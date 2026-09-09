@@ -1,10 +1,13 @@
 
 import { NextResponse } from 'next/server';
 import { getRules, saveRule, type AutomationRule, ensureRulesSheet } from '@/lib/data/wms';
+import { requireManagement } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
     try {
         await ensureRulesSheet();
         const rules = await getRules();
@@ -15,6 +18,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
     try {
         const body = await req.json();
         

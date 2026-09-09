@@ -2,8 +2,14 @@ import { withAuth } from "next-auth/middleware"
 import { getToken } from "next-auth/jwt"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { MANAGEMENT_ROLES, isManagementOnlyPath } from "./lib/rbac"
 
-// Page guard (redirects to /login) — unchanged behavior.
+// Must match the secret used in authOptions (same fallback) so getToken can
+// decode the session cookie even when NEXTAUTH_SECRET is unset — otherwise
+// every logged-in request looks unauthenticated (pages loop to /login, APIs 401).
+const AUTH_SECRET = process.env.NEXTAUTH_SECRET || "wms360_secret_key_2026"
+
+// Page guard (redirects to /login).
 const pageAuth = withAuth(
   // `withAuth` augments your `Request` with the user's token.
   function proxy(req) {
@@ -29,18 +35,18 @@ const pageAuth = withAuth(
            }
         }
 
-        const isStaff = typeof role === 'string' && (role.startsWith('Staff') || role === 'User');
-        if (isStaff) {
-            // Staff can operate warehouse and mobile app, but cannot access admin settings
-            if (path.startsWith('/admin/users') ||
-                path.startsWith('/admin/billing') ||
-                path.startsWith('/admin/audit')) {
-                return false;
-            }
+        // 3. Management-only areas (all of /admin/** except /admin/customers,
+        //    plus /ai-reorder) are restricted to Super Admin / Admin / Manager.
+        //    This closes the gap where non-management staff could open
+        //    /admin/organization, /admin/branches, /admin/rules, etc. directly.
+        if (isManagementOnlyPath(path) &&
+            !(MANAGEMENT_ROLES as readonly string[]).includes(role)) {
+            return false;
         }
 
+        // 4. Even within management, only Super Admin / Admin manage user
+        //    credentials and billing (Manager is excluded).
         if (role === 'Manager') {
-            // Manager can do operations and analytics, but cannot change user credentials or billing
             if (path.startsWith('/admin/users') ||
                 path.startsWith('/admin/billing')) {
                 return false;
@@ -53,6 +59,7 @@ const pageAuth = withAuth(
     pages: {
       signIn: "/login",
     },
+    secret: AUTH_SECRET,
   }
 )
 
@@ -73,7 +80,7 @@ export default async function proxy(req: NextRequest, event: any) {
     if (req.method === 'OPTIONS') {
       return NextResponse.next();
     }
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: AUTH_SECRET });
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -94,6 +101,10 @@ export const config = {
     "/orders/:path*",
     "/mobile/:path*",
     "/admin/:path*",
+    "/ai-reorder/:path*",
+    "/hq/:path*",
+    "/integrations/:path*",
+    "/barcode/:path*",
     "/damage/:path*",
     "/analytics/:path*",
     "/api/:path*",

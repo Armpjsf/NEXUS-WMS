@@ -76,7 +76,7 @@ export default function MobileNav() {
     <>
       {/* App-styled alert/confirm host for all mobile pages */}
       <MobileDialogHost />
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 z-50 shadow-[0_-2px_12px_rgba(15,23,42,0.06)]">
         <div className="flex justify-around items-center h-16">
           {navItems.map(item => {
             const Icon = item.icon;
@@ -87,7 +87,7 @@ export default function MobileNav() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                  isActive ? 'text-blue-400 bg-slate-800' : 'text-slate-400 hover:text-slate-200'
+                  isActive ? 'text-blue-700 bg-blue-50' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Icon className="w-6 h-6 mb-1" />

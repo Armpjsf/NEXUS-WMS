@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getUsers, addUser, updateUser, deleteUser } from '@/lib/users';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireManagement } from "@/lib/apiAuth";
 import { logAction } from "@/lib/auditTrail";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const guard = await requireManagement();
+  if (guard.error) return guard.error;
   try {
     const users = await getUsers();
     // If empty (first run), return default admin for checking
@@ -20,9 +21,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
     try {
-        const session = await getServerSession(authOptions);
-        const adminUser = session?.user as any;
+        const adminUser = guard.user;
         const currentUser = adminUser?.username || 'Unknown Admin';
         const currentUserId = adminUser?.id || 'admin';
 
@@ -65,9 +67,10 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
     try {
-        const session = await getServerSession(authOptions);
-        const adminUser = session?.user as any;
+        const adminUser = guard.user;
         const currentUser = adminUser?.username || 'Unknown Admin';
         const currentUserId = adminUser?.id || 'admin';
 

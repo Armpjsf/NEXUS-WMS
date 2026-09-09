@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getProductsUncached, getTransactionsUncached, getDamageRecords } from '@/lib/data/wms';
+import { requireManagement } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const guard = await requireManagement();
+  if (guard.error) return guard.error;
   try {
     const products = await getProductsUncached();
     const inbound = await getTransactionsUncached('IN');
