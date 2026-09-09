@@ -115,12 +115,12 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [org, setOrg] = useState<{ name: string; brandingLogo: string; brandingColor: string }>({ name: 'NEXUS WMS', brandingLogo: '/nexus-icon.png', brandingColor: '#06b6d4' });
+  const [org, setOrg] = useState<{ name: string; brandingLogo: string; brandingColor: string }>({ name: 'NEXUS WMS', brandingLogo: '/nexus-icon.png', brandingColor: '#2563eb' });
 
   useEffect(() => {
     const loadOrg = () => fetch('/api/org', { cache: 'no-store' })
       .then(r => r.json())
-      .then(d => setOrg({ name: d.name || 'NEXUS WMS', brandingLogo: d.brandingLogo || '/nexus-icon.png', brandingColor: d.brandingColor || '#06b6d4' }))
+      .then(d => setOrg({ name: d.name || 'NEXUS WMS', brandingLogo: d.brandingLogo || '/nexus-icon.png', brandingColor: d.brandingColor || '#2563eb' }))
       .catch(() => {});
     loadOrg();
     window.addEventListener('org-updated', loadOrg);
@@ -286,14 +286,14 @@ export default function Sidebar() {
         )}
       >
         <div className="flex h-20 items-center gap-3 border-b border-slate-200 px-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-md p-1">
-            <img src={org.brandingLogo || '/nexus-icon.png'} className="h-full w-full object-contain" alt={`${org.name} logo`} />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+            <img src={org.brandingLogo || '/nexus-icon.png'} className="h-10 w-10 object-contain drop-shadow-sm" alt={`${org.name} logo`} />
           </div>
 
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-lg font-black tracking-tight text-slate-950">{org.name}</h1>
-              <p className="truncate text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: org.brandingColor }}>Warehouse Command</p>
+              <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Warehouse Command</p>
             </div>
           )}
 

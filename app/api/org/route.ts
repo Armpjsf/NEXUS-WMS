@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const org = await getOrg(DEFAULT_ORG);
-    return NextResponse.json(org || { name: 'NEXUS WMS', brandingColor: '#06b6d4', brandingLogo: '/nexus-icon.png' });
+    return NextResponse.json(org || { name: 'NEXUS WMS', brandingColor: '#2563eb', brandingLogo: '/nexus-icon.png' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

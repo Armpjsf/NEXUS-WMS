@@ -83,11 +83,11 @@ function LoginForm() {
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-blue-700 via-teal-500 to-amber-500" />
           
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-slate-950 rounded-3xl mx-auto flex items-center justify-center shadow-xl shadow-slate-900/25 mb-4 ring-4 ring-cyan-500/20 overflow-hidden p-2">
-               <img src="/logo.png" alt="NEXUS WMS Logo" className="w-full h-full object-contain" />
+            <div className="w-20 h-20 mx-auto flex items-center justify-center mb-3">
+               <img src="/nexus-icon.png" alt="NEXUS WMS Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">NEXUS WMS</h1>
-            <p className="text-xs font-bold text-cyan-600 uppercase tracking-widest mt-1">Smart Warehouse Execution</p>
+            <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">Smart Warehouse Execution</p>
             <p className="text-slate-500 text-xs mt-2 font-medium">กรุณาลงชื่อเข้าใช้เพื่อเข้าสู่ระบบ</p>
           </div>
 

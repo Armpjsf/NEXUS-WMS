@@ -218,8 +218,8 @@ export default function MobileHubPage() {
       <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 overflow-hidden p-0.5 shadow-md shadow-cyan-500/10">
-              <img src="/icon.png" alt="NEXUS WMS" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden p-0.5 flex items-center justify-center">
+              <img src="/nexus-icon.png" alt="NEXUS WMS" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
