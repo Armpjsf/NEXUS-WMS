@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.wms360.pro', // Fixed to match google-services.json
-  appName: 'WMS 360 PRO',
+  appId: 'com.nexuswms.app', // Separate app from the legacy com.wms360.pro build
+  appName: 'NEXUS WMS',
   webDir: 'out',
   server: {
     // Warehouse staff use the APK primarily; open straight to the jobs menu

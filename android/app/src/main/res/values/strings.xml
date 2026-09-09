@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">WMS 360 PRO</string>
-    <string name="title_activity_main">WMS 360 PRO</string>
-    <string name="package_name">com.wms360.pro</string>
-    <string name="custom_url_scheme">com.wms360.pro</string>
+    <string name="app_name">NEXUS WMS</string>
+    <string name="title_activity_main">NEXUS WMS</string>
+    <string name="package_name">com.nexuswms.app</string>
+    <string name="custom_url_scheme">com.nexuswms.app</string>
 </resources>
