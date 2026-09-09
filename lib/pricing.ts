@@ -1,5 +1,5 @@
 
-import { getAllTransactions, Transaction, getProducts } from './googleSheets';
+import { getAllTransactions, type Transaction, getProducts } from './data/wms';
 
 export interface InventoryBatch {
   date: string;

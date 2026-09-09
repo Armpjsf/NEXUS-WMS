@@ -191,13 +191,23 @@ function WarehouseMapContent() {
               </div>
             </div>
 
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200 shadow-sm transition-all"
-            >
-              <RefreshCw className={cn('w-4 h-4 text-teal-600', loading && 'animate-spin')} />
-            </button>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/admin/slotting"
+                className="px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                คำแนะนำ ABC Slotting
+              </Link>
+              <button
+                onClick={fetchData}
+                disabled={loading}
+                className="p-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200 shadow-sm transition-all"
+                title="รีเฟรชข้อมูลผัง"
+              >
+                <RefreshCw className={cn('w-4 h-4 text-teal-600', loading && 'animate-spin')} />
+              </button>
+            </div>
           </div>
         </header>
 

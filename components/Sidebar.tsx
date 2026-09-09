@@ -37,6 +37,7 @@ import {
   Sparkles,
   Store,
   Tags,
+  Truck,
   Users,
 } from 'lucide-react';
 import { useLanguage } from './providers/LanguageProvider';
@@ -114,6 +115,17 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [org, setOrg] = useState<{ name: string; brandingLogo: string; brandingColor: string }>({ name: 'NEXUS WMS', brandingLogo: '/nexus-icon.png', brandingColor: '#06b6d4' });
+
+  useEffect(() => {
+    const loadOrg = () => fetch('/api/org', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setOrg({ name: d.name || 'NEXUS WMS', brandingLogo: d.brandingLogo || '/nexus-icon.png', brandingColor: d.brandingColor || '#06b6d4' }))
+      .catch(() => {});
+    loadOrg();
+    window.addEventListener('org-updated', loadOrg);
+    return () => window.removeEventListener('org-updated', loadOrg);
+  }, []);
   const { t, language, setLanguage } = useLanguage();
 
   // Load from localStorage on mount
@@ -150,28 +162,19 @@ export default function Sidebar() {
   const userRole = (session?.user as any)?.role || 'User';
   const isAdminRole = adminRoles.includes(userRole);
 
+  // P1 cleanup: ยุบเมนูซ้ำ (พิมพ์ฉลาก/สแกน/ตรวจนับ/รายงาน/AI) + ย้ายเมนูมือถือ (/mobile/*) ไปไว้ที่ MobileNav
   const navGroups = useMemo<NavGroup[]>(() => ([
     {
-      label: 'Command',
+      label: 'ภาพรวม',
       accent: 'bg-blue-500',
       items: [
         { label: t('menu_dashboard'), href: '/dashboard', icon: Home, tone: 'blue', viewerAllowed: true },
         { label: 'HQ Command Center', href: '/hq', icon: Building2, tone: 'cyan', viewerAllowed: true },
+        { label: t('menu_smart_restock'), href: '/ai-reorder', icon: Sparkles, tone: 'emerald', adminOnly: true },
       ],
     },
     {
-      label: 'Workflows',
-      accent: 'bg-amber-500',
-      items: [
-        { label: 'Marketplace Hub', href: '/integrations/marketplaces', icon: ShoppingBag, tone: 'rose' },
-        { label: t('menu_orders'), href: '/orders', icon: Mail, tone: 'rose' },
-        { label: t('menu_jobs'), href: '/mobile/jobs', icon: Briefcase, tone: 'violet' },
-        { label: t('mobile_nav_cycle_count'), href: '/mobile/cycle-count', icon: ClipboardCheck, tone: 'teal' },
-        { label: t('scan_barcode'), href: '/mobile/scan', icon: ScanLine, tone: 'cyan' },
-      ],
-    },
-    {
-      label: 'Inventory',
+      label: 'สินค้าคงคลัง',
       accent: 'bg-teal-500',
       items: [
         { label: t('menu_inventory'), href: '/inventory', icon: Box, tone: 'teal', viewerAllowed: true },
@@ -182,53 +185,52 @@ export default function Sidebar() {
       ],
     },
     {
-      label: 'Operations',
+      label: 'ปฏิบัติการ',
       accent: 'bg-emerald-500',
       items: [
+        { label: 'รับเข้า & จัดเก็บ (GRN)', href: '/ops/receiving', icon: ArrowDownToLine, tone: 'emerald' },
         { label: 'Smart Wave Picking', href: '/ops/wave-picking', icon: Boxes, tone: 'amber' },
-        { label: t('menu_inbound'), href: '/ops/inbound', icon: ArrowDownToLine, tone: 'emerald' },
-        { label: t('menu_outbound'), href: '/ops/outbound', icon: ArrowUpFromLine, tone: 'amber' },
-        { label: t('menu_damage'), href: '/ops/damage', icon: ShieldAlert, tone: 'rose' },
+        { label: 'เบิกจ่ายตรง / ภายใน (Issue)', href: '/ops/outbound', icon: ArrowUpFromLine, tone: 'amber' },
         { label: t('menu_cycle_count'), href: '/ops/cycle-count', icon: PackageCheck, tone: 'teal' },
+        { label: t('menu_damage'), href: '/ops/damage', icon: ShieldAlert, tone: 'rose' },
+        { label: t('scan_barcode'), href: '/barcode/scanner', icon: ScanLine, tone: 'cyan' },
       ],
     },
     {
-      label: 'Analytics',
+      label: 'การขาย & ออเดอร์',
+      accent: 'bg-rose-500',
+      items: [
+        { label: 'ออเดอร์ขาออก', href: '/ops/orders', icon: PackageCheck, tone: 'cyan' },
+        { label: 'ลูกค้า (Customers)', href: '/admin/customers', icon: Users, tone: 'blue' },
+        { label: 'คืนสินค้า (RMA)', href: '/ops/returns', icon: History, tone: 'rose' },
+        { label: 'Marketplace Hub', href: '/integrations/marketplaces', icon: ShoppingBag, tone: 'rose' },
+      ],
+    },
+    {
+      label: 'วิเคราะห์',
       accent: 'bg-violet-500',
       items: [
         { label: t('menu_analytics'), href: '/analytics', icon: BarChart3, tone: 'violet' },
-        { label: t('summary_report'), href: '/analytics/summary', icon: ChartNoAxesCombined, tone: 'blue' },
+        { label: 'รายงานเคลื่อนไหว', href: '/analytics/movements', icon: FileBarChart, tone: 'cyan', viewerAllowed: true },
         { label: t('aging_title'), href: '/analytics/aging', icon: Activity, tone: 'rose' },
         { label: t('forecast_title'), href: '/analytics/forecast', icon: Sparkles, tone: 'violet' },
         { label: t('profit_title'), href: '/analytics/profit', icon: ReceiptText, tone: 'emerald' },
         { label: t('menu_reports'), href: '/analytics/reports', icon: FileBarChart, tone: 'steel', viewerAllowed: true },
-        { label: t('inventory_report_title'), href: '/analytics/reports/inventory', icon: DatabaseZap, tone: 'cyan', viewerAllowed: true },
       ],
     },
     {
-      label: 'Documents & Tools',
-      accent: 'bg-cyan-500',
-      items: [
-        { label: t('menu_po_log'), href: '/po-log', icon: FileText, tone: 'steel' },
-        { label: 'Thermal Labels (100x150)', href: '/barcode/thermal-labels', icon: Printer, tone: 'amber' },
-        { label: t('menu_barcode'), href: '/barcode/generator', icon: QrCode, tone: 'blue', adminOnly: true },
-        { label: t('print_labels'), href: '/barcode/print', icon: Tags, tone: 'amber', adminOnly: true },
-        { label: t('scan_barcode'), href: '/barcode/scanner', icon: ScanLine, tone: 'cyan', adminOnly: true },
-      ],
-    },
-    {
-      label: 'Administration',
+      label: 'ตั้งค่า',
       accent: 'bg-slate-500',
       items: [
         { label: t('menu_admin'), href: '/admin', icon: Settings, tone: 'steel', adminOnly: true },
+        { label: 'ตั้งค่าองค์กร', href: '/admin/organization', icon: Building2, tone: 'cyan', adminOnly: true },
         { label: t('admin_users_title'), href: '/admin/users', icon: Users, tone: 'blue', adminOnly: true },
+        { label: 'ผู้ให้บริการขนส่ง', href: '/admin/carriers', icon: Truck, tone: 'amber', adminOnly: true },
+        { label: 'ผู้จำหน่าย (Suppliers)', href: '/admin/suppliers', icon: Building2, tone: 'emerald', adminOnly: true },
         { label: t('branches_title'), href: '/admin/branches', icon: Store, tone: 'teal', adminOnly: true },
         { label: t('rules_title'), href: '/admin/rules', icon: Bot, tone: 'amber', adminOnly: true },
-        { label: t('menu_audit'), href: '/admin/audit-trail', icon: History, tone: 'steel', adminOnly: true },
-        { label: t('menu_quality'), href: '/admin/data-quality', icon: SlidersHorizontal, tone: 'rose', adminOnly: true },
         { label: t('menu_slotting'), href: '/admin/slotting', icon: LayoutGrid, tone: 'violet', adminOnly: true },
-        { label: t('print_labels'), href: '/admin/labels', icon: Tags, tone: 'amber', adminOnly: true },
-        { label: t('menu_smart_restock'), href: '/ai-reorder', icon: Sparkles, tone: 'emerald', adminOnly: true },
+        { label: t('menu_audit'), href: '/admin/audit-trail', icon: History, tone: 'steel', adminOnly: true },
       ],
     },
   ]), [t]);
@@ -284,14 +286,14 @@ export default function Sidebar() {
         )}
       >
         <div className="flex h-20 items-center gap-3 border-b border-slate-200 px-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-            <img src="/logo.png" className="h-12 w-12 object-contain mix-blend-multiply" alt="WMS 360 logo" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-md p-1">
+            <img src={org.brandingLogo || '/nexus-icon.png'} className="h-full w-full object-contain" alt={`${org.name} logo`} />
           </div>
 
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-black tracking-tight text-slate-950">WMS 360 PRO</h1>
-              <p className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Warehouse Command</p>
+              <h1 className="truncate text-lg font-black tracking-tight text-slate-950">{org.name}</h1>
+              <p className="truncate text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: org.brandingColor }}>Warehouse Command</p>
             </div>
           )}
 

@@ -1,82 +1,99 @@
-# WMS 360 PRO
+# 🔷 NEXUS WMS
+> **Next-Gen Smart Warehouse Management & Logistics Execution System**  
+> ขับเคลื่อนด้วย Next.js 16 (Turbopack) • Supabase (PostgreSQL) • Capacitor Mobile (Android/iOS) • AI Smart Restock & Wave Picking
 
-ระบบ Warehouse Management System บน Next.js สำหรับจัดการคลังสินค้า, รับเข้า, จ่ายออก, damage, stock card, barcode, dashboard analytics, branch, user/role, notification, offline cache และ mobile build ผ่าน Capacitor Android
+![NEXUS WMS Logo](/public/logo.png)
 
-## Tech Stack
+---
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- NextAuth credentials provider
-- Google Sheets / Google Drive / Gmail integration
-- Firebase Admin สำหรับ push notification
-- Dexie IndexedDB สำหรับ offline cache/queue
-- Capacitor Android สำหรับ mobile app
+## 🚀 จุดเด่นและฟีเจอร์หลัก (Key Features)
 
-## โครงสร้างหลัก
+### 1. 📦 การจัดการสินค้าคงคลัง & แผนผังคลัง (Inventory & 2D Warehouse Map)
+* **2D Visual Warehouse Map**: จำลองผังเชลฟ์ คลังสินค้า และแสดงความจุ/Heatmap สินค้าแต่ละช่อง
+* **Stock Card & Real-time Transactions**: ตรวจสอบประวัติการเคลื่อนไหวเข้า-ออก-โอนย้าย แบบวินาทีต่อวินาที
+* **FIFO Batch Tracking**: ระบบจัดการสินค้าตามลำดับวันหมดอายุและวันที่รับเข้า (First-In, First-Out)
+* **AI Smart Restock & Demand Forecast**: วิเคราะห์แนวโน้มยอดขายและแนะนำจุดสั่งซื้อซ้ำอัตโนมัติ (Reorder Point)
 
-- `app/` หน้าเว็บและ API routes
-- `components/` shared UI และ providers
-- `lib/` service/helper หลัก เช่น Google Sheets, auth, users, reports, notification, pricing, FIFO
-- `hooks/` client hooks เช่น offline sync
-- `public/` PWA assets และ service worker
-- `android/` Capacitor Android project
-- `scripts/` และ `scratch/` dev utilities ไม่รวมใน app typecheck
+### 2. ⚡ ระบบหยิบสินค้าอัจฉริยะ (Smart Wave Picking)
+* **Order Batching**: รวมออเดอร์รอจัดส่งมาจัดกลุ่มเป็น Wave เดียวกันเพื่อลดรอบการเดินในคลัง
+* **S-Shape Pathfinding**: คำนวณเส้นทางเดินหยิบสินค้าที่สั้นและมีประสิทธิภาพสูงสุดอัตโนมัติ
+* **Real-time Order Transitions**: เมื่อหยิบครบ Wave ออเดอร์จะขยับสู่สถานะ `PICKED` และส่งต่อไปยังสถานี QC ทันที
 
-## การติดตั้ง
+### 3. 🔍 สถานีตรวจสอบและแพ็กสินค้า (Mobile QC Station & Packing)
+* **100% Barcode Verification**: ตรวจสอบบาร์โค้ดสินค้าทีละชิ้นด้วยปืนสแกนเลเซอร์ (PDA) หรือกล้องมือถือ
+* **Standard Box Sizing**: เลือกรหัสกล่องพัสดุมาตรฐาน (00, 0, A, B, 2A, C, D, ซอง) คำนวณน้ำหนักและค่าจัดส่ง
+* **4x6 Thermal Shipping Labels**: รองรับการพิมพ์ใบปะหน้าพัสดุขนาด 4x6 นิ้ว หรือ A4 จากเครื่องพิมพ์ความร้อนโดยตรง
+* **Courier Dispatch & Tracking Scan**: สแกนบันทึกเลขพัสดุ (Kerry, Flash, EMS, SPX, LEX) และตัดสต็อกสินค้าจริง (`SHIPPED`)
 
-```bash
-npm install
-npm run dev
-```
+### 4. 📱 ระบบพนักงานคลังบนมือถือ (Warehouse Mobile & PDA Hub)
+* พัฒนาเป็น **PWA & Native Mobile App (Capacitor Android)**
+* รองรับฮาร์ดแวร์ปืนสแกนบาร์โค้ดอุตสาหกรรม (Zebra, Honeywell, Chainway, Newland) และกล้องมือถือทั่วไป
+* มีระบบเสียงแจ้งเตือน (Scanner Audio Beep) และสั่นเตือน (Haptic Feedback)
 
-เปิด `http://localhost:3000`
+### 5. 🏢 สิทธิ์การใช้งานตามแผนกและองค์กร (Multi-Branch & Section-Based RBAC)
+* **Multi-Tenant & Multi-Branch**: แยกข้อมูลและสต็อกสินค้าของแต่ละสาขา หรือรวมดูภาพรวมผ่าน **HQ Command Center**
+* **Section-Based Roles**:
+  * 👑 `Super Admin`: ควบคุมทั้งองค์กร เข้าถึงได้ทุกเมนูและทุกสาขาทั่วประเทศ
+  * 🛡️ `Admin`: ผู้จัดการสาขา ดูแลเฉพาะสาขาของตนเอง
+  * 📥 `Staff - Inbound`: ฝ่ายรับสินค้าเข้าคลัง (GRN)
+  * 📦 `Staff - Picker`: ฝ่ายเดินหยิบสินค้าตาม Wave
+  * 🔍 `Staff - QC & Pack`: ฝ่ายตรวจสอบความถูกต้องและแพ็กกล่อง
+  * 🚚 `Staff - Dispatch`: ฝ่ายส่งมอบพัสดุขึ้นรถขนส่ง
+  * 📋 `Staff - Inventory`: ฝ่ายตรวจนับสต็อก (Cycle Count)
 
-## Environment Variables
+---
 
-เริ่มจากคัดลอก `.env.example` เป็น `.env.local` แล้วตั้งค่าจริง
+## 🛠️ สถาปัตยกรรมทางเทคนิค (Tech Stack)
 
-```bash
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=replace-with-a-long-random-secret
+* **Frontend & Backend**: Next.js 16 (App Router + Turbopack), React 19, TypeScript
+* **Styling & UI**: Tailwind CSS 4, Lucide Icons, Framer Motion
+* **Database & Auth**: Supabase (PostgreSQL), NextAuth.js
+* **Mobile Runtime**: Capacitor 8 (Android/iOS), PWA Web Push
+* **Offline Storage**: Dexie.js (IndexedDB) & Web Push Worker
 
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+---
 
-PRODUCT_SPREADSHEET_ID=your-main-inventory-sheet-id
-NEXT_PUBLIC_PO_SPREADSHEET_ID=your-document-sheet-id
-NEXT_PUBLIC_DELIVERY_FOLDER_ID=your-drive-folder-id
+## 💻 การติดตั้งและเริ่มต้นใช้งาน (Installation)
 
-ENABLE_DEV_ADMIN_BACKDOOR=false
-```
+1. **Clone repository**:
+   ```bash
+   git clone https://github.com/<your-username>/nexus-wms.git
+   cd nexus-wms
+   ```
 
-ห้ามเปิด `ENABLE_DEV_ADMIN_BACKDOOR=true` บน production ใช้ได้เฉพาะ local dev เมื่อต้อง bootstrap ระบบเท่านั้น
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-## คำสั่งสำคัญ
+3. **Configure Environment Variables**:
+   คัดลอกไฟล์ตัวอย่าง `.env.example` เป็น `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+   ตั้งค่าการเชื่อมต่อหลัก:
+   ```env
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your-secure-nextauth-secret
 
-```bash
-npm run dev       # run local dev server
-npm run lint      # run ESLint
-npx tsc --noEmit  # typecheck app code
-npm run build     # production build
-```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-key
+   ```
 
-## Auth และ Permission
+4. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
+   เปิดใช้งานระบบผ่านเบราว์เซอร์ที่: [http://localhost:3000](http://localhost:3000)
 
-- Login ใช้ `Users` sheet เป็นแหล่งข้อมูลหลัก
-- Password ต้องเก็บเป็น bcrypt hash
-- Role ปัจจุบัน: `Super Admin`, `Admin`, `Manager`, `User`, `Viewer`
-- Middleware ป้องกัน route ฝั่งหน้าเว็บตาม role
-- API auth/role guard ยังควรทำให้เป็นมาตรฐานในรอบถัดไป แต่รอบนี้ยังคงรูปแบบเดิมตามข้อจำกัด
+5. **Build for Production**:
+   ```bash
+   npm run build
+   npm start
+   ```
 
-## ข้อควรระวังในการพัฒนา
+---
 
-- หน้า order/email และ flow เอกสาร/roll tag มี logic ซับซ้อนมาก ให้แก้เฉพาะเมื่อมี requirement ชัดเจนและต้องทดสอบ end-to-end
-- หลีกเลี่ยงการเปลี่ยน column mapping ของ Google Sheets ถ้าไม่ได้ตรวจ sheet จริง
-- ทุกฟีเจอร์ที่เขียนลง sheet ควรมี audit log และ validation
-- ก่อน deploy ให้รัน `npm run lint`, `npx tsc --noEmit`, และ `npm run build`
-
-## Roadmap
-
-ดูแผนพัฒนาต่อที่ `docs/ROADMAP.md`
+## 📄 License
+Private Enterprise Software — All Rights Reserved.

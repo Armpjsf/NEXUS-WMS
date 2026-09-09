@@ -1,73 +1,104 @@
 import { NextResponse } from 'next/server';
-import { getSheetData, appendSheetData, ensureSheetExists, getServiceAccountEmail, cleanSpreadsheetId } from '@/lib/googleSheets';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
 
-// Use PO Spreadsheet ID to keep requests with other PO data
-const SHEET_ID = cleanSpreadsheetId(process.env.NEXT_PUBLIC_PO_SPREADSHEET_ID);
+export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
-    try {
-        const body = await req.json();
-        const { items } = body;
+// Generate a system PO number: PO-YYMMDD-XXX
+async function nextPoNumber(): Promise<string> {
+  const d = new Date();
+  const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const prefix = `PO-${ymd}-`;
+  const { count } = await supabase
+    .from('purchase_orders')
+    .select('id', { count: 'exact', head: true })
+    .like('po_number', `${prefix}%`);
+  return `${prefix}${String((count || 0) + 1).padStart(3, '0')}`;
+}
 
-        if (!items || !Array.isArray(items) || items.length === 0) {
-            return NextResponse.json({ error: "No items provided" }, { status: 400 });
-        }
-
-        if (!SHEET_ID) {
-            return NextResponse.json({ error: "Sheet ID not configured" }, { status: 500 });
-        }
-
-        // Generate Request ID
-        const date = new Date();
-        const idSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        const reqId = `REQ-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${idSuffix}`;
-        const reqDate = date.toISOString().split('T')[0];
-        const requester = "Admin (AI Reorder)";
-        
-        // Calculate Total
-        const totalAmount = items.reduce((acc: number, item: any) => acc + (item.suggestedQty * item.price), 0);
-        
-        // Serialize Items
-        const itemsString = JSON.stringify(items.map((i: any) => ({
-            id: i.id,
-            name: i.name,
-            qty: i.orderQty,
-            price: i.price,
-            total: i.orderQty * i.price
-        })));
-
-        // Data to Append
-        // Columns: Request ID | Date | Requester | Items (JSON) | Total Amount | Status
-        const rowData = [
-            reqId,
-            reqDate,
-            requester,
-            itemsString,
-            totalAmount.toString(),
-            "Pending"
-        ];
-        
-        const SHEET_NAME = "Purchase Requests";
-
-        // Ensure Sheet Exists
-        try {
-             await ensureSheetExists(SHEET_ID, SHEET_NAME, ["Request ID", "Date", "Requester", "Items", "Total Amount", "Status"]);
-        } catch (createErr) {
-             console.error("Failed to ensure sheet exists:", createErr);
-             const email = await getServiceAccountEmail();
-             // Return specific error to help user fix permissions
-             return NextResponse.json({ 
-                 error: `Permission Error: The system cannot create the sheet. Please grant 'Editor' access to: ${email} (Target Sheet ID: ${SHEET_ID})` 
-             }, { status: 500 });
-        }
-
-        // Append to Sheet
-        await appendSheetData(SHEET_ID, `${SHEET_NAME}!A:F`, [rowData]);
-
-        return NextResponse.json({ success: true, reqId });
-
-    } catch (error: any) {
-        console.error("PO Create Error:", error);
-        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+// List purchase orders (for receiving prefill etc.).
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const orgId = await getCurrentOrgId();
+    if (id) {
+      const { data, error } = await supabase.from('purchase_orders').select('*').eq('org_id', orgId).eq('id', id).maybeSingle();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      return NextResponse.json({ order: data });
     }
+    const status = searchParams.get('status') || undefined;
+    let q = supabase.from('purchase_orders').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(200);
+    if (status) q = q.eq('status', status);
+    const { data, error } = await q;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ orders: data || [] });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// Create a system-owned purchase order (generic, not customer-specific).
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { items = [], totalAmount, supplier, notes } = body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'No items to order' }, { status: 400 });
+    }
+
+    // @ts-ignore
+    const session = await getServerSession(authOptions);
+
+    const total =
+      typeof totalAmount === 'number'
+        ? totalAmount
+        : items.reduce((sum: number, it: any) => sum + Number(it.total ?? Number(it.qty || 0) * Number(it.price || 0)), 0);
+
+    const poNumber = await nextPoNumber();
+
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .insert({
+        org_id: await getCurrentOrgId(),
+        po_number: poNumber,
+        status: 'DRAFT',
+        supplier: supplier || '',
+        total_amount: total,
+        total_items: items.length,
+        items_json: items,
+        created_by: session?.user?.name || session?.user?.email || 'System',
+        notes: notes || '',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase create PO Error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    try {
+      const { logAction } = await import('@/lib/auditTrail');
+      await logAction({
+        userId: session?.user?.email || 'System',
+        userName: session?.user?.name || 'System',
+        action: 'CREATE',
+        module: 'PurchaseOrder',
+        description: `Created purchase order ${poNumber} (${items.length} items, ${total})`,
+        newValues: { poNumber, total } as any,
+      });
+    } catch (err) {
+      console.warn('Audit Log Failed:', err);
+    }
+
+    return NextResponse.json({ success: true, po: data });
+  } catch (error: any) {
+    console.error('API create PO Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

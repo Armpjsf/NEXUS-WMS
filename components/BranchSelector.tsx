@@ -29,23 +29,31 @@ export default function BranchSelector() {
     const defaultBranch = { id: 'hq', name: 'HQ (Default)', color: 'indigo', spreadsheetId: '' };
 
     useEffect(() => {
+        // Skip fetch if not authenticated
+        if (!session?.user) {
+            setBranches([defaultBranch]);
+            setLoading(false);
+            return;
+        }
+
         fetch(getApiUrl('/api/branches'))
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) return [defaultBranch];
+                return res.json();
+            })
             .then(data => {
                 if (Array.isArray(data) && data.length > 0) {
                     setBranches(data);
                 } else {
-                    // Fallback if empty or API error
                     setBranches([defaultBranch]); 
                 }
                 setLoading(false);
             })
-            .catch(err => {
-                console.error("Failed to load branches", err);
+            .catch(() => {
                 setBranches([defaultBranch]);
                 setLoading(false);
             });
-    }, []);
+    }, [session]);
 
     // Filter Branches based on Permission
     const allowedBranches = (session?.user as any)?.allowedBranches || ['*']; // Default * if not loaded yet

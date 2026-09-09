@@ -20,7 +20,7 @@ export default function KeyboardShortcuts() {
     { key: 'g d', label: 'G then D', description: 'Go to Dashboard', action: () => router.push('/dashboard') },
     { key: 'g i', label: 'G then I', description: 'Go to Inventory', action: () => router.push('/inventory') },
     { key: 'g s', label: 'G then S', description: 'Go to Scan', action: () => router.push('/barcode/scanner') },
-    { key: 'n i', label: 'N then I', description: 'New Inbound', action: () => router.push('/ops/inbound') },
+    { key: 'n i', label: 'N then I', description: 'New Inbound', action: () => router.push('/ops/receiving') },
     { key: 'n o', label: 'N then O', description: 'New Outbound', action: () => router.push('/ops/outbound') },
     { key: '?', label: '?', description: 'Show Shortcuts', action: () => setShowHelp(true) },
   ];

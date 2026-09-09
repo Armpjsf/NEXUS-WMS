@@ -1,187 +1,239 @@
-import { getSheetData, appendSheetRow, updateSheetData, getSheetId, getGoogleSheets, USER_SPREADSHEET_ID } from "./googleSheets";
-import bcrypt from 'bcryptjs';
+// User management (Supabase app_users). Passwords hashed with bcrypt.
 
-// ============================================================================
-// USER MANAGEMENT (REAL - USERS SHEET)
-// ============================================================================
+import bcrypt from 'bcryptjs';
+import { getServiceSupabase } from './supabase';
+import { getCurrentOrgId, DEFAULT_ORG } from './orgContext';
+import { checkPlanLimit } from './planLimits';
+
+export type UserRole =
+  | 'Super Admin'
+  | 'Admin'
+  | 'Manager'
+  | 'Staff - Inbound'
+  | 'Staff - Picker'
+  | 'Staff - QC & Pack'
+  | 'Staff - Dispatch'
+  | 'Staff - Inventory'
+  | 'Staff'
+  | 'User'
+  | 'Viewer';
+
+export interface RoleMeta {
+  role: string;
+  category: 'management' | 'section' | 'audit';
+  title: string;
+  description: string;
+  allowedSections: string[];
+}
+
+export const ROLE_DEFINITIONS: Record<string, RoleMeta> = {
+  'Super Admin': {
+    role: 'Super Admin',
+    category: 'management',
+    title: '👑 ผู้ดูแลระบบสูงสุด (Super Admin)',
+    description: 'เข้าถึงข้อมูลทั้งหมด ทุกเมนู ทุกการตั้งค่า และเห็นข้อมูลทุกสาขา',
+    allowedSections: ['*'],
+  },
+  'Admin': {
+    role: 'Admin',
+    category: 'management',
+    title: '💻 ผู้ดูแลระบบสาขา (Admin)',
+    description: 'จัดการคลังสินค้า สต็อก ออเดอร์ และทีมงานในสาขาที่ได้รับมอบหมาย',
+    allowedSections: ['*'],
+  },
+  'Manager': {
+    role: 'Manager',
+    category: 'management',
+    title: '👔 หัวหน้าคลัง (Manager)',
+    description: 'จัดการออเดอร์ วิเคราะห์รายงาน และดูภาพรวมคลังสินค้า',
+    allowedSections: ['*'],
+  },
+  'Staff - Inbound': {
+    role: 'Staff - Inbound',
+    category: 'section',
+    title: '📥 ฝ่ายรับสินค้าเข้า (Inbound)',
+    description: 'รับสินค้าเข้า ตรวจนับ PO และจัดเก็บขึ้นชั้นวาง (Putaway)',
+    allowedSections: ['inbound', 'inventory', 'home'],
+  },
+  'Staff - Picker': {
+    role: 'Staff - Picker',
+    category: 'section',
+    title: '🛒 ฝ่ายหยิบสินค้า (Picker)',
+    description: 'เดินหยิบสินค้าตาม Wave และเส้นทาง S-Shape',
+    allowedSections: ['picking', 'inventory', 'home'],
+  },
+  'Staff - QC & Pack': {
+    role: 'Staff - QC & Pack',
+    category: 'section',
+    title: '🔍 ฝ่ายตรวจ QC & แพ็ก (QC & Pack)',
+    description: 'สแกนตรวจสอบความถูกต้อง QC และบรรจุกล่องพิมพ์ใบปะหน้า',
+    allowedSections: ['orders', 'qc', 'pack', 'inventory', 'home'],
+  },
+  'Staff - Dispatch': {
+    role: 'Staff - Dispatch',
+    category: 'section',
+    title: '🚚 ฝ่ายจัดส่ง & ขนส่ง (Dispatch)',
+    description: 'ส่งมอบพัสดุให้ขนส่ง Kerry/Flash/SPX และงานคนขับ POD',
+    allowedSections: ['orders', 'dispatch', 'jobs', 'inventory', 'home'],
+  },
+  'Staff - Inventory': {
+    role: 'Staff - Inventory',
+    category: 'section',
+    title: '📋 ฝ่ายตรวจนับสต็อก (Inventory)',
+    description: 'ตรวจนับ Cycle Count ค้นหาและตรวจสอบยอดสต็อกในเชลฟ์',
+    allowedSections: ['cycle-count', 'inventory', 'home'],
+  },
+  'Staff': {
+    role: 'Staff',
+    category: 'section',
+    title: '📱 พนักงานคลังทั่วไป (Staff)',
+    description: 'เข้าถึงและใช้งานเครื่องมือในแอพมือถือได้ทุกแผนก',
+    allowedSections: ['*'],
+  },
+  'User': {
+    role: 'User',
+    category: 'section',
+    title: 'พนักงานคลังทั่วไป (User)',
+    description: 'เข้าถึงและใช้งานเครื่องมือในแอพมือถือได้ทุกแผนก',
+    allowedSections: ['*'],
+  },
+  'Viewer': {
+    role: 'Viewer',
+    category: 'audit',
+    title: '👁️ ผู้ตรวจสอบ (Viewer)',
+    description: 'ดูรายงานและสต็อกอย่างเดียว (Read-only)',
+    allowedSections: ['inventory', 'home'],
+  },
+};
+
+export function isStaffRole(role?: string): boolean {
+  if (!role) return false;
+  return role.startsWith('Staff') || role === 'User';
+}
+
+export function isManagementRole(role?: string): boolean {
+  return role === 'Super Admin' || role === 'Admin' || role === 'Manager';
+}
+
+export function getRoleMeta(role?: string): RoleMeta {
+  if (!role || !ROLE_DEFINITIONS[role]) {
+    return ROLE_DEFINITIONS['Staff'];
+  }
+  return ROLE_DEFINITIONS[role];
+}
+
 export interface User {
-    id: string;
-    username: string;
-    role: string;
-    status: string;
-    lastLogin: string;
-    password?: string; // Hashed (Internal use only)
-    allowedBranches?: string[]; // New: List of Branch IDs or ['*']
-    allowedOwners?: string[];   // Enterprise: Owner/Customer codes or ['*'] for all
+  id: string;
+  username: string;
+  role: string;
+  status: string;
+  lastLogin: string;
+  orgId?: string;
+  password?: string;
+  allowedBranches?: string[];
+  allowedOwners?: string[];
+}
+
+function mapUser(r: any): User {
+  return {
+    id: r.id,
+    username: r.username,
+    role: r.role || 'User',
+    status: r.status || 'Active',
+    lastLogin: r.last_login || '-',
+    orgId: r.org_id || DEFAULT_ORG,
+    allowedBranches: Array.isArray(r.allowed_branches) && r.allowed_branches.length ? r.allowed_branches : ['*'],
+    allowedOwners: Array.isArray(r.allowed_owners) && r.allowed_owners.length ? r.allowed_owners : ['*'],
+  };
 }
 
 export async function getUsers(): Promise<User[]> {
-    try {
-        // Fetch up to Column H (Index 7) for AllowedOwners
-        const raw = await getSheetData(USER_SPREADSHEET_ID, "'Users'!A:H");
-        if (!raw || raw.length < 2) return [];
-
-        return raw.slice(1).map((r, i) => ({
-             id: r[0] || `U-${i}`,
-             username: r[1] || "Unknown",
-             role: r[2] || "User",
-             status: r[3] || "Active",
-             lastLogin: r[4] || "-",
-             // Password at r[5]
-             allowedBranches: r[6] ? r[6].split(',').map((s: string) => s.trim()) : ['*'], // Default: All Access
-             allowedOwners: r[7] ? r[7].split(',').map((s: string) => s.trim()) : ['*']    // New: Owner Access
-        }));
-    } catch (e) {
-        console.error("Fetch Users Error:", e);
-        return [];
-    }
+  try {
+    const orgId = await getCurrentOrgId();
+    const { data, error } = await getServiceSupabase()
+      .from('app_users').select('*').eq('org_id', orgId).order('created_at', { ascending: true });
+    if (error) { console.error('Fetch Users Error:', error.message); return []; }
+    return (data || []).map(mapUser);
+  } catch (e) {
+    console.error('Fetch Users Error:', e);
+    return [];
+  }
 }
 
 export async function verifyUser(username: string, password: string): Promise<User | null> {
-    try {
-        const raw = await getSheetData(USER_SPREADSHEET_ID, "'Users'!A:H");
-        const allowDevAdmin =
-            process.env.NODE_ENV !== 'production' &&
-            process.env.ENABLE_DEV_ADMIN_BACKDOOR === 'true';
+  try {
+    const admin = getServiceSupabase();
+    const { data, error } = await admin
+      .from('app_users').select('*').ilike('username', username);
+    if (error) { console.error('Verify User Error:', error.message); return null; }
 
-        if (!raw || raw.length < 2) {
-             if (allowDevAdmin && username === 'admin' && password === 'admin') {
-                 return { 
-                     id: 'admin', 
-                     username: 'admin', 
-                     role: 'Super Admin', 
-                     status: 'Active', 
-                     lastLogin: new Date().toISOString(), 
-                     allowedBranches: ['*'],
-                     allowedOwners: ['*']
-                 };
-             }
-             return null;
-        }
+    const rows = data || [];
+    const allowDevAdmin =
+      process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_ADMIN_BACKDOOR === 'true';
 
-        // Collect ALL rows matching the username. With duplicates, find() would
-        // only try the first row and shadow the real account (e.g. a test user
-        // named "admin" blocking the Super Admin login).
-        const userRows = raw.slice(1).filter(r => r[1]?.toLowerCase() === username.toLowerCase());
-
-        if (userRows.length === 0) {
-             if (allowDevAdmin && username === 'admin' && password === 'admin') {
-                 return { 
-                     id: 'admin', 
-                     username: 'admin', 
-                     role: 'Super Admin', 
-                     status: 'Active', 
-                     lastLogin: new Date().toISOString(), 
-                     allowedBranches: ['*'],
-                     allowedOwners: ['*']
-                 };
-             }
-             return null;
-        }
-
-        // Try every matching row: the password decides which account logs in.
-        for (const userRow of userRows) {
-            const storedHash = userRow[5];
-            const status = userRow[3];
-
-            if (status !== 'Active' || !storedHash) continue;
-
-            const isValid = await bcrypt.compare(password, storedHash);
-            if (isValid) {
-                return {
-                    id: userRow[0],
-                    username: userRow[1],
-                    role: userRow[2],
-                    status: userRow[3],
-                    lastLogin: new Date().toISOString(),
-                    allowedBranches: userRow[6] ? userRow[6].split(',').map((s: string) => s.trim()) : ['*'],
-                    allowedOwners: userRow[7] ? userRow[7].split(',').map((s: string) => s.trim()) : ['*']
-                };
-            }
-        }
-
-        return null;
-
-    } catch (error) {
-        console.error("Verify User Error:", error);
-        return null;
+    if (rows.length === 0) {
+      if (allowDevAdmin && username === 'admin' && password === 'admin') {
+        return { id: 'admin', username: 'admin', role: 'Super Admin', status: 'Active', lastLogin: new Date().toISOString(), allowedBranches: ['*'], allowedOwners: ['*'] };
+      }
+      return null;
     }
+
+    for (const row of rows) {
+      if (row.status !== 'Active' || !row.password_hash) continue;
+      const ok = await bcrypt.compare(password, row.password_hash);
+      if (ok) {
+        // Best-effort last-login stamp
+        admin.from('app_users').update({ last_login: new Date().toISOString() }).eq('id', row.id).then(() => {}, () => {});
+        return { ...mapUser(row), lastLogin: new Date().toISOString() };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Verify User Error:', error);
+    return null;
+  }
 }
 
 export async function addUser(user: any) {
-    const hashedPassword = await bcrypt.hash(user.password || '123456', 10);
-    const branches = user.allowedBranches ? user.allowedBranches.join(',') : '*';
-    const owners = user.allowedOwners ? user.allowedOwners.join(',') : '*';
-    
-    const row = [
-        `U-${Date.now()}`,
-        user.username,
-        user.role,
-        "Active",
-        new Date().toISOString().split('T')[0],
-        hashedPassword, // Column F (5)
-        branches,       // Column G (6)
-        owners          // Column H (7)
-    ];
-    await appendSheetRow(USER_SPREADSHEET_ID, "'Users'!A:H", row);
-    return true;
+  const orgId = await getCurrentOrgId();
+  const limitErr = await checkPlanLimit(orgId, 'users', 'app_users');
+  if (limitErr) return { error: limitErr };
+
+  const hashedPassword = await bcrypt.hash(user.password || '123456', 10);
+  const { error } = await getServiceSupabase().from('app_users').insert({
+    id: `U-${Date.now()}`,
+    org_id: orgId,
+    username: user.username,
+    email: user.email || '',
+    role: user.role || 'Staff',
+    status: 'Active',
+    password_hash: hashedPassword,
+    allowed_branches: user.allowedBranches && user.allowedBranches.length ? user.allowedBranches : ['*'],
+    allowed_owners: user.allowedOwners && user.allowedOwners.length ? user.allowedOwners : ['*'],
+    last_login: new Date().toISOString().split('T')[0],
+  });
+  if (error) { console.error('Add User Error:', error.message); return false; }
+  return true;
 }
 
 export async function updateUser(userId: string, data: any) {
-    const raw = await getSheetData(USER_SPREADSHEET_ID, "'Users'!A:A"); // Just fetch IDs to find index
-    if (!raw) return false;
-    
-    const idx = raw.findIndex(r => r[0] === userId);
-    if (idx === -1) return false;
-    
-    if (data.username || data.role || data.status || data.allowedBranches || data.allowedOwners) {
-         // Fetch existing row to preserve values
-         const fullRow = (await getSheetData(USER_SPREADSHEET_ID, `'Users'!A${idx+1}:H${idx+1}`))[0];
-         if (!fullRow) return false;
+  const patch: Record<string, any> = {};
+  if (data.username) patch.username = data.username;
+  if (data.role) patch.role = data.role;
+  if (data.status) patch.status = data.status;
+  if (data.email !== undefined) patch.email = data.email;
+  if (data.allowedBranches) patch.allowed_branches = data.allowedBranches;
+  if (data.allowedOwners) patch.allowed_owners = data.allowedOwners;
+  if (data.password) patch.password_hash = await bcrypt.hash(data.password, 10);
 
-         const newUsername = data.username || fullRow[1];
-         const newRole = data.role || fullRow[2];
-         const newStatus = data.status || fullRow[3];
-         const newBranches = data.allowedBranches ? data.allowedBranches.join(',') : (fullRow[6] || '*');
-         const newOwners = data.allowedOwners ? data.allowedOwners.join(',') : (fullRow[7] || '*');
-
-         // Update B:D (Basic Info)
-         await updateSheetData(USER_SPREADSHEET_ID, `'Users'!B${idx + 1}:D${idx + 1}`, [[newUsername, newRole, newStatus]]);
-
-         // Update G:H (Permissions)
-         await updateSheetData(USER_SPREADSHEET_ID, `'Users'!G${idx + 1}:H${idx + 1}`, [[newBranches, newOwners]]);
-    }
-
-    // Optional password reset (Column F). Only when a new password is provided.
-    if (data.password) {
-         const hashedPassword = await bcrypt.hash(data.password, 10);
-         await updateSheetData(USER_SPREADSHEET_ID, `'Users'!F${idx + 1}:F${idx + 1}`, [[hashedPassword]]);
-    }
-
-    return true;
+  if (Object.keys(patch).length === 0) return true;
+  const { error } = await getServiceSupabase().from('app_users').update(patch).eq('id', userId);
+  if (error) { console.error('Update User Error:', error.message); return false; }
+  return true;
 }
 
 export async function deleteUser(userId: string): Promise<boolean> {
-    const raw = await getSheetData(USER_SPREADSHEET_ID, "'Users'!A:A");
-    if (!raw) return false;
-
-    const idx = raw.findIndex(r => r[0] === userId);
-    if (idx === -1) return false; // idx is 0-based incl. header row = actual sheet row index
-
-    const sheetId = await getSheetId(USER_SPREADSHEET_ID, 'Users');
-    if (sheetId === null) return false;
-
-    const { googleSheets, auth } = await getGoogleSheets();
-    await googleSheets.spreadsheets.batchUpdate({
-        auth: auth as any,
-        spreadsheetId: USER_SPREADSHEET_ID,
-        requestBody: {
-            requests: [{
-                deleteDimension: {
-                    range: { sheetId, dimension: 'ROWS', startIndex: idx, endIndex: idx + 1 },
-                },
-            }],
-        },
-    });
-    return true;
+  const { error } = await getServiceSupabase().from('app_users').delete().eq('id', userId);
+  if (error) { console.error('Delete User Error:', error.message); return false; }
+  return true;
 }

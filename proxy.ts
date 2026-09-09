@@ -18,19 +18,31 @@ const pageAuth = withAuth(
         const path = req.nextUrl.pathname;
         const role = token.role as string;
 
-        // 2. Viewer & User Restrictions
+        // 2. Role-based Access Control (RBAC)
         if (role === 'Viewer') {
-           if (path.startsWith('/orders') ||
-               path.startsWith('/ops/inbound') ||
-               path.startsWith('/ops/outbound') ||
-               path.startsWith('/admin/users')) {
+           // Read-only: can only view dashboard, inventory, and reports
+           if (path.startsWith('/ops') ||
+               path.startsWith('/admin') ||
+               path.startsWith('/ai-reorder') ||
+               path.startsWith('/barcode')) {
                return false;
            }
         }
 
-        // Block Standard User from Admin Pages
-        if (role === 'User') {
-            if (path.startsWith('/admin/users')) {
+        const isStaff = typeof role === 'string' && (role.startsWith('Staff') || role === 'User');
+        if (isStaff) {
+            // Staff can operate warehouse and mobile app, but cannot access admin settings
+            if (path.startsWith('/admin/users') ||
+                path.startsWith('/admin/billing') ||
+                path.startsWith('/admin/audit')) {
+                return false;
+            }
+        }
+
+        if (role === 'Manager') {
+            // Manager can do operations and analytics, but cannot change user credentials or billing
+            if (path.startsWith('/admin/users') ||
+                path.startsWith('/admin/billing')) {
                 return false;
             }
         }
@@ -53,7 +65,8 @@ export default async function proxy(req: NextRequest, event: any) {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith('/api/')) {
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron')) {
+    // Public: NextAuth, cron (own secret), and self-service onboarding (signup).
+    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding')) {
       return NextResponse.next();
     }
     // Let CORS preflights through; the actual request still gets checked.

@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getRules, saveRule, AutomationRule, ensureRulesSheet } from '@/lib/googleSheets';
+import { getRules, saveRule, type AutomationRule, ensureRulesSheet } from '@/lib/data/wms';
 
 export const dynamic = 'force-dynamic';
 

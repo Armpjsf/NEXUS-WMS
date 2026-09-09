@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getProducts, getTransactions } from '@/lib/googleSheets';
+import { getProducts, getTransactions } from '@/lib/data/wms';
 import { calculateRiskLevel, recommendReorder } from '@/lib/analysis';
 
 export const dynamic = 'force-dynamic';

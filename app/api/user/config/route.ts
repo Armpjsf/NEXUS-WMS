@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUserConfig, saveUserConfig } from "@/lib/googleSheets";
+import { getUserConfig, saveUserConfig } from "@/lib/data/wms";
 
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions);

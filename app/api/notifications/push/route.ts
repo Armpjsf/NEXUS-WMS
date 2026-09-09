@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { messaging } from '@/lib/firebaseAdmin';
-import { getSheetData } from '@/lib/googleSheets';
-import { TRANSACTION_SPREADSHEET_ID } from '@/lib/transactionUtils';
+import { getDeviceTokens } from '@/lib/data/wms';
 
 export async function POST(req: Request) {
     // Basic Security: Check for a secret key if needed, or open for now (Google Apps Script usage)
@@ -13,10 +12,8 @@ export async function POST(req: Request) {
              return NextResponse.json({ error: "Title and body required" }, { status: 400 });
         }
 
-        // Fetch tokens
-        const SHEET_ID = TRANSACTION_SPREADSHEET_ID;
-        const deviceData = await getSheetData(SHEET_ID, "'📱 Devices'!A:A");
-        const tokens = deviceData?.map((row: any[]) => row[0]).filter((t: any) => t && t.length > 10) || [];
+        // Fetch tokens from Supabase
+        const tokens = await getDeviceTokens();
 
         if (tokens.length === 0) {
             return NextResponse.json({ message: "No devices registered" });

@@ -52,14 +52,20 @@ export function useOfflineSync() {
              // Mark as syncing to prevent double process
              await db.pendingTransactions.update(item.id!, { status: 'SYNCING' });
 
-             let endpoint = '';
-             if (item.type === 'INBOUND') endpoint = '/api/inbound';
-             else if (item.type === 'OUTBOUND') endpoint = '/api/outbound';
-             
-             // TODO: Add other endpoints
+             let endpoint = item.endpoint || '';
+             if (!endpoint) {
+               if (item.type === 'INBOUND') endpoint = '/api/inbound';
+               else if (item.type === 'OUTBOUND') endpoint = '/api/outbound';
+               else if (item.type === 'DAMAGE') endpoint = '/api/damage';
+               else if (item.type === 'CYCLE_COUNT') endpoint = '/api/cycle-count';
+               else if (item.type === 'RECEIVING') endpoint = '/api/receiving';
+               else if (item.type === 'ORDER') endpoint = '/api/orders';
+               else if (item.type === 'RETURN') endpoint = '/api/returns';
+               else endpoint = '/api/transactions';
+             }
 
              const res = await fetch(endpoint, {
-                 method: 'POST',
+                 method: item.method || 'POST',
                  headers: { 'Content-Type': 'application/json' },
                  body: JSON.stringify(item.data)
              });

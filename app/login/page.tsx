@@ -33,23 +33,36 @@ function LoginForm() {
         setError('Invalid username or password');
         setLoading(false);
       } else {
-        // Force full reload to ensure session is picked up and state is cleared.
-        // Capacitor.isNativePlatform() is the reliable native check (the raw
-        // window.Capacitor global can be missing on a cold start).
+        // Fetch session to inspect role
+        let role = '';
+        try {
+          const sessionRes = await fetch('/api/auth/session');
+          const sessionData = await sessionRes.json();
+          role = sessionData?.user?.role || '';
+        } catch {
+          // ignore session fetch error
+        }
+
         const isMobile = Capacitor.isNativePlatform() || window.innerWidth < 768;
         let targetUrl = callbackUrl;
         
-        if (isMobile) {
+        // Staff/Warehouse workers or mobile devices go straight to /mobile
+        if (role === 'Staff' || role === 'User' || isMobile) {
           try {
             const pathname = callbackUrl.startsWith('http') 
               ? new URL(callbackUrl).pathname 
               : callbackUrl;
             
             if (!pathname.startsWith('/mobile')) {
-              targetUrl = '/mobile/jobs';
+              targetUrl = '/mobile';
             }
           } catch (e) {
-            targetUrl = '/mobile/jobs';
+            targetUrl = '/mobile';
+          }
+        } else {
+          // Admin/Manager on desktop go to /dashboard
+          if (targetUrl === '/' || targetUrl.startsWith('/mobile')) {
+            targetUrl = '/dashboard';
           }
         }
         window.location.href = targetUrl;
@@ -69,12 +82,13 @@ function LoginForm() {
         <div className="relative overflow-hidden bg-white/85 backdrop-blur-2xl border border-slate-200 rounded-[1.75rem] p-8 md:p-10 shadow-2xl shadow-slate-900/10">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-blue-700 via-teal-500 to-amber-500" />
           
-          <div className="text-center mb-10">
-            <div className="w-20 h-20 bg-slate-950 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-slate-900/20 mb-6 ring-4 ring-blue-50">
-               <User className="w-10 h-10 text-white" />
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-slate-950 rounded-3xl mx-auto flex items-center justify-center shadow-xl shadow-slate-900/25 mb-4 ring-4 ring-cyan-500/20 overflow-hidden p-2">
+               <img src="/logo.png" alt="NEXUS WMS Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2">Welcome Back</h1>
-            <p className="text-slate-500 font-medium">Please sign in to continue</p>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">NEXUS WMS</h1>
+            <p className="text-xs font-bold text-cyan-600 uppercase tracking-widest mt-1">Smart Warehouse Execution</p>
+            <p className="text-slate-500 text-xs mt-2 font-medium">กรุณาลงชื่อเข้าใช้เพื่อเข้าสู่ระบบ</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -129,6 +143,7 @@ function LoginForm() {
              </button>
              
              <div className="text-center">
+                 <a href="/onboarding" className="text-sm font-bold text-cyan-600 hover:text-cyan-700">ยังไม่มีองค์กร? สมัครใช้งาน →</a>
                  <p className="text-xs text-slate-400 font-medium mt-4">Inventory Management System v1.0</p>
              </div>
           </form>

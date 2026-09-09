@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getProducts, getTransactions, getSheetData, PRODUCT_SPREADSHEET_ID } from '@/lib/googleSheets';
+import { getProducts, getTransactions } from '@/lib/data/wms';
+import { calculateFIFOLayers } from '@/lib/fifo';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,21 +10,12 @@ export async function GET(request: Request) {
     const outbound = await getTransactions('OUT');
     const inbound = await getTransactions('IN'); // To calculate simple stock for value
 
-    // Fetch Product Master Price to match Col C of 'ชื่อสินค้า'
+    // Build cost-price map from Supabase products (by name and by SKU/id)
     const priceMap = new Map<string, number>();
-    try {
-        const productMasterRaw = await getSheetData(PRODUCT_SPREADSHEET_ID, "'ชื่อสินค้า'!A:E");
-        productMasterRaw?.slice(1).forEach((row: any[]) => {
-            const key1 = row[0]; // Potential Code/Name
-            const key2 = row[1]; // Potential Name/Code
-            const costPrice = parseFloat(row[2]?.replace(/,/g, '') || "0"); // Col C: Cost Price
-            
-            if (key1) priceMap.set(key1.trim(), costPrice);
-            if (key2) priceMap.set(key2.trim(), costPrice);
-        });
-    } catch (e) {
-        console.error("Failed to load Product Master for price map in aging api:", e);
-    }
+    products.forEach(p => {
+        if (p.name) priceMap.set(p.name.trim(), p.price || 0);
+        if (p.id) priceMap.set(String(p.id).trim(), p.price || 0);
+    });
 
     // 1. Calculate Stock Levels & Find First Received Dates
     const stockMap = new Map<string, number>();
@@ -63,7 +55,7 @@ export async function GET(request: Request) {
         }
     });
 
-    // 3. Prepare Report Data
+    // 3. Prepare Report Data with FIFO Layers
     const today = new Date();
     const report = products.map(p => {
         const lastSold = lastSoldMap.get(p.name);
@@ -109,6 +101,26 @@ export async function GET(request: Request) {
 
         const stockNode = p.stock;
         const price = priceMap.get(p.name) || p.price || 0;
+
+        // FIFO Layer calculation for this product
+        const prodInbound = inbound.filter(t => 
+            t.product === p.name || t.product === p.id || (t.sku && t.sku === p.id)
+        );
+        const fifoResult = calculateFIFOLayers(stockNode, prodInbound);
+        const fifoTiers = {
+            tier_0_30: 0,
+            tier_31_60: 0,
+            tier_61_90: 0,
+            tier_91_180: 0,
+            tier_180_plus: 0,
+        };
+        fifoResult.layers.forEach(l => {
+            if (l.daysOld <= 30) fifoTiers.tier_0_30 += l.qty;
+            else if (l.daysOld <= 60) fifoTiers.tier_31_60 += l.qty;
+            else if (l.daysOld <= 90) fifoTiers.tier_61_90 += l.qty;
+            else if (l.daysOld <= 180) fifoTiers.tier_91_180 += l.qty;
+            else fifoTiers.tier_180_plus += l.qty;
+        });
         
         return {
             id: p.id,
@@ -120,7 +132,11 @@ export async function GET(request: Request) {
             value: stockNode * price,
             lastSoldDate: lastSold ? lastSold.toISOString().split('T')[0] : null,
             daysSinceLastSale,
-            movementStatus
+            movementStatus,
+            fifoLayers: fifoResult.layers,
+            fifoTiers,
+            oldestBatchDate: fifoResult.oldestDate,
+            maxDaysOld: fifoResult.maxDaysOld,
         };
     });
 

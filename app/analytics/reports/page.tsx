@@ -89,7 +89,7 @@ export default function ReportsPage() {
         return;
     }
     if (report.id === 'damage_report') {
-        router.push('/damage');
+        router.push('/ops/damage');
         return;
     }
 

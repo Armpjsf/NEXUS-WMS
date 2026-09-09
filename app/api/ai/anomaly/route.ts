@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getProducts, getCycleCountLogs } from '@/lib/googleSheets';
+import { getProducts, getCycleCountLogs } from '@/lib/data/wms';
 import { detectAnomalies } from '@/lib/anomaly';
 
 export const dynamic = 'force-dynamic';

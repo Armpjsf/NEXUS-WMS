@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getStockMovement } from '@/lib/googleSheets';
+import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
 
 export const dynamic = 'force-dynamic';
 
+// Stock movement card for one SKU, built from Supabase stock_transactions.
+// Row shape returned: { date, docRef, type, in, out, balance }
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,46 +14,71 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate');
 
     if (!sku) {
-      return NextResponse.json({ error: "SKU is required" }, { status: 400 });
+      return NextResponse.json({ error: 'SKU is required' }, { status: 400 });
     }
 
-    console.log(`[StockCard] Fetching movement for ${sku} (Range: ${startDate} to ${endDate})`);
-    let movements = await getStockMovement(sku);
+    const normalized = sku.trim().toLowerCase();
 
-    // Initial Balance Calculation (before the selected date range)
-    let startingBalance = 0;
-    
-    // Parse dates safely
+    const orgId = await getCurrentOrgId();
+    const { data: rows, error } = await supabase
+      .from('stock_transactions')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Supabase stock-card Error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Match by SKU or product name (legacy sheets keyed on name).
+    const productMovs = (rows || [])
+      .filter((r: any) => {
+        const s = String(r.sku ?? '').trim().toLowerCase();
+        const n = String(r.product_name ?? '').trim().toLowerCase();
+        return s === normalized || n === normalized;
+      })
+      .map((r: any) => {
+        const qty = Number(r.qty ?? 0);
+        const isIn = r.type === 'IN';
+        const isDamage = r.type === 'DAMAGE';
+        return {
+          date: r.created_at,
+          docRef: isDamage ? `Damage: ${r.notes || ''}` : (r.doc_ref || (isIn ? 'Inbound' : 'Outbound')),
+          type: r.type,
+          in: isIn ? qty : 0,
+          out: isIn ? 0 : qty, // OUT and DAMAGE both reduce stock
+          balance: 0,
+        };
+      });
+
+    productMovs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Starting balance before the selected range + range filtering
     const startTs = startDate ? new Date(startDate).getTime() : 0;
-    const endTs = endDate ? new Date(endDate).getTime() + (24 * 60 * 60 * 1000) - 1 : Number.MAX_SAFE_INTEGER;
+    const endTs = endDate ? new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1 : Number.MAX_SAFE_INTEGER;
 
+    let startingBalance = 0;
+    let inRange = productMovs;
     if (startDate) {
-        // Calculate movement before start date
-        startingBalance = movements.reduce((acc, m) => {
-            if (new Date(m.date).getTime() < startTs) {
-                return acc + m.in - m.out;
-            }
-            return acc;
-        }, 0);
-
-        // Filter movements within range
-        movements = movements.filter(m => {
-            const d = new Date(m.date).getTime();
-            return d >= startTs && d <= endTs;
-        });
+      startingBalance = productMovs.reduce((acc, m) => {
+        return new Date(m.date).getTime() < startTs ? acc + m.in - m.out : acc;
+      }, 0);
+      inRange = productMovs.filter((m) => {
+        const d = new Date(m.date).getTime();
+        return d >= startTs && d <= endTs;
+      });
     }
 
-    // Re-calculate running balance with starting balance
     let currentBalance = startingBalance;
-    const finalMovements = movements.map(m => {
-        currentBalance += (m.in - m.out);
-        return { ...m, balance: currentBalance };
+    const finalMovements = inRange.map((m) => {
+      currentBalance += m.in - m.out;
+      return { ...m, balance: currentBalance };
     });
-    
-    return NextResponse.json(finalMovements);
 
+    return NextResponse.json(finalMovements);
   } catch (error: any) {
-    console.error("Stock Card API Error:", error);
+    console.error('Stock Card API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Printer,
@@ -25,7 +26,8 @@ import { usePdaScanner } from '@/hooks/usePdaScanner';
 
 type LabelType = 'SHIPPING_100x150' | 'SHELF_100x50' | 'PRODUCT_50x30';
 
-export default function ThermalLabelsPage() {
+function ThermalLabelsContent() {
+  const searchParams = useSearchParams();
   const [labelType, setLabelType] = useState<LabelType>('SHIPPING_100x150');
 
   // Shipping Label Form Data
@@ -58,6 +60,31 @@ export default function ThermalLabelsPage() {
   const [productName, setProductName] = useState('กล่องพัสดุ เบอร์ 0 (11x17x6 cm)');
   const [productPrice, setProductPrice] = useState('120');
   const [productUnit, setProductUnit] = useState('แพ็ก');
+
+  useEffect(() => {
+    const typeParam = searchParams.get('type') as LabelType | null;
+    if (typeParam && ['SHIPPING_100x150', 'SHELF_100x50', 'PRODUCT_50x30'].includes(typeParam)) {
+      setLabelType(typeParam);
+    }
+    if (searchParams.get('carrier')) setCarrier(searchParams.get('carrier')!);
+    if (searchParams.get('tracking')) setTrackingNo(searchParams.get('tracking')!);
+    if (searchParams.get('order')) setOrderNo(searchParams.get('order')!);
+    if (searchParams.get('recipientName')) setRecipientName(searchParams.get('recipientName')!);
+    if (searchParams.get('recipientPhone')) setRecipientPhone(searchParams.get('recipientPhone')!);
+    if (searchParams.get('recipientAddress')) setRecipientAddress(searchParams.get('recipientAddress')!);
+    if (searchParams.get('postalCode')) setPostalCode(searchParams.get('postalCode')!);
+    if (searchParams.get('cod')) setCodAmount(searchParams.get('cod')!);
+    if (searchParams.get('notes')) setNotes(searchParams.get('notes')!);
+
+    if (searchParams.get('location')) setShelfLocation(searchParams.get('location')!);
+    if (searchParams.get('zone')) setShelfZone(searchParams.get('zone')!);
+    if (searchParams.get('desc')) setShelfDesc(searchParams.get('desc')!);
+
+    if (searchParams.get('sku')) setProductSku(searchParams.get('sku')!);
+    if (searchParams.get('name')) setProductName(searchParams.get('name')!);
+    if (searchParams.get('price')) setProductPrice(searchParams.get('price')!);
+    if (searchParams.get('unit')) setProductUnit(searchParams.get('unit')!);
+  }, [searchParams]);
 
   // PDA Scanner auto-fill
   usePdaScanner({
@@ -532,3 +559,21 @@ export default function ThermalLabelsPage() {
     </div>
   );
 }
+
+export default function ThermalLabelsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-slate-50">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-600">กำลังโหลดเทมเพลตฉลาก...</p>
+          </div>
+        </div>
+      }
+    >
+      <ThermalLabelsContent />
+    </Suspense>
+  );
+}
+

@@ -13,8 +13,10 @@ export interface LocalProduct {
 
 export interface PendingTransaction {
   id?: number; // Auto-increment key
-  type: 'INBOUND' | 'OUTBOUND' | 'ADJUST' | 'DAMAGE';
+  type: 'INBOUND' | 'OUTBOUND' | 'ADJUST' | 'DAMAGE' | 'RECEIVING' | 'CYCLE_COUNT' | 'ORDER' | 'RETURN';
   data: any; // The payload we would have sent to the API
+  endpoint?: string;
+  method?: 'POST' | 'PATCH' | 'PUT';
   timestamp: number;
   status: 'PENDING' | 'SYNCING' | 'FAILED';
   retryCount: number;

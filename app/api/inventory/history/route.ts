@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTransactions } from '@/lib/googleSheets';
+import { getTransactions } from '@/lib/data/wms';
 
 export const dynamic = 'force-static';
 

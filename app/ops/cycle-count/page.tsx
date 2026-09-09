@@ -14,6 +14,9 @@ import {
   Barcode,
   Sparkles,
   MapPin,
+  Printer,
+  Camera,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -22,6 +25,8 @@ import { getApiUrl } from '@/lib/config';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { toast } from 'react-hot-toast';
 import { triggerHaptic } from '@/lib/voiceAssistant';
+import { usePdaScanner } from '@/hooks/usePdaScanner';
+import CameraScannerModal from '@/components/CameraScannerModal';
 
 interface CountItem {
   sku: string;
@@ -41,6 +46,7 @@ export default function CycleCountPage() {
   const [countItems, setCountItems] = useState<CountItem[]>([]);
   const [countDate, setCountDate] = useState(new Date().toISOString().split('T')[0]);
   const [countNote, setCountNote] = useState('');
+  const [showCountCam, setShowCountCam] = useState(false);
 
   // Enterprise Feature: Blind Cycle Count Mode
   const [isBlindCount, setIsBlindCount] = useState(true);
@@ -94,6 +100,31 @@ export default function CycleCountPage() {
       })
     );
   };
+
+  // Shared shelf count scanner for both PDA Gun and Mobile Camera
+  const handleItemCountScan = (scanned: string) => {
+    const q = scanned.trim().toLowerCase();
+    const found = countItems.find(
+      it => it.sku.toLowerCase() === q || it.location.toLowerCase() === q
+    );
+
+    if (found) {
+      const current = parseInt(found.actualQty) || 0;
+      const next = current + 1;
+      updateActualQty(found.sku, next.toString());
+      triggerHaptic('success');
+      toast.success(`นับเพิ่ม ${found.sku}: ${next} ชิ้น`);
+    } else {
+      triggerHaptic('error');
+      toast.error(`ไม่พบสินค้าสำหรับโค้ด: ${scanned}`);
+    }
+  };
+
+  // Wireless / PDA Scanner Gun auto-increment on shelf scan
+  usePdaScanner({
+    enabled: countItems.length > 0,
+    onScan: handleItemCountScan,
+  });
 
   // Quick Barcode Scan increment
   const handleBarcodeScan = (e: React.FormEvent) => {
@@ -204,8 +235,17 @@ export default function CycleCountPage() {
               </div>
             </div>
 
-            {/* Blind Count Switch */}
-            <div className="flex items-center gap-2">
+            {/* Actions: Print and Blind Count Switch */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href="/print/cycle-count"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <Printer className="w-4 h-4 text-slate-500" />
+                พิมพ์รายงานผลตรวจนับ
+              </a>
               <button
                 type="button"
                 onClick={() => {
@@ -251,7 +291,7 @@ export default function CycleCountPage() {
 
         {/* Barcode Quick Count Bar */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-md">
-          <form onSubmit={handleBarcodeScan} className="flex gap-2">
+          <form onSubmit={handleBarcodeScan} className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Barcode className="w-5 h-5 absolute left-3.5 top-2.5 text-slate-400" />
               <input
@@ -263,12 +303,26 @@ export default function CycleCountPage() {
                 className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
               />
             </div>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition-colors"
-            >
-              สแกนบาร์โค้ด
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                type="button"
+                onClick={() => setShowCountCam(true)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shrink-0"
+              >
+                <Camera className="w-3.5 h-3.5 text-teal-400" />
+                <span>เปิดกล้องสแกน</span>
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition-colors shrink-0"
+              >
+                สแกนบาร์โค้ด
+              </button>
+              <div className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-xl border border-slate-200 shrink-0">
+                <Zap className="w-3 h-3 text-amber-500" />
+                <span>PDA พร้อม</span>
+              </div>
+            </div>
           </form>
         </div>
 
@@ -452,6 +506,16 @@ export default function CycleCountPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Embedded Camera Scanner for Continuous Stock Audit */}
+      <CameraScannerModal
+        isOpen={showCountCam}
+        onClose={() => setShowCountCam(false)}
+        onScan={handleItemCountScan}
+        continuous={true}
+        title="สแกนตรวจนับสต็อก (Cycle Count)"
+        description="ส่องกล้องไปที่บาร์โค้ดสินค้าบนเชลฟ์เพื่อเพิ่มยอดนับทีละ 1 ชิ้นอัตโนมัติ (สแกนต่อเนื่องได้)"
+      />
     </div>
   );
 }

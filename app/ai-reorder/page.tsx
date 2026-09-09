@@ -18,13 +18,18 @@ import {
   Trash2,
   Plus,
   Minus,
-  ArrowLeft
+  ArrowLeft,
+  Printer,
+  Building2,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { getApiUrl } from '@/lib/config';
 import { useLanguage } from '@/components/providers/LanguageProvider';
+import { speakThai } from '@/lib/voiceAssistant';
 
 // Mock Sparkline Data Generator
 const generateSparkline = () => {
@@ -59,6 +64,12 @@ export default function AIReorderPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState<'ALL' | 'CRITICAL' | 'WARNING'>('ALL');
   
+  // Suppliers for PO
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string; code: string }[]>([]);
+  const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [poNotes, setPoNotes] = useState('');
+  const [createdPoResult, setCreatedPoResult] = useState<any | null>(null);
+
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -83,6 +94,19 @@ export default function AIReorderPage() {
           console.error(err);
           setLoading(false);
       });
+
+    // Load suppliers
+    fetch('/api/suppliers')
+      .then(res => res.json())
+      .then(data => {
+          if (Array.isArray(data)) {
+              setSuppliers(data);
+              if (data.length > 0 && !selectedSupplier) {
+                  setSelectedSupplier(data[0].name);
+              }
+          }
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -127,8 +151,11 @@ export default function AIReorderPage() {
       setSubmitting(true);
       try {
           const body = {
+             supplier: selectedSupplier || 'ผู้จำหน่ายทั่วไป',
+             notes: poNotes,
              items: cart.map(c => ({
                  id: c.id,
+                 sku: c.id,
                  name: c.name,
                  qty: c.orderQty,
                  price: c.price,
@@ -143,16 +170,19 @@ export default function AIReorderPage() {
               body: JSON.stringify(body)
           });
 
-          if (res.ok) {
-              alert(t('ai_po_success'));
+          const json = await res.json();
+          if (res.ok && json.success) {
+              speakThai('สร้างใบสั่งซื้อสินค้าสำเร็จ');
+              toast.success(`สร้างใบสั่งซื้อ ${json.po?.po_number || ''} สำเร็จ!`);
+              setCreatedPoResult(json.po);
               setCart([]);
               setIsCartOpen(false);
           } else {
-              alert('Failed to create PO');
+              toast.error(json.error || 'ไม่สามารถสร้างใบสั่งซื้อได้');
           }
-      } catch (err) {
+      } catch (err: any) {
           console.error(err);
-          alert('Error creating PO');
+          toast.error(err.message || 'เกิดข้อผิดพลาดในการสร้างใบสั่งซื้อ');
       } finally {
           setSubmitting(false);
       }
@@ -435,25 +465,112 @@ export default function AIReorderPage() {
                           ))}
                       </div>
 
-                      {/* Footer Actions */}
-                      <div className="p-6 border-t border-slate-100 bg-slate-50">
-                          <div className="flex justify-between items-center mb-6">
-                              <span className="text-sm font-medium text-slate-500">{t('ai_cart_total')}</span>
-                              <span className="text-2xl font-black text-slate-900">฿{cartTotal.toLocaleString()}</span>
-                          </div>
-                          <button 
-                              onClick={submitPO}
-                              disabled={submitting || cart.length === 0}
-                              className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                              {submitting ? <RefreshCw className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5" />}
-                              {submitting ? 'Submitting...' : t('ai_confirm_request')}
-                          </button>
-                      </div>
-                  </motion.div>
-              </>
-          )}
-      </AnimatePresence>
+                       {/* Supplier & Notes */}
+                       <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                           <div>
+                               <label className="block text-xs font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                                   <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                                   ผู้จำหน่ายสินค้า (Supplier)
+                               </label>
+                               <select
+                                   value={selectedSupplier}
+                                   onChange={e => setSelectedSupplier(e.target.value)}
+                                   className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                               >
+                                   <option value="">— เลือกผู้จำหน่าย —</option>
+                                   {suppliers.map(s => (
+                                       <option key={s.id} value={s.name}>
+                                           {s.code} - {s.name}
+                                       </option>
+                                   ))}
+                               </select>
+                           </div>
+                           <div>
+                               <label className="block text-xs font-bold text-slate-600 mb-1">
+                                   หมายเหตุใบสั่งซื้อ
+                               </label>
+                               <input
+                                   value={poNotes}
+                                   onChange={e => setPoNotes(e.target.value)}
+                                   placeholder="เช่น ด่วนที่สุด, ส่งภายในวันศุกร์"
+                                   className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-500"
+                               />
+                           </div>
+                       </div>
+
+                       {/* Footer Actions */}
+                       <div className="p-6 border-t border-slate-100 bg-slate-50">
+                           <div className="flex justify-between items-center mb-6">
+                               <span className="text-sm font-medium text-slate-500">{t('ai_cart_total')}</span>
+                               <span className="text-2xl font-black text-slate-900">฿{cartTotal.toLocaleString()}</span>
+                           </div>
+                           <button 
+                               onClick={submitPO}
+                               disabled={submitting || cart.length === 0}
+                               className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                               {submitting ? <RefreshCw className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5" />}
+                               {submitting ? 'กำลังสร้างใบสั่งซื้อ...' : 'สร้างใบสั่งซื้อ (Generate PO)'}
+                           </button>
+                       </div>
+                   </motion.div>
+               </>
+           )}
+       </AnimatePresence>
+
+       {/* PO Created Success Modal */}
+       {createdPoResult && (
+           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+               <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl p-6 text-center space-y-4">
+                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                       <CheckCircle2 className="w-10 h-10" />
+                   </div>
+                   <h3 className="text-xl font-black text-slate-900">สร้างใบสั่งซื้อเรียบร้อยแล้ว!</h3>
+                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-sm space-y-1.5">
+                       <div className="flex justify-between">
+                           <span className="text-slate-500">เลขที่ PO:</span>
+                           <span className="font-mono font-black text-indigo-600">{createdPoResult.po_number}</span>
+                       </div>
+                       <div className="flex justify-between">
+                           <span className="text-slate-500">ผู้จำหน่าย:</span>
+                           <span className="font-bold text-slate-800">{createdPoResult.supplier || '-'}</span>
+                       </div>
+                       <div className="flex justify-between">
+                           <span className="text-slate-500">จำนวนรายการ:</span>
+                           <span className="font-bold text-slate-800">{createdPoResult.total_items} รายการ</span>
+                       </div>
+                       <div className="flex justify-between">
+                           <span className="text-slate-500">ยอดเงินรวม:</span>
+                           <span className="font-bold text-emerald-600">฿{Number(createdPoResult.total_amount || 0).toLocaleString()}</span>
+                       </div>
+                   </div>
+
+                   <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                       <Link
+                           href={`/print/purchase-order?id=${createdPoResult.id}`}
+                           target="_blank"
+                           className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition-all"
+                       >
+                           <Printer className="w-4 h-4" />
+                           พิมพ์ใบสั่งซื้อ (PO)
+                       </Link>
+                       <Link
+                           href="/ops/receiving"
+                           className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all"
+                       >
+                           <FileText className="w-4 h-4" />
+                           ไปหน้าตรวจรับเข้า
+                       </Link>
+                   </div>
+                   <button
+                       onClick={() => setCreatedPoResult(null)}
+                       className="w-full py-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                   >
+                       ปิดหน้าต่างนี้
+                   </button>
+               </div>
+           </div>
+       )}
 
     </div>
   );

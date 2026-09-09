@@ -1,146 +1,133 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { getProducts, addProduct, editProduct, getBranchSpreadsheetId, ProductLocationConflictError } from '@/lib/googleSheets';
+import { supabase } from '@/lib/supabase';
+import { mapProductRows, mapProductRow } from '@/lib/data/products';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { checkPlanLimit } from '@/lib/planLimits';
 
 export async function GET(request: Request) {
-    try {
-        // @ts-ignore
-        const session = await getServerSession(authOptions);
-        const allowedOwners = (session?.user as any)?.allowedOwners;
-        
-        const { searchParams } = new URL(request.url);
-        const branchId = searchParams.get('branchId');
-        
-        const { resolveSpreadsheetId } = await import('@/lib/googleSheets');
-        const targetSheetId = await resolveSpreadsheetId(branchId, 'inventory');
-        
-        // Manual Revalidate Trigger
-        if (searchParams.get('revalidate') === 'true') {
-            // @ts-ignore
-            revalidateTag('products-sheet-only-v3');
-            console.log("Manual revalidation triggered for 'products-sheet-only-v3'");
-        }
-    
-        // Pass allowedOwners to filtered fetcher
-        console.log(`[API] Fetching products for branch: ${branchId || 'HQ'} -> SSID: ${targetSheetId}`);
-        const products = await getProducts(targetSheetId, allowedOwners);
-        
-        // Debug: Log first 3 products' movement status
-        if (products.length > 0) {
-            console.log("API Products Debug (First 3):", products.slice(0, 3).map((p: any) => ({
-                id: p.id,
-                name: p.name,
-                movementStatus: p.movementStatus
-            })));
-        }
-    
-        return NextResponse.json(products);
-    } catch (error: any) {
-        console.error("API GET Products Error:", error);
-        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+  try {
+    const orgId = await getCurrentOrgId();
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Supabase GET Products Error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(mapProductRows(products));
+  } catch (error: any) {
+    console.error('API GET Products Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { branchId, ...productData } = body;
-        
-        // Validation
-        if (!productData.name) return NextResponse.json({ error: "Product Name is required" }, { status: 400 });
-        
-        const { resolveSpreadsheetId } = await import('@/lib/googleSheets');
-        const targetSheetId = await resolveSpreadsheetId(branchId, 'inventory');
+  try {
+    const body = await request.json();
+    const { name, sku, category, stock, minStock, min_stock, unit, price, location, barcode, image_url, image } = body;
 
-        console.log(`[API] Adding product to branch: ${branchId || 'HQ'} -> SSID: ${targetSheetId}`);
-        const success = await addProduct(productData, targetSheetId);
-        if (success) {
-            // Audit Log
-            try {
-                const { logAction } = await import('@/lib/auditTrail');
-                const { getServerSession } = await import("next-auth/next");
-                const { authOptions } = await import("@/lib/auth");
-                // @ts-ignore
-                const session = await getServerSession(authOptions);
-
-                await logAction({
-                    userId: session?.user?.email || 'System',
-                    userName: session?.user?.name || 'Inventory Manager',
-                    action: 'CREATE',
-                    module: 'Inventory',
-                    description: `Added new product: ${productData.name}`,
-                    newValues: productData
-                });
-            } catch (auditErr) {
-                console.warn("Audit Log Failed:", auditErr);
-            }
-
-            return NextResponse.json({ success: true });
-        } else {
-             return NextResponse.json({ error: "Failed to add product" }, { status: 500 });
-        }
-    } catch (error: any) {
-        console.error("Add Product Error:", error);
-        if (error instanceof ProductLocationConflictError) {
-            return NextResponse.json(
-                { error: error.message, conflict: error.conflict },
-                { status: 409 }
-            );
-        }
-         return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!name) {
+      return NextResponse.json({ error: 'Product Name is required' }, { status: 400 });
     }
+
+    const itemSku = sku || name;
+    const orgId = await getCurrentOrgId();
+
+    // Enforce plan limit only for genuinely new SKUs (upsert also handles edits).
+    const { data: existing } = await supabase
+      .from('products').select('id').eq('org_id', orgId).eq('sku', itemSku).maybeSingle();
+    if (!existing) {
+      const limitErr = await checkPlanLimit(orgId, 'products', 'products');
+      if (limitErr) return NextResponse.json({ error: limitErr }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .upsert({
+        org_id: orgId,
+        sku: itemSku,
+        name,
+        category: category || 'General',
+        stock: Number(stock || 0),
+        min_stock: Number(min_stock || minStock || 5),
+        unit: unit || 'pcs',
+        price: Number(price || 0),
+        location: location || 'Unassigned',
+        barcode: barcode || null,
+        image_url: image_url || image || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'sku' })
+      .select();
+
+    if (error) {
+      console.error('Supabase Add Product Error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });
+  } catch (error: any) {
+    console.error('API POST Product Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function PUT(request: Request) {
-    try {
-        const body = await request.json();
-        const { branchId, oldName, updates } = body;
+  try {
+    const body = await request.json();
+    const { sku, id, updates } = body;
 
-        if (!oldName || !updates) {
-             return NextResponse.json({ error: "Missing oldName or updates" }, { status: 400 });
-        }
+    const targetSku = sku || updates?.sku;
+    const orgId = await getCurrentOrgId();
 
-        const { resolveSpreadsheetId } = await import('@/lib/googleSheets');
-        const targetSheetId = await resolveSpreadsheetId(branchId, 'inventory');
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('org_id', orgId)
+      .eq(id ? 'id' : 'sku', id || targetSku)
+      .select();
 
-        console.log(`[API] Editing product in branch: ${branchId || 'HQ'} -> SSID: ${targetSheetId}`);
-        const success = await editProduct(oldName, updates, targetSheetId);
-        if (success) {
-            // Audit Log
-            try {
-                const { logAction } = await import('@/lib/auditTrail');
-                const { getServerSession } = await import("next-auth/next");
-                const { authOptions } = await import("@/lib/auth");
-                // @ts-ignore
-                const session = await getServerSession(authOptions);
-
-                await logAction({
-                    userId: session?.user?.email || 'System',
-                    userName: session?.user?.name || 'Inventory Manager',
-                    action: 'UPDATE',
-                    module: 'Inventory',
-                    description: `Updated product: ${oldName}`,
-                    newValues: updates
-                });
-            } catch (auditErr) {
-                console.warn("Audit Log Failed:", auditErr);
-            }
-
-            return NextResponse.json({ success: true });
-        } else {
-            return NextResponse.json({ error: "Failed to update product (not found?)" }, { status: 404 });
-        }
-
-    } catch (error: any) {
-        console.error("Edit Product Error:", error);
-        if (error instanceof ProductLocationConflictError) {
-            return NextResponse.json(
-                { error: error.message, conflict: error.conflict },
-                { status: 409 }
-            );
-        }
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('Supabase Update Product Error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });
+  } catch (error: any) {
+    console.error('API PUT Product Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const sku = searchParams.get('sku');
+    const id = searchParams.get('id');
+
+    if (!sku && !id) {
+      return NextResponse.json({ error: 'SKU or ID is required' }, { status: 400 });
+    }
+
+    const orgId = await getCurrentOrgId();
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('org_id', orgId)
+      .eq(id ? 'id' : 'sku', id || sku);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

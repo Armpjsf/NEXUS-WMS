@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Loader2, Image as ImageIcon, MapPin, Tag, DollarSign, Package } from 'lucide-react';
+import { X, Save, Loader2, Image as ImageIcon, MapPin, Tag, DollarSign, Package, Upload } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface ProductModalProps {
@@ -16,6 +16,7 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
     const { t } = useLanguage();
     const isEdit = !!product;
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [emptyLocations, setEmptyLocations] = useState<string[]>([]);
     const [categories, setCategories] = useState<string[]>(["FENIX", "FORMICA", "TD BORD", "TOP BORD"]);
     
@@ -99,6 +100,26 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
             .catch(() => setCategories(["FENIX", "FORMICA", "TD BORD", "TOP BORD"]));
     }, [isOpen]);
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('sku', product?.id || formData.name || 'product');
+            const res = await fetch('/api/products/image', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Upload failed');
+            setFormData(prev => ({ ...prev, image: json.url }));
+        } catch (err: any) {
+            alert('อัปโหลดรูปไม่สำเร็จ: ' + err.message);
+        } finally {
+            setUploading(false);
+            e.target.value = '';
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -106,15 +127,17 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
             const urlParams = new URLSearchParams(window.location.search);
             const branchId = urlParams.get('branchId') || 'hq';
 
-            const method = isEdit ? 'PUT' : 'POST';
+            // Edit -> /api/products/update (maps camelCase -> snake_case, matches by sku/name)
+            // Add  -> /api/products (POST upsert)
+            const endpoint = isEdit ? '/api/products/update' : '/api/products';
+            const method = 'POST';
             const body: any = isEdit ? {
                 branchId,
-                oldName: product.name,
+                oldName: product.id || product.name,
                 updates: {
                     name: formData.name,
                     category: formData.category,
                     price: parseFloat(formData.price) || 0,
-                    // cost: parseFloat(formData.cost) || 0, // Ensure backend handles 'cost' mapping if needed (Column C)
                     minStock: parseFloat(formData.minStock) || 0,
                     unit: formData.unit,
                     location: formData.location,
@@ -132,7 +155,7 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
             };
 
             const submitProduct = async (payload: any) => {
-                const res = await fetch('/api/products', {
+                const res = await fetch(endpoint, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -317,15 +340,22 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
 
                          {/* Image */}
                          <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Image URL</label>
-                                <div className="relative">
-                                    <ImageIcon className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
-                                    <input 
-                                        value={formData.image}
-                                        onChange={e => setFormData({...formData, image: e.target.value})}
-                                        className="w-full pl-12 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-blue-600 outline-none focus:border-indigo-500 transition-all"
-                                        placeholder="https://..."
-                                    />
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">รูปสินค้า (อัปโหลด หรือใส่ URL)</label>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <ImageIcon className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                                        <input
+                                            value={formData.image}
+                                            onChange={e => setFormData({...formData, image: e.target.value})}
+                                            className="w-full pl-12 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-blue-600 outline-none focus:border-indigo-500 transition-all"
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                    <label className={`shrink-0 px-4 py-3 rounded-xl border font-bold text-sm flex items-center gap-2 cursor-pointer transition-colors ${uploading ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-wait' : 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'}`}>
+                                        {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                                        {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลด'}
+                                        <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+                                    </label>
                                 </div>
                                 {formData.image && (
                                     <div className="mt-2 h-32 w-full rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center">

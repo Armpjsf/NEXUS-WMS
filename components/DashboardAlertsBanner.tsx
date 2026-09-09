@@ -109,7 +109,7 @@ export default function DashboardAlertsBanner() {
           )}
           {hasPendingDamage && (
             <Link
-              href="/damage"
+              href="/ops/damage"
               className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-all hover:scale-105"
             >
               <AlertTriangle className="w-4 h-4" />

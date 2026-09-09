@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, AlertCircle, CheckCircle, Download, ArrowLeft } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, Download, ArrowLeft, Layers, X, Calendar, Package } from 'lucide-react';
 import Link from 'next/link';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { useLanguage } from '@/components/providers/LanguageProvider';
@@ -12,6 +12,7 @@ export default function AgingPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(90); // Default 3 months
   const [viewMode, setViewMode] = useState<'DEADSTOCK' | 'ALL'>('DEADSTOCK');
+  const [selectedProductForFifo, setSelectedProductForFifo] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -184,56 +185,150 @@ export default function AgingPage() {
                </button>
            </div>
            
-           <div className="overflow-x-auto">
-               <table className="w-full text-left text-slate-600">
-                   <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                       <tr>
-                           <th className="px-6 py-4">{t('product')}</th>
-                           <th className="px-6 py-4">{t('delivery_location')}</th>
-                           <th className="px-6 py-4">{t('label_stock')}</th>
-                           <th className="px-6 py-4">{t('total_value')}</th>
-                           <th className="px-6 py-4 text-center">{t('col_status')}</th>
-                           <th className="px-6 py-4">{t('col_last_sold')}</th>
-                           <th className="px-6 py-4">{t('col_days_inactive')}</th>
-                       </tr>
-                   </thead>
-                   <tbody className="divide-y divide-slate-100">
-                       {loading ? (
-                           <tr><td colSpan={7} className="p-8 text-center text-slate-500">{t('loading')}</td></tr>
-                       ) : tableData.length === 0 ? (
-                           <tr><td colSpan={7} className="p-8 text-center text-slate-500">{t('no_products_found')}</td></tr>
-                       ) : (
-                           tableData.map((item) => (
-                               <tr key={item.id} className="hover:bg-amber-50/50">
-                                   <td className="px-6 py-4 font-bold text-slate-950">{item.name}</td>
-                                   <td className="px-6 py-4 font-mono text-blue-700">{item.location || '-'}</td>
-                                   <td className="px-6 py-4">{item.stock.toLocaleString()}</td>
-                                   <td className="px-6 py-4">฿{item.value.toLocaleString()}</td>
-                                   <td className="px-6 py-4 text-center">
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${
-                                            (item.movementStatus || 'Deadstock') === 'Fast Moving' ? 'bg-emerald-500/20 text-emerald-400' :
-                                            (item.movementStatus || 'Deadstock') === 'Normal Moving' ? 'bg-blue-500/20 text-blue-400' :
-                                            (item.movementStatus || 'Deadstock') === 'Slow Moving' ? 'bg-amber-500/20 text-amber-400' :
-                                            (item.movementStatus || 'Deadstock') === 'Very Slow Moving' ? 'bg-orange-500/20 text-orange-400' :
-                                            'bg-rose-500/20 text-rose-400'
-                                        }`}>
-                                            {item.movementStatus || 'Deadstock'}
-                                        </span>
-                                   </td>
-                                   <td className="px-6 py-4 text-slate-400">
-                                       {item.lastSoldDate || t('never_sold')}
-                                   </td>
-                                   <td className="px-6 py-4 text-red-400 font-bold">
-                                       {item.daysSinceLastSale > 9000 ? t('never_sold') : `${item.daysSinceLastSale} days`}
-                                   </td>
-                               </tr>
-                           ))
-                       )}
-                   </tbody>
-               </table>
-           </div>
-       </div>
-    </div>
-  </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-slate-600">
+                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                        <tr>
+                            <th className="px-6 py-4">{t('product')}</th>
+                            <th className="px-6 py-4">{t('delivery_location')}</th>
+                            <th className="px-6 py-4">{t('label_stock')}</th>
+                            <th className="px-6 py-4">{t('total_value')}</th>
+                            <th className="px-6 py-4 text-center">{t('col_status')}</th>
+                            <th className="px-6 py-4">กระจายอายุสต็อก (FIFO Tiers)</th>
+                            <th className="px-6 py-4">{t('col_last_sold')}</th>
+                            <th className="px-6 py-4">{t('col_days_inactive')}</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {loading ? (
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">{t('loading')}</td></tr>
+                        ) : tableData.length === 0 ? (
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">{t('no_products_found')}</td></tr>
+                        ) : (
+                            tableData.map((item) => (
+                                <tr key={item.id} className="hover:bg-amber-50/50">
+                                    <td className="px-6 py-4 font-bold text-slate-950">{item.name}</td>
+                                    <td className="px-6 py-4 font-mono text-blue-700">{item.location || '-'}</td>
+                                    <td className="px-6 py-4 font-bold">{item.stock.toLocaleString()}</td>
+                                    <td className="px-6 py-4">฿{item.value.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-center">
+                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${
+                                             (item.movementStatus || 'Deadstock') === 'Fast Moving' ? 'bg-emerald-500/20 text-emerald-600' :
+                                             (item.movementStatus || 'Deadstock') === 'Normal Moving' ? 'bg-blue-500/20 text-blue-600' :
+                                             (item.movementStatus || 'Deadstock') === 'Slow Moving' ? 'bg-amber-500/20 text-amber-600' :
+                                             (item.movementStatus || 'Deadstock') === 'Very Slow Moving' ? 'bg-orange-500/20 text-orange-600' :
+                                             'bg-rose-500/20 text-rose-600'
+                                         }`}>
+                                             {item.movementStatus || 'Deadstock'}
+                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            {item.fifoTiers && (
+                                                <>
+                                                    {item.fifoTiers.tier_0_30 > 0 && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold" title="อายุไม่เกิน 30 วัน">
+                                                            ≤30d: {item.fifoTiers.tier_0_30}
+                                                        </span>
+                                                    )}
+                                                    {item.fifoTiers.tier_31_60 > 0 && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold" title="อายุ 31-60 วัน">
+                                                            31-60d: {item.fifoTiers.tier_31_60}
+                                                        </span>
+                                                    )}
+                                                    {item.fifoTiers.tier_61_90 > 0 && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold" title="อายุ 61-90 วัน">
+                                                            61-90d: {item.fifoTiers.tier_61_90}
+                                                        </span>
+                                                    )}
+                                                    {(item.fifoTiers.tier_91_180 + item.fifoTiers.tier_180_plus) > 0 && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-semibold" title="อายุมากกว่า 90 วัน">
+                                                            &gt;90d: {item.fifoTiers.tier_91_180 + item.fifoTiers.tier_180_plus}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                            {item.fifoLayers && item.fifoLayers.length > 0 && (
+                                                <button
+                                                    onClick={() => setSelectedProductForFifo(item)}
+                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200 transition-colors ml-1"
+                                                >
+                                                    <Layers className="w-3 h-3" />
+                                                    {item.fifoLayers.length} ล็อต
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-400">
+                                        {item.lastSoldDate || t('never_sold')}
+                                    </td>
+                                    <td className="px-6 py-4 text-red-500 font-bold">
+                                        {item.daysSinceLastSale > 9000 ? t('never_sold') : `${item.daysSinceLastSale} days`}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {/* FIFO Lot Detail Modal */}
+        {selectedProductForFifo && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedProductForFifo(null)}>
+                <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                        <div>
+                            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                                <Layers className="w-5 h-5 text-amber-600" />
+                                รายละเอียดล็อต FIFO: {selectedProductForFifo.name}
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                สต็อกคงเหลือทั้งหมด {selectedProductForFifo.stock} ชิ้น · มูลค่ารวม ฿{selectedProductForFifo.value.toLocaleString()}
+                            </p>
+                        </div>
+                        <button onClick={() => setSelectedProductForFifo(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="p-6 overflow-y-auto space-y-3">
+                        {selectedProductForFifo.fifoLayers && selectedProductForFifo.fifoLayers.length > 0 ? (
+                            selectedProductForFifo.fifoLayers.map((layer: any, idx: number) => {
+                                const layerVal = (layer.qty || 0) * (selectedProductForFifo.price || 0);
+                                return (
+                                    <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/80 flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 text-slate-400" />
+                                                <span className="font-bold text-slate-800 text-sm">รับเข้าเมื่อ: {layer.date}</span>
+                                            </div>
+                                            <div className="text-xs text-slate-500">
+                                                อายุสต็อกล็อตนี้: <span className="font-bold text-slate-700">{layer.daysOld} วัน</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-black text-slate-900">{layer.qty} ชิ้น</div>
+                                            <div className="text-xs font-semibold text-emerald-600">฿{layerVal.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="text-center py-8 text-slate-400">ไม่พบล็อตการรับเข้าในประวัติ</div>
+                        )}
+                    </div>
+                    <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                        <button
+                            onClick={() => setSelectedProductForFifo(null)}
+                            className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-xl transition-all"
+                        >
+                            ปิดหน้าต่าง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+     </div>
+   </div>
   );
 }

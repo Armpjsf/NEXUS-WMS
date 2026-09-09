@@ -1,7 +1,7 @@
 // Audit Trail Utility for WMS 360
-// Logs user actions for tracking changes (Persistent via Google Sheets)
+// Logs user actions for tracking changes (Persistent via Supabase)
 
-import { appendAuditLog, fetchAuditLogsFromSheet, AuditLogEntry } from './googleSheets';
+import { getServiceSupabase } from './supabase';
 
 export interface AuditLog {
   id: string;
@@ -29,21 +29,27 @@ export async function logAction(params: {
   newValues?: Record<string, any>;
 }) {
   const timestamp = new Date().toISOString();
-  
-  const entry: AuditLogEntry = {
-      timestamp,
-      userId: params.userId,
-      userName: params.userName,
-      action: params.action,
-      module: params.module,
-      recordId: params.recordId || '',
-      description: params.description,
-      ipAddress: ''
+
+  const entry = {
+    ts: timestamp,
+    user_id: params.userId,
+    user_name: params.userName,
+    action: params.action,
+    module: params.module,
+    record_id: params.recordId || '',
+    description: params.description,
+    old_values: params.oldValues || null,
+    new_values: params.newValues || null,
+    ip_address: '',
   };
 
-  // Fire and forget (don't block UI strictly, but if awaited it waits)
-  await appendAuditLog(entry);
-  
+  try {
+    const { error } = await getServiceSupabase().from('audit_log').insert(entry);
+    if (error) console.warn('[Audit] insert failed:', error.message);
+  } catch (e) {
+    console.warn('[Audit] insert exception:', e);
+  }
+
   console.log('[Audit]', params.action, params.module, params.description);
   return entry;
 }
@@ -57,25 +63,36 @@ export async function getAuditLogs(params?: {
   endDate?: Date;
   limit?: number;
 }) {
-  let filtered = await fetchAuditLogsFromSheet();
-  
-  if (params?.module) {
-    filtered = filtered.filter((l: any) => l.module === params.module);
+  let query = getServiceSupabase()
+    .from('audit_log')
+    .select('*')
+    .order('ts', { ascending: false })
+    .limit(params?.limit || 100);
+
+  if (params?.module) query = query.eq('module', params.module);
+  if (params?.action) query = query.eq('action', params.action);
+  if (params?.userId) query = query.eq('user_id', params.userId);
+
+  const { data, error } = await query;
+  if (error) {
+    console.warn('[Audit] fetch failed:', error.message);
+    return [];
   }
-  
-  if (params?.action) {
-    filtered = filtered.filter((l: any) => l.action === params.action);
-  }
-  
-  if (params?.userId) {
-    filtered = filtered.filter((l: any) => l.userId === params.userId);
-  }
-  
-  // Date filtering on string timestamp? 
-  // Standard format ISO, comparison works lexically or convert.
-  // ... Simplified for now.
-  
-  return filtered.slice(0, params?.limit || 100);
+
+  // Map back to the camelCase shape the UI expects
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    timestamp: r.ts,
+    userId: r.user_id,
+    userName: r.user_name,
+    action: r.action,
+    module: r.module,
+    recordId: r.record_id,
+    description: r.description,
+    oldValues: r.old_values,
+    newValues: r.new_values,
+    ipAddress: r.ip_address,
+  }));
 }
 
 // Clear all logs (Not implemented for Sheets yet)

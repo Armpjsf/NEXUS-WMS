@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTransactions } from '@/lib/googleSheets';
+import { getTransactions } from '@/lib/data/wms';
 import { allocateFIFO, FIFOAllocation, AllocationMethod } from '@/lib/fifo';
 
 export const dynamic = 'force-dynamic';

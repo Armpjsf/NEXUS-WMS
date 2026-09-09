@@ -8,7 +8,7 @@ const quickActions = [
   {
     label: 'รับเข้า',
     labelEn: 'Inbound',
-    href: '/ops/inbound',
+    href: '/ops/receiving',
     icon: PackagePlus,
     color: 'bg-emerald-500',
     hoverColor: 'hover:bg-emerald-600',

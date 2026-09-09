@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addTransaction, getProducts } from '@/lib/googleSheets';
-import { TransactionSchema } from '@/lib/schemas';
-import { z } from 'zod';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,96 +8,83 @@ export async function POST(request: Request) {
     const body = await request.json();
     let items = [];
 
-    // Support both single item (legacy) and multi-item (new)
     if (body.items && Array.isArray(body.items)) {
-        items = body.items;
+      items = body.items;
     } else if (body.sku && body.qty) {
-        items.push(body);
+      items.push(body);
     }
 
     if (items.length === 0) {
-        return NextResponse.json({ error: "No items provided" }, { status: 400 });
+      return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
 
-    // Validate Items using Zod (Updated for Enterprise Fields)
-    const ItemValidation = z.object({
-        sku: z.string().min(1),
-        qty: z.union([z.number().positive(), z.string().transform(v => parseFloat(v))]),
-        docRef: z.string().optional(),
-        date: z.string().optional(),
-        salePrice: z.number().optional().or(z.string().transform(val => parseFloat(val))),
-        // Enterprise Fields (Phase 14)
-        batch: z.string().optional(),
-        expiryDate: z.string().optional(),
-        owner: z.string().optional(),
-    });
+    const transactionInserts: any[] = [];
 
-    const results = z.array(ItemValidation).safeParse(items);
-    if (!results.success) {
-        return NextResponse.json({ 
-            error: "Validation Failed", 
-            details: results.error.format() 
-        }, { status: 400 });
-    }
-
-    // Process each item using addTransaction (supports enterprise fields)
-    const products = await getProducts();
-    
     for (const item of items) {
-        const product = products.find(p => p.name === item.sku);
-        const cost = item.salePrice || (product?.price || 0); // Use provided price or lookup
-        
-        await addTransaction('IN', {
-            date: item.date,
-            sku: item.sku,
-            qty: Number(item.qty),
-            price: cost,
-            unit: product?.unit || 'pcs',
-            docRef: item.docRef || '',
-            // Enterprise Fields
-            batch: item.batch || '',
-            expiryDate: item.expiryDate || '',
-            owner: item.owner || ''
+      const qtyNum = Number(item.qty) || 0;
+      const sku = item.sku;
+
+      // 1. Fetch current product
+      const { data: prodData } = await supabase
+        .from('products')
+        .select('*')
+        .eq('sku', sku)
+        .maybeSingle();
+
+      const currentStock = Number(prodData?.stock || 0);
+      const newStock = currentStock + qtyNum;
+
+      // 2. Update Product Stock
+      if (prodData) {
+        await supabase
+          .from('products')
+          .update({
+            stock: newStock,
+            location: item.location || prodData.location,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('sku', sku);
+      } else {
+        // Create product if not exists
+        await supabase.from('products').insert({
+          sku,
+          name: sku,
+          stock: qtyNum,
+          location: item.location || 'Unassigned',
+          price: Number(item.salePrice || item.price || 0),
         });
-    }
+      }
 
-    // Automation & Audit
-    try {
-      const { logAction } = await import('@/lib/auditTrail');
-      const { checkStockRules } = await import('@/lib/automation');
-      const { getServerSession } = await import("next-auth/next");
-      const { authOptions } = await import("@/lib/auth");
-
-      // @ts-ignore
-      const session = await getServerSession(authOptions);
-
-      // Parallelize rule checking
-      const productsRefresh = await getProducts();
-      await Promise.all(items.map(async (tx: any) => {
-          const product = productsRefresh.find(p => p.name === tx.sku);
-          if (product) {
-              const newStock = product.stock + Number(tx.qty);
-              await checkStockRules(tx.sku, newStock);
-          }
-      }));
-
-      await logAction({
-        userId: session?.user?.email || 'System', 
-        userName: session?.user?.name || 'Inbound API',
-        action: 'CREATE',
-        module: 'Inbound',
-        description: `Received ${items.length} items (Doc: ${items[0].docRef || 'N/A'})`,
-        newValues: { items: items }
+      // 3. Prepare Transaction Record
+      transactionInserts.push({
+        type: 'IN',
+        sku,
+        product_name: prodData?.name || sku,
+        qty: qtyNum,
+        unit_price: Number(item.salePrice || item.price || prodData?.price || 0),
+        doc_ref: item.docRef || '',
+        location: item.location || prodData?.location || 'Unassigned',
+        batch_no: item.batch || '',
+        expiry_date: item.expiryDate || null,
+        user_name: 'Warehouse Operator',
+        created_at: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),
       });
-    } catch (err) {
-      console.warn("Automation/Audit Failed:", err);
     }
 
-    return NextResponse.json({ success: true, message: `Captured ${items.length} items` });
+    // 4. Batch Insert Transactions
+    if (transactionInserts.length > 0) {
+      const { error: txError } = await supabase
+        .from('stock_transactions')
+        .insert(transactionInserts);
 
+      if (txError) {
+        console.error('Supabase Inbound Tx Error:', txError);
+      }
+    }
+
+    return NextResponse.json({ success: true, count: items.length });
   } catch (error: any) {
-    console.error("Inbound API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API Inbound Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
-

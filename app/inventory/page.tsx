@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProductModal } from '@/components/ProductModal';
-import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2 } from 'lucide-react';
+import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -13,6 +13,9 @@ import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/config';
 import { useNotification } from '@/components/providers/GlobalNotificationProvider';
 import { useLanguage } from '@/components/providers/LanguageProvider';
+import toast from 'react-hot-toast';
+import { usePdaScanner } from '@/hooks/usePdaScanner';
+import CameraScannerModal from '@/components/CameraScannerModal';
 
 export default function InventoryPage() {
   return (
@@ -33,6 +36,17 @@ function InventoryContent() {
   const [filterMovement, setFilterMovement] = useState('ALL');
   const [showInactive, setShowInactive] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [showCamScan, setShowCamScan] = useState(false);
+
+  // Hardware PDA / Laser Scanner Gun support for instant product lookup
+  usePdaScanner({
+    onScan: (scanned) => {
+      const q = scanned.trim();
+      setSearch(q);
+      toast.success(`PDA สแกนค้นหา: ${q}`);
+    },
+    enabled: true,
+  });
   
   // CRUD State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -272,8 +286,28 @@ function InventoryContent() {
                        placeholder={t('search_placeholder')}
                        value={search}
                        onChange={e => setSearch(e.target.value)}
-                       className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all font-semibold"
+                       className="w-full pl-11 pr-28 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all font-semibold"
                     />
+                    <div className="absolute right-2 top-2 flex items-center gap-1.5">
+                      {search && (
+                        <button
+                          type="button"
+                          onClick={() => setSearch('')}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowCamScan(true)}
+                        title="สแกนบาร์โค้ดสินค้า"
+                        className="px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">สแกน</span>
+                      </button>
+                    </div>
                 </div>
                 <span className="px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-bold whitespace-nowrap shadow-sm">
                     {search ? `ค้นพบ ${filtered.length.toLocaleString()} รายการ` : `ทั้งหมด ${filtered.length.toLocaleString()} รายการ`}
@@ -532,6 +566,19 @@ function InventoryContent() {
             onClose={() => setIsModalOpen(false)}
             product={editingProduct}
             onSuccess={fetchData} 
+        />
+
+        {/* Embedded Camera Scanner for Instant Product Search */}
+        <CameraScannerModal
+            isOpen={showCamScan}
+            onClose={() => setShowCamScan(false)}
+            onScan={(scanned) => {
+              setSearch(scanned.trim());
+              setShowCamScan(false);
+              toast.success(`ค้นหาจากบาร์โค้ด: ${scanned.trim()}`);
+            }}
+            title="สแกนบาร์โค้ดค้นหาสินค้าคงคลัง"
+            description="ส่องกล้องไปที่บาร์โค้ดบนตัวสินค้าเพื่อค้นหาข้อมูลสต็อก พิกัดจัดเก็บ และประวัติ"
         />
     </div>
   );

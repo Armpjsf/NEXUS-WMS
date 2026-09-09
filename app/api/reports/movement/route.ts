@@ -1,20 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getTransactionsUncached, resolveSpreadsheetId } from '@/lib/googleSheets';
+import { getTransactionsUncached } from '@/lib/data/wms';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const branchId = searchParams.get('branchId') || undefined;
-
-        // Resolve Spreadsheet ID
-        const targetSheetId = await resolveSpreadsheetId(branchId, 'inventory');
-
-        // Fetch Both IN and OUT (Using Uncached to avoid 'Invariant: incrementalCache missing')
+        // Fetch Both IN and OUT from Supabase
         const [inbound, outbound] = await Promise.all([
-            getTransactionsUncached('IN', targetSheetId),
-            getTransactionsUncached('OUT', targetSheetId)
+            getTransactionsUncached('IN'),
+            getTransactionsUncached('OUT')
         ]);
 
         // Tag them

@@ -12,7 +12,6 @@ import { useNotification } from '@/components/providers/GlobalNotificationProvid
 interface BranchConfig {
     id: string;
     name: string;
-    spreadsheetId: string;
     color: string;
     status: 'Active' | 'Inactive';
 }
@@ -30,7 +29,6 @@ export default function AdminBranchesPage() {
     const [formData, setFormData] = useState<Partial<BranchConfig>>({
         id: '',
         name: '',
-        spreadsheetId: '',
         color: 'slate'
     });
 
@@ -56,7 +54,7 @@ export default function AdminBranchesPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!formData.id || !formData.name || !formData.spreadsheetId) {
+        if (!formData.id || !formData.name) {
             sendNotification('Error', { body: 'Please fill in all required fields.' });
             return;
         }
@@ -71,7 +69,7 @@ export default function AdminBranchesPage() {
             if (res.ok) {
                 sendNotification('Success', { body: t('branch_saved_success') });
                 setIsAdding(false);
-                setFormData({ id: '', name: '', spreadsheetId: '', color: 'slate' });
+                setFormData({ id: '', name: '', color: 'slate' });
                 fetchData();
             } else {
                 throw new Error('Failed to save');
@@ -175,20 +173,6 @@ export default function AdminBranchesPage() {
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('spreadsheet_id_label')}</label>
-                                    <div className="relative">
-                                        <LinkIcon className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
-                                        <input 
-                                            type="text" 
-                                            placeholder="1nIIVyTTtu4VAm..."
-                                            value={formData.spreadsheetId}
-                                            onChange={e => setFormData({...formData, spreadsheetId: e.target.value})}
-                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 mt-1">{t('spreadsheet_id_desc')}</p>
-                                </div>
-                                <div className="md:col-span-2">
                                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('branch_color')}</label>
                                      <div className="flex flex-wrap gap-2">
                                         {colors.map(color => (
@@ -245,11 +229,10 @@ export default function AdminBranchesPage() {
                                         {branch.name}
                                         <span className="text-[10px] bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-mono font-bold tracking-wider">{branch.id}</span>
                                     </h4>
-                                    <div className="flex items-center gap-3 mt-2">
-                                         <div className="p-1.5 bg-slate-50 rounded-lg">
-                                            <LinkIcon className="w-4 h-4 text-slate-400" />
-                                         </div>
-                                         <code className="text-xs text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded-md border border-slate-100">{branch.spreadsheetId}</code>
+                                    <div className="flex items-center gap-2 mt-2">
+                                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> ใช้งาน
+                                         </span>
                                     </div>
                                 </div>
 

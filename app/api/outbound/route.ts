@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { writeTransactionData } from '@/lib/transactionUtils';
+import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,72 +9,95 @@ export async function POST(request: Request) {
     const body = await request.json();
     let items = [];
 
-    // Support both single item (legacy) and multi-item (new)
     if (body.items && Array.isArray(body.items)) {
-        items = body.items;
+      items = body.items;
     } else if (body.sku && body.qty) {
-        // Legacy fallback
-        items.push({
-            sku: body.sku,
-            qty: body.qty,
-            docRef: body.docRef,
-            salePrice: body.salePrice
-        });
+      items.push(body);
     }
 
     if (items.length === 0) {
-        return NextResponse.json({ error: "No items provided" }, { status: 400 });
+      return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
 
-    // Map to TransactionItem format
-    const transactionItems = items.map((i: any) => ({
-        itemCode: i.sku,
-        quantity: Number(i.qty),
-        orderNumber: i.docRef || '',
-        price: i.salePrice ? Number(i.salePrice) : undefined
-    }));
+    const orgId = await getCurrentOrgId();
 
-    await writeTransactionData(transactionItems);
+    // Guard: block dispatch that exceeds available stock (validate ALL lines
+    // before mutating anything, so a partial commit can't happen).
+    const stockCache: Record<string, any> = {};
+    const shortages: string[] = [];
+    for (const item of items) {
+      const qtyNum = Number(item.qty) || 0;
+      const sku = item.sku;
+      const { data: prodData } = await supabase
+        .from('products').select('*').eq('org_id', orgId).eq('sku', sku).maybeSingle();
+      stockCache[sku] = prodData;
+      const avail = Number(prodData?.stock || 0);
+      if (!prodData) {
+        shortages.push(`${sku}: ไม่พบสินค้าในคลัง`);
+      } else if (qtyNum > avail) {
+        shortages.push(`${prodData.name || sku}: ต้องการ ${qtyNum} แต่คงเหลือ ${avail}`);
+      }
+    }
+    if (shortages.length > 0) {
+      return NextResponse.json(
+        { error: 'สต็อกไม่พอสำหรับการจ่ายออก', shortages },
+        { status: 409 },
+      );
+    }
 
-    // Automation & Audit
-    try {
-      const { logAction } = await import('@/lib/auditTrail');
-      const { checkStockRules } = await import('@/lib/automation');
-      const { getProducts } = await import('@/lib/googleSheets');
-      const { getServerSession } = await import("next-auth/next");
-      const { authOptions } = await import("@/lib/auth");
+    const transactionInserts: any[] = [];
 
-      // @ts-ignore
-      const session = await getServerSession(authOptions);
-      
-      // Fetch current stock to calculate projected stock after this outbound
-      const products = await getProducts();
+    for (const item of items) {
+      const qtyNum = Number(item.qty) || 0;
+      const sku = item.sku;
 
-      // Parallelize rule checking
-      await Promise.all(transactionItems.map(async (tx: { itemCode: string; quantity: number }) => {
-          const product = products.find(p => p.name === tx.itemCode);
-          if (product) {
-              const newStock = product.stock - tx.quantity;
-              await checkStockRules(tx.itemCode, newStock);
-          }
-      }));
+      // Reuse the product fetched during validation
+      const prodData = stockCache[sku];
 
-      await logAction({
-        userId: session?.user?.email || 'System', 
-        userName: session?.user?.name || 'Outbound API',
-        action: 'CREATE', 
-        module: 'Outbound',
-        description: `Issued ${items.length} items (Doc: ${items[0].docRef || 'N/A'})`,
-        newValues: { items: items }
+      const currentStock = Number(prodData?.stock || 0);
+      const newStock = Math.max(0, currentStock - qtyNum);
+
+      // 2. Update Product Stock
+      if (prodData) {
+        await supabase
+          .from('products')
+          .update({
+            stock: newStock,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('org_id', orgId)
+          .eq('sku', sku);
+      }
+
+      // 3. Prepare Transaction Record
+      transactionInserts.push({
+        org_id: orgId,
+        type: 'OUT',
+        sku,
+        product_name: prodData?.name || sku,
+        qty: qtyNum,
+        unit_price: Number(item.salePrice || item.price || prodData?.price || 0),
+        doc_ref: item.docRef || '',
+        location: prodData?.location || 'Unassigned',
+        user_name: 'Warehouse Operator',
+        created_at: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),
       });
-    } catch (err) {
-      console.warn("Automation/Audit Failed:", err);
     }
 
-    return NextResponse.json({ success: true, message: `Captured ${items.length} items` });
+    // 4. Batch Insert Transactions
+    if (transactionInserts.length > 0) {
+      const { error: txError } = await supabase
+        .from('stock_transactions')
+        .insert(transactionInserts);
 
+      if (txError) {
+        console.error('Supabase Outbound Tx Error:', txError);
+      }
+    }
+
+    return NextResponse.json({ success: true, count: items.length });
   } catch (error: any) {
-    console.error("Outbound API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API Outbound Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

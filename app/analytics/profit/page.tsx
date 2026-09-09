@@ -61,28 +61,6 @@ export default function ProfitAnalyticsPage() {
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(val);
 
-  const [syncing, setSyncing] = useState(false);
-
-  const handleSync = async () => {
-      if (!confirm(t('confirm_sync_history') || 'Sync historical data? This will add missing orders to profit calculation.')) return;
-      
-      setSyncing(true);
-      try {
-          const res = await fetch(getApiUrl('/api/debug/sync-history'), { method: 'POST' });
-          const json = await res.json();
-          if (json.success) {
-              alert(`Synced ${json.count} items!`);
-              window.location.reload();
-          } else {
-              alert('Sync Failed: ' + json.error);
-          }
-      } catch (e) {
-          alert('Error syncing');
-      } finally {
-          setSyncing(false);
-      }
-  };
-
   return (
     <div className="min-h-screen px-4 py-6 pb-20 sm:px-6 lg:p-8 relative overflow-hidden">
       <AmbientBackground />
@@ -109,14 +87,6 @@ export default function ProfitAnalyticsPage() {
                 </p>
             </div>
             <div className="flex gap-2">
-                <button 
-                    onClick={handleSync}
-                    disabled={syncing}
-                    className="bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-2 transition-all disabled:opacity-50"
-                >
-                    <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} /> 
-                    {syncing ? 'Syncing...' : t('sync_history') || 'Sync History'}
-                </button>
                 <button className="bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-2 transition-all">
                     <Download className="w-4 h-4" /> {t('profit_export')}
                 </button>
@@ -138,14 +108,6 @@ export default function ProfitAnalyticsPage() {
                         <p className="text-slate-500 max-w-md mb-6">
                            Start recording sales (Outbound Transactions) to see your real-time profit analysis here.
                         </p>
-                        <button 
-                            onClick={handleSync}
-                            disabled={syncing}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-emerald-200 transition-all flex items-center gap-2"
-                        >
-                             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                             {syncing ? 'Syncing...' : 'Sync Past Orders Now'}
-                        </button>
                     </div>
                 ) : (
                   <>

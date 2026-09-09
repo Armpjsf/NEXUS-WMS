@@ -314,7 +314,7 @@ export default function Dashboard() {
                            <KpiCard label={t('kpi_total_value')} value={`฿${(data?.summary?.totalValue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={DollarSign} bg="bg-green-50" color="text-green-600" />
                         </motion.div>
                         <motion.div variants={item} transition={{ delay: 0.2 }}>
-                           <KpiCard label={t('kpi_inbound_total')} value={data?.summary?.inboundPeriod || 0} icon={ArrowDownRight} bg="bg-indigo-50" color="text-indigo-500" href="/ops/inbound" />
+                           <KpiCard label={t('kpi_inbound_total')} value={data?.summary?.inboundPeriod || 0} icon={ArrowDownRight} bg="bg-indigo-50" color="text-indigo-500" href="/ops/receiving" />
                         </motion.div>
                         <motion.div variants={item} transition={{ delay: 0.25 }}>
                             <KpiCard label={t('kpi_outbound_total')} value={data?.summary?.outboundPeriod || 0} icon={ArrowUpRight} bg="bg-emerald-50" color="text-emerald-500" href="/ops/outbound" />

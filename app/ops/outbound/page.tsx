@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Loader2, PackageMinus, Plus, Trash2, Calendar, FileText, Info, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, PackageMinus, Plus, Trash2, Calendar, FileText, Info, FileSpreadsheet, Camera, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchableSelect } from '@/components/SearchableSelect';
@@ -15,6 +15,8 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { db } from '@/lib/db';
 import { toast } from 'react-hot-toast';
 import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
+import { usePdaScanner } from '@/hooks/usePdaScanner';
+import CameraScannerModal from '@/components/CameraScannerModal';
 
 export default function OutboundPage() {
   const { t } = useLanguage();
@@ -34,11 +36,34 @@ export default function OutboundPage() {
   const [currentPrice, setCurrentPrice] = useState('');
   const [docRef, setDocRef] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showCamera, setShowCamera] = useState(false);
 
   // FIFO Preview State
   const [fifoPreview, setFifoPreview] = useState<any>(null);
   const [fifoLoading, setFifoLoading] = useState(false);
   const [fifoMethod, setFifoMethod] = useState<'FIFO' | 'FEFO'>('FIFO');
+
+  const handleScanSku = (scanned: string) => {
+    const q = scanned.trim().toLowerCase();
+    const matched = products.find(p =>
+      (p.name || '').toLowerCase() === q ||
+      (p.id || '').toLowerCase() === q ||
+      (p.barcode || '').toLowerCase() === q
+    );
+    if (matched) {
+      setCurrentSku(matched.name);
+      if (!currentQty) setCurrentQty('1');
+      setShowCamera(false);
+      toast.success(`เลือกสินค้า: ${matched.name}`);
+    } else {
+      toast.error(`ไม่พบสินค้ารหัส "${scanned}" ในระบบ`);
+    }
+  };
+
+  usePdaScanner({
+    onScan: handleScanSku,
+    enabled: true,
+  });
 
   useEffect(() => {
     async function loadProducts() {
@@ -94,8 +119,21 @@ export default function OutboundPage() {
 
   const addItem = () => {
      if (!currentSku || !currentQty) return;
+
+     // Guard: don't let the running total for a SKU exceed available stock.
+     const prod = products.find((p: any) => p.name === currentSku || p.id === currentSku);
+     if (prod) {
+        const already = items.filter(i => i.sku === currentSku).reduce((s, i) => s + Number(i.qty || 0), 0);
+        const wanted = already + Number(currentQty || 0);
+        const avail = Number(prod.stock || 0);
+        if (wanted > avail) {
+           toast.error(`สต็อกไม่พอ: ${prod.name} คงเหลือ ${avail} (จะจ่ายรวม ${wanted})`);
+           return;
+        }
+     }
+
      setItems(prev => [
-        ...prev, 
+        ...prev,
         { sku: currentSku, qty: currentQty, salePrice: currentPrice }
      ]);
      // Clear inputs
@@ -148,11 +186,20 @@ export default function OutboundPage() {
       const res = await fetch(getApiUrl('/api/outbound'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) 
+        body: JSON.stringify(payload)
       });
-      
+
+      // Business errors (e.g. insufficient stock) — surface, do NOT save offline.
+      if (res.status === 409 || res.status === 400) {
+        const data = await res.json().catch(() => ({}));
+        const detail = Array.isArray(data.shortages) ? `\n• ${data.shortages.join('\n• ')}` : '';
+        toast.error((data.error || 'จ่ายออกไม่สำเร็จ') + detail, { duration: 6000 });
+        setSubmitting(false);
+        return;
+      }
+
       if (!res.ok) throw new Error(await res.text());
-      
+
       toast.success(t('success_outbound'));
       setItems([]);
       setDocRef('');
@@ -270,18 +317,40 @@ export default function OutboundPage() {
                     </h3>
                     <div className="space-y-5">
                         <div className="space-y-2">
-                            <label className="text-xs text-slate-400 font-bold block uppercase tracking-wider">{t('product')}</label>
-                            <SearchableSelect 
-                                options={products.map(p => ({
-                                    value: p.name,
-                                    label: p.name,
-                                    subLabel: `Stock: ${p.stock}`
-                                }))}
-                                value={currentSku}
-                                onChange={setCurrentSku}
-                                placeholder="-- Select Product --"
-                                disabled={loading}
-                            />
+                            <div className="flex justify-between items-center">
+                                <label className="text-xs text-slate-400 font-bold block uppercase tracking-wider">{t('product')}</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCamera(true)}
+                                    className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 active:scale-95 transition-transform"
+                                >
+                                    <Camera className="w-3.5 h-3.5" />
+                                    <span>สแกนบาร์โค้ด</span>
+                                </button>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                                <div className="flex-1">
+                                    <SearchableSelect 
+                                        options={products.map(p => ({
+                                            value: p.name,
+                                            label: p.name,
+                                            subLabel: `Stock: ${p.stock}`
+                                        }))}
+                                        value={currentSku}
+                                        onChange={setCurrentSku}
+                                        placeholder="-- Select Product --"
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCamera(true)}
+                                    className="p-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl border border-rose-200 transition-colors shrink-0"
+                                    title="เปิดกล้องสแกนบาร์โค้ดสินค้า"
+                                >
+                                    <Camera className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         {currentSku && (() => {
@@ -477,6 +546,15 @@ export default function OutboundPage() {
           type="OUT"
           products={products}
           onImported={(importedItems) => setItems(prev => [...prev, ...importedItems])}
+      />
+
+      {/* Embedded Camera Scanner for Outbound Product Selection */}
+      <CameraScannerModal
+          isOpen={showCamera}
+          onClose={() => setShowCamera(false)}
+          onScan={handleScanSku}
+          title="สแกนบาร์โค้ดสินค้าเพื่อจ่ายออก"
+          description="ส่องกล้องไปที่บาร์โค้ดบนตัวสินค้าเพื่อเลือกสินค้าลงรายการจ่ายออกทันที"
       />
     </div>
   );

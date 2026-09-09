@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getTransactions, getProducts } from '@/lib/googleSheets';
+import { getTransactions, getProducts } from '@/lib/data/wms';
 
 export const dynamic = 'force-dynamic';
 

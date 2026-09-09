@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Prompt, Outfit } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import PushNotificationManager from "@/components/PushNotificationManager";
 import LocalNotificationManager from "@/components/LocalNotificationManager";
 import NotificationInitializer from "@/components/NotificationInitializer";
@@ -22,13 +22,21 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "WMS 360 PRO",
-  description: "Advanced Warehouse Management System",
+  title: "NEXUS WMS | Smart Warehouse Management System",
+  description: "Next-Gen Smart Warehouse Management & Logistics Execution System",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/nexus-icon.png?v=3", type: "image/png" },
+      { url: "/favicon.ico?v=3", sizes: "any" }
+    ],
+    shortcut: "/nexus-icon.png?v=3",
+    apple: "/nexus-icon.png?v=3",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "WMS 360",
+    title: "NEXUS WMS",
   },
   formatDetection: {
     telephone: false,
@@ -55,10 +63,9 @@ export default function RootLayout({
             <NotificationInitializer />
             <KeyboardShortcuts />
             <OfflineIndicator />
-            <Sidebar />
-            <main id="main-content" className="min-h-screen pt-20 transition-all duration-300 md:pl-72 md:pt-0">
-            {children}
-            </main>
+            <AppShell>
+              {children}
+            </AppShell>
         </Providers>
       </body>
     </html>

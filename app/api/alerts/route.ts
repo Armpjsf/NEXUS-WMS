@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { getProducts, getDamageRecords } from '@/lib/googleSheets';
+import { getProducts, getDamageRecords } from '@/lib/data/wms';
 import { getAllAlerts, getAlertSummary } from '@/lib/inAppAlerts';
 
 export const dynamic = 'force-dynamic';

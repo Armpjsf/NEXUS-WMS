@@ -1,6 +1,7 @@
-
 import { NextResponse } from 'next/server';
-import { getDamageRecords, addDamageRecord, updateDamageStatusByRow, type DamageRecord } from '@/lib/googleSheets';
+import { supabase } from '@/lib/supabase';
+import { getDamageRecords } from '@/lib/data/wms';
+import { getCurrentOrgId } from '@/lib/orgContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,82 +19,87 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { date, product_name, quantity, unit, reason, notes, reported_by } = body;
 
-    // Validation
     if (!product_name || !quantity || !reason) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const newRecord: DamageRecord = {
-        date: date || new Date().toISOString().split('T')[0],
-        product_name,
-        quantity,
-        unit: unit || 'ชิ้น',
-        reason,
-        notes: notes || '',
-        reported_by: reported_by || 'System',
-        status: 'รอดำเนินการ',
-        approved_by: '',
-        approved_date: ''
-    };
+    const { error } = await supabase.from('damage_records').insert({
+      org_id: await getCurrentOrgId(),
+      report_date: date || new Date().toISOString().split('T')[0],
+      product_name,
+      quantity: Number(quantity) || 0,
+      unit: unit || 'ชิ้น',
+      reason,
+      notes: notes || '',
+      reported_by: reported_by || 'System',
+      status: 'รอดำเนินการ',
+    });
 
-    const success = await addDamageRecord(newRecord);
-
-    // Audit Log
-    if (success) {
-      try {
-        const { logAction } = await import('@/lib/auditTrail');
-        await logAction({
-          userId: reported_by || 'System',
-          userName: reported_by || 'System',
-          action: 'CREATE', // Uppercase to match type definitions
-          module: 'Damage',
-          description: `Reported damage: ${product_name} x${quantity} (${reason})`,
-          newValues: newRecord as any
-        });
-      } catch (err) { console.warn("Audit Log Failed:", err); }
-      
-      return NextResponse.json({ message: 'Damage record added successfully' });
-    } else {
-        return NextResponse.json({ error: 'Failed to add record' }, { status: 500 });
+    if (error) {
+      console.error('Supabase add damage Error:', error);
+      return NextResponse.json({ error: 'Failed to add record' }, { status: 500 });
     }
 
+    try {
+      const { logAction } = await import('@/lib/auditTrail');
+      await logAction({
+        userId: reported_by || 'System',
+        userName: reported_by || 'System',
+        action: 'CREATE',
+        module: 'Damage',
+        description: `Reported damage: ${product_name} x${quantity} (${reason})`,
+        newValues: { product_name, quantity, reason } as any,
+      });
+    } catch (err) {
+      console.warn('Audit Log Failed:', err);
+    }
+
+    return NextResponse.json({ message: 'Damage record added successfully' });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
-    try {
-        const body = await req.json();
-        const { rowIndex, status, approver, sent_to_hq } = body;
+  try {
+    const body = await req.json();
+    const { rowIndex, id, status, approver, sent_to_hq } = body;
 
-        // Note: rowIndex is 0-based array index from frontend
-        if (rowIndex === undefined) {
-            return NextResponse.json({ error: 'Missing rowIndex' }, { status: 400 });
-        }
-
-        const sheetRow = rowIndex + 2;
-
-        if (sent_to_hq) {
-            const { updateDamageHqStatusByRow } = await import('@/lib/googleSheets');
-            const success = await updateDamageHqStatusByRow(sheetRow, sent_to_hq);
-            if (success) {
-                return NextResponse.json({ message: 'HQ status updated successfully' });
-            } else {
-                return NextResponse.json({ error: 'Failed to update HQ status' }, { status: 500 });
-            }
-        } else if (status) {
-            const success = await updateDamageStatusByRow(sheetRow, status, approver || 'Admin');
-            if (success) {
-                return NextResponse.json({ message: 'Status updated' });
-            } else {
-                 return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
-            }
-        } else {
-            return NextResponse.json({ error: 'Missing status or sent_to_hq' }, { status: 400 });
-        }
-
-    } catch (error) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    // Resolve the target row id. Frontend still sends a 0-based rowIndex; map it
+    // to the actual record via the same created_at DESC ordering used on read.
+    let targetId = id as string | undefined;
+    if (!targetId) {
+      if (rowIndex === undefined) {
+        return NextResponse.json({ error: 'Missing rowIndex or id' }, { status: 400 });
+      }
+      const records = await getDamageRecords();
+      targetId = records[rowIndex]?.id;
+      if (!targetId) {
+        return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+      }
     }
+
+    let patch: Record<string, any>;
+    if (sent_to_hq) {
+      patch = { sent_to_hq };
+    } else if (status) {
+      patch = {
+        status,
+        approved_by: approver || 'Admin',
+        approved_date: new Date().toISOString().split('T')[0],
+      };
+    } else {
+      return NextResponse.json({ error: 'Missing status or sent_to_hq' }, { status: 400 });
+    }
+
+    const { error } = await supabase.from('damage_records').update(patch).eq('id', targetId);
+    if (error) {
+      console.error('Supabase update damage Error:', error);
+      return NextResponse.json({ error: 'Failed to update record' }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: sent_to_hq ? 'HQ status updated successfully' : 'Status updated' });
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

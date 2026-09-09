@@ -1,7 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-// Redirect to canonical page or keep as alias? 
-// For now, duplicate content but with translation so user is happy either way.
-import StockCardPage from '../inventory/stock-card/page';
-
-export default StockCardPage;
+// Canonical stock card lives under /inventory/stock-card. This root path is a legacy alias.
+export default function StockCardRedirect() {
+  redirect('/inventory/stock-card');
+}

@@ -1,7 +1,7 @@
 
 // app/api/ai/reorder/route.ts
 import { NextResponse } from 'next/server';
-import { getProducts, getTransactionsUncached } from '@/lib/googleSheets';
+import { getProducts, getTransactionsUncached } from '@/lib/data/wms';
 import { calculateTrend, calculateSafetyStock } from '@/lib/forecast';
 
 export const dynamic = 'force-dynamic';

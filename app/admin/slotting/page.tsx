@@ -52,13 +52,24 @@ export default function SlottingPage() {
        {/* Header */}
        <header className="overflow-hidden rounded-[1.75rem] border border-indigo-200 bg-white/85 p-6 shadow-xl shadow-indigo-900/10 backdrop-blur-xl">
           <div className="h-1 bg-gradient-to-r from-indigo-600 via-emerald-500 to-amber-500 -mx-6 -mt-6 mb-6" />
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-             <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <LayoutGrid className="w-8 h-8 text-indigo-600" />
-             </div>
-             Smart Slotting (ABC Analysis)
-          </h1>
-          <p className="text-slate-500 mt-2">Optimize your warehouse layout based on product velocity.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                 <div className="p-2 bg-indigo-500/10 rounded-lg">
+                    <LayoutGrid className="w-8 h-8 text-indigo-600" />
+                 </div>
+                 Smart Slotting (ABC Analysis)
+              </h1>
+              <p className="text-slate-500 mt-2">Optimize your warehouse layout based on product velocity.</p>
+            </div>
+            <Link
+              href="/inventory/map"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all self-start sm:self-center"
+            >
+              <Warehouse className="w-4 h-4" />
+              ดูแผนผังคลัง 2D (Visual Map)
+            </Link>
+          </div>
        </header>
 
        {/* ABC Distribution Cards */}

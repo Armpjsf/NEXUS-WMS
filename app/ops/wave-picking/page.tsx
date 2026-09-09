@@ -24,6 +24,7 @@ import {
   VolumeX,
   Eye,
   Smartphone,
+  Camera,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,7 +40,9 @@ import {
   PickingWave,
   parseLocation,
 } from '@/lib/picking';
-import { speakPickInstruction, speakThai, triggerHaptic } from '@/lib/voiceAssistant';
+import { speakPickInstruction, speakThai, triggerHaptic, speakScanSuccess, speakScanMismatch, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
+import { usePdaScanner } from '@/hooks/usePdaScanner';
+import CameraScannerModal from '@/components/CameraScannerModal';
 
 export default function WavePickingPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -58,6 +61,7 @@ export default function WavePickingPage() {
 
   // Fast Scan Bar State
   const [scanInput, setScanInput] = useState('');
+  const [showWaveScanCam, setShowWaveScanCam] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
 
   // Load Products
@@ -310,9 +314,43 @@ export default function WavePickingPage() {
     return activeWave.items.find(x => x.status !== 'PICKED');
   }, [activeWave]);
 
+  // Shared item pick scanner for both Hardware PDA Gun and Mobile Camera
+  const handleItemScanned = (scanned: string) => {
+    if (!activeWave) return;
+    const query = scanned.trim().toLowerCase();
+    const match = activeWave.items.find(
+      i =>
+        (i.sku.toLowerCase() === query ||
+          i.productName.toLowerCase() === query ||
+          i.location.toLowerCase() === query) &&
+        i.status !== 'PICKED'
+    );
+
+    if (match) {
+      handlePickItem(match.id, match.requestedQty);
+      triggerHaptic('success');
+      toast.success(`สแกนสำเร็จ: ${match.productName} (${match.location})`);
+      if (voiceEnabled) speakScanSuccess(match.productName);
+    } else {
+      triggerHaptic('error');
+      if (voiceEnabled) speakScanMismatch();
+      toast.error(`ไม่พบรายการที่รอหยิบสำหรับโค้ด: ${scanned}`);
+    }
+  };
+
+  // Global PDA / Wireless Scanner Gun Listener (Keyboard Wedge)
+  usePdaScanner({
+    enabled: Boolean(activeWave && activeWave.status === 'IN_PROGRESS'),
+    onScan: handleItemScanned,
+  });
+
   // Print Pick Sheet
   const handlePrint = () => {
-    window.print();
+    if (activeWave) {
+      window.open(`/print/wave-slip?id=${activeWave.id}`, '_blank');
+    } else {
+      window.print();
+    }
   };
 
   return (
@@ -677,6 +715,16 @@ export default function WavePickingPage() {
 
                     <button
                       type="button"
+                      onClick={() => setShowWaveScanCam(true)}
+                      className="px-5 py-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-2xl shadow-xl flex items-center gap-2 transition-all active:scale-95"
+                      title="เปิดกล้องสแกนยืนยันสินค้า"
+                    >
+                      <Camera className="w-5 h-5" />
+                      <span className="hidden sm:inline">สแกนกล้อง</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => handlePickItem(nextTargetItem.id, nextTargetItem.requestedQty)}
                       className={cn(
                         'px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black rounded-2xl shadow-xl flex items-center gap-3 transition-all',
@@ -748,7 +796,7 @@ export default function WavePickingPage() {
 
               {/* Fast Scan Input Bar */}
               <div className="mt-5 pt-4 border-t border-slate-100/10 print:hidden">
-                <form onSubmit={handleScanSubmit} className="flex gap-2">
+                <form onSubmit={handleScanSubmit} className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <Barcode className="w-5 h-5 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
@@ -765,12 +813,22 @@ export default function WavePickingPage() {
                       )}
                     />
                   </div>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-sm shadow-md transition-all flex items-center gap-2"
-                  >
-                    ยืนยันสแกน
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowWaveScanCam(true)}
+                      className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-sm shadow-md transition-all flex items-center gap-2 active:scale-95 shrink-0"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>เปิดกล้องสแกน</span>
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl text-sm shadow-md transition-all flex items-center gap-2 shrink-0"
+                    >
+                      ยืนยัน
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
@@ -938,6 +996,16 @@ export default function WavePickingPage() {
           )
         )}
       </div>
+
+      {/* Embedded Camera Scanner for Tablet & Phone Pickers */}
+      <CameraScannerModal
+        isOpen={showWaveScanCam}
+        onClose={() => setShowWaveScanCam(false)}
+        onScan={handleItemScanned}
+        continuous={true}
+        title={`สแกนหยิบสินค้า: ${activeWave?.waveNumber || ''}`}
+        description="ส่องกล้องไปที่บาร์โค้ดสินค้าหรือพิกัดเชลฟ์เพื่อยืนยันการหยิบ (รองรับสแกนต่อเนื่อง)"
+      />
     </div>
   );
 }

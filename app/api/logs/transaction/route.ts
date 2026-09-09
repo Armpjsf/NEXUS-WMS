@@ -1,57 +1,60 @@
 import { NextResponse } from 'next/server';
-import { getTransactions, getProducts, getDamageRecords } from '@/lib/googleSheets';
+import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
 
 export const dynamic = 'force-dynamic';
 
+// Returns enriched IN / OUT / DAMAGE logs from Supabase stock_transactions,
+// shaped for the Transactions page ({ date, product, qty, location, status, reason }).
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'IN' | 'OUT' | 'DAMAGE'
 
     if (type !== 'IN' && type !== 'OUT' && type !== 'DAMAGE') {
-        return NextResponse.json({ error: "Invalid type. Use 'IN', 'OUT' or 'DAMAGE'" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid type. Use 'IN', 'OUT' or 'DAMAGE'" }, { status: 400 });
     }
 
-    // Always fetch products to get Location Map
-    // Normalize keys: Lowercase + Trim for robust matching
-    const products = await getProducts();
+    const orgId = await getCurrentOrgId();
+
+    // Location fallback map (product name -> location) for rows missing a location.
+    const { data: products } = await supabase
+      .from('products')
+      .select('name, location')
+      .eq('org_id', orgId);
     const locMap = new Map<string, string>();
-    products.forEach(p => {
-        if (p.name) locMap.set(p.name.toLowerCase().trim(), p.location);
+    (products || []).forEach((p: any) => {
+      if (p.name) locMap.set(String(p.name).toLowerCase().trim(), p.location);
     });
 
-    let enrichedLogs: any[] = [];
+    const { data: rows, error } = await supabase
+      .from('stock_transactions')
+      .select('*')
+      .eq('org_id', orgId)
+      .eq('type', type)
+      .order('created_at', { ascending: false });
 
-    if (type === 'DAMAGE') {
-        const records = await getDamageRecords();
-        enrichedLogs = records.map(r => {
-            const normalizedName = r.product_name ? r.product_name.toLowerCase().trim() : "";
-            return {
-                date: r.date,
-                product: r.product_name,
-                qty: r.quantity,
-                location: locMap.get(normalizedName) || '-', // Actual Warehouse Location
-                reason: r.reason, // Specific Damage Reason
-                status: r.status
-            };
-        });
-    } else {
-        const logs = await getTransactions(type);
-        enrichedLogs = logs.map(l => {
-             const normalizedName = l.product ? l.product.toLowerCase().trim() : "";
-             return {
-                ...l,
-                location: locMap.get(normalizedName) || '-'
-             };
-        });
+    if (error) {
+      console.error('Supabase logs/transaction Error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
-    // Sort by Date Descending
-    enrichedLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const enrichedLogs = (rows || []).map((r: any) => {
+      const productName = r.product_name || r.sku || '';
+      const normalizedName = productName.toLowerCase().trim();
+      return {
+        date: r.created_at,
+        product: productName,
+        qty: Number(r.qty ?? 0),
+        location: r.location || locMap.get(normalizedName) || '-',
+        reason: r.notes || undefined,
+        status: type === 'DAMAGE' ? (r.notes || '-') : undefined,
+      };
+    });
 
     return NextResponse.json(enrichedLogs);
-
   } catch (error: any) {
+    console.error('API logs/transaction Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

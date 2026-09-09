@@ -1,85 +1,70 @@
 import { NextResponse } from 'next/server';
-import { getBranchesFromSheet, saveBranchToSheet, deleteBranchFromSheet, BranchConfig } from '@/lib/googleSheets';
+import { supabase, getServiceSupabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { checkPlanLimit } from '@/lib/planLimits';
 
 export const dynamic = 'force-dynamic';
 
+// Branches are now real Supabase rows (no per-branch spreadsheet). `id` in the
+// UI maps to the branch `code`.
 export async function GET() {
-    try {
-        const branches = await getBranchesFromSheet();
-        return NextResponse.json(branches);
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch branches" }, { status: 500 });
-    }
+  const orgId = await getCurrentOrgId();
+  const { data, error } = await supabase
+    .from('branches')
+    .select('code, name, color, status')
+    .eq('org_id', orgId)
+    .eq('status', 'ACTIVE')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('branches GET error:', error);
+    return NextResponse.json([]);
+  }
+  return NextResponse.json((data || []).map((b: any) => ({ id: b.code, name: b.name, color: b.color })));
 }
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { logAction } from "@/lib/auditTrail";
-
-// ... existing imports
-
 export async function POST(request: Request) {
-    try {
-        const session = await getServerSession(authOptions);
-        const adminUser = session?.user as any;
-
-        const body = await request.json();
-        
-        // Basic Validation
-        if (!body.id || !body.name || !body.spreadsheetId) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-        }
-
-        const newBranch: BranchConfig = {
-            id: body.id,
-            name: body.name,
-            spreadsheetId: body.spreadsheetId,
-            inventorySpreadsheetId: body.inventorySpreadsheetId || body.spreadsheetId,
-            color: body.color || 'slate',
-            status: 'Active'
-        };
-
-        await saveBranchToSheet(newBranch);
-        
-        await logAction({
-             userId: adminUser?.id || 'admin',
-             userName: adminUser?.username || 'Unknown Admin',
-             action: 'CREATE',
-             module: 'branches',
-             description: `Created/Updated branch: ${newBranch.name} (${newBranch.id})`,
-             newValues: newBranch
-        });
-
-        return NextResponse.json({ success: true, branch: newBranch });
-
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to save branch" }, { status: 500 });
+  try {
+    const body = await request.json();
+    const code = (body.id || body.code || '').trim();
+    if (!code || !body.name) {
+      return NextResponse.json({ error: 'ต้องมีรหัสและชื่อสาขา' }, { status: 400 });
     }
+    const orgId = await getCurrentOrgId();
+
+    // Enforce plan limit for new branch codes.
+    const { data: existing } = await getServiceSupabase()
+      .from('branches').select('id').eq('org_id', orgId).eq('code', code).maybeSingle();
+    if (!existing) {
+      const limitErr = await checkPlanLimit(orgId, 'branches', 'branches');
+      if (limitErr) return NextResponse.json({ error: limitErr }, { status: 403 });
+    }
+
+    const { error } = await getServiceSupabase().from('branches').upsert(
+      { org_id: orgId, code, name: body.name, color: body.color || 'slate', status: 'ACTIVE' },
+      { onConflict: 'org_id,code' },
+    );
+    if (error) {
+      console.error('branches POST error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
-    try {
-        const session = await getServerSession(authOptions);
-        const adminUser = session?.user as any;
-
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
-
-        if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
-
-        await deleteBranchFromSheet(id);
-
-        await logAction({
-             userId: adminUser?.id || 'admin',
-             userName: adminUser?.username || 'Unknown Admin',
-             action: 'DELETE',
-             module: 'branches',
-             description: `Deactivated branch: ${id}`
-        });
-
-        return NextResponse.json({ success: true });
-
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to delete branch" }, { status: 500 });
-    }
+  try {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('id');
+    if (!code) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    // Soft-deactivate rather than hard delete (keeps historical references intact).
+    const { error } = await getServiceSupabase()
+      .from('branches').update({ status: 'INACTIVE' }).eq('org_id', await getCurrentOrgId()).eq('code', code);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

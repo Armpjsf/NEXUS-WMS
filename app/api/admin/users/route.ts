@@ -29,8 +29,11 @@ export async function POST(req: Request) {
         const body = await req.json();
         
         if (body.action === 'add') {
-            await addUser(body.data);
-            
+            const result = await addUser(body.data);
+            if (result && typeof result === 'object' && 'error' in result) {
+                return NextResponse.json({ error: (result as any).error }, { status: 403 });
+            }
+
             await logAction({
                  userId: currentUserId,
                  userName: currentUser,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { getTransactions, Transaction } from '@/lib/googleSheets';
+import { getTransactions, type Transaction } from '@/lib/data/wms';
 
 export const dynamic = 'force-dynamic';
 

@@ -15,7 +15,7 @@ export default function Home() {
     
     // replace() (not push) so the root spinner never sits in the back stack,
     // avoiding a back-button loop back onto this loading screen.
-    router.replace(isMobile ? '/mobile/jobs' : '/dashboard');
+    router.replace(isMobile ? '/mobile' : '/dashboard');
   }, [router]);
 
   return (

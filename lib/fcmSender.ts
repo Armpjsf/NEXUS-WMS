@@ -1,8 +1,6 @@
 import { messaging } from './firebaseAdmin';
-import { getSheetData, removeDeadDeviceTokens } from './googleSheets';
-import { TRANSACTION_SPREADSHEET_ID } from './transactionUtils';
+import { getDeviceTokens, removeDeviceTokens } from './data/wms';
 
-const DEVICES_RANGE = "'📱 Devices'!A:A";
 const DEAD_TOKEN_CODES = new Set([
     'messaging/registration-token-not-registered',
     'messaging/invalid-argument',
@@ -29,18 +27,13 @@ export async function sendFcmToDevices(
     opts: { tag?: string; spreadsheetId?: string } = {}
 ): Promise<{ sent: number; failed: number }> {
     const tag = opts.tag || 'FCM';
-    // Device tokens are registered into the TRANSACTION spreadsheet (see
-    // /api/notifications/register). Reading the PRODUCT sheet here silently
-    // sent every push to 0 devices.
-    const ssid = opts.spreadsheetId || TRANSACTION_SPREADSHEET_ID;
 
     if (!messaging) {
         console.warn(`[${tag}] Firebase messaging not initialized.`);
         return { sent: 0, failed: 0 };
     }
 
-    const deviceData = await getSheetData(ssid, DEVICES_RANGE);
-    const tokens = deviceData?.map((r: any[]) => r[0]).filter((t: any) => t && t.length > 10) || [];
+    const tokens = await getDeviceTokens();
     if (tokens.length === 0) {
         console.log(`[${tag}] No devices registered.`);
         return { sent: 0, failed: 0 };
@@ -74,7 +67,7 @@ export async function sendFcmToDevices(
         }
     });
     if (deadTokens.length > 0) {
-        await removeDeadDeviceTokens(deadTokens, ssid);
+        await removeDeviceTokens(deadTokens);
     }
 
     return { sent: res.successCount, failed: res.failureCount };

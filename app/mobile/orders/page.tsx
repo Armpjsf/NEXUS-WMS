@@ -1,273 +1,1003 @@
 'use client';
 
-import { getApiUrl } from '@/lib/config';
-import { useState, useEffect } from 'react';
-import { RefreshCw, User, Play, Undo2, CheckCircle2, Package, Inbox, Wifi, WifiOff, Check, Clock, MapPin, Copy } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { 
+  Package, 
+  Search, 
+  ArrowLeft, 
+  CheckCircle2, 
+  Truck, 
+  Camera, 
+  RefreshCw, 
+  X, 
+  Check, 
+  Scan, 
+  Printer, 
+  ExternalLink,
+  ChevronRight,
+  ShieldCheck,
+  AlertCircle,
+  FileText
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
-import { useLanguage } from '@/components/providers/LanguageProvider';
-import { usePullToRefresh, PullIndicator } from '@/components/ui/PullToRefresh';
-import { appAlert, appConfirm } from '@/components/ui/MobileDialog';
+import CameraScannerModal from '@/components/CameraScannerModal';
+import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
+import { triggerHaptic } from '@/lib/voiceAssistant';
+import { getApiUrl } from '@/lib/config';
 
-interface RollTag { id: string; customer: string; itemCount: number; }
-interface ActiveForm { docNum: string; customer: string; refDate?: string; status?: string; items?: any[]; signature?: string | null; }
-interface WaitingJob { docNum: string; customer: string; orderNo?: string; }
+type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+interface Line {
+  sku: string;
+  name: string;
+  qty: number;
+  packedQty?: number;
+  done?: boolean;
+}
+
+interface Order {
+  id: string;
+  orderNo: string;
+  channel: string;
+  customerName: string;
+  status: Status;
+  priority: string;
+  items: Line[];
+  totalQty: number;
+  totalAmount: number;
+  carrier: string;
+  trackingNo: string;
+  createdAt: string;
+  shipAddress: string;
+  phone: string;
+  notes?: string;
+  boxCount?: number;
+  weightKg?: number;
+}
+
+interface Carrier {
+  id: string;
+  code: string;
+  name: string;
+  trackingUrlTemplate: string;
+  isDefault: boolean;
+}
 
 export default function MobileOrdersPage() {
-  const { t } = useLanguage();
-
-  const [pending, setPending] = useState<RollTag[]>([]);
-  const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
-  const [waiting, setWaiting] = useState<WaitingJob[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null); // guards double-taps
-  const [productLoc, setProductLoc] = useState<Map<string, string>>(new Map());
-  const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'QC' | 'PACK' | 'DISPATCH' | 'SHIPPED'>('QC');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [qcOrder, setQcOrder] = useState<Order | null>(null);
+  const [packingOrder, setPackingOrder] = useState<Order | null>(null);
+  const [dispatchOrder, setDispatchOrder] = useState<Order | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
-  const branchId = typeof window !== 'undefined'
-    ? (new URLSearchParams(window.location.search).get('branchId') || 'hq')
-    : 'hq';
-
-  const fetchStatus = async () => {
+  // Load orders & carriers
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch(getApiUrl(`/api/orders/status?branchId=${branchId}&t=${Date.now()}`), { cache: 'no-store' });
-      if (res.ok) setIsConnected(true);
-      const data = await res.json();
-      setPending(data.pending || []);
-      setActiveForm(data.activeForm || null);
-      setWaiting(data.waiting || []);
-    } catch (e) {
-      setIsConnected(false);
+      const [ordRes, carRes] = await Promise.all([
+        fetch(getApiUrl('/api/orders'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/carriers'), { cache: 'no-store' }).catch(() => null),
+      ]);
+      const ordJson = await ordRes.json();
+      setOrders(ordJson.orders || []);
+
+      if (carRes && carRes.ok) {
+        const carJson = await carRes.json();
+        setCarriers(carJson.carriers || []);
+      }
+    } catch {
+      toast.error('โหลดข้อมูลออเดอร์ไม่สำเร็จ');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => { fetchStatus(); }, []);
-
-  // Load product locations for the item list
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(getApiUrl('/api/products'));
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          const map = new Map<string, string>();
-          data.forEach((p: any) => map.set(p.name, p.location || '-'));
-          setProductLoc(map);
-        }
-      } catch { /* offline: skip locations */ }
-    })();
   }, []);
 
-  const post = async (path: string, body: any, id: string) => {
-    if (busyId) return;
-    try {
-      setBusyId(id);
-      const res = await fetch(getApiUrl(path), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...body, branchId })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Error ${res.status}`);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const isQcPassed = (o: Order) => Boolean(o.notes?.includes('[QC:PASSED]'));
+
+  // Main barcode scan on list: Find matching order by OrderNo or TrackingNo
+  const handleMainBarcodeScan = useCallback((code: string) => {
+    const q = code.trim().toLowerCase();
+    if (!q) return;
+
+    const match = orders.find(o => 
+      o.orderNo.toLowerCase() === q ||
+      (o.trackingNo && o.trackingNo.toLowerCase() === q) ||
+      o.items.some(it => it.sku.toLowerCase() === q)
+    );
+
+    if (match) {
+      playScannerAudio('success');
+      toast.success(`พบออเดอร์ ${match.orderNo}`);
+      setCameraOpen(false);
+
+      if (match.status === 'PICKED') {
+        if (isQcPassed(match)) {
+          setActiveTab('PACK');
+          setPackingOrder(match);
+        } else {
+          setActiveTab('QC');
+          setQcOrder(match);
+        }
+      } else if (match.status === 'PACKED') {
+        setActiveTab('DISPATCH');
+        setDispatchOrder(match);
+      } else {
+        setActiveTab('SHIPPED');
+        setSearchQuery(match.orderNo);
       }
-      await fetchStatus();
-    } catch (e: any) {
-      appAlert('ผิดพลาด: ' + e.message);
-    } finally {
-      setBusyId(null);
+      return;
     }
-  };
 
-  // Build the customer LINE message (matches the admin order page format)
-  const formatItemCode = (itemStr: string) => {
-    const s = String(itemStr || '').trim();
-    if (!s) return '';
-    const suffix = s.toUpperCase().endsWith('I') ? ' I' : '';
-    return s.length >= 8 ? `${s.slice(2, 6)} ${s.slice(6, 8)}${suffix}` : `${s}${suffix}`;
-  };
+    playScannerAudio('error');
+    setCameraOpen(false);
+    setSearchQuery(code.trim());
+    toast.error(`ไม่พบออเดอร์ที่ตรงกับรหัส "${code}"`);
+  }, [orders]);
 
-  const handleCopyLine = async () => {
-    if (!activeForm) return;
-    const items = activeForm.items || [];
-    const orderNumbers = Array.from(new Set(items.map((i: any) => i.orderNo).filter(Boolean)));
-    const orderText = orderNumbers.length ? orderNumbers.join(', ') : activeForm.docNum;
-    let msg = 'จัดสินค้าเรียบร้อย\n';
-    msg += `เลขออเดอร์ ที่ : ${orderText}\n`;
-    msg += `ชื่อร้านค้า : ${activeForm.customer}\n`;
-    items.forEach((it: any) => { if (it.itemCode) msg += `${formatItemCode(it.itemCode)} = ${it.qty || 0}\n`; });
-    msg += '\nโปรดแจ้งเลขออเดอร์ทุกครั้ง เมื่อมารับสินค้าที่คลังสินค้า\nขอบคุณครับ';
-    try {
-      await navigator.clipboard.writeText(msg);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      appAlert(msg); // Fallback if clipboard is blocked: show text to copy manually
-    }
-  };
+  usePdaScanner({
+    onScan: handleMainBarcodeScan,
+    enabled: !qcOrder && !packingOrder && !dispatchOrder && !cameraOpen,
+    playSound: false,
+  });
 
-  const handleProcess = (tagId: string) => post('/api/orders/process', { tagId }, `process-${tagId}`);
-  const handleRecall = async (docNum: string) => {
-    if (!(await appConfirm(`ดึงงาน ${docNum} กลับมาทำใหม่?`))) return;
-    post('/api/orders/recall', { docNum }, `recall-${docNum}`);
-  };
-  const handleClear = async () => {
-    if (!(await appConfirm('ปิด/จัดเก็บงานที่กำลังทำอยู่?'))) return;
-    post('/api/orders/archive', {}, 'clear');
-  };
+  // Segregate by real fulfillment lifecycle
+  const qcOrders = orders.filter(o => o.status === 'PICKED' && !isQcPassed(o));
+  const packOrders = orders.filter(o => o.status === 'PICKED' && isQcPassed(o));
+  const dispatchOrders = orders.filter(o => o.status === 'PACKED');
+  const shippedOrders = orders.filter(o => o.status === 'SHIPPED');
 
-  const ptr = usePullToRefresh(fetchStatus);
+  const currentTabOrders = (
+    activeTab === 'QC' ? qcOrders :
+    activeTab === 'PACK' ? packOrders :
+    activeTab === 'DISPATCH' ? dispatchOrders :
+    shippedOrders
+  ).filter(o => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      o.orderNo.toLowerCase().includes(q) ||
+      o.customerName.toLowerCase().includes(q) ||
+      (o.trackingNo && o.trackingNo.toLowerCase().includes(q)) ||
+      o.items.some(i => i.sku.toLowerCase().includes(q) || i.name.toLowerCase().includes(q))
+    );
+  });
 
   return (
-    <div className="relative min-h-screen pb-24 bg-slate-50/50" style={ptr.rootStyle} {...ptr.bind}>
-      <AmbientBackground />
-      <PullIndicator pullDistance={ptr.pullDistance} refreshing={ptr.refreshing} />
-      <div className="relative z-10 max-w-lg mx-auto p-4 md:p-6" style={ptr.contentStyle}>
-
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/50 shadow-sm sticky top-2 z-20">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t('menu_orders')}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <div className={`flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${isConnected ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                {isConnected ? t('online') : t('offline')}
-              </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-28 font-sans select-none">
+      {/* Top Mobile Bar */}
+      <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 shadow-md">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/mobile" 
+              className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="font-bold text-base text-white leading-tight">สถานี QC &amp; จัดส่ง (Fulfillment)</h1>
+              <p className="text-[11px] text-slate-400">ตรวจความถูกต้อง แพ็กกล่อง และส่งมอบขนส่ง</p>
             </div>
           </div>
-          <button onClick={fetchStatus} className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-indigo-500 shadow-sm active:scale-95">
-            <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCameraOpen(true)}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition-all"
+            >
+              <Camera className="w-4 h-4" />
+              <span>สแกนกล้อง</span>
+            </button>
+            <button
+              onClick={loadData}
+              className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white active:scale-95"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
-        {/* Active Job */}
-        {activeForm && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3 px-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-              <h2 className="text-emerald-600 font-bold uppercase tracking-wider text-xs">{t('active_job')}</h2>
-            </div>
-            <div className="bg-white border-2 border-indigo-100 rounded-[2rem] p-6 shadow-xl">
-              <div className="text-3xl font-black text-slate-900 tracking-tighter mb-1">
-                {(() => {
-                  const orders = Array.from(new Set((activeForm.items || []).map((i: any) => i.orderNo).filter(Boolean)));
-                  return orders.length ? orders.join(', ') : activeForm.docNum;
-                })()}
-              </div>
-              <div className="text-[11px] text-slate-400 font-semibold mb-2">{t('doc_no')}: {activeForm.docNum}</div>
-              <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm bg-indigo-50 px-3 py-1.5 rounded-xl w-fit mb-4">
-                <User className="w-4 h-4" /> {activeForm.customer}
+        {/* Search & Barcode Status */}
+        <div className="mt-3 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="ค้นหาเลขออเดอร์, Tracking, หรือลูกค้า..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2.5 text-slate-500 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="px-2.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-[10px] font-mono text-blue-400 flex items-center gap-1 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            PDA พร้อม
+          </div>
+        </div>
+
+        {/* Status Tabs (4 Dedicated Steps) */}
+        <div className="grid grid-cols-4 gap-1 mt-3 p-1 bg-slate-950 rounded-xl border border-slate-800 text-center">
+          <button
+            onClick={() => setActiveTab('QC')}
+            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+              activeTab === 'QC'
+                ? 'bg-teal-600 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ตรวจ QC ({qcOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('PACK')}
+            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+              activeTab === 'PACK'
+                ? 'bg-blue-600 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            รอแพ็ก ({packOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('DISPATCH')}
+            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+              activeTab === 'DISPATCH'
+                ? 'bg-amber-600 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            รอส่ง ({dispatchOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('SHIPPED')}
+            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+              activeTab === 'SHIPPED'
+                ? 'bg-emerald-600 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ส่งแล้ว ({shippedOrders.length})
+          </button>
+        </div>
+      </header>
+
+      {/* Orders List */}
+      <main className="p-4 space-y-3 max-w-lg mx-auto">
+        {loading ? (
+          <div className="py-16 text-center text-slate-500 text-sm">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-400" />
+            กำลังโหลดรายการออเดอร์...
+          </div>
+        ) : currentTabOrders.length === 0 ? (
+          <div className="py-16 text-center text-slate-500 space-y-2">
+            <Package className="w-12 h-12 mx-auto text-slate-700" />
+            <p className="text-sm font-semibold text-slate-400">
+              {searchQuery ? 'ไม่พบออเดอร์ที่ตรงกับการค้นหา' : 
+               activeTab === 'QC' ? 'ไม่มีออเดอร์รอตรวจ QC (ต้องมีสินค้าที่หยิบเสร็จแล้ว)' :
+               activeTab === 'PACK' ? 'ไม่มีออเดอร์รอแพ็ก (ต้องผ่านการตรวจ QC ก่อน)' :
+               activeTab === 'DISPATCH' ? 'ไม่มีออเดอร์รอส่งมอบให้ขนส่ง' : 'ยังไม่มีประวัติการส่งมอบ'}
+            </p>
+          </div>
+        ) : (
+          currentTabOrders.map(order => (
+            <div
+              key={order.id}
+              className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 shadow-md space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-white text-base">
+                      {order.orderNo}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      {order.channel || 'Direct'}
+                    </span>
+                    {isQcPassed(order) && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                        QC ผ่านแล้ว
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium mt-0.5">
+                    ลูกค้า: {order.customerName || 'ทั่วไป'}
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block">จำนวน</span>
+                  <span className="text-base font-black text-blue-400">{order.totalQty}</span>
+                  <span className="text-[11px] text-slate-400 ml-1">ชิ้น</span>
+                </div>
               </div>
 
-              {/* Item list */}
-              {activeForm.items && activeForm.items.length > 0 && (
-                <div className="space-y-2 mb-4 bg-slate-50 rounded-2xl p-3 border border-slate-100/50">
-                  <div className="flex justify-between px-1">
-                    <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{t('items_list')}</span>
-                    <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{activeForm.items.length}</span>
+              {/* Items preview */}
+              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs space-y-1">
+                {order.items.map((it, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-slate-300">
+                    <span className="truncate max-w-[200px]">• {it.name}</span>
+                    <span className="font-mono text-slate-400">x{it.qty}</span>
                   </div>
-                  {activeForm.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-100">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-slate-900 font-bold text-sm truncate">{item.itemCode || item.description}</div>
-                        {item.orderNo && <div className="text-slate-400 text-[11px]">Ref: {item.orderNo}</div>}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-slate-900 font-black text-lg leading-none">x{item.qty}</div>
-                        <div className="text-orange-600 text-[10px] font-bold flex items-center justify-end gap-0.5 mt-1 bg-orange-50 px-1.5 py-0.5 rounded-lg border border-orange-100">
-                          <MapPin className="w-3 h-3" /> {productLoc.get(item.itemCode || item.description) || '-'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                ))}
+              </div>
+
+              {/* Tracking info if already packed/shipped */}
+              {order.trackingNo && (
+                <div className="flex items-center justify-between text-xs font-mono text-amber-300 bg-amber-950/20 border border-amber-500/20 p-2 rounded-lg">
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-amber-400" />
+                    {order.carrier || 'ขนส่ง'}: {order.trackingNo}
+                  </span>
                 </div>
               )}
 
-              {/* Signature status (read-only) */}
-              <div className={`mb-4 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border ${activeForm.signature ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
-                {activeForm.signature ? <><Check className="w-4 h-4" /> {t('signed_status')}</> : <><Clock className="w-4 h-4" /> รอลูกค้าเซ็นรับ</>}
-              </div>
+              {/* Action Buttons based on status & QC */}
+              {order.status === 'PICKED' && !isQcPassed(order) && (
+                <button
+                  onClick={() => setQcOrder(order)}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all"
+                >
+                  <ShieldCheck className="w-4 h-4" /> เปิดสถานีตรวจสอบ QC (ยิงบาร์โค้ดเช็กสินค้า)
+                </button>
+              )}
 
-              <button
-                onClick={handleCopyLine}
-                className={`w-full mb-3 min-h-[52px] py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 active:scale-[0.98] transition-all ${
-                  copied ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              {order.status === 'PICKED' && isQcPassed(order) && (
+                <button
+                  onClick={() => setPackingOrder(order)}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all"
+                >
+                  <Package className="w-4 h-4" /> เลือกกล่อง &amp; บันทึกแพ็กพัสดุ (Packing)
+                </button>
+              )}
+
+              {order.status === 'PACKED' && (
+                <button
+                  onClick={() => setDispatchOrder(order)}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all"
+                >
+                  <Truck className="w-4 h-4" /> สแกนเลขพัสดุ &amp; ส่งมอบขนส่ง
+                </button>
+              )}
+
+              {order.status === 'SHIPPED' && (
+                <div className="flex items-center justify-between pt-1 text-xs text-emerald-400">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" /> ส่งมอบให้ขนส่งแล้ว
+                  </span>
+                  <a
+                    href={`/print/shipping-label?id=${order.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] flex items-center gap-1"
+                  >
+                    <Printer className="w-3 h-3" /> ฉลาก 4x6
+                  </a>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </main>
+
+      {/* Modal 1: Dedicated QC Inspection Modal */}
+      {qcOrder && (
+        <MobileQcModal
+          order={qcOrder}
+          onClose={() => setQcOrder(null)}
+          onPassQc={() => {
+            const target = qcOrder;
+            setQcOrder(null);
+            loadData();
+            setActiveTab('PACK');
+            setPackingOrder(target);
+          }}
+        />
+      )}
+
+      {/* Modal 2: Packing Modal */}
+      {packingOrder && (
+        <MobilePackingModal
+          order={packingOrder}
+          onClose={() => setPackingOrder(null)}
+          onDone={() => {
+            setPackingOrder(null);
+            loadData();
+            setActiveTab('DISPATCH');
+          }}
+        />
+      )}
+
+      {/* Modal 3: Dispatch / Shipping Tracking Modal */}
+      {dispatchOrder && (
+        <MobileDispatchModal
+          order={dispatchOrder}
+          carriers={carriers}
+          onClose={() => setDispatchOrder(null)}
+          onDone={() => {
+            setDispatchOrder(null);
+            loadData();
+            setActiveTab('SHIPPED');
+          }}
+        />
+      )}
+
+      {/* Global Camera Scanner Modal */}
+      <CameraScannerModal
+        isOpen={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onScan={handleMainBarcodeScan}
+        title="สแกนเลขออเดอร์ / บาร์โค้ดพัสดุ"
+        description="ส่องกล้องไปที่บาร์โค้ดเพื่อเปิดหน้าต่างแพ็กหรือส่งมอบทันที"
+      />
+
+      {/* Bottom Sticky Navigation */}
+      <MobileNav />
+    </div>
+  );
+}
+
+/**
+ * Dedicated Mobile QC Station Modal:
+ * Worker inspects picked basket, scanning each item to verify 100% SKU and quantity match.
+ */
+function MobileQcModal({
+  order,
+  onClose,
+  onPassQc,
+}: {
+  order: Order;
+  onClose: () => void;
+  onPassQc: () => void;
+}) {
+  const [items, setItems] = useState(() => 
+    order.items.map(it => ({ ...it, verifiedQty: 0, done: false }))
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [quickInput, setQuickInput] = useState('');
+
+  const handleScanItem = (barcode: string) => {
+    const q = barcode.trim().toLowerCase();
+    const idx = items.findIndex(it => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q));
+
+    if (idx >= 0) {
+      playScannerAudio('success');
+      triggerHaptic('success');
+      setItems(prev => {
+        const copy = [...prev];
+        const newQty = Math.min(copy[idx].qty, (copy[idx].verifiedQty || 0) + 1);
+        copy[idx] = { ...copy[idx], verifiedQty: newQty, done: newQty >= copy[idx].qty };
+        return copy;
+      });
+      toast.success(`✓ ตรวจผ่าน: ${items[idx].name}`);
+    } else {
+      playScannerAudio('error');
+      triggerHaptic('error');
+      toast.error(`❌ บาร์โค้ด "${barcode}" ไม่ตรงกับรายการในออเดอร์นี้!`);
+    }
+  };
+
+  usePdaScanner({
+    onScan: handleScanItem,
+    enabled: !scannerOpen,
+    playSound: false,
+  });
+
+  const totalRequired = items.reduce((sum, it) => sum + it.qty, 0);
+  const totalVerified = items.reduce((sum, it) => sum + (it.verifiedQty || 0), 0);
+  const allItemsVerified = items.every(it => (it.verifiedQty || 0) >= it.qty);
+
+  const handleMarkAllVerified = () => {
+    setItems(prev => prev.map(it => ({ ...it, verifiedQty: it.qty, done: true })));
+    toast.success('ทำเครื่องหมายตรวจผ่านครบทุกรายการแล้ว');
+  };
+
+  const handleApproveQc = async () => {
+    setSubmitting(true);
+    try {
+      const existingNotes = order.notes || '';
+      const qcStamp = `[QC:PASSED ${new Date().toLocaleTimeString('th-TH')}]`;
+      const updatedNotes = existingNotes.includes('[QC:PASSED') ? existingNotes : `${existingNotes} ${qcStamp}`.trim();
+
+      const res = await fetch(getApiUrl('/api/orders'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          notes: updatedNotes,
+        }),
+      });
+
+      if (!res.ok) throw new Error('บันทึกผล QC ไม่สำเร็จ');
+      toast.success(`ออเดอร์ ${order.orderNo} ผ่านการตรวจ QC เรียบร้อย!`);
+      onPassQc();
+    } catch (e: any) {
+      toast.error(e.message || 'เกิดข้อผิดพลาดในการบันทึก QC');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-slate-900 border border-slate-700 w-full max-w-lg max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5">
+        {/* Modal Header */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-teal-500/20 text-teal-400 border border-teal-500/30">
+                <ShieldCheck className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="font-bold text-white text-base">สถานีตรวจ QC: {order.orderNo}</h3>
+                <p className="text-xs text-slate-400">ลูกค้า: {order.customerName} • ตรวจแล้ว {totalVerified}/{totalRequired} ชิ้น</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setScannerOpen(true)}
+              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 shadow-md shadow-teal-600/30"
+              title="เปิดกล้องสแกน QC"
+            >
+              <Camera className="w-4 h-4" />
+              <span>สแกน</span>
+            </button>
+            <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scan instruction banner */}
+        <div className="bg-teal-950/40 border-b border-teal-500/20 px-4 py-2 text-xs text-teal-300 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+            ยิงบาร์โค้ด หรือ กดปุ่ม +1 เพื่อตรวจสินค้า
+          </span>
+          <button onClick={handleMarkAllVerified} className="text-teal-400 underline font-bold text-xs">
+            ตรวจผ่านทั้งหมด
+          </button>
+        </div>
+
+        {/* Quick Barcode Scan / Type Input Bar */}
+        <div className="p-2.5 bg-slate-950 border-b border-slate-800 flex items-center gap-2">
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              if (quickInput.trim()) {
+                handleScanItem(quickInput.trim());
+                setQuickInput('');
+              }
+            }}
+            className="flex items-center gap-2 flex-1"
+          >
+            <div className="relative flex-1">
+              <Scan className="w-4 h-4 text-teal-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={quickInput}
+                onChange={e => setQuickInput(e.target.value)}
+                placeholder="สแกน หรือ พิมพ์ SKU แล้วกด Enter..."
+                className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-teal-500 font-bold"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!quickInput.trim()}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl transition-all shrink-0"
+            >
+              ตรวจ
+            </button>
+          </form>
+        </div>
+
+        {/* Items Checklist */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+          {items.map((it, idx) => {
+            const isDone = (it.verifiedQty || 0) >= it.qty;
+            return (
+              <div
+                key={idx}
+                className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+                  isDone 
+                    ? 'bg-teal-950/30 border-teal-500/40 text-white shadow-xs' 
+                    : 'bg-slate-950 border-slate-800 text-slate-300'
                 }`}
               >
-                {copied ? <><Check className="w-5 h-5" /> คัดลอกแล้ว</> : <><Copy className="w-5 h-5" /> คัดลอกข้อความ LINE</>}
-              </button>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                    isDone ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30' : 'bg-slate-800 text-slate-500'
+                  }`}>
+                    {isDone ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs leading-snug">{it.name}</h4>
+                    <span className="text-[10px] font-mono text-slate-400 block mt-0.5">SKU: {it.sku}</span>
+                  </div>
+                </div>
 
-              <button
-                onClick={handleClear}
-                disabled={busyId === 'clear'}
-                className="w-full min-h-[52px] bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-              >
-                {busyId === 'clear' ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> {t('clear_btn')}</>}
-              </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-right font-mono">
+                    <span className={`text-base font-black ${isDone ? 'text-teal-400' : 'text-amber-400'}`}>
+                      {it.verifiedQty || 0}
+                    </span>
+                    <span className="text-xs text-slate-400"> / {it.qty}</span>
+                  </div>
+                  {!isDone && (
+                    <button
+                      type="button"
+                      onClick={() => handleScanItem(it.sku)}
+                      className="px-2.5 py-1.5 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 rounded-lg text-xs font-bold border border-teal-500/30 active:scale-95 transition-all"
+                      title="คลิกเพื่อตรวจผ่าน +1"
+                    >
+                      +1
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Submit QC Pass */}
+        <div className="p-4 border-t border-slate-800 shrink-0 bg-slate-900">
+          <button
+            onClick={handleApproveQc}
+            disabled={submitting || !allItemsVerified}
+            className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
+              allItemsVerified
+                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 text-white shadow-xl shadow-teal-600/30 active:scale-[0.98]'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+            }`}
+          >
+            {submitting ? (
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5" />
+            )}
+            <span>
+              {allItemsVerified 
+                ? '✓ ผ่านการตรวจ QC ครบถ้วน (ส่งต่อสถานีแพ็กกล่อง)' 
+                : `กรุณายิงบาร์โค้ดตรวจสินค้าให้ครบ (${totalVerified}/${totalRequired} ชิ้น)`}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <CameraScannerModal
+        isOpen={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleScanItem}
+        title="สแกนตรวจ QC สินค้า"
+        description="ส่องกล้องไปที่บาร์โค้ดสินค้าเพื่อตรวจนับทีละชิ้น"
+        continuous={true}
+      />
+    </div>
+  );
+}
+
+/**
+ * Mobile Packing Station Modal:
+ * Worker selects box size, inputs weight, prints shipping label, and completes packaging.
+ */
+function MobilePackingModal({
+  order,
+  onClose,
+  onDone,
+}: {
+  order: Order;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const BOX_SIZES = [
+    { code: '00', label: 'กล่อง 00 (เล็ก)' },
+    { code: '0', label: 'กล่อง 0' },
+    { code: 'A', label: 'กล่อง A' },
+    { code: 'B', label: 'กล่อง B' },
+    { code: '2A', label: 'กล่อง 2A' },
+    { code: 'C', label: 'กล่อง C' },
+    { code: 'D', label: 'กล่อง D' },
+    { code: 'BAG', label: 'ซองกันน้ำ' },
+  ];
+
+  const [selectedBox, setSelectedBox] = useState('A');
+  const [weightKg, setWeightKg] = useState('0.5');
+  const [boxCount, setBoxCount] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleCommitPack = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(getApiUrl('/api/orders'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          status: 'PACKED',
+          boxCount,
+          weightKg: parseFloat(weightKg) || 0.5,
+          notes: `${order.notes || ''} [Box:${selectedBox}]`.trim(),
+        }),
+      });
+
+      if (!res.ok) throw new Error('บันทึกการแพ็กไม่สำเร็จ');
+      toast.success(`แพ็กออเดอร์ ${order.orderNo} สำเร็จ! ย้ายไปสถานีรอส่งมอบ`);
+      onDone();
+    } catch (e: any) {
+      toast.error(e.message || 'เกิดข้อผิดพลาดในการบันทึก');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30">
+              <Package className="w-5 h-5" />
+            </span>
+            <div>
+              <h3 className="font-bold text-white text-base">สถานีแพ็กกล่อง: {order.orderNo}</h3>
+              <p className="text-xs text-slate-400">ลูกค้า: {order.customerName}</p>
             </div>
           </div>
-        )}
+          <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        {/* Pending roll tags -> Process to create a job */}
-        <h2 className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-4 px-2">{t('menu_pending') || 'รอเปิดงาน'} ({pending.length})</h2>
-        {pending.length === 0 && !loading ? (
-          <div className="bg-white/80 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center mb-8">
-            <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-400">ไม่มีรายการรอเปิดงาน</p>
-          </div>
-        ) : (
-          <div className="space-y-3 mb-8">
-            {pending.map((tag) => (
-              <div key={tag.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex justify-between items-center">
-                <div className="min-w-0">
-                  <div className="font-black text-slate-900 text-lg truncate">{tag.customer}</div>
-                  <div className="text-xs text-slate-400 flex items-center gap-1"><Package className="w-3 h-3" /> {tag.itemCount} รายการ</div>
-                </div>
-                <button
-                  onClick={() => handleProcess(tag.id)}
-                  disabled={busyId === `process-${tag.id}`}
-                  className="shrink-0 min-h-[48px] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 active:scale-95 transition-all"
-                >
-                  {busyId === `process-${tag.id}` ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Play className="w-4 h-4 fill-white" /> เปิดงาน</>}
-                </button>
-              </div>
+        {/* QC Verified Tag */}
+        <div className="p-2.5 rounded-xl bg-teal-950/40 border border-teal-500/30 text-teal-300 text-xs flex items-center justify-between">
+          <span className="flex items-center gap-1.5 font-bold">
+            <ShieldCheck className="w-4 h-4 text-teal-400" /> ตรวจสอบ QC ผ่านครบถ้วนแล้ว
+          </span>
+          <span className="text-[11px] font-mono font-bold text-teal-400">{order.totalQty} ชิ้น</span>
+        </div>
+
+        {/* Box Size Picker */}
+        <div>
+          <label className="text-xs text-slate-400 block mb-1.5 font-bold">เลือกขนาดกล่องพัสดุ (Box Size)</label>
+          <div className="grid grid-cols-4 gap-2">
+            {BOX_SIZES.map(b => (
+              <button
+                key={b.code}
+                type="button"
+                onClick={() => setSelectedBox(b.code)}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${
+                  selectedBox === b.code
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {b.code}
+              </button>
             ))}
           </div>
-        )}
+        </div>
 
-        {/* Waiting jobs -> Recall */}
-        {waiting.length > 0 && (
-          <>
-            <h2 className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-4 px-2">{t('ready_to_process') || 'รอโหลด'} ({waiting.length})</h2>
-            <div className="space-y-3">
-              {waiting.map((job) => (
-                <div key={job.docNum} className="bg-white border-l-4 border-l-orange-400 border-y border-r border-slate-200 rounded-r-2xl p-4 shadow-sm flex justify-between items-center">
-                  <div className="min-w-0">
-                    <div className="font-black text-slate-900 text-lg truncate">{job.orderNo || job.docNum}</div>
-                    <div className="text-xs text-slate-500 flex items-center gap-1"><User className="w-3 h-3" /> {job.customer}</div>
-                  </div>
-                  <button
-                    onClick={() => handleRecall(job.docNum)}
-                    disabled={busyId === `recall-${job.docNum}`}
-                    className="shrink-0 min-h-[48px] bg-orange-100 text-orange-700 hover:bg-orange-200 disabled:opacity-60 px-5 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 active:scale-95"
-                  >
-                    {busyId === `recall-${job.docNum}` ? <div className="w-5 h-5 border-2 border-orange-300 border-t-orange-700 rounded-full animate-spin" /> : <><Undo2 className="w-4 h-4" /> ดึงกลับ</>}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+        {/* Weight & Box Count */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-slate-400 block mb-1 font-bold">น้ำหนักรวม (กก.)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={weightKg}
+              onChange={e => setWeightKg(e.target.value)}
+              className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-sm focus:outline-none focus:border-blue-500 font-bold"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1 font-bold">จำนวนกล่อง (ชิ้น)</label>
+            <input
+              type="number"
+              min="1"
+              value={boxCount}
+              onChange={e => setBoxCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-sm focus:outline-none focus:border-blue-500 font-bold"
+            />
+          </div>
+        </div>
 
+        {/* Print Shipping Label Link */}
+        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+          <div className="text-xs">
+            <span className="font-bold text-white block">พิมพ์ใบปะหน้าพัสดุ</span>
+            <span className="text-[10px] text-slate-400">ขนาด 4x6 นิ้ว หรือ A4</span>
+          </div>
+          <a
+            href={`/print/shipping-label?id=${order.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 border border-slate-700"
+          >
+            <Printer className="w-4 h-4 text-blue-400" />
+            <span>พิมพ์ฉลาก</span>
+          </a>
+        </div>
+
+        {/* Submit Commit Pack */}
+        <button
+          onClick={handleCommitPack}
+          disabled={submitting}
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 active:scale-[0.98] transition-all"
+        >
+          {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+          <span>ยืนยันแพ็กกล่องเสร็จสิ้น (PACKED)</span>
+        </button>
       </div>
-      <div className="fixed bottom-0 left-0 right-0 z-50"><MobileNav /></div>
+    </div>
+  );
+}
+
+/**
+ * Mobile Dispatch Modal:
+ * Worker selects courier and scans Tracking No. barcode directly at the dock.
+ */
+function MobileDispatchModal({
+  order,
+  carriers,
+  onClose,
+  onDone
+}: {
+  order: Order;
+  carriers: Carrier[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [carrier, setCarrier] = useState(order.carrier || (carriers[0]?.name || 'Flash Express'));
+  const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [scanCamOpen, setScanCamOpen] = useState(false);
+
+  const handleScanTracking = (code: string) => {
+    const clean = code.trim();
+    if (!clean) return;
+    playScannerAudio('success');
+    triggerHaptic('success');
+    setTrackingNo(clean);
+    setScanCamOpen(false);
+    toast.success(`สแกนเลขพัสดุ: ${clean}`);
+  };
+
+  usePdaScanner({
+    onScan: handleScanTracking,
+    enabled: !scanCamOpen,
+    playSound: false,
+  });
+
+  const handleCommitDispatch = async () => {
+    if (!trackingNo.trim()) {
+      toast.error('กรุณาระบุหรือสแกนเลขพัสดุ (Tracking No.)');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(getApiUrl('/api/orders'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          status: 'SHIPPED',
+          carrier,
+          trackingNo: trackingNo.trim(),
+        }),
+      });
+
+      if (!res.ok) throw new Error('บันทึกส่งมอบไม่สำเร็จ');
+      toast.success(`ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
+      onDone();
+    } catch (e: any) {
+      toast.error(e.message || 'เกิดข้อผิดพลาด');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Truck className="w-5 h-5 text-amber-400" />
+            <h3 className="font-bold text-white text-base">ส่งมอบขนส่ง: {order.orderNo}</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Courier Select */}
+        <div>
+          <label className="text-xs text-slate-400 block mb-1.5 font-semibold">ผู้ให้บริการขนส่ง (Carrier)</label>
+          <select
+            value={carrier}
+            onChange={e => setCarrier(e.target.value)}
+            className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:outline-none focus:border-amber-500"
+          >
+            {carriers.length > 0 ? (
+              carriers.map(c => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))
+            ) : (
+              <>
+                <option value="Flash Express">Flash Express</option>
+                <option value="Kerry Express">Kerry Express (KEX)</option>
+                <option value="J&T Express">J&T Express</option>
+                <option value="Thailand Post">ไปรษณีย์ไทย (EMS)</option>
+                <option value="SPX Express">SPX Express (Shopee)</option>
+                <option value="Lazada Logistics">Lazada Logistics (LEX)</option>
+                <option value="รถบริษัทส่งเอง">รถบริษัทส่งเอง (Own Fleet)</option>
+              </>
+            )}
+          </select>
+        </div>
+
+        {/* Tracking Number Input + Scan */}
+        <div>
+          <label className="text-xs text-slate-400 block mb-1.5 font-semibold">
+            เลขพัสดุ (Tracking No.)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={trackingNo}
+              onChange={e => setTrackingNo(e.target.value)}
+              placeholder="สแกนหรือพิมพ์เลขพัสดุ..."
+              className="flex-1 p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-amber-400 font-black text-sm focus:outline-none focus:border-amber-500"
+            />
+            <button
+              onClick={() => setScanCamOpen(true)}
+              className="p-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center active:scale-95 shadow-md shadow-amber-600/30"
+              title="สแกนบาร์โค้ด Tracking"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">
+            • กดปุ่มกล้อง หรือใช้ปืนยิงบาร์โค้ดสแกนเลขจากใบปะหน้า Flash/Kerry ได้ทันที
+          </p>
+        </div>
+
+        {/* Submit */}
+        <button
+          onClick={handleCommitDispatch}
+          disabled={submitting}
+          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 active:scale-[0.98] transition-all"
+        >
+          {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
+          <span>ยืนยันส่งมอบให้ขนส่ง (SHIPPED)</span>
+        </button>
+      </div>
+
+      <CameraScannerModal
+        isOpen={scanCamOpen}
+        onClose={() => setScanCamOpen(false)}
+        onScan={handleScanTracking}
+        title="สแกนบาร์โค้ดเลขพัสดุ (Tracking)"
+        description="ส่องกล้องไปที่บาร์โค้ดเลขพัสดุบนใบปะหน้ากล่อง"
+      />
     </div>
   );
 }

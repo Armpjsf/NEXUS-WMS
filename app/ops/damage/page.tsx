@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Plus, CheckCircle, XCircle, Search, Filter, ArrowLeft, Truck } from 'lucide-react';
+import { AlertTriangle, Plus, CheckCircle, XCircle, Search, Filter, ArrowLeft, Truck, Printer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
@@ -173,13 +173,24 @@ export default function DamagePage() {
             </h1>
             <p className="text-slate-500 font-semibold">{t('damage_subtitle')}</p>
         </div>
-        <button 
-            onClick={() => setShowForm(!showForm)}
-            className="bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white font-bold py-3 px-5 rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-amber-900/20"
-        >
-            <Plus className="w-5 h-5" />
-            {showForm ? t('close_form') : t('report_damage_btn')}
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <a
+            href="/print/damage-report"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-xl flex items-center gap-2 transition-colors shadow-sm text-sm"
+          >
+            <Printer className="w-4 h-4 text-slate-500" />
+            พิมพ์รายงานชำรุด
+          </a>
+          <button 
+              onClick={() => setShowForm(!showForm)}
+              className="bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white font-bold py-3 px-5 rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-amber-900/20"
+          >
+              <Plus className="w-5 h-5" />
+              {showForm ? t('close_form') : t('report_damage_btn')}
+          </button>
+        </div>
       </div>
 
       {/* Form Section */}

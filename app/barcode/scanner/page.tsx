@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { QrCode, Camera, Search, Package, ArrowLeft, History, X, Volume2, VolumeX } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { QrCode, Camera, Search, Package, ArrowLeft, History, X, Volume2, VolumeX, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { getApiUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';
+import { usePdaScanner } from '@/hooks/usePdaScanner';
+import { speakScanSuccess, speakScanMismatch, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
 
 interface Product {
   id: string;
@@ -94,34 +96,25 @@ export default function BarcodeScannerPage() {
     }
     setIsScanning(false);
   };
-  const handleScanSuccess = (code: string) => {
-    // Play beep sound
-    if (soundEnabled) {
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        oscillator.start();
-        setTimeout(() => {
-          oscillator.stop();
-          audioCtx.close();
-        }, 150);
-      } catch (e) {
-        console.error("Audio beep error:", e);
-      }
-    }
-
+  const handleScanSuccess = useCallback((code: string) => {
     // Find matching product
     const matchedProduct = products.find(p => 
       p.name.toLowerCase().includes(code.toLowerCase()) ||
       p.id.toLowerCase() === code.toLowerCase() ||
       code.toLowerCase().includes(p.name.toLowerCase())
     );
+
+    if (matchedProduct) {
+      vibrateSuccess();
+      if (soundEnabled) {
+        speakScanSuccess(matchedProduct.name, matchedProduct.stock);
+      }
+    } else {
+      vibrateError();
+      if (soundEnabled) {
+        speakScanMismatch(code, 'ไม่พบสินค้าในระบบ');
+      }
+    }
 
     const result: ScanResult = {
       code,
@@ -132,9 +125,17 @@ export default function BarcodeScannerPage() {
     setScanResult(result);
     setScanHistory(prev => [result, ...prev.slice(0, 9)]); // Keep last 10
 
-    // Stop scanner after successful scan
+    // Stop camera scanner after scan if it was active
     stopScanner();
-  };
+  }, [products, soundEnabled]);
+
+  // Hook hardware wedge / PDA scanner directly
+  usePdaScanner({
+    onScan: (scanned) => {
+      handleScanSuccess(scanned.trim());
+    },
+    enabled: true,
+  });
 
   const handleManualSearch = () => {
     if (!manualCode.trim()) return;
@@ -189,8 +190,14 @@ export default function BarcodeScannerPage() {
                 <Camera className="w-10 h-10 text-indigo-500" />
               </div>
               <h2 className="text-lg font-bold text-slate-800 mb-2">พร้อมสแกน</h2>
-              <p className="text-slate-500 text-sm mb-6">กดปุ่มด้านล่างเพื่อเปิดกล้องสแกน</p>
+              <p className="text-slate-500 text-sm mb-4">กดปุ่มด้านล่างเพื่อเปิดกล้อง หรือยิงด้วยปืนสแกนไร้สาย / PDA ได้ทันที</p>
               
+              <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-full">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>PDA Scanner Gun Ready (สแกนได้ทันที ไม่ต้องคลิกโฟกัส)</span>
+              </div>
+
               <button
                 onClick={startScanner}
                 disabled={loading}

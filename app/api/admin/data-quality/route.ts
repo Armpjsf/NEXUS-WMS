@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getProductsUncached, getTransactionsUncached, getDamageRecords } from '@/lib/googleSheets';
+import { getProductsUncached, getTransactionsUncached, getDamageRecords } from '@/lib/data/wms';
 
 export const dynamic = 'force-dynamic';
 

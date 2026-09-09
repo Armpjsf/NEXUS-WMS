@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getProductsUncached, getTransactionsUncached } from '@/lib/googleSheets';
+import { getProductsUncached, getTransactionsUncached } from '@/lib/data/wms';
 import { performABCAnalysis } from '@/lib/slotting';
 
 export const dynamic = 'force-dynamic';

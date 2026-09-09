@@ -1,6 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { getCycleCountLogs, addCycleCountEntry, type CycleCountRecord } from '@/lib/googleSheets';
+import { getCycleCountLogs, addCycleCountEntry, type CycleCountRecord } from '@/lib/data/wms';
+import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,15 +88,18 @@ export async function POST(req: Request) {
 
 export async function DELETE() {
   try {
-    const { clearSheetRange, PRODUCT_SPREADSHEET_ID } = await import('@/lib/googleSheets');
-    
-    // Clear everything from A2 (keep headers) down to J2000
-    await clearSheetRange(PRODUCT_SPREADSHEET_ID, "'CycleCount_Log'!A2:J2000"); // Note: Single quotes for sheet name in range if it has underscore? Google Sheets handles it, but safety is good.
-    // 'CycleCount_Log' does not strictly typically need quotes unless spaces, but good practice.
-    // Wait, in lib/googleSheets.ts it uses SPREADSHEET_ID from process.env usually, but also exports a constant. 
-    // The export in lib/googleSheets.ts line 408 is what I should rely on or the helper's internal logic.
-    // Actually `clearSheetRange` takes an ID. 
-    
+    // Clear all cycle count log rows
+    const orgId = await getCurrentOrgId();
+    const { error } = await supabase
+      .from('cycle_count_logs')
+      .delete()
+      .eq('org_id', orgId);
+
+    if (error) {
+      console.error('Error clearing cycle count log:', error);
+      return NextResponse.json({ error: 'Failed to clear log' }, { status: 500 });
+    }
+
     return NextResponse.json({ message: 'Cycle Count Log cleared successfully' });
   } catch (error) {
     console.error('Error clearing cycle count log:', error);

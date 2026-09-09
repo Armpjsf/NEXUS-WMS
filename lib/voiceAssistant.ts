@@ -82,6 +82,46 @@ export function speakPickInstruction(item: {
 }
 
 /**
+ * Speak scan match confirmation
+ */
+export function speakScanSuccess(productName: string, qty?: number) {
+  if (qty !== undefined) {
+    speakThai(`สแกน ${productName} จำนวน ${qty} สำเร็จ`);
+  } else {
+    speakThai(`หยิบ ${productName} สำเร็จ`);
+  }
+}
+
+/**
+ * Speak scan mismatch / error warning
+ */
+export function speakScanMismatch(barcode?: string, reason?: string) {
+  if (reason) {
+    speakThai(`แจ้งเตือน ${reason}`);
+  } else {
+    speakThai('บาร์โค้ดไม่ตรงกับรายการ กรุณาตรวจสอบอีกครั้ง');
+  }
+}
+
+/**
+ * Speak putaway destination prompt
+ */
+export function speakPutawayLocation(productNameOrBin: string, bin?: string) {
+  const targetBin = bin || productNameOrBin;
+  const locSpoken = targetBin
+    .replace(/A/g, 'เอ ')
+    .replace(/B/g, 'บี ')
+    .replace(/C/g, 'ซี ')
+    .replace(/D/g, 'ดี ')
+    .replace(/-/g, ' ');
+  if (bin) {
+    speakThai(`นำ ${productNameOrBin} ไปจัดเก็บที่ช่อง ${locSpoken}`);
+  } else {
+    speakThai(`นำไปจัดเก็บที่ช่อง ${locSpoken}`);
+  }
+}
+
+/**
  * Mobile Tactile Haptic Vibration for Capacitor APK & PWA
  */
 export function triggerHaptic(type: 'success' | 'warning' | 'error' = 'success') {
@@ -99,3 +139,8 @@ export function triggerHaptic(type: 'success' | 'warning' | 'error' = 'success')
     }
   }
 }
+
+export const vibrateSuccess = () => triggerHaptic('success');
+export const vibrateWarning = () => triggerHaptic('warning');
+export const vibrateError = () => triggerHaptic('error');
+
