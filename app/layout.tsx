@@ -21,7 +21,14 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+const getBaseUrl = () => {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'https://nexus-wms.vercel.app';
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(getBaseUrl()),
   title: "NEXUS WMS | Smart Warehouse Management System",
   description: "Next-Gen Smart Warehouse Management & Logistics Execution System",
   manifest: "/manifest.json",
