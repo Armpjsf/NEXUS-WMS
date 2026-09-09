@@ -21,14 +21,28 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+const FALLBACK_BASE_URL = 'https://nexus-wms.vercel.app';
+
 const getBaseUrl = () => {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'https://nexus-wms.vercel.app';
+  const nextauth = process.env.NEXTAUTH_URL?.trim();
+  if (nextauth) return nextauth;
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return vercel.startsWith('http') ? vercel : `https://${vercel}`;
+  return FALLBACK_BASE_URL;
+};
+
+// Never throw at module-evaluation time: an invalid/empty base URL here crashes
+// the whole build during prerender (e.g. /_not-found → "TypeError: Invalid URL").
+const getMetadataBase = () => {
+  try {
+    return new URL(getBaseUrl());
+  } catch {
+    return new URL(FALLBACK_BASE_URL);
+  }
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(getBaseUrl()),
+  metadataBase: getMetadataBase(),
   title: "NEXUS WMS | Smart Warehouse Management System",
   description: "Next-Gen Smart Warehouse Management & Logistics Execution System",
   manifest: "/manifest.json",
