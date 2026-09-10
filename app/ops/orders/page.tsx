@@ -518,9 +518,14 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
     if (lines.length === 0) { toast.error('เพิ่มสินค้าอย่างน้อย 1 รายการ'); return; }
     setSaving(true);
     try {
+      // Tag the order with the branch currently selected in the URL so shipped
+      // orders route to the right branch (in TMS too). Empty = no branch.
+      const branchCode = typeof window !== 'undefined'
+        ? (new URLSearchParams(window.location.search).get('branchId') || '')
+        : '';
       const res = await fetch('/api/orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName: customer, phone, shipAddress: address, carrier, items: lines }),
+        body: JSON.stringify({ customerName: customer, phone, shipAddress: address, carrier, items: lines, branchCode }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'สร้างไม่สำเร็จ');

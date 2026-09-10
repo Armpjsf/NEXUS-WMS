@@ -15,6 +15,28 @@ export function isTmsEnabled(): boolean {
   return Boolean(process.env.TMS_API_URL && process.env.TMS_API_KEY);
 }
 
+// Resolve which TMS branch (Jobs_Main.Branch_ID) a shipped order belongs to.
+// Priority: the order's own WMS branch code (multi-branch, one shared WMS) →
+// translated via TMS_BRANCH_MAP when WMS and TMS use different codes → else the
+// code as-is (they usually match, e.g. 'URT') → else the TMS_BRANCH_ID default.
+// So adding a new branch just needs the same code created in both systems — no
+// env change per branch.
+function resolveTmsBranch(order: OutboundOrder): string | undefined {
+  const code = (order.branchCode || '').trim();
+  if (code) {
+    try {
+      if (process.env.TMS_BRANCH_MAP) {
+        const map = JSON.parse(process.env.TMS_BRANCH_MAP) as Record<string, string>;
+        if (map && map[code]) return map[code];
+      }
+    } catch {
+      /* malformed TMS_BRANCH_MAP — fall through to identity */
+    }
+    return code;
+  }
+  return process.env.TMS_BRANCH_ID || undefined;
+}
+
 export interface TmsResult {
   ok: boolean;
   jobId?: string;
@@ -49,11 +71,11 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       vehicle_type: '',
       // plan_date omitted -> TMS defaults to today (todayTH)
     };
-    // Optionally scope the TMS job to a branch (maps this warehouse to a TMS
-    // Branch_ID, e.g. 'HQ'). Driver / plate / vehicle stay empty on purpose —
-    // TMS fills those when the job is assigned/bid.
-    if (process.env.TMS_BRANCH_ID) {
-      payload.branch_id = process.env.TMS_BRANCH_ID;
+    // Scope the TMS job to the order's branch (e.g. 'URT', 'SKN'). Driver /
+    // plate / vehicle stay empty on purpose — TMS fills those on assignment/bid.
+    const branch = resolveTmsBranch(order);
+    if (branch) {
+      payload.branch_id = branch;
     }
 
     // Hard 8s timeout so a slow TMS never stalls the ship request.

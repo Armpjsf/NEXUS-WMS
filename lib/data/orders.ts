@@ -28,6 +28,7 @@ export interface OutboundOrder {
   customerName: string;
   phone: string;
   shipAddress: string;
+  branchCode: string;
   status: OrderStatus;
   priority: string;
   items: OrderLine[];
@@ -59,6 +60,7 @@ function mapOrder(r: any): OutboundOrder {
     customerName: r.customer_name || '',
     phone: r.phone || '',
     shipAddress: r.ship_address || '',
+    branchCode: r.branch_code || '',
     status: r.status || 'NEW',
     priority: r.priority || 'NORMAL',
     items,
@@ -114,6 +116,7 @@ export async function getOrder(id: string): Promise<OutboundOrder | null> {
 export async function createOrder(input: {
   channel?: string; refNo?: string; customerName?: string; phone?: string;
   shipAddress?: string; carrier?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;
+  branchCode?: string;
 }): Promise<OutboundOrder | null> {
   const items = (input.items || []).map((l) => ({
     sku: l.sku, name: l.name, qty: Number(l.qty) || 0,
@@ -132,6 +135,7 @@ export async function createOrder(input: {
     customer_name: input.customerName || '',
     phone: input.phone || '',
     ship_address: input.shipAddress || '',
+    branch_code: input.branchCode || null,
     carrier: input.carrier || '',
     status: 'NEW',
     priority: input.priority || 'NORMAL',
