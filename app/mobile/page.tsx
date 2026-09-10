@@ -148,6 +148,18 @@ export default function MobileHubPage() {
       iconBg: 'bg-teal-100 text-teal-600',
     },
     {
+      id: 'cross-dock',
+      section: 'Staff - Dispatch',
+      title: 'เช็คของขึ้นรถ (Cross-Dock)',
+      subtitle: 'กรอกของที่ลูกค้านำมา (ไม่ต้องมีในคลัง) เช็ค แล้วส่งเข้า TMS',
+      icon: Truck,
+      href: '/mobile/dispatch',
+      color: 'from-cyan-600 to-blue-700',
+      tag: 'Cross-Dock',
+      border: 'border-cyan-200',
+      iconBg: 'bg-cyan-100 text-cyan-600',
+    },
+    {
       id: 'dispatch',
       section: 'Staff - Dispatch',
       title: 'ส่งมอบขนส่ง (Courier Dispatch)',
