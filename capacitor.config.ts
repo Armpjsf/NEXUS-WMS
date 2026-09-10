@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     // Warehouse staff use the APK primarily; open straight to the jobs menu
     // so cold-starts (incl. notification taps) land on the right page instead
     // of the root spinner. Requires an APK rebuild to take effect.
-    url: 'https://nexus-wms.vercel.app/mobile/jobs',
+    url: 'https://nexus-wms-phi.vercel.app/mobile/jobs',
     cleartext: true
   }
 };
