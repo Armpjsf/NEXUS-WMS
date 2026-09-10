@@ -207,7 +207,7 @@ export default function MobileHubPage() {
       title: 'เบิกจ่ายตรง / ใช้ภายใน',
       desc: 'เบิกกล่อง เทป หรือตัวอย่างสินค้า',
       icon: PackageMinus,
-      href: '/ops/outbound',
+      href: '/mobile/outbound',
       badge: 'Direct Issue',
     },
   ];
