@@ -656,8 +656,8 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       // Tag the order with the branch currently selected in the URL so shipped
       // orders route to the right branch (in TMS too). Empty = no branch.
       const branchCode = typeof window !== 'undefined'
-        ? (new URLSearchParams(window.location.search).get('branchId') || '')
-        : '';
+        ? (new URLSearchParams(window.location.search).get('branchId') || 'URT')
+        : 'URT';
       const res = await fetch('/api/orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customerName: customer, phone, shipAddress: address, carrier, items: lines, branchCode }),

@@ -25,8 +25,8 @@ export default function BranchSelector() {
     const [branches, setBranches] = useState<BranchConfig[]>([]);
     const [loading, setLoading] = useState(true);
     
-    // Default Fallback
-    const defaultBranch = { id: 'hq', name: 'HQ (Default)', color: 'indigo', spreadsheetId: '' };
+    // Default Fallback: URT to match TMS Surat Thani
+    const defaultBranch = { id: 'URT', name: 'สาขาสุราษฎร์ธานี (URT)', color: 'teal', spreadsheetId: '' };
 
     useEffect(() => {
         // Skip fetch if not authenticated
@@ -63,7 +63,7 @@ export default function BranchSelector() {
         return allowedBranches.includes(b.id);
     });
 
-    const currentBranchId = searchParams.get('branchId') || 'hq';
+    const currentBranchId = searchParams.get('branchId') || 'URT';
     // Use visibleBranches to determine current branch display
     const currentBranch = visibleBranches.find(b => b.id === currentBranchId) || visibleBranches[0] || defaultBranch;
 

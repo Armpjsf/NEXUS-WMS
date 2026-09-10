@@ -34,7 +34,7 @@ function resolveTmsBranch(order: OutboundOrder): string | undefined {
     }
     return code;
   }
-  return process.env.TMS_BRANCH_ID || undefined;
+  return process.env.TMS_BRANCH_ID || 'URT';
 }
 
 export interface TmsResult {

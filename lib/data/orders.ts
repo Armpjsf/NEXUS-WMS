@@ -172,24 +172,22 @@ export async function createOrder(input: {
     notes: input.notes || '',
   };
 
+  const targetBranch = (input.branchCode || 'URT').trim();
+
   // Attempt insert with branch_code
   let data: any = null;
   let error: any = null;
 
-  if (input.branchCode) {
-    const res = await supabase.from('outbound_orders').insert({
-      ...insertPayload,
-      branch_code: input.branchCode,
-    }).select().single();
-    data = res.data;
-    error = res.error;
-  }
+  const res = await supabase.from('outbound_orders').insert({
+    ...insertPayload,
+    branch_code: targetBranch,
+  }).select().single();
+  data = res.data;
+  error = res.error;
 
-  // If failed (e.g. branch_code column doesn't exist in Supabase yet) or no branchCode
+  // If failed (e.g. branch_code column doesn't exist in Supabase yet)
   if (error || !data) {
-    const fallbackNotes = input.branchCode
-      ? `${input.notes ? input.notes + ' ' : ''}[Branch: ${input.branchCode}]`.trim()
-      : (input.notes || '');
+    const fallbackNotes = `${input.notes ? input.notes + ' ' : ''}[Branch: ${targetBranch}]`.trim();
 
     const retryRes = await supabase.from('outbound_orders').insert({
       ...insertPayload,
