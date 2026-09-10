@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Trash2, Check, X, User, MapPin, Phone, PackageCheck, ScanLine } from 'lucide-react';
+import { Truck, Plus, Trash2, Check, X, User, MapPin, Phone, PackageCheck, ScanLine, PenLine } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import CameraScannerModal from '@/components/CameraScannerModal';
+import SignatureModal from '@/components/SignatureModal';
 import { getApiUrl } from '@/lib/config';
 
 interface Item { sku: string; name: string; qty: number }
@@ -28,6 +30,11 @@ export default function MobileDispatchPage() {
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [scanOpen, setScanOpen] = useState(false);
+  const [sigTarget, setSigTarget] = useState<'' | 'sender' | 'receiver'>('');
+  const [senderSig, setSenderSig] = useState('');
+  const [receiverSig, setReceiverSig] = useState('');
+
   const loadCarriers = useCallback(async () => {
     try {
       const res = await fetch(getApiUrl('/api/carriers'), { cache: 'no-store' });
@@ -50,6 +57,14 @@ export default function MobileDispatchPage() {
     setChecked(false);
   };
   const removeItem = (i: number) => { setItems(prev => prev.filter((_, idx) => idx !== i)); setChecked(false); };
+
+  const onScanned = (code: string) => {
+    const c = (code || '').trim();
+    if (!c) return;
+    setItems(prev => [...prev, { sku: `XD-${Date.now().toString().slice(-6)}`, name: c, qty: 1 }]);
+    setChecked(false);
+    toast.success(`เพิ่ม: ${c}`);
+  };
 
   const isFleet = /บริษัท|จัดส่งเอง|fleet/i.test(carrier);
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
@@ -77,9 +92,18 @@ export default function MobileDispatchPage() {
       if (!createRes.ok || !created.order) throw new Error(created.error || 'สร้างออเดอร์ไม่สำเร็จ');
 
       // 2) Ship immediately → triggers TMS job for company-fleet carriers.
+      //    Attach handover signatures (staff = ผู้ส่ง, client = ผู้รับ) if captured.
+      const qcSignatures = (senderSig || receiverSig) ? {
+        staffSignature: senderSig || undefined,
+        staffName: 'ผู้ส่ง (พนักงาน)',
+        clientSignature: receiverSig || undefined,
+        clientName: customer || 'ผู้รับ',
+        signedAt: new Date().toISOString(),
+        notes: 'Cross-dock เช็คของขึ้นรถ',
+      } : undefined;
       const shipRes = await fetch(getApiUrl('/api/orders'), {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: created.order.id, status: 'SHIPPED' }),
+        body: JSON.stringify({ id: created.order.id, status: 'SHIPPED', ...(qcSignatures ? { qcSignatures } : {}) }),
       });
       const shipped = await shipRes.json();
       if (!shipRes.ok) throw new Error(shipped.error || 'ส่งขึ้นรถไม่สำเร็จ');
@@ -90,6 +114,7 @@ export default function MobileDispatchPage() {
       );
       // reset
       setItems([]); setCustomer(''); setPhone(''); setAddress(''); setChecked(false);
+      setSenderSig(''); setReceiverSig('');
     } catch (e: any) {
       toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t });
     } finally {
@@ -125,10 +150,15 @@ export default function MobileDispatchPage() {
 
         {/* Quick item entry */}
         <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">เพิ่มรายการของ (ไม่ต้องมีในคลัง)</div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">เพิ่มรายการของ (ไม่ต้องมีในคลัง)</span>
+            <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-bold text-cyan-600 active:scale-95 transition-transform">
+              <ScanLine className="w-4 h-4" /> สแกนยิงของ
+            </button>
+          </div>
           <div className="flex gap-2">
             <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addItem(); }}
-              placeholder="ชื่อ/รายการของ" className="flex-1 bg-slate-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-300" />
+              placeholder="ชื่อ/รายการของ หรือกดสแกน" className="flex-1 bg-slate-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-300" />
             <input value={qty} onChange={e => setQty(e.target.value)} type="number" inputMode="numeric"
               className="w-16 bg-slate-100 rounded-xl px-2 py-2.5 text-sm text-center outline-none focus:ring-2 focus:ring-cyan-300" />
             <button onClick={addItem} className="px-3 rounded-xl bg-cyan-600 text-white active:scale-95 transition-transform"><Plus className="w-5 h-5" /></button>
@@ -167,6 +197,24 @@ export default function MobileDispatchPage() {
             : <p className="text-xs text-slate-400 mt-1.5">ขนส่งเอกชน — ไม่เข้า TMS</p>}
         </div>
 
+        {/* Handover signatures (optional) */}
+        {items.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setSigTarget('sender')}
+              className={`rounded-2xl p-3.5 border flex flex-col items-center gap-1.5 transition-all ${senderSig ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`}>
+              <PenLine className={`w-5 h-5 ${senderSig ? 'text-emerald-600' : 'text-slate-400'}`} />
+              <span className="text-xs font-bold text-slate-700">ลายเซ็นผู้ส่ง</span>
+              {senderSig ? <span className="text-[10px] text-emerald-600 font-bold">✓ เซ็นแล้ว</span> : <span className="text-[10px] text-slate-400">แตะเพื่อเซ็น</span>}
+            </button>
+            <button onClick={() => setSigTarget('receiver')}
+              className={`rounded-2xl p-3.5 border flex flex-col items-center gap-1.5 transition-all ${receiverSig ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`}>
+              <PenLine className={`w-5 h-5 ${receiverSig ? 'text-emerald-600' : 'text-slate-400'}`} />
+              <span className="text-xs font-bold text-slate-700">ลายเซ็นผู้รับ</span>
+              {receiverSig ? <span className="text-[10px] text-emerald-600 font-bold">✓ เซ็นแล้ว</span> : <span className="text-[10px] text-slate-400">แตะเพื่อเซ็น</span>}
+            </button>
+          </div>
+        )}
+
         {/* QC check confirm */}
         {items.length > 0 && (
           <button onClick={() => setChecked(v => !v)}
@@ -191,6 +239,30 @@ export default function MobileDispatchPage() {
           </div>
         </div>
       )}
+
+      {/* Scan items */}
+      <CameraScannerModal
+        isOpen={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onScan={onScanned}
+        continuous
+        title="สแกนยิงของขึ้นรถ"
+        description="ส่องกล้องไปที่บาร์โค้ด/QR บนตัวสินค้าหรือกล่อง — สแกนต่อเนื่องได้"
+      />
+
+      {/* Signatures */}
+      <SignatureModal
+        isOpen={sigTarget === 'sender'}
+        onClose={() => setSigTarget('')}
+        docNum={`ผู้ส่ง${customer ? ' → ' + customer : ''}`}
+        onSave={async (dataUrl) => { setSenderSig(dataUrl); }}
+      />
+      <SignatureModal
+        isOpen={sigTarget === 'receiver'}
+        onClose={() => setSigTarget('')}
+        docNum={`ผู้รับ${customer ? ': ' + customer : ''}`}
+        onSave={async (dataUrl) => { setReceiverSig(dataUrl); }}
+      />
 
       <MobileNav />
     </div>
