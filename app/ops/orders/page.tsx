@@ -7,11 +7,13 @@ import toast from 'react-hot-toast';
 import {
   Package, Plus, X, Truck, ClipboardCheck, CheckCircle2,
   ArrowRight, Search, Trash2, MapPin, ArrowLeft, FileText,
-  Printer, ExternalLink, UserCheck, Camera, Zap
+  Printer, ExternalLink, UserCheck, Camera, Zap, RefreshCw,
+  ShieldCheck, Eye, Download
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import { exportToExcel } from '@/lib/export/excel';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
@@ -20,6 +22,8 @@ interface Order {
   id: string; orderNo: string; channel: string; customerName: string; status: Status;
   priority: string; items: Line[]; totalQty: number; totalAmount: number;
   carrier: string; trackingNo: string; createdAt: string; shipAddress: string; phone: string;
+  podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
+  tmsJobId?: string; tmsStatus?: string; tmsSyncedAt?: string | null; branchCode?: string;
 }
 interface Carrier {
   id: string; code: string; name: string; trackingUrlTemplate: string; isDefault: boolean;
@@ -52,6 +56,8 @@ export default function OrdersPage() {
   const [showSearchCam, setShowSearchCam] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [dispatchOrder, setDispatchOrder] = useState<Order | null>(null);
+  const [viewPodOrder, setViewPodOrder] = useState<Order | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // PDA Scanner for Order lookup
   usePdaScanner({
@@ -79,6 +85,26 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const syncTms = async (orderId: string) => {
+    setSyncingId(orderId);
+    const t = toast.loading('กำลังตรวจสอบและซิงค์สถานะจาก TMS...');
+    try {
+      const res = await fetch('/api/orders/sync-tms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'ซิงค์ไม่สำเร็จ');
+      toast.success(json.message || 'ซิงค์ข้อมูลจาก TMS สำเร็จ', { id: t });
+      load();
+    } catch (e: any) {
+      toast.error(e.message || 'เกิดข้อผิดพลาดในการซิงค์', { id: t });
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   const advance = async (o: Order) => {
     const idx = FLOW.indexOf(o.status);
@@ -130,8 +156,14 @@ export default function OrdersPage() {
       )
     : tabFiltered;
 
-  const getTrackingUrl = (carrierName: string, trackingNo: string) => {
+  const getTrackingUrl = (carrierName: string, trackingNo: string, tmsJobId?: string) => {
+    if (tmsJobId) {
+      return `https://tms-e-pod.vercel.app/track/${encodeURIComponent(tmsJobId)}`;
+    }
     if (!carrierName || !trackingNo) return null;
+    if (trackingNo.startsWith('JOB-') || carrierName.includes('บริษัท') || carrierName.includes('OWN_FLEET')) {
+      return `https://tms-e-pod.vercel.app/track/${encodeURIComponent(trackingNo.trim())}`;
+    }
     const c = carriers.find(item => item.name.toLowerCase().includes(carrierName.toLowerCase()) || carrierName.toLowerCase().includes(item.name.toLowerCase()));
     if (c?.trackingUrlTemplate) {
       return c.trackingUrlTemplate.replace('{trackingNo}', encodeURIComponent(trackingNo.trim()));
@@ -156,9 +188,38 @@ export default function OrdersPage() {
             </h1>
             <p className="text-slate-500 font-medium mt-1">ครบ loop: เบิก → หยิบ → แพ็ก → จัดส่ง (พร้อมเลขพัสดุ) → ส่งถึง (POD)</p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition-all">
-            <Plus className="w-5 h-5" /> สร้างออเดอร์
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (filtered.length === 0) {
+                  toast.error('ไม่มีออเดอร์สำหรับส่งออก');
+                  return;
+                }
+                const rows = filtered.map((o: Order) => ({
+                  'เลขที่ออเดอร์': o.orderNo,
+                  'ชื่อลูกค้า': o.customerName,
+                  'เบอร์โทร': o.phone,
+                  'ที่อยู่จัดส่ง': o.shipAddress,
+                  'สถานะ': STATUS_TH[o.status as Status] || o.status,
+                  'จำนวนชิ้นรวม': o.totalQty,
+                  'ผู้ให้บริการขนส่ง': o.carrier || '-',
+                  'เลขพัสดุ (Tracking)': o.trackingNo || '-',
+                  'รหัสงาน TMS (ePOD)': o.tmsJobId || '-',
+                  'สถานะ TMS': o.tmsStatus || '-',
+                  'วันที่สร้าง': new Date(o.createdAt).toLocaleString('th-TH'),
+                }));
+                exportToExcel(rows, `ออเดอร์ขาออก_${new Date().toISOString().slice(0, 10)}`, 'Orders');
+                toast.success('ส่งออกไฟล์ Excel สำเร็จ!');
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+            >
+              <Download className="w-4 h-4" />
+              <span>ส่งออก Excel</span>
+            </button>
+            <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition-all">
+              <Plus className="w-5 h-5" /> สร้างออเดอร์
+            </button>
+          </div>
         </div>
 
         {/* Pipeline counts */}
@@ -178,15 +239,15 @@ export default function OrdersPage() {
             <Search className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="ค้นหาเลขที่ออเดอร์, ชื่อลูกค้า, หรือเลขพัสดุ Tracking..."
+              placeholder="ค้นหา Order No., ชื่อลูกค้า หรือเลขพัสดุ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-2.5 bg-white/90 border border-slate-200 rounded-2xl font-medium text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-cyan-500 shadow-sm"
+              className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl font-medium outline-none focus:border-cyan-500 shadow-sm text-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -194,9 +255,8 @@ export default function OrdersPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              type="button"
               onClick={() => setShowSearchCam(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white font-bold text-sm shadow-md transition-all shrink-0"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 transition-all shrink-0 active:scale-95"
             >
               <Camera className="w-4 h-4" />
               <span>สแกนหาออเดอร์</span>
@@ -228,7 +288,11 @@ export default function OrdersPage() {
           ) : (
             <div className="divide-y divide-slate-100">
               {filtered.map((o) => {
-                const trackUrl = getTrackingUrl(o.carrier, o.trackingNo);
+                const trackUrl = getTrackingUrl(o.carrier, o.trackingNo, o.tmsJobId);
+                const hasTmsJob = Boolean(o.tmsJobId || (o.trackingNo && o.trackingNo.startsWith('JOB-')));
+                const tmsId = o.tmsJobId || o.trackingNo;
+                const hasPodProof = Boolean(o.podSignature || o.podPhoto);
+
                 return (
                   <div key={o.id} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-slate-50/60 transition-colors">
                     <div className="flex-1 min-w-0">
@@ -237,6 +301,7 @@ export default function OrdersPage() {
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${STATUS_STYLE[o.status]}`}>{STATUS_TH[o.status]}</span>
                         {o.channel !== 'MANUAL' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">{o.channel}</span>}
                         {o.priority === 'URGENT' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-600">ด่วน</span>}
+                        {o.branchCode && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200">สาขา: {o.branchCode}</span>}
                       </div>
                       <div className="text-sm text-slate-500 mt-1 truncate">
                         <span className="font-semibold text-slate-700">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น · ฿{o.totalAmount.toLocaleString()}
@@ -251,9 +316,53 @@ export default function OrdersPage() {
                             )}
                           </span>
                         )}
+                        {hasTmsJob && (
+                          <span className="text-indigo-700 font-semibold ml-2 inline-flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded text-xs ring-1 ring-indigo-200">
+                            <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>TMS: {tmsId}</span>
+                            {o.tmsStatus && (
+                              <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded text-[10px] font-bold">{o.tmsStatus}</span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* TMS Sync & Live Tracking Actions */}
+                      {hasTmsJob && (
+                        <>
+                          <button
+                            onClick={() => syncTms(o.id)}
+                            disabled={syncingId === o.id}
+                            title="ซิงค์สถานะและหลักฐาน POD ล่าสุดจากระบบ TMS"
+                            className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${syncingId === o.id ? 'animate-spin text-indigo-600' : ''}`} />
+                          </button>
+                          <a
+                            href={`https://tms-e-pod.vercel.app/track/${encodeURIComponent(tmsId)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="เปิดดูแผนที่สดติดตามรถขนส่ง (TMS Live Tracking)"
+                            className="p-2 rounded-xl text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </>
+                      )}
+
+                      {/* POD View button if delivered and has proof */}
+                      {o.status === 'DELIVERED' && hasPodProof && (
+                        <button
+                          onClick={() => setViewPodOrder(o)}
+                          title="ดูหลักฐานการจัดส่ง (ภาพถ่ายและลายเซ็น POD)"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition-all active:scale-95"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <span>ดู POD</span>
+                        </button>
+                      )}
+
                       {/* Documents Print Suite */}
                       <a href={`/print/picking-slip?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบหยิบสินค้า (Picking Slip)"
                         className="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors">
@@ -279,7 +388,11 @@ export default function OrdersPage() {
                           </button>
                         </>
                       )}
-                      {o.status === 'DELIVERED' && <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-sm px-3"><CheckCircle2 className="w-5 h-5" /> เสร็จสิ้น</span>}
+                      {o.status === 'DELIVERED' && !hasPodProof && (
+                        <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-sm px-3">
+                          <CheckCircle2 className="w-5 h-5" /> เสร็จสิ้น
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -297,6 +410,16 @@ export default function OrdersPage() {
             carriers={carriers}
             onClose={() => setDispatchOrder(null)}
             onDone={() => { setDispatchOrder(null); load(); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Proof of Delivery (POD) Preview Modal */}
+      <AnimatePresence>
+        {viewPodOrder && (
+          <PodProofModal
+            order={viewPodOrder}
+            onClose={() => setViewPodOrder(null)}
           />
         )}
       </AnimatePresence>
@@ -392,6 +515,18 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
               <option value="อื่นๆ">อื่นๆ</option>
             </select>
           </div>
+
+          {(carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET') && (
+            <div className="p-3 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs text-indigo-800 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-indigo-900">
+                <Truck className="w-4 h-4 text-indigo-600" />
+                <span>เชื่อมโยงระบบ TMS ePOD อัตโนมัติ</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-indigo-700">
+                เมื่อกดจัดส่ง ระบบจะสร้าง Job ใน TMS ทันที หากเว้นว่างเลขพัสดุไว้ ระบบจะนำ Job ID จาก TMS มาเป็นเลข Tracking พร้อมลิงก์แผนที่สด
+              </p>
+            </div>
+          )}
 
           <div>
             <div className="flex justify-between items-center mb-1">
@@ -639,3 +774,143 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
     </motion.div>
   );
 }
+
+function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }) {
+  const photoList = order.podPhoto ? order.podPhoto.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(photoList[0] || null);
+  const tmsId = order.tmsJobId || (order.trackingNo?.startsWith('JOB-') ? order.trackingNo : null);
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center">
+          <div className="font-black text-lg flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-emerald-200" />
+            <span>หลักฐานการจัดส่ง (Proof of Delivery)</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5 overflow-y-auto flex-1">
+          {/* Summary Info */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <span className="font-mono font-black text-slate-900 text-base">{order.orderNo}</span>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300">
+                จัดส่งถึงแล้ว (DELIVERED)
+              </span>
+            </div>
+            <div className="text-xs text-slate-600 space-y-1">
+              <div><b>ลูกค้า:</b> {order.customerName} {order.phone ? `(${order.phone})` : ''}</div>
+              {order.shipAddress && <div><b>ที่อยู่ส่งมอบ:</b> {order.shipAddress}</div>}
+              {order.deliveredAt && <div><b>วันเวลาส่งมอบ:</b> {new Date(order.deliveredAt).toLocaleString('th-TH')}</div>}
+              {order.podNote && <div className="text-slate-700 bg-white p-2 rounded-xl border border-slate-200 font-medium"><b>บันทึก:</b> {order.podNote}</div>}
+            </div>
+          </div>
+
+          {/* Digital Signature */}
+          <div>
+            <div className="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">
+              <span>ลายเซ็นดิจิทัลผู้รับ (e-Signature)</span>
+            </div>
+            {order.podSignature ? (
+              <div className="border border-slate-200 rounded-2xl bg-white p-3 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={order.podSignature}
+                  alt="ลายเซ็นผู้รับสินค้า"
+                  className="max-h-40 object-contain rounded"
+                />
+              </div>
+            ) : (
+              <div className="p-6 text-center text-xs text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+                ไม่มีข้อมูลลายเซ็น
+              </div>
+            )}
+          </div>
+
+          {/* Photo Proofs */}
+          <div>
+            <div className="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">
+              <span>ภาพถ่ายหลักฐานส่งมอบ ({photoList.length} รูป)</span>
+            </div>
+            {photoList.length > 0 ? (
+              <div className="space-y-3">
+                {selectedPhoto && (
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center aspect-video relative group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedPhoto}
+                      alt="รูปหลักฐานการส่งมอบสินค้า"
+                      className="max-h-80 w-full object-contain"
+                    />
+                    <a
+                      href={selectedPhoto}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute top-3 right-3 bg-black/60 text-white p-2 rounded-xl hover:bg-black/90 transition-colors"
+                      title="ดูภาพต้นฉบับขนาดเต็ม"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+                {photoList.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {photoList.map((url, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedPhoto(url)}
+                        className={`w-16 h-16 rounded-xl border-2 overflow-hidden shrink-0 transition-all ${
+                          selectedPhoto === url ? 'border-emerald-500 scale-95 shadow-md' : 'border-slate-200 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`รูปที่ ${idx + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 text-center text-xs text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+                ไม่มีรูปถ่ายหลักฐาน
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+          {tmsId ? (
+            <a
+              href={`https://tms-e-pod.vercel.app/track/${encodeURIComponent(tmsId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>เปิดใบงานในระบบ TMS ({tmsId})</span>
+            </a>
+          ) : <div />}
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 active:scale-95 transition-all"
+          >
+            ปิดหน้าต่าง
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+

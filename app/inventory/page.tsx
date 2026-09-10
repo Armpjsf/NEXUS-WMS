@@ -162,10 +162,17 @@ function InventoryContent() {
                         normalize(p.id).includes(term) ||
                         normalize(p.location).includes(term);
     const stockStatus = p.stock <= p.minStock ? 'LOW' : 'OK'; 
-    const matchStatus = filterStatus === 'ALL' || 
-                        (filterStatus === 'LOW' && stockStatus === 'LOW') || 
-                        (filterStatus === 'OK' && stockStatus === 'OK') ||
-                        (filterStatus === 'INACTIVE');
+    const now = Date.now();
+    const expTime = p.expiryDate ? new Date(p.expiryDate).getTime() : null;
+    const isExpiringSoon = expTime !== null && expTime > now && (expTime - now) <= 30 * 86400000;
+    const isExpired = expTime !== null && expTime <= now;
+
+    let matchStatus = filterStatus === 'ALL' || 
+                      (filterStatus === 'LOW' && stockStatus === 'LOW') || 
+                      (filterStatus === 'OK' && stockStatus === 'OK') ||
+                      (filterStatus === 'INACTIVE') ||
+                      (filterStatus === 'EXPIRING' && isExpiringSoon) ||
+                      (filterStatus === 'EXPIRED' && isExpired);
     
     // Robust movement matching (Trim + Case Insensitive + Handle Empty)
     const pMovement = (p.movementStatus || '').trim().toLowerCase();
@@ -341,6 +348,8 @@ function InventoryContent() {
                 >
                     <option value="ALL">{t('filter_all_status')}</option>
                     <option value="LOW">{t('filter_low_stock')}</option>
+                    <option value="EXPIRING">⏰ ใกล้หมดอายุ (≤ 30 วัน)</option>
+                    <option value="EXPIRED">❌ หมดอายุแล้ว</option>
                     <option value="OK">{t('filter_in_stock')}</option>
                     <option value="INACTIVE">{t('filter_inactive')}</option>
                 </select>
@@ -460,6 +469,28 @@ function InventoryContent() {
                                                 <span className="font-semibold text-slate-700 truncate block">{product.location || '-'}</span>
                                             </div>
                                         </div>
+
+                                        {(product.lotNo || product.expiryDate) && (
+                                            <div className="flex items-center gap-1.5 text-[11px] mb-3 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                                                {product.lotNo && (
+                                                    <span className="font-mono font-bold text-slate-700 truncate" title={`Lot: ${product.lotNo}`}>
+                                                        Lot: {product.lotNo}
+                                                    </span>
+                                                )}
+                                                {product.expiryDate && (
+                                                    <span className={cn(
+                                                        "ml-auto font-bold px-2 py-0.5 rounded-md text-[10px] whitespace-nowrap",
+                                                        new Date(product.expiryDate).getTime() < Date.now()
+                                                            ? "bg-rose-100 text-rose-700 border border-rose-200"
+                                                            : (new Date(product.expiryDate).getTime() - Date.now() <= 30 * 86400000)
+                                                            ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                                            : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                                    )}>
+                                                        Exp: {product.expiryDate}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </Link>
                                 </div>
 

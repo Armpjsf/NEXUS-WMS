@@ -4,6 +4,7 @@ import type { ElementType } from 'react';
 import {
   Activity,
   ArrowDownToLine,
+  ArrowLeftRight,
   ArrowUpFromLine,
   BarChart3,
   Bot,
@@ -190,9 +191,11 @@ export default function Sidebar() {
       items: [
         { label: 'รับเข้า & จัดเก็บ (GRN)', href: '/ops/receiving', icon: ArrowDownToLine, tone: 'emerald' },
         { label: 'Smart Wave Picking', href: '/ops/wave-picking', icon: Boxes, tone: 'amber' },
+        { label: 'โอนสต็อกข้ามสาขา', href: '/ops/transfers', icon: ArrowLeftRight, tone: 'teal' },
         { label: 'เบิกจ่ายตรง / ภายใน (Issue)', href: '/ops/outbound', icon: ArrowUpFromLine, tone: 'amber' },
         { label: t('menu_cycle_count'), href: '/ops/cycle-count', icon: PackageCheck, tone: 'teal' },
         { label: t('menu_damage'), href: '/ops/damage', icon: ShieldAlert, tone: 'rose' },
+        { label: 'พิมพ์บาร์โค้ด & ฉลาก', href: '/ops/labels', icon: Tags, tone: 'amber' },
         { label: t('scan_barcode'), href: '/barcode/scanner', icon: ScanLine, tone: 'cyan' },
       ],
     },
@@ -214,6 +217,8 @@ export default function Sidebar() {
         { label: 'รายงานเคลื่อนไหว', href: '/analytics/movements', icon: FileBarChart, tone: 'cyan', viewerAllowed: true },
         { label: t('aging_title'), href: '/analytics/aging', icon: Activity, tone: 'rose' },
         { label: t('forecast_title'), href: '/analytics/forecast', icon: Sparkles, tone: 'violet' },
+        { label: 'ประสิทธิภาพพนักงาน', href: '/ops/analytics/staff', icon: Users, tone: 'violet' },
+        { label: 'มูลค่าสต็อก & Dead Stock', href: '/ops/reports/valuation', icon: ReceiptText, tone: 'rose' },
         { label: t('profit_title'), href: '/analytics/profit', icon: ReceiptText, tone: 'emerald' },
         { label: t('menu_reports'), href: '/analytics/reports', icon: FileBarChart, tone: 'steel', viewerAllowed: true },
       ],

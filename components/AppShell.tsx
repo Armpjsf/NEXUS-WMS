@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Smartphone } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import GlobalAIAssistant from '@/components/GlobalAIAssistant';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -43,6 +44,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           โหมดมือถือ
         </Link>
       )}
+      <GlobalAIAssistant />
     </>
   );
 }

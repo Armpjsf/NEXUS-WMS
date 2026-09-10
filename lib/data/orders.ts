@@ -3,7 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
-import { isTmsEnabled, createTmsDeliveryJob } from '@/lib/tms';
+import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier } from '@/lib/tms';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -48,10 +48,32 @@ export interface OutboundOrder {
   packedAt: string | null;
   shippedAt: string | null;
   deliveredAt: string | null;
+  tmsJobId?: string;
+  tmsStatus?: string;
+  tmsSyncedAt?: string | null;
 }
 
 function mapOrder(r: any): OutboundOrder {
   const items: OrderLine[] = Array.isArray(r.items_json) ? r.items_json : [];
+  
+  // Extract TMS Job ID and status from columns or fallback from notes
+  let tmsJobId = r.tms_job_id || '';
+  if (!tmsJobId && r.notes) {
+    const m = String(r.notes).match(/\[TMS Job:\s*([^\]]+)\]/i);
+    if (m) tmsJobId = m[1].trim();
+  }
+  let tmsStatus = r.tms_status || '';
+  if (!tmsStatus && tmsJobId) {
+    tmsStatus = r.status === 'DELIVERED' ? 'Completed' : (r.status === 'SHIPPED' ? 'In Transit' : 'New');
+  }
+
+  // Extract branchCode from column or notes
+  let branchCode = r.branch_code || '';
+  if (!branchCode && r.notes) {
+    const bm = String(r.notes).match(/\[Branch:\s*([^\]]+)\]/i);
+    if (bm) branchCode = bm[1].trim();
+  }
+
   return {
     id: r.id,
     orderNo: r.order_no,
@@ -60,7 +82,7 @@ function mapOrder(r: any): OutboundOrder {
     customerName: r.customer_name || '',
     phone: r.phone || '',
     shipAddress: r.ship_address || '',
-    branchCode: r.branch_code || '',
+    branchCode,
     status: r.status || 'NEW',
     priority: r.priority || 'NORMAL',
     items,
@@ -80,6 +102,9 @@ function mapOrder(r: any): OutboundOrder {
     packedAt: r.packed_at,
     shippedAt: r.shipped_at,
     deliveredAt: r.delivered_at,
+    tmsJobId: tmsJobId || undefined,
+    tmsStatus: tmsStatus || undefined,
+    tmsSyncedAt: r.tms_synced_at || null,
   };
 }
 
@@ -106,6 +131,8 @@ export async function listOrders(opts: { status?: string; limit?: number } = {})
   return (data || []).map(mapOrder);
 }
 
+export const getOrders = listOrders;
+
 export async function getOrder(id: string): Promise<OutboundOrder | null> {
   const orgId = await getCurrentOrgId();
   const { data, error } = await supabase.from('outbound_orders').select('*').eq('id', id).eq('org_id', orgId).maybeSingle();
@@ -127,7 +154,7 @@ export async function createOrder(input: {
   const orderNo = await nextOrderNo();
   const orgId = await getCurrentOrgId();
 
-  const { data, error } = await supabase.from('outbound_orders').insert({
+  const insertPayload: Record<string, any> = {
     org_id: orgId,
     order_no: orderNo,
     channel: input.channel || 'MANUAL',
@@ -135,7 +162,6 @@ export async function createOrder(input: {
     customer_name: input.customerName || '',
     phone: input.phone || '',
     ship_address: input.shipAddress || '',
-    branch_code: input.branchCode || null,
     carrier: input.carrier || '',
     status: 'NEW',
     priority: input.priority || 'NORMAL',
@@ -144,7 +170,35 @@ export async function createOrder(input: {
     total_amount: totalAmount,
     created_by: input.createdBy || 'System',
     notes: input.notes || '',
-  }).select().single();
+  };
+
+  // Attempt insert with branch_code
+  let data: any = null;
+  let error: any = null;
+
+  if (input.branchCode) {
+    const res = await supabase.from('outbound_orders').insert({
+      ...insertPayload,
+      branch_code: input.branchCode,
+    }).select().single();
+    data = res.data;
+    error = res.error;
+  }
+
+  // If failed (e.g. branch_code column doesn't exist in Supabase yet) or no branchCode
+  if (error || !data) {
+    const fallbackNotes = input.branchCode
+      ? `${input.notes ? input.notes + ' ' : ''}[Branch: ${input.branchCode}]`.trim()
+      : (input.notes || '');
+
+    const retryRes = await supabase.from('outbound_orders').insert({
+      ...insertPayload,
+      notes: fallbackNotes,
+    }).select().single();
+
+    data = retryRes.data;
+    error = retryRes.error;
+  }
 
   if (error) {
     console.error('[orders] create error:', error);
@@ -186,7 +240,7 @@ export async function updateOrder(
   patch: Partial<{
     status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string;
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
-    priority: string; notes: string;
+    priority: string; notes: string; tmsJobId: string; tmsStatus: string;
   }>,
 ): Promise<OutboundOrder | null> {
   const current = await getOrder(id);
@@ -229,15 +283,203 @@ export async function updateOrder(
   const mapped = mapOrder(data);
 
   // Hand the shipment to the TMS (ePOD) delivery system when the order first
-  // reaches SHIPPED. Feature-flagged and fault-isolated: it never throws and is
-  // a no-op unless TMS_API_URL/TMS_API_KEY are configured, so the ship flow is
-  // unaffected whether TMS is reachable or not.
-  if (movingToShipped && isTmsEnabled()) {
+  // reaches SHIPPED and is handled by the company's internal delivery fleet.
+  // 3PL express carriers (Flash, Kerry, etc.) are skipped.
+  if (movingToShipped && isTmsEnabled() && isCompanyFleetCarrier(mapped.carrier)) {
     const r = await createTmsDeliveryJob(mapped);
-    if (r.ok) console.log(`[tms] delivery job ${r.jobId} created for order ${mapped.orderNo}`);
+    if (r.ok && r.jobId) {
+      console.log(`[tms] delivery job ${r.jobId} created for order ${mapped.orderNo}`);
+      try {
+        const updateTmsPayload: Record<string, any> = {
+          tms_job_id: r.jobId,
+          tms_status: 'New',
+          tms_synced_at: new Date().toISOString(),
+        };
+        if (!mapped.trackingNo) {
+          updateTmsPayload.tracking_no = r.jobId;
+        }
+
+        const { error: tmsErr } = await getServiceSupabase()
+          .from('outbound_orders')
+          .update(updateTmsPayload)
+          .eq('id', id)
+          .eq('org_id', orgId);
+
+        if (tmsErr) {
+          // Column might not exist yet: fallback to storing in notes and tracking_no
+          const noteWithTms = `${mapped.notes ? mapped.notes + ' ' : ''}[TMS Job: ${r.jobId}]`.trim();
+          await getServiceSupabase()
+            .from('outbound_orders')
+            .update({
+              notes: noteWithTms,
+              tracking_no: mapped.trackingNo || r.jobId,
+            })
+            .eq('id', id)
+            .eq('org_id', orgId);
+        }
+
+        mapped.tmsJobId = r.jobId;
+        mapped.tmsStatus = 'New';
+        if (!mapped.trackingNo) mapped.trackingNo = r.jobId;
+      } catch (tmsSaveErr) {
+        console.warn('[orders] failed to save tms_job_id:', tmsSaveErr);
+      }
+    }
   }
 
   return mapped;
+}
+
+// Close WMS order automatically upon receiving POD from TMS Webhook
+export async function closeOrderFromTmsPod(input: {
+  orderNo?: string;
+  tmsJobId?: string;
+  signatureUrl?: string | null;
+  photoUrls?: string[];
+  deliveryDate?: string;
+  receiverName?: string | null;
+  driverName?: string | null;
+  vehiclePlate?: string | null;
+  notes?: string;
+}): Promise<{ ok: boolean; order?: OutboundOrder; error?: string }> {
+  const admin = getServiceSupabase();
+  let query = admin.from('outbound_orders').select('*');
+
+  if (input.orderNo) {
+    query = query.eq('order_no', input.orderNo);
+  } else if (input.tmsJobId) {
+    query = query.or(`tms_job_id.eq.${input.tmsJobId},notes.ilike.%[TMS Job: ${input.tmsJobId}]%,tracking_no.eq.${input.tmsJobId}`);
+  } else {
+    return { ok: false, error: 'Missing orderNo or tmsJobId' };
+  }
+
+  const { data: orderRow, error: findError } = await query.maybeSingle();
+  if (findError || !orderRow) {
+    return { ok: false, error: `Order not found (${input.orderNo || input.tmsJobId})` };
+  }
+
+  const podNotesParts: string[] = [];
+  if (input.receiverName) podNotesParts.push(`ผู้รับ: ${input.receiverName}`);
+  if (input.driverName) podNotesParts.push(`คนขับ: ${input.driverName}`);
+  if (input.vehiclePlate) podNotesParts.push(`ทะเบียน: ${input.vehiclePlate}`);
+  if (input.notes) podNotesParts.push(input.notes);
+  const podNoteStr = podNotesParts.join(' | ') || 'ส่งมอบสำเร็จผ่านระบบ TMS ePOD';
+
+  const deliveredAt = input.deliveryDate ? new Date(input.deliveryDate).toISOString() : new Date().toISOString();
+  const photoUrl = (input.photoUrls && input.photoUrls.length > 0)
+    ? input.photoUrls.join(',')
+    : (orderRow.pod_photo || '');
+
+  const updateData: Record<string, any> = {
+    status: 'DELIVERED',
+    delivered_at: deliveredAt,
+    pod_signature: input.signatureUrl || orderRow.pod_signature || '',
+    pod_photo: photoUrl,
+    pod_note: podNoteStr,
+    tms_status: 'Completed',
+    tms_synced_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  // Try updating with tms columns
+  let { data: updated, error: updateError } = await admin
+    .from('outbound_orders')
+    .update(updateData)
+    .eq('id', orderRow.id)
+    .select()
+    .single();
+
+  if (updateError) {
+    // Fallback: strip extra columns if not yet migrated in Supabase
+    delete updateData.tms_status;
+    delete updateData.tms_synced_at;
+    const { data: fbData, error: fbError } = await admin
+      .from('outbound_orders')
+      .update(updateData)
+      .eq('id', orderRow.id)
+      .select()
+      .single();
+
+    if (fbError) {
+      console.error('[orders] closeOrderFromTmsPod error:', fbError);
+      return { ok: false, error: fbError.message };
+    }
+    updated = fbData;
+  }
+
+  // Log in Audit Trail
+  try {
+    await admin.from('audit_log').insert({
+      org_id: orderRow.org_id,
+      user_name: 'TMS ePOD Bot',
+      action: 'UPDATE',
+      module: 'ORDERS',
+      record_id: orderRow.id,
+      description: `ปิดออเดอร์อัตโนมัติ ${orderRow.order_no} เป็น DELIVERED ผ่าน TMS (คนขับ: ${input.driverName || '-'})`,
+      new_values: { status: 'DELIVERED', pod_signature: input.signatureUrl ? 'มี' : 'ไม่มี', photos_count: input.photoUrls?.length || 0 },
+    });
+  } catch (e) {
+    /* ignore audit log failure */
+  }
+
+  return { ok: true, order: mapOrder(updated) };
+}
+
+// On-demand status sync with TMS
+export async function syncOrderWithTms(orderId: string): Promise<{ ok: boolean; order?: OutboundOrder; message?: string }> {
+  const current = await getOrder(orderId);
+  if (!current) return { ok: false, message: 'Order not found' };
+
+  const targetJobId = current.tmsJobId || (current.trackingNo.startsWith('JOB-') ? current.trackingNo : undefined);
+  const { fetchTmsJobStatus } = await import('@/lib/tms');
+  const tmsRes = await fetchTmsJobStatus({ jobId: targetJobId, orderNo: current.orderNo });
+
+  if (!tmsRes.ok || !tmsRes.job) {
+    return { ok: false, message: tmsRes.error || 'TMS Job not found' };
+  }
+
+  const job = tmsRes.job;
+
+  // If completed in TMS, auto-close WMS order with full POD
+  if (job.isCompleted) {
+    const closeRes = await closeOrderFromTmsPod({
+      orderNo: current.orderNo,
+      tmsJobId: job.jobId,
+      signatureUrl: job.signatureUrl,
+      photoUrls: job.photoUrls,
+      deliveryDate: job.deliveryDate,
+      receiverName: job.receiverName,
+      driverName: job.driverName,
+      vehiclePlate: job.vehiclePlate,
+    });
+    if (closeRes.ok && closeRes.order) {
+      return { ok: true, order: closeRes.order, message: 'อัปเดตเป็นจัดส่งสำเร็จ (DELIVERED) พร้อมหลักฐาน POD เรียบร้อย' };
+    }
+  }
+
+  // Update status and tracking info
+  const patch: any = {
+    tmsJobId: job.jobId,
+    tmsStatus: job.status,
+  };
+  if (!current.trackingNo && job.jobId) {
+    patch.trackingNo = job.jobId;
+  }
+
+  // Try saving tms_status to db
+  try {
+    const admin = getServiceSupabase();
+    await admin.from('outbound_orders').update({
+      tms_status: job.status,
+      tms_job_id: job.jobId,
+      tms_synced_at: new Date().toISOString(),
+    }).eq('id', current.id);
+  } catch {
+    /* ignore */
+  }
+
+  const refreshed = await getOrder(orderId);
+  return { ok: true, order: refreshed || current, message: `สถานะ TMS ล่าสุด: ${job.status}` };
 }
 
 // Orders still awaiting pick/pack — feeds Wave Picking's "load pending orders".

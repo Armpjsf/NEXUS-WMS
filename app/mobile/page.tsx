@@ -24,7 +24,8 @@ import {
   MapPin, 
   X,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  RotateCcw
 } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
@@ -201,6 +202,38 @@ export default function MobileHubPage() {
       icon: Truck,
       href: '/mobile/jobs',
       badge: 'Delivery',
+    },
+    {
+      id: 'quick-adjust',
+      title: 'ปรับสต็อกด่วน (Quick Adjust)',
+      desc: 'สแกนแล้วกด +/- ปรับยอดจริงหน้างาน',
+      icon: RefreshCw,
+      href: '/mobile/adjust',
+      badge: 'Adjust',
+    },
+    {
+      id: 'damage-report',
+      title: 'แจ้งสินค้าชำรุด (Report Damage)',
+      desc: 'ถ่ายรูป ตัดจ่ายของชำรุดออกจากสต็อก',
+      icon: AlertCircle,
+      href: '/mobile/damage',
+      badge: 'Damage',
+    },
+    {
+      id: 'putaway',
+      title: 'จัดเก็บขึ้นชั้น (Putaway)',
+      desc: 'สแกนสินค้าและสแกนชั้นวางยืนยันพิกัด',
+      icon: Layers,
+      href: '/mobile/putaway',
+      badge: 'Putaway',
+    },
+    {
+      id: 'returns',
+      title: 'รับคืนสินค้า (RMA Returns)',
+      desc: 'ตรวจสภาพสินค้าคืนและรับเข้าสต็อก',
+      icon: RotateCcw,
+      href: '/mobile/returns',
+      badge: 'Returns',
     },
     {
       id: 'outbound-issue',

@@ -40,13 +40,62 @@ function resolveTmsBranch(order: OutboundOrder): string | undefined {
 export interface TmsResult {
   ok: boolean;
   jobId?: string;
+  trackingUrl?: string;
   skipped?: boolean;
   error?: string;
+}
+
+export interface TmsJobStatusResult {
+  ok: boolean;
+  job?: {
+    jobId: string;
+    status: string;
+    isCompleted: boolean;
+    planDate?: string;
+    deliveryDate?: string;
+    actualDeliveryTime?: string;
+    driverName?: string;
+    vehiclePlate?: string;
+    signatureUrl?: string | null;
+    photoProofUrl?: string | null;
+    photoUrls: string[];
+    receiverName?: string | null;
+    trackingUrl?: string;
+    wmsOrderNo?: string;
+  };
+  error?: string;
+}
+
+export function getTmsTrackingUrl(jobId: string): string {
+  const base = (process.env.TMS_APP_URL || 'https://tms-e-pod.vercel.app').replace(/\/+$/, '');
+  return `${base}/track/${encodeURIComponent(jobId)}`;
+}
+
+/**
+ * Checks if the carrier name represents the internal company delivery fleet (Own Fleet / TMS ePOD).
+ * Matches: 'รถขนส่งบริษัท', 'รถคลังจัดส่งเอง', 'Company Fleet', 'FLEET', 'OWN_FLEET', 'จัดส่งเอง'.
+ */
+export function isCompanyFleetCarrier(carrier?: string | null): boolean {
+  if (!carrier) return false;
+  const c = carrier.trim().toLowerCase();
+  return (
+    c.includes('บริษัท') ||
+    c.includes('จัดส่งเอง') ||
+    c.includes('fleet') ||
+    c === 'own_fleet'
+  );
 }
 
 // Create a TMS delivery job for a shipped WMS order. Never throws.
 export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsResult> {
   if (!isTmsEnabled()) return { ok: false, skipped: true, error: 'disabled' };
+
+  // Only dispatch to TMS for internal company fleet shipments.
+  // 3PL shipments (Flash, Kerry, J&T, EMS, etc.) are handled by their respective courier networks.
+  if (!isCompanyFleetCarrier(order.carrier)) {
+    console.log(`[tms] order ${order.orderNo} carrier '${order.carrier || 'none'}' is not company fleet — skipping TMS job`);
+    return { ok: false, skipped: true, error: 'not-company-fleet' };
+  }
 
   // TMS requires a delivery address; skip quietly if the order has none.
   if (!order.shipAddress || !order.shipAddress.trim()) {
@@ -65,14 +114,18 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
 
     const payload: Record<string, unknown> = {
       customer_id: order.customerName || order.orderNo,
+      customer_name: order.customerName || '',
+      customer_phone: order.phone || '',
       pickup_address: pickup,
       delivery_address: order.shipAddress.trim(),
       items: details,
       vehicle_type: '',
-      // plan_date omitted -> TMS defaults to today (todayTH)
+      wms_order_no: order.orderNo,
+      tracking_no: order.trackingNo || '',
+      notes: `ออเดอร์ WMS: ${order.orderNo}${order.customerName ? ` (${order.customerName})` : ''}`,
     };
-    // Scope the TMS job to the order's branch (e.g. 'URT', 'SKN'). Driver /
-    // plate / vehicle stay empty on purpose — TMS fills those on assignment/bid.
+
+    // Scope the TMS job to the order's branch (e.g. 'URT', 'SKN').
     const branch = resolveTmsBranch(order);
     if (branch) {
       payload.branch_id = branch;
@@ -99,10 +152,73 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
     }
 
     const data: any = await res.json().catch(() => ({}));
-    return { ok: true, jobId: data?.job_id != null ? String(data.job_id) : undefined };
+    const jobId = data?.job_id != null ? String(data.job_id) : undefined;
+    const trackingUrl = data?.tracking_url || (jobId ? getTmsTrackingUrl(jobId) : undefined);
+
+    return { ok: true, jobId, trackingUrl };
   } catch (e: any) {
-    // Includes AbortError (timeout) and network errors.
     console.error(`[tms] create job error for ${order.orderNo}:`, e?.message || e);
     return { ok: false, error: e?.message || 'error' };
   }
 }
+
+// Query real-time status and POD proof from TMS for a job or order. Never throws.
+export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: string }): Promise<TmsJobStatusResult> {
+  if (!isTmsEnabled()) return { ok: false, error: 'disabled' };
+  if (!target.jobId && !target.orderNo) return { ok: false, error: 'missing target' };
+
+  try {
+    const baseUrl = process.env.TMS_API_URL as string;
+    const url = new URL(baseUrl);
+    if (target.jobId) url.searchParams.set('job_id', target.jobId);
+    else if (target.orderNo) url.searchParams.set('wms_order_no', target.orderNo);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${process.env.TMS_API_KEY}`,
+      },
+      signal: controller.signal,
+      cache: 'no-store',
+    }).finally(() => clearTimeout(timer));
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      console.warn(`[tms] fetch status failed: HTTP ${res.status} ${txt}`);
+      return { ok: false, error: `HTTP ${res.status}` };
+    }
+
+    const data = await res.json();
+    if (!data.success || !data.job) {
+      return { ok: false, error: data.error || 'Job not found' };
+    }
+
+    const j = data.job;
+    return {
+      ok: true,
+      job: {
+        jobId: String(j.job_id),
+        status: j.status || 'New',
+        isCompleted: Boolean(j.is_completed),
+        planDate: j.plan_date,
+        deliveryDate: j.delivery_date,
+        actualDeliveryTime: j.actual_delivery_time,
+        driverName: j.driver_name || undefined,
+        vehiclePlate: j.vehicle_plate || undefined,
+        signatureUrl: j.signature_url || null,
+        photoProofUrl: j.photo_proof_url || null,
+        photoUrls: Array.isArray(j.photo_urls) ? j.photo_urls : [],
+        receiverName: j.receiver_name || null,
+        trackingUrl: j.tracking_url || getTmsTrackingUrl(String(j.job_id)),
+        wmsOrderNo: j.wms_order_no,
+      },
+    };
+  } catch (e: any) {
+    console.error('[tms] fetch status error:', e?.message || e);
+    return { ok: false, error: e?.message || 'error' };
+  }
+}
+

@@ -18,6 +18,27 @@ export interface UIProduct {
   barcode?: string;
   owner: string;
   movementStatus?: string;
+  lotNo?: string;
+  expiryDate?: string;
+  mfgDate?: string;
+}
+
+export function getDaysUntilExpiry(expiryDate?: string | null): number | null {
+  if (!expiryDate) return null;
+  const target = new Date(expiryDate).getTime();
+  if (isNaN(target)) return null;
+  const now = new Date().setHours(0, 0, 0, 0);
+  return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+}
+
+export function isExpired(expiryDate?: string | null): boolean {
+  const days = getDaysUntilExpiry(expiryDate);
+  return days !== null && days < 0;
+}
+
+export function isExpiringSoon(expiryDate?: string | null, daysThreshold = 30): boolean {
+  const days = getDaysUntilExpiry(expiryDate);
+  return days !== null && days >= 0 && days <= daysThreshold;
 }
 
 // Map one raw Supabase row -> UIProduct shape expected by the frontend.
@@ -37,6 +58,9 @@ export function mapProductRow(row: any): UIProduct {
     barcode: row.barcode ?? '',
     owner: row.owner ?? '',
     movementStatus: row.movement_status ?? undefined,
+    lotNo: row.lot_no ?? row.batch_no ?? undefined,
+    expiryDate: row.expiry_date ?? undefined,
+    mfgDate: row.mfg_date ?? undefined,
   };
 }
 
