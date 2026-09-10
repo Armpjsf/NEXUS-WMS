@@ -105,7 +105,38 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
 
   try {
     const url = process.env.TMS_API_URL as string;
-    const pickup = (process.env.TMS_PICKUP_ADDRESS || 'คลังสินค้า NEXUS WMS').trim();
+
+    // Derive TMS Job ID directly from WMS Order Number (ORD-2026-8008 -> JOB-2026-8008)
+    const targetJobId = order.orderNo.startsWith('ORD-')
+      ? order.orderNo.replace(/^ORD-/, 'JOB-')
+      : (order.orderNo.startsWith('JOB-') ? order.orderNo : `JOB-${order.orderNo}`);
+
+    // Resolve pickup origin name from branch/warehouse settings
+    let pickup = (process.env.TMS_PICKUP_ADDRESS || '').trim();
+    if (!pickup) {
+      try {
+        const branchCode = (order.branchCode || process.env.TMS_BRANCH_ID || 'URT').trim();
+        const { getServiceSupabase } = await import('@/lib/supabase');
+        const { data: bRow } = await getServiceSupabase()
+          .from('branches')
+          .select('name, warehouse_name, pickup_address')
+          .eq('code', branchCode)
+          .maybeSingle();
+
+        if (bRow?.warehouse_name) {
+          pickup = bRow.warehouse_name.trim();
+        } else if (bRow?.pickup_address) {
+          pickup = bRow.pickup_address.trim();
+        } else if (bRow?.name) {
+          pickup = bRow.name.includes('คลัง') ? bRow.name : `คลังสินค้า ${bRow.name}`;
+        }
+      } catch (err) {
+        console.warn('[tms] could not query branch for pickup origin:', err);
+      }
+    }
+    if (!pickup) {
+      pickup = `คลังสินค้าสาขา ${order.branchCode || 'URT'}`;
+    }
 
     const itemsSummary = (order.items || []).map((i) => `${i.name} x${i.qty}`).join(', ');
     const details =
@@ -119,9 +150,10 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       pickup_address: pickup,
       delivery_address: order.shipAddress.trim(),
       items: details,
-      vehicle_type: '',
+      vehicle_type: order.vehicleType || '4-Wheel',
       wms_order_no: order.orderNo,
-      tracking_no: order.trackingNo || '',
+      job_id: targetJobId,
+      tracking_no: order.trackingNo || targetJobId,
       notes: `ออเดอร์ WMS: ${order.orderNo}${order.customerName ? ` (${order.customerName})` : ''}`,
     };
 
@@ -152,7 +184,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
     }
 
     const data: any = await res.json().catch(() => ({}));
-    const jobId = data?.job_id != null ? String(data.job_id) : undefined;
+    const jobId = data?.job_id != null ? String(data.job_id) : targetJobId;
     const trackingUrl = data?.tracking_url || (jobId ? getTmsTrackingUrl(jobId) : undefined);
 
     return { ok: true, jobId, trackingUrl };

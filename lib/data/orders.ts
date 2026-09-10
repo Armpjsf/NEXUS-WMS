@@ -48,6 +48,7 @@ export interface OutboundOrder {
   packedAt: string | null;
   shippedAt: string | null;
   deliveredAt: string | null;
+  vehicleType?: string;
   tmsJobId?: string;
   tmsStatus?: string;
   tmsSyncedAt?: string | null;
@@ -72,6 +73,13 @@ function mapOrder(r: any): OutboundOrder {
   if (!branchCode && r.notes) {
     const bm = String(r.notes).match(/\[Branch:\s*([^\]]+)\]/i);
     if (bm) branchCode = bm[1].trim();
+  }
+
+  // Extract vehicleType from column or notes
+  let vehicleType = r.vehicle_type || '';
+  if (!vehicleType && r.notes) {
+    const vm = String(r.notes).match(/\[Vehicle:\s*([^\]]+)\]/i);
+    if (vm) vehicleType = vm[1].trim();
   }
 
   return {
@@ -102,6 +110,7 @@ function mapOrder(r: any): OutboundOrder {
     packedAt: r.packed_at,
     shippedAt: r.shipped_at,
     deliveredAt: r.delivered_at,
+    vehicleType: vehicleType || undefined,
     tmsJobId: tmsJobId || undefined,
     tmsStatus: tmsStatus || undefined,
     tmsSyncedAt: r.tms_synced_at || null,
@@ -142,7 +151,7 @@ export async function getOrder(id: string): Promise<OutboundOrder | null> {
 
 export async function createOrder(input: {
   channel?: string; refNo?: string; customerName?: string; phone?: string;
-  shipAddress?: string; carrier?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;
+  shipAddress?: string; carrier?: string; vehicleType?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;
   branchCode?: string;
 }): Promise<OutboundOrder | null> {
   const items = (input.items || []).map((l) => ({
@@ -154,6 +163,9 @@ export async function createOrder(input: {
   const orderNo = await nextOrderNo();
   const orgId = await getCurrentOrgId();
 
+  const targetBranch = (input.branchCode || 'URT').trim();
+  const vType = (input.vehicleType || '4-Wheel').trim();
+
   const insertPayload: Record<string, any> = {
     org_id: orgId,
     order_no: orderNo,
@@ -163,6 +175,7 @@ export async function createOrder(input: {
     phone: input.phone || '',
     ship_address: input.shipAddress || '',
     carrier: input.carrier || '',
+    vehicle_type: vType,
     status: 'NEW',
     priority: input.priority || 'NORMAL',
     items_json: items,
@@ -170,30 +183,21 @@ export async function createOrder(input: {
     total_amount: totalAmount,
     created_by: input.createdBy || 'System',
     notes: input.notes || '',
+    branch_code: targetBranch,
   };
 
-  const targetBranch = (input.branchCode || 'URT').trim();
+  // Attempt insert with branch_code and vehicle_type
+  let { data, error } = await supabase.from('outbound_orders').insert(insertPayload).select().single();
 
-  // Attempt insert with branch_code
-  let data: any = null;
-  let error: any = null;
-
-  const res = await supabase.from('outbound_orders').insert({
-    ...insertPayload,
-    branch_code: targetBranch,
-  }).select().single();
-  data = res.data;
-  error = res.error;
-
-  // If failed (e.g. branch_code column doesn't exist in Supabase yet)
+  // If failed (e.g. vehicle_type or branch_code column doesn't exist yet in Supabase)
   if (error || !data) {
-    const fallbackNotes = `${input.notes ? input.notes + ' ' : ''}[Branch: ${targetBranch}]`.trim();
+    const fallbackNotes = `${input.notes ? input.notes + ' ' : ''}[Branch: ${targetBranch}] [Vehicle: ${vType}]`.trim();
+    const fallbackPayload = { ...insertPayload };
+    delete fallbackPayload.vehicle_type;
+    delete fallbackPayload.branch_code;
+    fallbackPayload.notes = fallbackNotes;
 
-    const retryRes = await supabase.from('outbound_orders').insert({
-      ...insertPayload,
-      notes: fallbackNotes,
-    }).select().single();
-
+    const retryRes = await supabase.from('outbound_orders').insert(fallbackPayload).select().single();
     data = retryRes.data;
     error = retryRes.error;
   }
@@ -236,7 +240,7 @@ const STAMP: Record<string, string> = {
 export async function updateOrder(
   id: string,
   patch: Partial<{
-    status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string;
+    status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string; vehicleType: string;
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
   }>,
@@ -251,6 +255,7 @@ export async function updateOrder(
     row.total_amount = patch.items.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.price) || 0), 0);
   }
   if (patch.carrier !== undefined) row.carrier = patch.carrier;
+  if (patch.vehicleType !== undefined) row.vehicle_type = patch.vehicleType;
   if (patch.trackingNo !== undefined) row.tracking_no = patch.trackingNo;
   if (patch.boxCount !== undefined) row.box_count = patch.boxCount;
   if (patch.weightKg !== undefined) row.weight_kg = patch.weightKg;
@@ -272,8 +277,20 @@ export async function updateOrder(
     await commitStockOut(current, orgId);
   }
 
-  const { data, error } = await getServiceSupabase()
+  let { data, error } = await getServiceSupabase()
     .from('outbound_orders').update(row).eq('id', id).eq('org_id', orgId).select().single();
+  
+  if (error && error.message && error.message.includes('vehicle_type')) {
+    delete row.vehicle_type;
+    if (patch.vehicleType) {
+      row.notes = `${row.notes || current.notes || ''} [Vehicle: ${patch.vehicleType}]`.trim();
+    }
+    const retry = await getServiceSupabase()
+      .from('outbound_orders').update(row).eq('id', id).eq('org_id', orgId).select().single();
+    data = retry.data;
+    error = retry.error;
+  }
+
   if (error) {
     console.error('[orders] update error:', error);
     return null;

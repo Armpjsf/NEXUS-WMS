@@ -22,6 +22,7 @@ interface Order {
   id: string; orderNo: string; channel: string; customerName: string; status: Status;
   priority: string; items: Line[]; totalQty: number; totalAmount: number;
   carrier: string; trackingNo: string; createdAt: string; shipAddress: string; phone: string;
+  vehicleType?: string;
   podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
   tmsJobId?: string; tmsStatus?: string; tmsSyncedAt?: string | null; branchCode?: string;
 }
@@ -316,6 +317,11 @@ export default function OrdersPage() {
                             )}
                           </span>
                         )}
+                        {o.vehicleType && (
+                          <span className="text-amber-900 font-semibold ml-2 inline-flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded text-xs ring-1 ring-amber-200">
+                            🚗 {o.vehicleType}
+                          </span>
+                        )}
                         {hasTmsJob && (
                           <span className="text-indigo-700 font-semibold ml-2 inline-flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded text-xs ring-1 ring-indigo-200">
                             <Truck className="w-3.5 h-3.5 text-indigo-600" />
@@ -448,9 +454,12 @@ export default function OrdersPage() {
 function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; carriers: Carrier[]; onClose: () => void; onDone: () => void }) {
   const defaultCarrier = carriers.find(c => c.isDefault)?.name || carriers[0]?.name || 'Flash Express';
   const [carrier, setCarrier] = useState(order.carrier || defaultCarrier);
+  const [vehicleType, setVehicleType] = useState(order.vehicleType || '4-Wheel');
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
   const [submitting, setSubmitting] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+
+  const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
 
   const selectedCarrierObj = carriers.find(c => c.name === carrier);
   const previewUrl = selectedCarrierObj?.trackingUrlTemplate && trackingNo
@@ -469,6 +478,7 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
           id: order.id,
           status: 'SHIPPED',
           carrier,
+          vehicleType: isCompanyFleet ? vehicleType : undefined,
           trackingNo: trackingNo.trim(),
         }),
       });
@@ -516,15 +526,34 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
             </select>
           </div>
 
-          {(carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET') && (
-            <div className="p-3 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs text-indigo-800 space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-indigo-900">
-                <Truck className="w-4 h-4 text-indigo-600" />
-                <span>เชื่อมโยงระบบ TMS ePOD อัตโนมัติ</span>
+          {isCompanyFleet && (
+            <div className="space-y-3 p-3.5 bg-indigo-50/80 border border-indigo-100 rounded-2xl">
+              <div>
+                <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">
+                  🚗 ประเภทรถขนส่ง (TMS Vehicle Type) *
+                </label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 font-bold text-sm bg-white text-indigo-950"
+                >
+                  <option value="4-Wheel">รถกระบะ 4 ล้อ (4-Wheel)</option>
+                  <option value="6-Wheel">รถบรรทุก 6 ล้อ (6-Wheel)</option>
+                  <option value="10-Wheel">รถบรรทุก 10 ล้อ (10-Wheel)</option>
+                  <option value="Trailer">รถหัวลาก / เทรลเลอร์ (Trailer)</option>
+                  <option value="Motorcycle">รถมอเตอร์ไซค์ (Motorcycle)</option>
+                </select>
               </div>
-              <p className="text-[11px] leading-relaxed text-indigo-700">
-                เมื่อกดจัดส่ง ระบบจะสร้าง Job ใน TMS ทันที หากเว้นว่างเลขพัสดุไว้ ระบบจะนำ Job ID จาก TMS มาเป็นเลข Tracking พร้อมลิงก์แผนที่สด
-              </p>
+
+              <div className="text-xs text-indigo-800 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-indigo-900">
+                  <Truck className="w-4 h-4 text-indigo-600" />
+                  <span>เชื่อมโยงระบบ TMS ePOD อัตโนมัติ</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-indigo-700">
+                  ระบบจะนำเลข Order ({order.orderNo}) ไปสร้างเป็นเลข Job ใน TMS ทันที พร้อมระบุประเภทรถ {vehicleType} สำหรับมอบหมายคนขับ
+                </p>
+              </div>
             </div>
           )}
 
@@ -603,6 +632,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [carrier, setCarrier] = useState(carriers.find(c => c.isDefault)?.name || 'Flash Express');
+  const [vehicleType, setVehicleType] = useState('4-Wheel');
   const [saving, setSaving] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
@@ -658,9 +688,18 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       const branchCode = typeof window !== 'undefined'
         ? (new URLSearchParams(window.location.search).get('branchId') || 'URT')
         : 'URT';
+      const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
       const res = await fetch('/api/orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName: customer, phone, shipAddress: address, carrier, items: lines, branchCode }),
+        body: JSON.stringify({
+          customerName: customer,
+          phone,
+          shipAddress: address,
+          carrier,
+          vehicleType: isCompanyFleet ? vehicleType : undefined,
+          items: lines,
+          branchCode,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'สร้างไม่สำเร็จ');
@@ -668,6 +707,8 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       onDone();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
+
+  const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -710,10 +751,29 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm"
               >
                 {carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                <option value="รถขนส่งบริษัท">รถขนส่งบริษัท</option>
+                <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
               </select>
             </div>
           </div>
+
+          {isCompanyFleet && (
+            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between gap-3">
+              <label className="text-xs font-bold text-indigo-900 whitespace-nowrap">
+                🚗 ประเภทรถขนส่ง (TMS):
+              </label>
+              <select
+                value={vehicleType}
+                onChange={e => setVehicleType(e.target.value)}
+                className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 font-bold outline-none text-xs text-indigo-950 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="4-Wheel">รถกระบะ 4 ล้อ (4-Wheel)</option>
+                <option value="6-Wheel">รถบรรทุก 6 ล้อ (6-Wheel)</option>
+                <option value="10-Wheel">รถบรรทุก 10 ล้อ (10-Wheel)</option>
+                <option value="Trailer">รถหัวลาก / เทรลเลอร์ (Trailer)</option>
+                <option value="Motorcycle">รถมอเตอร์ไซค์ (Motorcycle)</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <div className="relative flex-1">

@@ -9,18 +9,41 @@ export const dynamic = 'force-dynamic';
 // UI maps to the branch `code`.
 export async function GET() {
   const orgId = await getCurrentOrgId();
-  const { data, error } = await supabase
+  let data: any[] | null = null;
+  let error: any = null;
+
+  const res = await supabase
     .from('branches')
-    .select('code, name, color, status')
+    .select('code, name, color, status, warehouse_name, pickup_address')
     .eq('org_id', orgId)
     .eq('status', 'ACTIVE')
     .order('created_at', { ascending: true });
+
+  data = res.data;
+  error = res.error;
+
+  if (error && error.message && (error.message.includes('column') || error.message.includes('does not exist'))) {
+    const fallback = await supabase
+      .from('branches')
+      .select('code, name, color, status')
+      .eq('org_id', orgId)
+      .eq('status', 'ACTIVE')
+      .order('created_at', { ascending: true });
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error('branches GET error:', error);
     return NextResponse.json([]);
   }
-  return NextResponse.json((data || []).map((b: any) => ({ id: b.code, name: b.name, color: b.color })));
+  return NextResponse.json((data || []).map((b: any) => ({
+    id: b.code,
+    name: b.name,
+    color: b.color,
+    warehouseName: b.warehouse_name || '',
+    pickupAddress: b.pickup_address || '',
+  })));
 }
 
 export async function POST(request: Request) {
@@ -40,10 +63,31 @@ export async function POST(request: Request) {
       if (limitErr) return NextResponse.json({ error: limitErr }, { status: 403 });
     }
 
-    const { error } = await getServiceSupabase().from('branches').upsert(
-      { org_id: orgId, code, name: body.name, color: body.color || 'slate', status: 'ACTIVE' },
+    const upsertPayload: Record<string, any> = {
+      org_id: orgId,
+      code,
+      name: body.name,
+      color: body.color || 'slate',
+      status: 'ACTIVE',
+      warehouse_name: body.warehouseName || body.name,
+      pickup_address: body.pickupAddress || '',
+    };
+
+    let { error } = await getServiceSupabase().from('branches').upsert(
+      upsertPayload,
       { onConflict: 'org_id,code' },
     );
+
+    if (error && error.message && (error.message.includes('column') || error.message.includes('does not exist'))) {
+      delete upsertPayload.warehouse_name;
+      delete upsertPayload.pickup_address;
+      const retry = await getServiceSupabase().from('branches').upsert(
+        upsertPayload,
+        { onConflict: 'org_id,code' },
+      );
+      error = retry.error;
+    }
+
     if (error) {
       console.error('branches POST error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
