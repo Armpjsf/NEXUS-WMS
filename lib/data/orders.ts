@@ -20,6 +20,23 @@ export interface OrderLine {
   price?: number;
 }
 
+export interface DeliveryDestination {
+  drop: number;
+  name: string;
+  phone: string;
+  address: string;
+  notes?: string;
+}
+
+export interface QCSignatures {
+  clientSignature?: string;
+  clientName?: string;
+  staffSignature?: string;
+  staffName?: string;
+  signedAt?: string;
+  notes?: string;
+}
+
 export interface OutboundOrder {
   id: string;
   orderNo: string;
@@ -52,6 +69,16 @@ export interface OutboundOrder {
   tmsJobId?: string;
   tmsStatus?: string;
   tmsSyncedAt?: string | null;
+  destinations?: DeliveryDestination[];
+  qcSignatures?: QCSignatures;
+}
+
+export function stripQcMetaFromNotes(notes: string): string {
+  if (!notes) return '';
+  return notes
+    .replace(/<!--DESTINATIONS:[\s\S]*?-->/g, '')
+    .replace(/<!--QC_SIGS:[\s\S]*?-->/g, '')
+    .trim();
 }
 
 function mapOrder(r: any): OutboundOrder {
@@ -80,6 +107,43 @@ function mapOrder(r: any): OutboundOrder {
   if (!vehicleType && r.notes) {
     const vm = String(r.notes).match(/\[Vehicle:\s*([^\]]+)\]/i);
     if (vm) vehicleType = vm[1].trim();
+  }
+
+  // Extract Multi-drop destinations from column or notes tag
+  let destinations: DeliveryDestination[] = [];
+  if (Array.isArray(r.destinations_json) && r.destinations_json.length > 0) {
+    destinations = r.destinations_json;
+  } else if (r.notes) {
+    const dm = String(r.notes).match(/<!--DESTINATIONS:(.*?)-->/);
+    if (dm) {
+      try { destinations = JSON.parse(dm[1]); } catch (_) {}
+    }
+  }
+  if (destinations.length === 0 && r.ship_address) {
+    destinations = [{
+      drop: 1,
+      name: r.customer_name || 'ผู้รับ',
+      phone: r.phone || '',
+      address: r.ship_address || '',
+    }];
+  }
+
+  // Extract QC Dual Signatures from columns or notes tag
+  let qcSignatures: QCSignatures | undefined = undefined;
+  if (r.qc_signatures) {
+    qcSignatures = typeof r.qc_signatures === 'string' ? JSON.parse(r.qc_signatures) : r.qc_signatures;
+  } else if (r.notes) {
+    const sm = String(r.notes).match(/<!--QC_SIGS:(.*?)-->/);
+    if (sm) {
+      try { qcSignatures = JSON.parse(sm[1]); } catch (_) {}
+    }
+  }
+  if (!qcSignatures && (r.pod_signature || r.qc_client_signature)) {
+    qcSignatures = {
+      clientSignature: r.qc_client_signature || r.pod_signature || '',
+      staffSignature: r.qc_staff_signature || '',
+      signedAt: r.picked_at || r.updated_at,
+    };
   }
 
   return {
@@ -114,6 +178,8 @@ function mapOrder(r: any): OutboundOrder {
     tmsJobId: tmsJobId || undefined,
     tmsStatus: tmsStatus || undefined,
     tmsSyncedAt: r.tms_synced_at || null,
+    destinations,
+    qcSignatures,
   };
 }
 
@@ -154,6 +220,8 @@ export async function createOrder(input: {
   shipAddress?: string; carrier?: string; vehicleType?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;
   branchCode?: string;
   status?: OrderStatus;
+  destinations?: DeliveryDestination[];
+  qcSignatures?: QCSignatures;
 }): Promise<OutboundOrder | null> {
   const targetStatus = input.status || 'NEW';
   const isPrePicked = targetStatus === 'PICKED';
@@ -168,6 +236,14 @@ export async function createOrder(input: {
 
   const targetBranch = (input.branchCode || 'URT').trim();
   const vType = (input.vehicleType || '4-Wheel').trim();
+
+  let initialNotes = input.notes || '';
+  if (input.destinations && input.destinations.length > 0) {
+    initialNotes = `${initialNotes} <!--DESTINATIONS:${JSON.stringify(input.destinations)}-->`.trim();
+  }
+  if (input.qcSignatures) {
+    initialNotes = `${initialNotes} <!--QC_SIGS:${JSON.stringify(input.qcSignatures)}-->`.trim();
+  }
 
   const insertPayload: Record<string, any> = {
     org_id: orgId,
@@ -186,7 +262,7 @@ export async function createOrder(input: {
     total_qty: totalQty,
     total_amount: totalAmount,
     created_by: input.createdBy || 'System',
-    notes: input.notes || '',
+    notes: initialNotes,
     branch_code: targetBranch,
   };
 
@@ -195,7 +271,7 @@ export async function createOrder(input: {
 
   // If failed (e.g. vehicle_type or branch_code column doesn't exist yet in Supabase)
   if (error || !data) {
-    const fallbackNotes = `${input.notes ? input.notes + ' ' : ''}[Branch: ${targetBranch}] [Vehicle: ${vType}]`.trim();
+    const fallbackNotes = `${initialNotes ? initialNotes + ' ' : ''}[Branch: ${targetBranch}] [Vehicle: ${vType}]`.trim();
     const fallbackPayload = { ...insertPayload };
     delete fallbackPayload.vehicle_type;
     delete fallbackPayload.branch_code;
@@ -247,6 +323,7 @@ export async function updateOrder(
     status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string; vehicleType: string;
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
+    destinations: DeliveryDestination[]; qcSignatures: QCSignatures;
   }>,
 ): Promise<OutboundOrder | null> {
   const current = await getOrder(id);
@@ -267,7 +344,25 @@ export async function updateOrder(
   if (patch.podPhoto !== undefined) row.pod_photo = patch.podPhoto;
   if (patch.podNote !== undefined) row.pod_note = patch.podNote;
   if (patch.priority !== undefined) row.priority = patch.priority;
-  if (patch.notes !== undefined) row.notes = patch.notes;
+
+  // Handle destinations and qcSignatures serialized cleanly inside notes
+  let currentNotes = patch.notes !== undefined ? patch.notes : (current.notes || '');
+  if (patch.destinations !== undefined) {
+    currentNotes = currentNotes.replace(/<!--DESTINATIONS:[\s\S]*?-->/g, '').trim();
+    if (patch.destinations.length > 0) {
+      currentNotes = `${currentNotes} <!--DESTINATIONS:${JSON.stringify(patch.destinations)}-->`.trim();
+    }
+  }
+  if (patch.qcSignatures !== undefined) {
+    currentNotes = currentNotes.replace(/<!--QC_SIGS:[\s\S]*?-->/g, '').trim();
+    currentNotes = `${currentNotes} <!--QC_SIGS:${JSON.stringify(patch.qcSignatures)}-->`.trim();
+    if (patch.qcSignatures.clientSignature && !patch.podSignature) {
+      row.pod_signature = patch.qcSignatures.clientSignature;
+    }
+  }
+  if (currentNotes !== (current.notes || '') || patch.notes !== undefined || patch.destinations !== undefined || patch.qcSignatures !== undefined) {
+    row.notes = currentNotes;
+  }
 
   const movingToShipped = patch.status === 'SHIPPED' && current.status !== 'SHIPPED';
   if (patch.status) {

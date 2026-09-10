@@ -149,12 +149,17 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       qty: it.qty,
     }));
 
+    const hasMultipleDrops = Array.isArray(order.destinations) && order.destinations.length > 1;
+    const deliveryAddress = hasMultipleDrops
+      ? order.destinations!.map(d => `[ดรอป ${d.drop}] ${d.name} (${d.phone}): ${d.address}`).join(' | ')
+      : (order.shipAddress || '').trim();
+
     const payload: Record<string, unknown> = {
       customer_id: order.customerName || order.orderNo,
       customer_name: order.customerName || '',
       customer_phone: order.phone || '',
       pickup_address: pickup,
-      delivery_address: order.shipAddress.trim(),
+      delivery_address: deliveryAddress,
       items: details,
       items_list: itemsList,
       parcel_barcode: order.trackingNo || order.orderNo,
@@ -166,6 +171,15 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       job_id: targetJobId,
       tracking_no: order.trackingNo || targetJobId,
       notes: `ออเดอร์ WMS: ${order.orderNo}${order.customerName ? ` (${order.customerName})` : ''}`,
+      ...(hasMultipleDrops ? {
+        stops: order.destinations!.map(d => ({
+          stop_number: d.drop,
+          recipient_name: d.name,
+          phone: d.phone,
+          address: d.address,
+          notes: d.notes || '',
+        })),
+      } : {}),
     };
 
     // Scope the TMS job to the order's branch (e.g. 'URT', 'SKN').

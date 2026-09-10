@@ -9,6 +9,8 @@ ALTER TABLE outbound_orders ADD COLUMN IF NOT EXISTS vehicle_type TEXT DEFAULT '
 ALTER TABLE outbound_orders ADD COLUMN IF NOT EXISTS tms_job_id TEXT;
 ALTER TABLE outbound_orders ADD COLUMN IF NOT EXISTS tms_status TEXT;
 ALTER TABLE outbound_orders ADD COLUMN IF NOT EXISTS tms_synced_at TIMESTAMPTZ;
+ALTER TABLE outbound_orders ADD COLUMN IF NOT EXISTS destinations_json JSONB;
+ALTER TABLE outbound_orders ADD COLUMN IF NOT EXISTS qc_signatures JSONB;
 
 CREATE INDEX IF NOT EXISTS idx_ob_orders_tms_job ON outbound_orders(tms_job_id);
 CREATE INDEX IF NOT EXISTS idx_ob_orders_branch ON outbound_orders(branch_code);

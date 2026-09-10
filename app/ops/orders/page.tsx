@@ -14,6 +14,7 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import { exportToExcel } from '@/lib/export/excel';
+import DualSignatureModal, { DeliveryDestination, QCSignatures } from '@/components/orders/DualSignatureModal';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
@@ -25,6 +26,8 @@ interface Order {
   vehicleType?: string;
   podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
   tmsJobId?: string; tmsStatus?: string; tmsSyncedAt?: string | null; branchCode?: string;
+  destinations?: DeliveryDestination[];
+  qcSignatures?: QCSignatures;
 }
 interface Carrier {
   id: string; code: string; name: string; trackingUrlTemplate: string; isDefault: boolean;
@@ -58,6 +61,7 @@ export default function OrdersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [dispatchOrder, setDispatchOrder] = useState<Order | null>(null);
   const [viewPodOrder, setViewPodOrder] = useState<Order | null>(null);
+  const [qcOrder, setQcOrder] = useState<Order | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // PDA Scanner for Order lookup
@@ -382,8 +386,27 @@ export default function OrdersPage() {
                         className="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors">
                         <FileText className="w-4 h-4" />
                       </a>
+                      <a href={`/print/qc-handover?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจรับมอบสินค้า (QC Handover Slip)"
+                        className="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
+                        <ShieldCheck className="w-4 h-4 text-teal-600" />
+                      </a>
 
-                      {/* Advance buttons */}
+                      {/* Advance & QC Action buttons */}
+                      {(o.status === 'PICKED' || o.status === 'PACKED' || o.qcSignatures?.clientSignature || o.qcSignatures?.staffSignature) && (
+                        <button
+                          onClick={() => setQcOrder(o)}
+                          title="ตรวจรับมอบสินค้าพร้อมเซ็นชื่อ 2 ฝ่าย (ลูกค้า + QC คลัง)"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-xs active:scale-95 ${
+                            o.qcSignatures?.clientSignature
+                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-teal-50 hover:bg-teal-100 text-teal-800 border-teal-300'
+                          }`}
+                        >
+                          <UserCheck className="w-3.5 h-3.5 text-teal-600" />
+                          <span>{o.qcSignatures?.clientSignature ? 'QC เซ็นแล้ว' : 'ตรวจรับ QC (เซ็นชื่อ)'}</span>
+                        </button>
+                      )}
+
                       {o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && (
                         <>
                           {o.status === 'NEW' && (
@@ -449,6 +472,18 @@ export default function OrdersPage() {
           <PodProofModal
             order={viewPodOrder}
             onClose={() => setViewPodOrder(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* QC Handover Dual Signature Modal */}
+      <AnimatePresence>
+        {qcOrder && (
+          <DualSignatureModal
+            isOpen={Boolean(qcOrder)}
+            order={qcOrder}
+            onClose={() => setQcOrder(null)}
+            onSaveSuccess={() => { setQcOrder(null); load(); }}
           />
         )}
       </AnimatePresence>
@@ -660,6 +695,18 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [saving, setSaving] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
+  // Multi-Drop delivery destinations
+  const [multiDrop, setMultiDrop] = useState(false);
+  const [destinations, setDestinations] = useState<DeliveryDestination[]>([
+    { drop: 1, name: '', phone: '', address: '', notes: '' },
+  ]);
+
+  // Custom item modal / input for customer-provided stock (cross-docking)
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [customSku, setCustomSku] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [customQty, setCustomQty] = useState(1);
+
   useEffect(() => {
     Promise.all([
       fetch('/api/products', { cache: 'no-store' }).then(r => r.json()),
@@ -678,6 +725,9 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       setPhone(found.phone || '');
       setAddress(found.address || '');
       if (found.defaultCarrier) setCarrier(found.defaultCarrier);
+      setDestinations([
+        { drop: 1, name: found.name, phone: found.phone || '', address: found.address || '', notes: '' },
+      ]);
     }
   };
 
@@ -687,6 +737,24 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   };
   const setQty = (sku: string, qty: number) => setLines(lines.map(l => l.sku === sku ? { ...l, qty: Math.max(1, qty) } : l));
   const removeLine = (sku: string) => setLines(lines.filter(l => l.sku !== sku));
+
+  const addCustomItem = () => {
+    if (!customName.trim()) {
+      toast.error('กรุณาระบุชื่อสินค้า');
+      return;
+    }
+    const sku = customSku.trim() || `CUS-${Date.now().toString().slice(-6)}`;
+    if (lines.some(l => l.sku === sku)) {
+      toast.error('รหัส SKU นี้มีอยู่ในรายการแล้ว');
+      return;
+    }
+    setLines([...lines, { sku, name: customName.trim(), qty: Math.max(1, customQty), price: 0 }]);
+    setCustomSku('');
+    setCustomName('');
+    setCustomQty(1);
+    setShowCustomItem(false);
+    toast.success(`เพิ่ม ${customName.trim()} ลงออเดอร์แล้ว`);
+  };
 
   const handleScanProduct = (scanned: string) => {
     const q = scanned.trim().toLowerCase();
@@ -713,17 +781,27 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
         ? (new URLSearchParams(window.location.search).get('branchId') || 'URT')
         : 'URT';
       const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
+
+      const finalDestinations = multiDrop
+        ? destinations.filter(d => d.address.trim() || d.name.trim())
+        : [{ drop: 1, name: customer, phone, address, notes: '' }];
+
+      const finalAddress = multiDrop && destinations[0]?.address
+        ? destinations[0].address
+        : address;
+
       const res = await fetch('/api/orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: customer,
           phone,
-          shipAddress: address,
+          shipAddress: finalAddress,
           carrier,
           vehicleType: isCompanyFleet ? vehicleType : undefined,
           items: lines,
           branchCode,
           status: prePicked ? 'PICKED' : 'NEW',
+          destinations: finalDestinations.length > 0 ? finalDestinations : undefined,
         }),
       });
       const json = await res.json();
@@ -781,6 +859,92 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             </div>
           </div>
 
+          {/* Multi-Drop Destinations Toggle */}
+          <div className="bg-cyan-50/50 border border-cyan-200/80 rounded-2xl p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label
+                className="flex items-center gap-2 cursor-pointer text-xs font-black text-cyan-900 select-none"
+                onClick={() => setMultiDrop(!multiDrop)}
+              >
+                <input
+                  type="checkbox"
+                  checked={multiDrop}
+                  onChange={(e) => setMultiDrop(e.target.checked)}
+                  className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                />
+                <span>📍 จัดส่งปลายทางหลายดรอป (Multi-Drop)</span>
+              </label>
+              {multiDrop && (
+                <button
+                  type="button"
+                  onClick={() => setDestinations([...destinations, { drop: destinations.length + 1, name: '', phone: '', address: '', notes: '' }])}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" /> เพิ่มดรอป
+                </button>
+              )}
+            </div>
+
+            {multiDrop && (
+              <div className="space-y-2.5 pt-1">
+                {destinations.map((d, idx) => (
+                  <div key={idx} className="bg-white border border-cyan-100 rounded-xl p-3 text-xs shadow-xs relative">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-cyan-800 bg-cyan-100 px-2 py-0.5 rounded text-[11px]">
+                        ดรอปที่ {d.drop}
+                      </span>
+                      {destinations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const filtered = destinations.filter((_, i) => i !== idx);
+                            setDestinations(filtered.map((item, i) => ({ ...item, drop: i + 1 })));
+                          }}
+                          className="text-slate-400 hover:text-rose-600 text-[11px] flex items-center gap-0.5"
+                        >
+                          <Trash2 className="w-3 h-3" /> ลบ
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-1.5">
+                      <input
+                        placeholder="ชื่อผู้รับดรอปนี้"
+                        value={d.name}
+                        onChange={(e) => {
+                          const copy = [...destinations];
+                          copy[idx] = { ...copy[idx], name: e.target.value };
+                          setDestinations(copy);
+                        }}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-500"
+                      />
+                      <input
+                        placeholder="เบอร์โทรผู้รับ"
+                        value={d.phone}
+                        onChange={(e) => {
+                          const copy = [...destinations];
+                          copy[idx] = { ...copy[idx], phone: e.target.value };
+                          setDestinations(copy);
+                        }}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                    <textarea
+                      rows={2}
+                      placeholder="ที่อยู่จัดส่งสำหรับดรอปนี้..."
+                      value={d.address}
+                      onChange={(e) => {
+                        const copy = [...destinations];
+                        copy[idx] = { ...copy[idx], address: e.target.value };
+                        setDestinations(copy);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {isCompanyFleet && (
             <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between gap-3">
               <label className="text-xs font-bold text-indigo-900 whitespace-nowrap">
@@ -824,10 +988,10 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             )}
           </div>
 
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3.5 top-3 w-5 h-5 text-slate-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้าเพื่อเพิ่มลงออเดอร์..." className="w-full pl-11 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้าเพื่อเพิ่มลงออเดอร์..." className="w-full pl-11 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm" />
               {shown.length > 0 && (
                 <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
                   {shown.map(p => (
@@ -841,13 +1005,70 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             </div>
             <button
               type="button"
+              onClick={() => setShowCustomItem(!showCustomItem)}
+              className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
+              title="เพิ่มสินค้านอกแคตตาล็อกที่ลูกค้าจัดเตรียมมา"
+            >
+              <Plus className="w-4 h-4" />
+              <span>สินค้ากำหนดเอง</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setShowCameraScanner(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
             >
               <Camera className="w-4 h-4 text-cyan-400" />
-              <span>สแกนสินค้า</span>
+              <span>สแกน</span>
             </button>
           </div>
+
+          {/* Custom Item Form */}
+          {showCustomItem && (
+            <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-2xl space-y-2.5">
+              <div className="text-xs font-bold text-teal-900 flex justify-between items-center">
+                <span>➕ เพิ่มสินค้านอกแคตตาล็อก (Cross-Docking / ลูกค้าส่งมา)</span>
+                <button type="button" onClick={() => setShowCustomItem(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="รหัส SKU (เว้นว่างเพื่อสร้างอัตโนมัติ)"
+                  value={customSku}
+                  onChange={e => setCustomSku(e.target.value)}
+                  className="bg-white border border-teal-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <input
+                  type="text"
+                  placeholder="ชื่อสินค้า *"
+                  value={customName}
+                  onChange={e => setCustomName(e.target.value)}
+                  className="bg-white border border-teal-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500 sm:col-span-2"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-teal-800">จำนวน:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={customQty}
+                    onChange={e => setCustomQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 bg-white border border-teal-200 rounded-lg px-2.5 py-1 text-center text-xs font-bold"
+                  />
+                  <span className="text-xs text-slate-500">ชิ้น</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addCustomItem}
+                  className="px-4 py-1.5 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-xs active:scale-95 transition-all"
+                >
+                  เพิ่มลงออเดอร์
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             {lines.length === 0 ? (
