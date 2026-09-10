@@ -7,7 +7,15 @@ import { notificationService } from '@/lib/notificationService';
 
 export default function PushNotificationManager() {
   useEffect(() => {
-    if (Capacitor.getPlatform() !== 'web') {
+    // FCM push requires a google-services.json baked into the APK. Until Firebase
+    // is configured for this app id (com.nexuswms.app), calling
+    // PushNotifications.register() throws "Default FirebaseApp is not initialized"
+    // natively and hard-crashes the app on launch. Gate the whole init behind an
+    // explicit flag so the default (unset) is safe; set NEXT_PUBLIC_PUSH_ENABLED
+    // = 'true' on Vercel once google-services.json is in place.
+    const pushEnabled = process.env.NEXT_PUBLIC_PUSH_ENABLED === 'true';
+
+    if (pushEnabled && Capacitor.getPlatform() !== 'web') {
       const initPush = async () => {
         try {
           // 1. Request Permission
