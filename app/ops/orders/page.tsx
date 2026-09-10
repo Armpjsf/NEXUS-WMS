@@ -386,6 +386,29 @@ export default function OrdersPage() {
                       {/* Advance buttons */}
                       {o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && (
                         <>
+                          {o.status === 'NEW' && (
+                            <button
+                              onClick={async () => {
+                                const t = toast.loading('กำลังส่งต่อไป QC...');
+                                try {
+                                  const res = await fetch('/api/orders', {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ id: o.id, status: 'PICKED' }),
+                                  });
+                                  if (!res.ok) throw new Error('เกิดข้อผิดพลาด');
+                                  toast.success('ลูกค้าเตรียมของแล้ว → ส่งต่อไป QC/แพ็ก', { id: t });
+                                  load();
+                                } catch (e: any) {
+                                  toast.error(e.message, { id: t });
+                                }
+                              }}
+                              title="ลูกค้าเตรียมของไว้แล้ว ข้ามไปสถานี QC & แพ็กทันที"
+                              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all border border-blue-200 shadow-xs"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" /> ลูกค้าหยิบแล้ว (ไป QC)
+                            </button>
+                          )}
                           <button onClick={() => advance(o)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 active:scale-95 transition-all">
                             {NEXT_LABEL[o.status]} <ArrowRight className="w-4 h-4" />
                           </button>
@@ -633,6 +656,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [address, setAddress] = useState('');
   const [carrier, setCarrier] = useState(carriers.find(c => c.isDefault)?.name || 'Flash Express');
   const [vehicleType, setVehicleType] = useState('4-Wheel');
+  const [prePicked, setPrePicked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
@@ -699,6 +723,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
           vehicleType: isCompanyFleet ? vehicleType : undefined,
           items: lines,
           branchCode,
+          status: prePicked ? 'PICKED' : 'NEW',
         }),
       });
       const json = await res.json();
@@ -774,6 +799,30 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
               </select>
             </div>
           )}
+
+          {/* Pre-picked by customer toggle */}
+          <div
+            className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-100/70 transition-colors"
+            onClick={() => setPrePicked(!prePicked)}
+          >
+            <div className="flex items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={prePicked}
+                onChange={(e) => setPrePicked(e.target.checked)}
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">ลูกค้าจัดเตรียมสินค้าเรียบร้อยแล้ว (Pre-picked)</span>
+                <span className="text-[11px] text-slate-500 block">ข้ามขั้นตอนเบิกหยิบในคลัง ➔ ส่งต่อไปยังสถานีตรวจสอบ QC & แพ็กทันที</span>
+              </div>
+            </div>
+            {prePicked && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 shrink-0">
+                พร้อม QC
+              </span>
+            )}
+          </div>
 
           <div className="flex gap-2">
             <div className="relative flex-1">

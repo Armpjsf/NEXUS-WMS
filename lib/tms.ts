@@ -143,6 +143,12 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       `[WMS ${order.orderNo}] ${itemsSummary}` +
       (order.carrier ? ` | ${order.carrier} ${order.trackingNo || ''}`.trimEnd() : '');
 
+    const itemsList = (order.items || []).map((it) => ({
+      code: it.sku || it.name,
+      label: it.name,
+      qty: it.qty,
+    }));
+
     const payload: Record<string, unknown> = {
       customer_id: order.customerName || order.orderNo,
       customer_name: order.customerName || '',
@@ -150,6 +156,11 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       pickup_address: pickup,
       delivery_address: order.shipAddress.trim(),
       items: details,
+      items_list: itemsList,
+      parcel_barcode: order.trackingNo || order.orderNo,
+      box_count: order.boxCount || 1,
+      weight_kg: order.weightKg || null,
+      cargo_type: itemsSummary.length > 60 ? `${itemsSummary.substring(0, 57)}...` : itemsSummary,
       vehicle_type: order.vehicleType || '4-Wheel',
       wms_order_no: order.orderNo,
       job_id: targetJobId,

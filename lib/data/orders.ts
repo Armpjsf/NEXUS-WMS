@@ -153,10 +153,13 @@ export async function createOrder(input: {
   channel?: string; refNo?: string; customerName?: string; phone?: string;
   shipAddress?: string; carrier?: string; vehicleType?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;
   branchCode?: string;
+  status?: OrderStatus;
 }): Promise<OutboundOrder | null> {
+  const targetStatus = input.status || 'NEW';
+  const isPrePicked = targetStatus === 'PICKED';
   const items = (input.items || []).map((l) => ({
     sku: l.sku, name: l.name, qty: Number(l.qty) || 0,
-    picked: 0, packed: 0, location: l.location || '', price: Number(l.price) || 0,
+    picked: isPrePicked ? (Number(l.qty) || 0) : 0, packed: 0, location: l.location || '', price: Number(l.price) || 0,
   }));
   const totalQty = items.reduce((s, l) => s + l.qty, 0);
   const totalAmount = items.reduce((s, l) => s + l.qty * (l.price || 0), 0);
@@ -176,7 +179,8 @@ export async function createOrder(input: {
     ship_address: input.shipAddress || '',
     carrier: input.carrier || '',
     vehicle_type: vType,
-    status: 'NEW',
+    status: targetStatus,
+    ...(isPrePicked ? { picked_at: new Date().toISOString() } : {}),
     priority: input.priority || 'NORMAL',
     items_json: items,
     total_qty: totalQty,
