@@ -5,6 +5,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Truck, MapPin, Phone, PackageCheck, CheckCircle2, RefreshCw, ChevronRight, X, PenLine, Camera, FileText } from 'lucide-react';
 import SignatureModal from '@/components/SignatureModal';
+import MobileNav from '@/components/MobileNav';
 
 // Convert a data URL (from the signature pad) into a File for upload.
 function dataUrlToFile(dataUrl: string, name: string): File {
@@ -86,6 +87,7 @@ export default function DriverJobsPage() {
       </div>
 
       {active && <PodSheet order={active} onClose={() => setActive(null)} onDone={() => { setActive(null); load(); }} />}
+      <MobileNav />
     </div>
   );
 }
