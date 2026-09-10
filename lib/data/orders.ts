@@ -3,6 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { isTmsEnabled, createTmsDeliveryJob } from '@/lib/tms';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -221,7 +222,18 @@ export async function updateOrder(
     console.error('[orders] update error:', error);
     return null;
   }
-  return mapOrder(data);
+  const mapped = mapOrder(data);
+
+  // Hand the shipment to the TMS (ePOD) delivery system when the order first
+  // reaches SHIPPED. Feature-flagged and fault-isolated: it never throws and is
+  // a no-op unless TMS_API_URL/TMS_API_KEY are configured, so the ship flow is
+  // unaffected whether TMS is reachable or not.
+  if (movingToShipped && isTmsEnabled()) {
+    const r = await createTmsDeliveryJob(mapped);
+    if (r.ok) console.log(`[tms] delivery job ${r.jobId} created for order ${mapped.orderNo}`);
+  }
+
+  return mapped;
 }
 
 // Orders still awaiting pick/pack — feeds Wave Picking's "load pending orders".
