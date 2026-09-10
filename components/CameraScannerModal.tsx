@@ -31,14 +31,23 @@ export default function CameraScannerModal({
   const [showManual, setShowManual] = useState(false);
   const scannerRef = useRef<any>(null);
   const readerId = useRef(`qr-reader-${Math.random().toString(36).slice(2, 7)}`);
+  // Dedup/throttle via refs — the html5-qrcode success callback captures a stale
+  // render closure, so reading state there never dedups. Refs are stable and
+  // always current, so they gate the flood of ~10-30 callbacks/second.
+  const lastCodeRef = useRef<string | null>(null);
+  const lastTimeRef = useRef(0);
+  const audioCtxRef = useRef<any>(null);
 
-  // Play audio beep
+  // Play audio beep. Reuse ONE AudioContext (creating one per scan leaks and
+  // eventually throws when the browser's context limit is hit).
   const playBeep = () => {
     if (!soundEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -58,8 +67,13 @@ export default function CameraScannerModal({
     const cleanCode = decodedText.trim();
     if (!cleanCode) return;
 
-    // Prevent duplicate rapid scans of same item within 1 second
-    if (cleanCode === lastScanned) return;
+    // Ref-based dedup: skip the same code within 1.5s, and hard-throttle ANY
+    // scan to at most one per 700ms so continuous mode can't flood.
+    const now = Date.now();
+    if (now - lastTimeRef.current < 700) return;
+    if (cleanCode === lastCodeRef.current && now - lastTimeRef.current < 1500) return;
+    lastCodeRef.current = cleanCode;
+    lastTimeRef.current = now;
 
     playBeep();
     triggerHaptic('success');
@@ -69,10 +83,6 @@ export default function CameraScannerModal({
 
     if (!continuous) {
       onClose();
-    } else {
-      setTimeout(() => {
-        setLastScanned(null);
-      }, 1200);
     }
   };
 
@@ -171,6 +181,10 @@ export default function CameraScannerModal({
           scannerRef.current = null;
         });
       }
+      try { audioCtxRef.current?.close(); } catch {}
+      audioCtxRef.current = null;
+      lastCodeRef.current = null;
+      lastTimeRef.current = 0;
     };
   }, [isOpen, facingMode]);
 
