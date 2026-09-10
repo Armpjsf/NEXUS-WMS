@@ -22,6 +22,11 @@ const withPWA = require('next-pwa')({
   register: true,
   importScripts: ['/push-worker.js'],
   skipWaiting: true,
+  // Purge stale precache after each deploy and take control immediately, so the
+  // service worker never serves outdated JS chunks (which surface as a blank
+  // "client-side exception" white screen after a new deploy).
+  cleanupOutdatedCaches: true,
+  clientsClaim: true,
 });
 
 const nextConfig: any = {

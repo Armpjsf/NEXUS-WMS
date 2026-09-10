@@ -72,9 +72,10 @@ export default function MobileScanPage() {
 
     setProducts(prevProducts => {
        // Find product using latest state
+       const q = (code || '').toLowerCase();
        const matchedProduct = prevProducts.find(p =>
-         p.name.toLowerCase().includes(code.toLowerCase()) ||
-         p.id.toLowerCase() === code.toLowerCase()
+         (p.name || '').toLowerCase().includes(q) ||
+         (p.id || '').toLowerCase() === q
        );
 
        const result: ScanResult = {
