@@ -1,29 +1,25 @@
-// Production URL on Vercel
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://wms-360-pro.vercel.app'; 
+// Absolute base only needed when the app is served from a bundled native origin
+// (capacitor://, file://, ionic://). This build's APK uses a remote server.url,
+// so the webview origin is the live https site and relative paths are correct.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nexus-wms-phi.vercel.app';
 
 export const getApiUrl = (path: string) => {
     // Ensure path starts with /
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
     if (typeof window !== 'undefined') {
-        // Only compiled native mobile apps (Capacitor iOS/Android) need absolute URL
-        // because native apps are served from capacitor:// or file:// protocol
-        const win = window as any;
-        const isNativeCapacitor = Boolean(
-            win.Capacitor && 
-            typeof win.Capacitor.isNativePlatform === 'function' && 
-            win.Capacitor.isNativePlatform()
-        );
-
-        if (isNativeCapacitor) {
-            return `${API_BASE_URL}${cleanPath}`;
+        const proto = window.location.protocol;
+        // Loaded over http/https — this includes the Capacitor webview, which points
+        // at the remote https site via server.url. Same-origin relative paths hit the
+        // exact site the app is running on (no CORS, no wrong-domain calls).
+        if (proto === 'http:' || proto === 'https:') {
+            return cleanPath;
         }
-
-        // Web browsers (whether localhost, LAN IP like 192.168.x.x, or public domain):
-        // ALWAYS use relative path so requests stay on the same origin/port without CORS issues!
-        return cleanPath;
+        // Bundled native origin (capacitor://, file://, ionic://) has no backend of
+        // its own, so fall back to the absolute production URL.
+        return `${API_BASE_URL}${cleanPath}`;
     }
 
-    // Default: Relative Path
+    // Server-side: relative path.
     return cleanPath;
 };
