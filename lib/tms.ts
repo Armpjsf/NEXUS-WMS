@@ -41,7 +41,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       `[WMS ${order.orderNo}] ${itemsSummary}` +
       (order.carrier ? ` | ${order.carrier} ${order.trackingNo || ''}`.trimEnd() : '');
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       customer_id: order.customerName || order.orderNo,
       pickup_address: pickup,
       delivery_address: order.shipAddress.trim(),
@@ -49,6 +49,12 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       vehicle_type: '',
       // plan_date omitted -> TMS defaults to today (todayTH)
     };
+    // Optionally scope the TMS job to a branch (maps this warehouse to a TMS
+    // Branch_ID, e.g. 'HQ'). Driver / plate / vehicle stay empty on purpose —
+    // TMS fills those when the job is assigned/bid.
+    if (process.env.TMS_BRANCH_ID) {
+      payload.branch_id = process.env.TMS_BRANCH_ID;
+    }
 
     // Hard 8s timeout so a slow TMS never stalls the ship request.
     const controller = new AbortController();
