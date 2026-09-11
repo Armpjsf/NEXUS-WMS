@@ -18,6 +18,7 @@ export interface OrderLine {
   packed?: number;
   location?: string;
   price?: number;
+  drop?: number; // which delivery drop this item belongs to (1-based, multi-drop)
 }
 
 export interface DeliveryDestination {
@@ -66,6 +67,8 @@ export interface OutboundOrder {
   shippedAt: string | null;
   deliveredAt: string | null;
   vehicleType?: string;
+  vehiclePlate?: string;
+  driverName?: string;
   tmsJobId?: string;
   tmsStatus?: string;
   tmsSyncedAt?: string | null;
@@ -107,6 +110,17 @@ function mapOrder(r: any): OutboundOrder {
   if (!vehicleType && r.notes) {
     const vm = String(r.notes).match(/\[Vehicle:\s*([^\]]+)\]/i);
     if (vm) vehicleType = vm[1].trim();
+  }
+  // Assigned company vehicle (plate) + driver, from column or notes fallback.
+  let vehiclePlate = r.vehicle_plate || '';
+  if (!vehiclePlate && r.notes) {
+    const pm = String(r.notes).match(/\[Plate:\s*([^\]]+)\]/i);
+    if (pm) vehiclePlate = pm[1].trim();
+  }
+  let driverName = r.driver_name || '';
+  if (!driverName && r.notes) {
+    const dnm = String(r.notes).match(/\[Driver:\s*([^\]]+)\]/i);
+    if (dnm) driverName = dnm[1].trim();
   }
 
   // Extract Multi-drop destinations from column or notes tag
@@ -175,6 +189,8 @@ function mapOrder(r: any): OutboundOrder {
     shippedAt: r.shipped_at,
     deliveredAt: r.delivered_at,
     vehicleType: vehicleType || undefined,
+    vehiclePlate: vehiclePlate || undefined,
+    driverName: driverName || undefined,
     tmsJobId: tmsJobId || undefined,
     tmsStatus: tmsStatus || undefined,
     tmsSyncedAt: r.tms_synced_at || null,
@@ -219,6 +235,8 @@ export async function createOrder(input: {
   channel?: string; refNo?: string; customerName?: string; phone?: string;
   shipAddress?: string; carrier?: string; vehicleType?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;
   branchCode?: string;
+  vehiclePlate?: string;
+  driverName?: string;
   status?: OrderStatus;
   destinations?: DeliveryDestination[];
   qcSignatures?: QCSignatures;
@@ -226,7 +244,7 @@ export async function createOrder(input: {
   const targetStatus = input.status || 'NEW';
   const isPrePicked = targetStatus === 'PICKED';
   const items = (input.items || []).map((l) => ({
-    sku: l.sku, name: l.name, qty: Number(l.qty) || 0,
+    sku: l.sku, name: l.name, qty: Number(l.qty) || 0, drop: l.drop || 1,
     picked: isPrePicked ? (Number(l.qty) || 0) : 0, packed: 0, location: l.location || '', price: Number(l.price) || 0,
   }));
   const totalQty = items.reduce((s, l) => s + l.qty, 0);
@@ -255,6 +273,8 @@ export async function createOrder(input: {
     ship_address: input.shipAddress || '',
     carrier: input.carrier || '',
     vehicle_type: vType,
+    vehicle_plate: (input.vehiclePlate || '').trim() || null,
+    driver_name: (input.driverName || '').trim() || null,
     status: targetStatus,
     ...(isPrePicked ? { picked_at: new Date().toISOString() } : {}),
     priority: input.priority || 'NORMAL',
@@ -271,10 +291,14 @@ export async function createOrder(input: {
 
   // If failed (e.g. vehicle_type or branch_code column doesn't exist yet in Supabase)
   if (error || !data) {
-    const fallbackNotes = `${initialNotes ? initialNotes + ' ' : ''}[Branch: ${targetBranch}] [Vehicle: ${vType}]`.trim();
+    const plateTag = input.vehiclePlate ? ` [Plate: ${String(input.vehiclePlate).trim()}]` : '';
+    const driverTag = input.driverName ? ` [Driver: ${String(input.driverName).trim()}]` : '';
+    const fallbackNotes = `${initialNotes ? initialNotes + ' ' : ''}[Branch: ${targetBranch}] [Vehicle: ${vType}]${plateTag}${driverTag}`.trim();
     const fallbackPayload = { ...insertPayload };
     delete fallbackPayload.vehicle_type;
     delete fallbackPayload.branch_code;
+    delete fallbackPayload.vehicle_plate;
+    delete fallbackPayload.driver_name;
     fallbackPayload.notes = fallbackNotes;
 
     const retryRes = await supabase.from('outbound_orders').insert(fallbackPayload).select().single();

@@ -231,6 +231,7 @@ export default function Sidebar() {
         { label: 'ตั้งค่าองค์กร', href: '/admin/organization', icon: Building2, tone: 'cyan', adminOnly: true },
         { label: t('admin_users_title'), href: '/admin/users', icon: Users, tone: 'blue', adminOnly: true },
         { label: 'ผู้ให้บริการขนส่ง', href: '/admin/carriers', icon: Truck, tone: 'amber', adminOnly: true },
+        { label: 'รถบริษัท (Fleet)', href: '/admin/fleet', icon: Truck, tone: 'blue', adminOnly: true },
         { label: 'ผู้จำหน่าย (Suppliers)', href: '/admin/suppliers', icon: Building2, tone: 'emerald', adminOnly: true },
         { label: t('branches_title'), href: '/admin/branches', icon: Store, tone: 'teal', adminOnly: true },
         { label: t('rules_title'), href: '/admin/rules', icon: Bot, tone: 'amber', adminOnly: true },

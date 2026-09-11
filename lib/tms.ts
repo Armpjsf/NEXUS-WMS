@@ -167,6 +167,9 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       weight_kg: order.weightKg || null,
       cargo_type: itemsSummary.length > 60 ? `${itemsSummary.substring(0, 57)}...` : itemsSummary,
       vehicle_type: order.vehicleType || '4-Wheel',
+      // Pre-assigned company vehicle/driver (checker picked the plate at the dock).
+      ...(order.vehiclePlate ? { vehicle_plate: order.vehiclePlate } : {}),
+      ...(order.driverName ? { driver_name: order.driverName } : {}),
       wms_order_no: order.orderNo,
       job_id: targetJobId,
       tracking_no: order.trackingNo || targetJobId,
