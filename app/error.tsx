@@ -41,6 +41,11 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           <RefreshCw className="w-4 h-4" /> โหลดหน้าใหม่
         </button>
       </div>
+      {/* Show the real error so a screenshot can pinpoint the cause. */}
+      <pre className="mt-6 max-w-sm w-full whitespace-pre-wrap break-words text-left text-[11px] leading-relaxed text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+        {String(error?.message || error) || 'unknown error'}
+        {error?.digest ? `\n\ndigest: ${error.digest}` : ''}
+      </pre>
     </div>
   );
 }
