@@ -44,7 +44,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           โหมดมือถือ
         </Link>
       )}
-      <GlobalAIAssistant />
+      {/* AI assistant is off by default (reads the whole catalog per message =
+          heavy Disk IO). Re-enable later with NEXT_PUBLIC_AI_ENABLED = 'true'. */}
+      {process.env.NEXT_PUBLIC_AI_ENABLED === 'true' && <GlobalAIAssistant />}
     </>
   );
 }
