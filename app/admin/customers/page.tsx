@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   Users, Plus, Search, Trash2, Edit2, ArrowLeft, RefreshCw,
-  Phone, Mail, MapPin, Truck, Building, FileText, CheckCircle2, X
+  Phone, Mail, MapPin, Truck, Building, FileText, CheckCircle2, X, Power
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 
@@ -126,6 +126,25 @@ export default function AdminCustomersPage() {
     }
   };
 
+  // Soft-delete: flip ACTIVE <-> INACTIVE. Use this for customers that already
+  // have orders (hard delete is blocked by the FK).
+  const toggleStatus = async (c: Customer) => {
+    const next = c.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: c.id, status: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'อัปเดตสถานะไม่สำเร็จ');
+      toast.success(next === 'INACTIVE' ? 'ปิดใช้งานลูกค้าแล้ว' : 'เปิดใช้งานลูกค้าแล้ว');
+      load();
+    } catch (err: any) {
+      toast.error(err.message || 'เกิดข้อผิดพลาด');
+    }
+  };
+
   return (
     <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
       <AmbientBackground />
@@ -196,10 +215,13 @@ export default function AdminCustomersPage() {
                   </tr>
                 ) : (
                   customers.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={c.id} className={`hover:bg-slate-50/80 transition-colors ${c.status === 'INACTIVE' ? 'opacity-50' : ''}`}>
                       <td className="py-3.5 px-4">
                         <div className="font-mono text-xs font-bold text-blue-600">{c.code}</div>
-                        <div className="font-bold text-slate-800 text-sm">{c.name}</div>
+                        <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                          {c.name}
+                          {c.status === 'INACTIVE' && <span className="text-[10px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded">ปิดใช้งาน</span>}
+                        </div>
                         {c.taxId && <div className="text-[11px] text-slate-400">Tax: {c.taxId}</div>}
                       </td>
                       <td className="py-3.5 px-4">
@@ -241,6 +263,13 @@ export default function AdminCustomersPage() {
                             title="แก้ไข"
                           >
                             <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => toggleStatus(c)}
+                            className={`p-1.5 rounded-lg transition-colors ${c.status === 'INACTIVE' ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'}`}
+                            title={c.status === 'INACTIVE' ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                          >
+                            <Power className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(c)}

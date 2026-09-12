@@ -12,6 +12,7 @@ interface Item { sku: string; name: string; qty: number; drop: number }
 interface Drop { name: string; phone: string; address: string }
 interface Carrier { code: string; name: string; isDefault?: boolean }
 interface Vehicle { id: string; plate: string; driverName: string; vehicleType: string }
+interface CustomerOpt { id: string; name: string; phone: string; address: string; defaultCarrier?: string }
 
 // Full static class strings (Tailwind can't see dynamically-built class names).
 const DROP_STYLES = [
@@ -32,6 +33,7 @@ export default function MobileDispatchPage() {
   const [carrier, setCarrier] = useState('รถขนส่งบริษัท (จัดส่งเอง)');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleId, setVehicleId] = useState('');
+  const [customerOpts, setCustomerOpts] = useState<CustomerOpt[]>([]);
 
   const [customer, setCustomer] = useState('');
   const [drops, setDrops] = useState<Drop[]>([{ name: '', phone: '', address: '' }]);
@@ -51,15 +53,19 @@ export default function MobileDispatchPage() {
 
   const load = useCallback(async () => {
     try {
-      const [rc, rv] = await Promise.all([
+      const [rc, rv, rcu] = await Promise.all([
         fetch(getApiUrl('/api/carriers'), { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
         fetch(getApiUrl('/api/fleet-vehicles?active=1'), { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+        fetch(getApiUrl('/api/customers'), { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
       ]);
       const cs: Carrier[] = rc.carriers || [];
       setCarriers(cs);
       const def = cs.find(c => c.isDefault) || cs.find(c => /บริษัท|จัดส่งเอง|fleet/i.test(c.name)) || cs[0];
       if (def) setCarrier(def.name);
       setVehicles(rv.vehicles || []);
+      setCustomerOpts((rcu.customers || [])
+        .filter((c: any) => c.status !== 'INACTIVE')
+        .map((c: any) => ({ id: c.id, name: c.name, phone: c.phone || '', address: c.address || '', defaultCarrier: c.defaultCarrier || '' })));
     } catch { /* keep defaults */ }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -232,10 +238,30 @@ export default function MobileDispatchPage() {
           )}
         </div>
 
-        {/* Overall customer */}
+        {/* Overall customer — pick from Customer Master or type free text */}
         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl px-3 py-2.5 shadow-sm">
           <User className="w-4 h-4 text-slate-400 shrink-0" />
-          <input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="ชื่อลูกค้า/งาน (ไม่บังคับ)" className="w-full bg-transparent text-sm outline-none" />
+          <input
+            value={customer}
+            list="dispatch-customers"
+            onChange={e => {
+              const v = e.target.value;
+              setCustomer(v);
+              // If they picked an exact match from the list, prefill drop 1's
+              // contact/address when those fields are still empty.
+              const hit = customerOpts.find(c => c.name === v);
+              if (hit) setDrops(prev => prev.map((d, i) => i === 0 ? {
+                name: d.name || hit.name,
+                phone: d.phone || hit.phone,
+                address: d.address || hit.address,
+              } : d));
+            }}
+            placeholder="ชื่อลูกค้า/งาน — เลือกจากรายชื่อหรือพิมพ์เอง (ไม่บังคับ)"
+            className="w-full bg-transparent text-sm outline-none"
+          />
+          <datalist id="dispatch-customers">
+            {customerOpts.map(c => <option key={c.id} value={c.name} />)}
+          </datalist>
         </div>
 
         {/* Drops */}

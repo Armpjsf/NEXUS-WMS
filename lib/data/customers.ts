@@ -159,18 +159,28 @@ export async function updateCustomer(id: string, patch: Partial<Customer>): Prom
   return mapCustomer(data);
 }
 
-export async function deleteCustomer(id: string): Promise<boolean> {
+export async function deleteCustomer(id: string): Promise<{ ok: boolean; error?: string }> {
   const orgId = await getCurrentOrgId();
   const client = getServiceSupabase();
-  const { error } = await client
+  // .select() so we can tell an actual delete from a no-op (row not found /
+  // filtered out by org_id / demo fallback row that was never in the DB).
+  const { data, error } = await client
     .from('customers')
     .delete()
     .eq('org_id', orgId)
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) {
     console.error('[customers] deleteCustomer error:', error);
-    return false;
+    // FK violation → the customer is still referenced by orders/etc.
+    if (error.code === '23503') {
+      return { ok: false, error: 'ลบไม่ได้ เพราะลูกค้ารายนี้ถูกใช้อยู่ในออเดอร์/เอกสารอื่น — แนะนำเปลี่ยนสถานะเป็น "ปิดใช้งาน" แทน' };
+    }
+    return { ok: false, error: error.message };
   }
-  return true;
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'ไม่พบลูกค้ารายนี้ในระบบ (อาจเป็นข้อมูลตัวอย่าง/เดโม ที่ยังไม่ได้บันทึกจริง)' };
+  }
+  return { ok: true };
 }

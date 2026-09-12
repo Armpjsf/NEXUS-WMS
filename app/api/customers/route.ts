@@ -59,8 +59,8 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing customer id' }, { status: 400 });
 
-    const ok = await deleteCustomer(id);
-    if (!ok) return NextResponse.json({ error: 'ลบข้อมูลลูกค้าไม่สำเร็จ' }, { status: 500 });
+    const result = await deleteCustomer(id);
+    if (!result.ok) return NextResponse.json({ error: result.error || 'ลบข้อมูลลูกค้าไม่สำเร็จ' }, { status: 400 });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('API customers DELETE error:', error);
