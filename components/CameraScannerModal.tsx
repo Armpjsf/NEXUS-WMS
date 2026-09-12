@@ -103,13 +103,27 @@ export default function CameraScannerModal({
   useEffect(() => {
     let isMounted = true;
 
+    // Safely tear down the scanner. html5-qrcode's stop() throws SYNCHRONOUSLY
+    // ("Cannot transition to a new state, already under transition") if called
+    // while start() is still in flight or when not scanning — which .catch()
+    // can't catch and would crash the app. Guard everything in try/catch and
+    // only stop when actually SCANNING (state 2).
+    const safeStop = (s: any) => {
+      if (!s) return;
+      try {
+        const st = typeof s.getState === 'function' ? s.getState() : 2;
+        if (st === 2) {
+          Promise.resolve(s.stop()).catch(() => {}).then(() => { try { s.clear(); } catch {} });
+        } else {
+          try { s.clear(); } catch {}
+        }
+      } catch { /* transitioning / not running — ignore */ }
+    };
+
     if (!isOpen) {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {}).then(() => {
-          try { scannerRef.current?.clear(); } catch {}
-          scannerRef.current = null;
-        });
-      }
+      const s = scannerRef.current;
+      scannerRef.current = null;
+      safeStop(s);
       return;
     }
 
@@ -181,12 +195,9 @@ export default function CameraScannerModal({
     return () => {
       isMounted = false;
       clearTimeout(timer);
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {}).then(() => {
-          try { scannerRef.current?.clear(); } catch {}
-          scannerRef.current = null;
-        });
-      }
+      const s = scannerRef.current;
+      scannerRef.current = null;
+      safeStop(s);
       try { audioCtxRef.current?.close(); } catch {}
       audioCtxRef.current = null;
       lastCodeRef.current = null;
