@@ -73,9 +73,18 @@ export default function MobileDispatchPage() {
     setName(''); setQty('1'); setChecked(false);
   };
   const onScanned = (code: string) => {
-    const c = (code || '').trim(); if (!c) return;
-    setItems(prev => [...prev, { sku: `XD-${Date.now().toString().slice(-6)}`, name: c, qty: 1, drop: activeDrop }]);
-    setChecked(false); toast.success(`ดรอป ${activeDrop}: ${c}`);
+    let name = (code || '').trim(); if (!name) return;
+    let sku = '';
+    // WMS QR labels encode {"loc","name","stock"} — pull out the real product
+    // name/sku instead of storing the whole JSON blob as the item name.
+    if (name.startsWith('{')) {
+      try {
+        const o = JSON.parse(name);
+        if (o && (o.name || o.sku)) { name = String(o.name || o.sku); sku = String(o.sku || o.name || ''); }
+      } catch { /* not JSON — keep raw */ }
+    }
+    setItems(prev => [...prev, { sku: sku || name || `XD-${Date.now().toString().slice(-6)}`, name, qty: 1, drop: activeDrop }]);
+    setChecked(false); toast.success(`ดรอป ${activeDrop}: ${name}`);
   };
   const removeItem = (i: number) => { setItems(prev => prev.filter((_, idx) => idx !== i)); setChecked(false); };
   const setItemDrop = (i: number, d: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, drop: d } : it));
