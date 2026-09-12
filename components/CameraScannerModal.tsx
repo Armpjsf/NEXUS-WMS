@@ -64,25 +64,31 @@ export default function CameraScannerModal({
   };
 
   const handleDecoded = (decodedText: string) => {
-    const cleanCode = decodedText.trim();
-    if (!cleanCode) return;
+    // Belt-and-suspenders: a rapid camera stream must never crash the whole app,
+    // so swallow any error from the handlers here.
+    try {
+      const cleanCode = (decodedText || '').trim();
+      if (!cleanCode) return;
 
-    // Ref-based dedup: skip the same code within 1.5s, and hard-throttle ANY
-    // scan to at most one per 700ms so continuous mode can't flood.
-    const now = Date.now();
-    if (now - lastTimeRef.current < 700) return;
-    if (cleanCode === lastCodeRef.current && now - lastTimeRef.current < 1500) return;
-    lastCodeRef.current = cleanCode;
-    lastTimeRef.current = now;
+      // Ref-based dedup: skip the same code within 1.5s, and hard-throttle ANY
+      // scan to at most one per 700ms so continuous mode can't flood.
+      const now = Date.now();
+      if (now - lastTimeRef.current < 700) return;
+      if (cleanCode === lastCodeRef.current && now - lastTimeRef.current < 1500) return;
+      lastCodeRef.current = cleanCode;
+      lastTimeRef.current = now;
 
-    playBeep();
-    triggerHaptic('success');
-    setLastScanned(cleanCode);
+      playBeep();
+      triggerHaptic('success');
+      setLastScanned(cleanCode);
 
-    onScan(cleanCode);
+      try { onScan(cleanCode); } catch (e) { console.error('[scanner] onScan error:', e); }
 
-    if (!continuous) {
-      onClose();
+      if (!continuous) {
+        onClose();
+      }
+    } catch (e) {
+      console.error('[scanner] handleDecoded error:', e);
     }
   };
 
