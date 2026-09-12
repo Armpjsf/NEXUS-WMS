@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown } from 'lucide-react';
+import { Truck, Plus, Minus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import SignatureModal from '@/components/SignatureModal';
@@ -22,6 +22,7 @@ const DROP_STYLES = [
   { border: 'border-emerald-200', text: 'text-emerald-600', chip: 'bg-emerald-600 text-white', badge: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
 ];
 const ds = (i: number) => DROP_STYLES[((i % 5) + 5) % 5];
+const DRAFT_KEY = 'xd-dispatch-draft';
 
 // Cross-dock dispatch: check goods at the dock and load onto a fixed company
 // truck. No stock needed. Supports multiple drops (group items per drop) and
@@ -63,33 +64,76 @@ export default function MobileDispatchPage() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  // Persist an in-progress draft so a screen lock / app reload doesn't lose the
+  // scanned items. Restore on mount, autosave on change, clear on dispatch.
+  const restored = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (Array.isArray(d.items) && d.items.length > 0) {
+          setItems(d.items);
+          setDrops(Array.isArray(d.drops) && d.drops.length ? d.drops : [{ name: '', phone: '', address: '' }]);
+          setCustomer(d.customer || ''); setVehicleId(d.vehicleId || ''); setActiveDrop(d.activeDrop || 1);
+          setCustomerStaffSig(d.customerStaffSig || ''); setCheckerSig(d.checkerSig || '');
+          setDriverSig(d.driverSig || ''); setLoadConfirmed(!!d.loadConfirmed);
+          toast('กู้รายการที่ค้างไว้กลับมาแล้ว', { icon: '↩️' });
+        }
+      }
+    } catch { /* ignore */ }
+    restored.current = true;
+  }, []);
+  useEffect(() => {
+    if (!restored.current) return;
+    try {
+      if (items.length === 0) { localStorage.removeItem(DRAFT_KEY); return; }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ items, drops, customer, vehicleId, activeDrop, customerStaffSig, checkerSig, driverSig, loadConfirmed }));
+    } catch { /* ignore quota/private-mode */ }
+  }, [items, drops, customer, vehicleId, activeDrop, customerStaffSig, checkerSig, driverSig, loadConfirmed]);
+
   const isFleet = /บริษัท|จัดส่งเอง|fleet/i.test(carrier);
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
+
+  // Add qty of an item to the active drop. If the same code/name already exists
+  // in that drop, merge (increment) — so scanning one label twice = qty 2, and
+  // "1 label = N pieces" is just an editable qty on the row.
+  const addOrMerge = (itemName: string, itemSku: string, addQty: number) => {
+    setItems(prev => {
+      const idx = prev.findIndex(i => i.drop === activeDrop && (itemSku ? i.sku === itemSku : i.name === itemName));
+      if (idx >= 0) {
+        const c = [...prev]; c[idx] = { ...c[idx], qty: c[idx].qty + addQty }; return c;
+      }
+      return [...prev, { sku: itemSku || itemName || `XD-${Date.now().toString().slice(-6)}`, name: itemName, qty: addQty, drop: activeDrop }];
+    });
+    setChecked(false);
+  };
 
   const addItem = () => {
     const n = name.trim(); const q = Number(qty);
     if (!n) { toast.error('ใส่ชื่อ/รายการของ'); return; }
     if (!q || q <= 0) { toast.error('จำนวนไม่ถูกต้อง'); return; }
-    setItems(prev => [...prev, { sku: `XD-${Date.now().toString().slice(-6)}`, name: n, qty: q, drop: activeDrop }]);
-    setName(''); setQty('1'); setChecked(false);
+    addOrMerge(n, n, q);
+    setName(''); setQty('1');
   };
   const onScanned = (code: string) => {
-    let name = (code || '').trim(); if (!name) return;
-    let sku = '';
-    // WMS QR labels encode {"loc","name","stock"} — pull out the real product
-    // name/sku instead of storing the whole JSON blob as the item name.
-    if (name.startsWith('{')) {
+    let itemName = (code || '').trim(); if (!itemName) return;
+    let itemSku = '';
+    // WMS/old QR labels encode {"loc","name","stock"} — pull out the real name.
+    if (itemName.startsWith('{')) {
       try {
-        const o = JSON.parse(name);
-        if (o && (o.name || o.sku)) { name = String(o.name || o.sku); sku = String(o.sku || o.name || ''); }
+        const o = JSON.parse(itemName);
+        if (o && (o.name || o.sku)) { itemName = String(o.name || o.sku); itemSku = String(o.sku || o.name || ''); }
       } catch { /* not JSON — keep raw */ }
     }
-    setItems(prev => [...prev, { sku: sku || name || `XD-${Date.now().toString().slice(-6)}`, name, qty: 1, drop: activeDrop }]);
-    setChecked(false); toast.success(`ดรอป ${activeDrop}: ${name}`);
+    addOrMerge(itemName, itemSku, 1);
+    toast.success(`ดรอป ${activeDrop}: ${itemName}`);
   };
   const removeItem = (i: number) => { setItems(prev => prev.filter((_, idx) => idx !== i)); setChecked(false); };
   const setItemDrop = (i: number, d: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, drop: d } : it));
+  const bumpQty = (i: number, delta: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, qty: Math.max(1, it.qty + delta) } : it));
+  const setQtyVal = (i: number, v: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, qty: Math.max(1, Math.floor(v) || 1) } : it));
 
   const addDrop = () => { setDrops(prev => [...prev, { name: '', phone: '', address: '' }]); setActiveDrop(drops.length + 1); };
   const removeDrop = (idx: number) => {
@@ -111,8 +155,9 @@ export default function MobileDispatchPage() {
     if (isFleet && vehicles.length > 0 && !vehicleId) { toast.error('เลือกรถ/ทะเบียนก่อน'); return; }
     if (!customerStaffSig || !checkerSig) { toast.error('ต้องมีลายเซ็น พนักงานจัดของ(ลูกค้า) + เช็คเกอร์'); return; }
     if (!checked) { toast.error('กรุณายืนยันว่าเช็คของครบแล้ว'); return; }
-    if (!driverSig) { toast.error('คนขับต้องเซ็นรับของ'); return; }
-    if (!loadConfirmed) { toast.error(`คนขับยืนยันจำนวนที่โหลด (${totalQty} ชิ้น) ก่อน`); return; }
+    // Driver signature + load-count confirm are OPTIONAL here: one checker serves
+    // many trucks and often finishes checking before the truck arrives. The
+    // driver confirms/loads later (in the TMS app); don't block the checker.
     setSubmitting(true);
     const t = toast.loading('กำลังสร้างงานและส่งขึ้นรถ...');
     try {
@@ -159,6 +204,7 @@ export default function MobileDispatchPage() {
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
       setActiveDrop(1); setChecked(false); setVehicleId('');
       setCustomerStaffSig(''); setCheckerSig(''); setDriverSig(''); setLoadConfirmed(false);
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (e: any) {
       toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t });
     } finally { setSubmitting(false); }
@@ -246,8 +292,14 @@ export default function MobileDispatchPage() {
                     {drops.map((_, di) => <option key={di} value={di + 1}>{di + 1}</option>)}
                   </select>
                 ) : <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center font-bold shrink-0">{i + 1}</div>}
-                <div className="min-w-0 flex-1"><div className="font-bold text-slate-900 truncate">{it.name}</div><div className="text-xs text-slate-500">จำนวน <strong className="text-cyan-600">{it.qty}</strong> ชิ้น</div></div>
-                <button onClick={() => removeItem(i)} className="p-2 text-slate-400 hover:text-rose-600 active:scale-90"><Trash2 className="w-4 h-4" /></button>
+                <div className="min-w-0 flex-1"><div className="font-bold text-slate-900 truncate">{it.name}</div><div className="text-[11px] text-slate-400">1 ลาเบล = ใส่จำนวนชิ้นได้</div></div>
+                {/* Qty stepper — supports "1 label = N pieces" */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => bumpQty(i, -1)} className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
+                  <input value={it.qty} onChange={e => setQtyVal(i, Number(e.target.value))} type="number" inputMode="numeric" className="w-11 h-7 text-center text-sm font-bold text-cyan-600 bg-slate-50 border border-slate-200 rounded-lg outline-none" />
+                  <button onClick={() => bumpQty(i, 1)} className="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
+                </div>
+                <button onClick={() => removeItem(i)} className="p-1.5 text-slate-400 hover:text-rose-600 active:scale-90 shrink-0"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
           </div>
@@ -288,7 +340,7 @@ export default function MobileDispatchPage() {
         {items.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-3">
             <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
-              ขั้น 3 · คนขับรับโหลดขึ้นรถ{selectedVehicle ? ` — ${selectedVehicle.driverName || selectedVehicle.plate}` : ''}
+              ขั้น 3 · คนขับรับโหลด (ถ้าคนขับอยู่หน้างาน — ไม่บังคับ){selectedVehicle ? ` — ${selectedVehicle.driverName || selectedVehicle.plate}` : ''}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setSigTarget('driver')} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${driverSig ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
@@ -309,7 +361,7 @@ export default function MobileDispatchPage() {
       {items.length > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
           <div className="max-w-lg mx-auto">
-            <button onClick={dispatch} disabled={submitting || !checked || !customerStaffSig || !checkerSig || !driverSig || !loadConfirmed} className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 active:scale-[0.99] text-white font-black rounded-2xl py-4 shadow-xl shadow-cyan-600/30">
+            <button onClick={dispatch} disabled={submitting} className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 active:scale-[0.99] text-white font-black rounded-2xl py-4 shadow-xl shadow-cyan-600/30">
               <Truck className="w-5 h-5" />{submitting ? 'กำลังส่ง...' : `ส่งขึ้นรถ (${totalQty} ชิ้น)`}
             </button>
           </div>
