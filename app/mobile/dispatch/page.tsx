@@ -43,11 +43,11 @@ export default function MobileDispatchPage() {
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
-  const [sigTarget, setSigTarget] = useState<'' | 'customer' | 'checker' | 'driver'>('');
+  const [sigTarget, setSigTarget] = useState<'' | 'customer' | 'checker'>('');
   const [customerStaffSig, setCustomerStaffSig] = useState('');
   const [checkerSig, setCheckerSig] = useState('');
-  const [driverSig, setDriverSig] = useState('');
-  const [loadConfirmed, setLoadConfirmed] = useState(false); // driver confirmed total count loaded
+  // NOTE: the driver does NOT use the WMS app — driver confirms the loaded count
+  // in the TMS app instead. So no driver signature/count here.
 
   const load = useCallback(async () => {
     try {
@@ -77,7 +77,6 @@ export default function MobileDispatchPage() {
           setDrops(Array.isArray(d.drops) && d.drops.length ? d.drops : [{ name: '', phone: '', address: '' }]);
           setCustomer(d.customer || ''); setVehicleId(d.vehicleId || ''); setActiveDrop(d.activeDrop || 1);
           setCustomerStaffSig(d.customerStaffSig || ''); setCheckerSig(d.checkerSig || '');
-          setDriverSig(d.driverSig || ''); setLoadConfirmed(!!d.loadConfirmed);
           toast('กู้รายการที่ค้างไว้กลับมาแล้ว', { icon: '↩️' });
         }
       }
@@ -88,9 +87,9 @@ export default function MobileDispatchPage() {
     if (!restored.current) return;
     try {
       if (items.length === 0) { localStorage.removeItem(DRAFT_KEY); return; }
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ items, drops, customer, vehicleId, activeDrop, customerStaffSig, checkerSig, driverSig, loadConfirmed }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ items, drops, customer, vehicleId, activeDrop, customerStaffSig, checkerSig }));
     } catch { /* ignore quota/private-mode */ }
-  }, [items, drops, customer, vehicleId, activeDrop, customerStaffSig, checkerSig, driverSig, loadConfirmed]);
+  }, [items, drops, customer, vehicleId, activeDrop, customerStaffSig, checkerSig]);
 
   const isFleet = /บริษัท|จัดส่งเอง|fleet/i.test(carrier);
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
@@ -186,9 +185,7 @@ export default function MobileDispatchPage() {
       const qcSignatures = {
         customerStaffSignature: customerStaffSig || undefined, customerStaffName: 'พนักงานจัดของ (ลูกค้า)',
         checkerSignature: checkerSig || undefined, checkerName: 'เช็คเกอร์',
-        driverSignature: driverSig || undefined, driverSignName: selectedVehicle?.driverName || 'คนขับ',
-        loadedCount: totalQty,
-        signedAt: new Date().toISOString(), notes: 'Cross-dock เช็คของขึ้นรถ',
+        signedAt: new Date().toISOString(), notes: 'Cross-dock เช็คของขึ้นรถ (คนขับยืนยันจำนวนในแอป TMS)',
       };
 
       const shipRes = await fetch(getApiUrl('/api/orders'), {
@@ -203,7 +200,7 @@ export default function MobileDispatchPage() {
         { id: t, duration: 5000 });
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
       setActiveDrop(1); setChecked(false); setVehicleId('');
-      setCustomerStaffSig(''); setCheckerSig(''); setDriverSig(''); setLoadConfirmed(false);
+      setCustomerStaffSig(''); setCheckerSig('');
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (e: any) {
       toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t });
@@ -336,24 +333,11 @@ export default function MobileDispatchPage() {
           </div>
         )}
 
-        {/* ขั้น 3: คนขับรับโหลด — ลายเซ็นคนขับ + ยืนยันจำนวนรวม */}
+        {/* คนขับยืนยันจำนวนที่โหลด → ทำในแอป TMS (คนขับไม่ใช้แอป WMS) */}
         {items.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-3">
-            <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
-              ขั้น 3 · คนขับรับโหลด (ถ้าคนขับอยู่หน้างาน — ไม่บังคับ){selectedVehicle ? ` — ${selectedVehicle.driverName || selectedVehicle.plate}` : ''}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setSigTarget('driver')} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${driverSig ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
-                <PenLine className={`w-5 h-5 ${driverSig ? 'text-emerald-600' : 'text-slate-400'}`} />
-                <span className="text-[11px] font-bold text-slate-700">ลายเซ็นคนขับ</span>
-                <span className={`text-[10px] font-bold ${driverSig ? 'text-emerald-600' : 'text-slate-400'}`}>{driverSig ? '✓ เซ็นแล้ว' : 'แตะเพื่อเซ็น'}</span>
-              </button>
-              <button onClick={() => setLoadConfirmed(v => !v)} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${loadConfirmed ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
-                <PackageCheck className={`w-5 h-5 ${loadConfirmed ? 'text-emerald-600' : 'text-slate-400'}`} />
-                <span className="text-[11px] font-bold text-slate-700">ยืนยันโหลดครบ</span>
-                <span className={`text-[10px] font-bold ${loadConfirmed ? 'text-emerald-600' : 'text-slate-400'}`}>{loadConfirmed ? `✓ ${totalQty} ชิ้น` : `รวม ${totalQty} ชิ้น`}</span>
-              </button>
-            </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-xs text-blue-700 flex items-start gap-2">
+            <Truck className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>คนขับยืนยันจำนวนที่โหลดจริงในแอป TMS ตอนขึ้นของ — เช็คเกอร์ไม่ต้องรอคนขับที่นี่</span>
           </div>
         )}
       </div>
@@ -371,7 +355,6 @@ export default function MobileDispatchPage() {
       <CameraScannerModal isOpen={scanOpen} onClose={() => setScanOpen(false)} onScan={onScanned} continuous title="สแกนยิงของขึ้นรถ" description={multi ? `กำลังใส่ลงดรอป ${activeDrop} — สแกนต่อเนื่องได้` : 'ส่องบาร์โค้ด/QR — สแกนต่อเนื่องได้'} />
       <SignatureModal isOpen={sigTarget === 'customer'} onClose={() => setSigTarget('')} docNum="ลายเซ็นพนักงานจัดของ (ลูกค้า)" onSave={async (d) => { setCustomerStaffSig(d); }} />
       <SignatureModal isOpen={sigTarget === 'checker'} onClose={() => setSigTarget('')} docNum="ลายเซ็นเช็คเกอร์" onSave={async (d) => { setCheckerSig(d); }} />
-      <SignatureModal isOpen={sigTarget === 'driver'} onClose={() => setSigTarget('')} docNum={`ลายเซ็นคนขับ${selectedVehicle?.driverName ? ' — ' + selectedVehicle.driverName : ''}`} onSave={async (d) => { setDriverSig(d); }} />
       <MobileNav />
     </div>
   );
