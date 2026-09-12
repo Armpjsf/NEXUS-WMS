@@ -147,6 +147,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       code: it.sku || it.name,
       label: it.name,
       qty: it.qty,
+      drop: it.drop || 1, // per-drop manifest so the driver app can reconcile at each stop
     }));
 
     const hasMultipleDrops = Array.isArray(order.destinations) && order.destinations.length > 1;

@@ -42,9 +42,11 @@ export default function MobileDispatchPage() {
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
-  const [sigTarget, setSigTarget] = useState<'' | 'sender' | 'receiver'>('');
-  const [senderSig, setSenderSig] = useState('');
-  const [receiverSig, setReceiverSig] = useState('');
+  const [sigTarget, setSigTarget] = useState<'' | 'customer' | 'checker' | 'driver'>('');
+  const [customerStaffSig, setCustomerStaffSig] = useState('');
+  const [checkerSig, setCheckerSig] = useState('');
+  const [driverSig, setDriverSig] = useState('');
+  const [loadConfirmed, setLoadConfirmed] = useState(false); // driver confirmed total count loaded
 
   const load = useCallback(async () => {
     try {
@@ -107,7 +109,10 @@ export default function MobileDispatchPage() {
     if (items.length === 0) { toast.error('ยังไม่มีรายการของ'); return; }
     if (drops.some(d => !d.address.trim())) { toast.error('ใส่ที่อยู่ให้ครบทุกดรอป'); return; }
     if (isFleet && vehicles.length > 0 && !vehicleId) { toast.error('เลือกรถ/ทะเบียนก่อน'); return; }
+    if (!customerStaffSig || !checkerSig) { toast.error('ต้องมีลายเซ็น พนักงานจัดของ(ลูกค้า) + เช็คเกอร์'); return; }
     if (!checked) { toast.error('กรุณายืนยันว่าเช็คของครบแล้ว'); return; }
+    if (!driverSig) { toast.error('คนขับต้องเซ็นรับของ'); return; }
+    if (!loadConfirmed) { toast.error(`คนขับยืนยันจำนวนที่โหลด (${totalQty} ชิ้น) ก่อน`); return; }
     setSubmitting(true);
     const t = toast.loading('กำลังสร้างงานและส่งขึ้นรถ...');
     try {
@@ -131,15 +136,19 @@ export default function MobileDispatchPage() {
       const created = await createRes.json();
       if (!createRes.ok || !created.order) throw new Error(created.error || 'สร้างออเดอร์ไม่สำเร็จ');
 
-      const qcSignatures = (senderSig || receiverSig) ? {
-        staffSignature: senderSig || undefined, staffName: 'ผู้ส่ง (พนักงาน)',
-        clientSignature: receiverSig || undefined, clientName: customer || drops[0].name || 'ผู้รับ',
+      // Cross-dock handover signatures (dock): customer staff + checker + driver.
+      // (End-customer POD is captured later in TMS at delivery.)
+      const qcSignatures = {
+        customerStaffSignature: customerStaffSig || undefined, customerStaffName: 'พนักงานจัดของ (ลูกค้า)',
+        checkerSignature: checkerSig || undefined, checkerName: 'เช็คเกอร์',
+        driverSignature: driverSig || undefined, driverSignName: selectedVehicle?.driverName || 'คนขับ',
+        loadedCount: totalQty,
         signedAt: new Date().toISOString(), notes: 'Cross-dock เช็คของขึ้นรถ',
-      } : undefined;
+      };
 
       const shipRes = await fetch(getApiUrl('/api/orders'), {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: created.order.id, status: 'SHIPPED', ...(qcSignatures ? { qcSignatures } : {}) }),
+        body: JSON.stringify({ id: created.order.id, status: 'SHIPPED', qcSignatures }),
       });
       const shipped = await shipRes.json();
       if (!shipRes.ok) throw new Error(shipped.error || 'ส่งขึ้นรถไม่สำเร็จ');
@@ -148,7 +157,8 @@ export default function MobileDispatchPage() {
         `✅ ${created.order.orderNo} ส่งขึ้นรถแล้ว${selectedVehicle ? ` (${selectedVehicle.plate})` : ''}${isFleet ? ' + เข้า TMS' : ''}`,
         { id: t, duration: 5000 });
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
-      setActiveDrop(1); setChecked(false); setSenderSig(''); setReceiverSig(''); setVehicleId('');
+      setActiveDrop(1); setChecked(false); setVehicleId('');
+      setCustomerStaffSig(''); setCheckerSig(''); setDriverSig(''); setLoadConfirmed(false);
     } catch (e: any) {
       toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t });
     } finally { setSubmitting(false); }
@@ -254,35 +264,52 @@ export default function MobileDispatchPage() {
             : <p className="text-xs text-slate-400 mt-1.5">ขนส่งเอกชน — ไม่เข้า TMS</p>}
         </div>
 
-        {/* Signatures */}
+        {/* ขั้น 2: ตรวจรับจากคลังลูกค้า — ลายเซ็น พนักงานจัดของ + เช็คเกอร์ */}
         {items.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            {(['sender', 'receiver'] as const).map(role => {
-              const sig = role === 'sender' ? senderSig : receiverSig;
-              return (
-                <button key={role} onClick={() => setSigTarget(role)} className={`rounded-2xl p-3.5 border flex flex-col items-center gap-1.5 ${sig ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`}>
+          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-3">
+            <div className="text-[11px] font-bold text-cyan-700 uppercase tracking-wider">ขั้น 2 · ตรวจรับจากคลังลูกค้า</div>
+            <div className="grid grid-cols-2 gap-3">
+              {([['customer', 'พนักงานจัดของ (ลูกค้า)', customerStaffSig], ['checker', 'เช็คเกอร์ (เรา)', checkerSig]] as const).map(([role, label, sig]) => (
+                <button key={role} onClick={() => setSigTarget(role as any)} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${sig ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
                   <PenLine className={`w-5 h-5 ${sig ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  <span className="text-xs font-bold text-slate-700">ลายเซ็น{role === 'sender' ? 'ผู้ส่ง' : 'ผู้รับ'}</span>
+                  <span className="text-[11px] font-bold text-slate-700 text-center leading-tight">{label}</span>
                   <span className={`text-[10px] font-bold ${sig ? 'text-emerald-600' : 'text-slate-400'}`}>{sig ? '✓ เซ็นแล้ว' : 'แตะเพื่อเซ็น'}</span>
                 </button>
-              );
-            })}
+              ))}
+            </div>
+            <button onClick={() => setChecked(v => !v)} className={`w-full flex items-center gap-3 rounded-xl p-3 border ${checked ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${checked ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-300'}`}>{checked && <Check className="w-4 h-4" />}</div>
+              <span className="text-sm font-semibold text-left text-slate-700">เช็คของครบถ้วนตามที่ลูกค้าจัดเตรียม</span>
+            </button>
           </div>
         )}
 
-        {/* QC check */}
+        {/* ขั้น 3: คนขับรับโหลด — ลายเซ็นคนขับ + ยืนยันจำนวนรวม */}
         {items.length > 0 && (
-          <button onClick={() => setChecked(v => !v)} className={`w-full flex items-center gap-3 rounded-2xl p-3.5 border ${checked ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`}>
-            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${checked ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 border border-slate-300'}`}>{checked && <Check className="w-4 h-4" />}</div>
-            <span className="text-sm font-semibold text-left text-slate-700">เช็คของครบถ้วน พร้อมขึ้นรถแล้ว</span>
-          </button>
+          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-3">
+            <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+              ขั้น 3 · คนขับรับโหลดขึ้นรถ{selectedVehicle ? ` — ${selectedVehicle.driverName || selectedVehicle.plate}` : ''}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setSigTarget('driver')} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${driverSig ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
+                <PenLine className={`w-5 h-5 ${driverSig ? 'text-emerald-600' : 'text-slate-400'}`} />
+                <span className="text-[11px] font-bold text-slate-700">ลายเซ็นคนขับ</span>
+                <span className={`text-[10px] font-bold ${driverSig ? 'text-emerald-600' : 'text-slate-400'}`}>{driverSig ? '✓ เซ็นแล้ว' : 'แตะเพื่อเซ็น'}</span>
+              </button>
+              <button onClick={() => setLoadConfirmed(v => !v)} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${loadConfirmed ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
+                <PackageCheck className={`w-5 h-5 ${loadConfirmed ? 'text-emerald-600' : 'text-slate-400'}`} />
+                <span className="text-[11px] font-bold text-slate-700">ยืนยันโหลดครบ</span>
+                <span className={`text-[10px] font-bold ${loadConfirmed ? 'text-emerald-600' : 'text-slate-400'}`}>{loadConfirmed ? `✓ ${totalQty} ชิ้น` : `รวม ${totalQty} ชิ้น`}</span>
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
       {items.length > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
           <div className="max-w-lg mx-auto">
-            <button onClick={dispatch} disabled={submitting || !checked} className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 active:scale-[0.99] text-white font-black rounded-2xl py-4 shadow-xl shadow-cyan-600/30">
+            <button onClick={dispatch} disabled={submitting || !checked || !customerStaffSig || !checkerSig || !driverSig || !loadConfirmed} className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 active:scale-[0.99] text-white font-black rounded-2xl py-4 shadow-xl shadow-cyan-600/30">
               <Truck className="w-5 h-5" />{submitting ? 'กำลังส่ง...' : `ส่งขึ้นรถ (${totalQty} ชิ้น)`}
             </button>
           </div>
@@ -290,8 +317,9 @@ export default function MobileDispatchPage() {
       )}
 
       <CameraScannerModal isOpen={scanOpen} onClose={() => setScanOpen(false)} onScan={onScanned} continuous title="สแกนยิงของขึ้นรถ" description={multi ? `กำลังใส่ลงดรอป ${activeDrop} — สแกนต่อเนื่องได้` : 'ส่องบาร์โค้ด/QR — สแกนต่อเนื่องได้'} />
-      <SignatureModal isOpen={sigTarget === 'sender'} onClose={() => setSigTarget('')} docNum="ลายเซ็นผู้ส่ง" onSave={async (d) => { setSenderSig(d); }} />
-      <SignatureModal isOpen={sigTarget === 'receiver'} onClose={() => setSigTarget('')} docNum="ลายเซ็นผู้รับ" onSave={async (d) => { setReceiverSig(d); }} />
+      <SignatureModal isOpen={sigTarget === 'customer'} onClose={() => setSigTarget('')} docNum="ลายเซ็นพนักงานจัดของ (ลูกค้า)" onSave={async (d) => { setCustomerStaffSig(d); }} />
+      <SignatureModal isOpen={sigTarget === 'checker'} onClose={() => setSigTarget('')} docNum="ลายเซ็นเช็คเกอร์" onSave={async (d) => { setCheckerSig(d); }} />
+      <SignatureModal isOpen={sigTarget === 'driver'} onClose={() => setSigTarget('')} docNum={`ลายเซ็นคนขับ${selectedVehicle?.driverName ? ' — ' + selectedVehicle.driverName : ''}`} onSave={async (d) => { setDriverSig(d); }} />
       <MobileNav />
     </div>
   );

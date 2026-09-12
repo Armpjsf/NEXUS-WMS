@@ -30,10 +30,18 @@ export interface DeliveryDestination {
 }
 
 export interface QCSignatures {
-  clientSignature?: string;
+  clientSignature?: string;   // end-customer POD (captured later in TMS at delivery)
   clientName?: string;
   staffSignature?: string;
   staffName?: string;
+  // Cross-dock handover signatures captured at the loading dock:
+  customerStaffSignature?: string; // พนักงานจัดของ (คลังลูกค้า)
+  customerStaffName?: string;
+  checkerSignature?: string;       // เช็คเกอร์ (เรา)
+  checkerName?: string;
+  driverSignature?: string;        // คนขับ (รับโหลดขึ้นรถ)
+  driverSignName?: string;
+  loadedCount?: number;            // จำนวนรวมที่คนขับยืนยันโหลด
   signedAt?: string;
   notes?: string;
 }
