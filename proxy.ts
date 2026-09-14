@@ -73,7 +73,7 @@ export default async function proxy(req: NextRequest, event: any) {
 
   if (pathname.startsWith('/api/')) {
     // Public: NextAuth, cron (own secret), and self-service onboarding (signup).
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding')) {
+    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public')) {
       return NextResponse.next();
     }
     // Let CORS preflights through; the actual request still gets checked.

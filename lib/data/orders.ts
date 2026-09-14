@@ -261,6 +261,18 @@ export async function getOrder(id: string): Promise<OutboundOrder | null> {
   return mapOrder(data);
 }
 
+// Fetch an order by its (unguessable) UUID with no org/session scoping, for
+// share-by-link public documents (e.g. the QC handover slip). Uses the service
+// client so it works for logged-out visitors. Exposes order data to anyone
+// holding the id — only surface this through purpose-built public documents.
+export async function getOrderPublic(id: string): Promise<OutboundOrder | null> {
+  if (!id) return null;
+  const { data, error } = await getServiceSupabase()
+    .from('outbound_orders').select('*').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return mapOrder(data);
+}
+
 export async function createOrder(input: {
   channel?: string; refNo?: string; customerName?: string; phone?: string;
   shipAddress?: string; carrier?: string; vehicleType?: string; priority?: string; items: OrderLine[]; createdBy?: string; notes?: string;

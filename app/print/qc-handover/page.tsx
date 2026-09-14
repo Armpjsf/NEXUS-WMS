@@ -61,9 +61,10 @@ function QCHandoverSlip() {
       setLoading(false);
       return;
     }
-    fetch(`/api/orders?id=${id}`, { cache: 'no-store' })
+    // Public endpoint (share-by-link) so the slip loads without a login too.
+    fetch(`/api/public/qc-handover?id=${id}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then(setOrder)
+      .then((j) => setOrder(j?.order || null))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
