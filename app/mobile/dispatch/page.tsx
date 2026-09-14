@@ -8,7 +8,7 @@ import CameraScannerModal from '@/components/CameraScannerModal';
 import SignatureModal from '@/components/SignatureModal';
 import { getApiUrl } from '@/lib/config';
 
-interface Item { sku: string; name: string; qty: number; drop: number }
+interface Item { sku: string; name: string; qty: number; drop: number; scanned?: boolean; override?: boolean }
 interface Drop { name: string; phone: string; address: string; lat?: number | null; lng?: number | null }
 interface Carrier { code: string; name: string; isDefault?: boolean }
 interface Vehicle { id: string; plate: string; driverName: string; vehicleType: string }
@@ -202,13 +202,14 @@ export default function MobileDispatchPage() {
   // Add qty of an item to the active drop. If the same code/name already exists
   // in that drop, merge (increment) — so scanning one label twice = qty 2, and
   // "1 label = N pieces" is just an editable qty on the row.
-  const addOrMerge = (itemName: string, itemSku: string, addQty: number) => {
+  const addOrMerge = (itemName: string, itemSku: string, addQty: number, scanned: boolean) => {
     setItems(prev => {
       const idx = prev.findIndex(i => i.drop === activeDrop && (itemSku ? i.sku === itemSku : i.name === itemName));
       if (idx >= 0) {
-        const c = [...prev]; c[idx] = { ...c[idx], qty: c[idx].qty + addQty }; return c;
+        // A scan on an existing row promotes it to scanned (a manual bump never demotes).
+        const c = [...prev]; c[idx] = { ...c[idx], qty: c[idx].qty + addQty, scanned: scanned || c[idx].scanned }; return c;
       }
-      return [...prev, { sku: itemSku || itemName || `XD-${Date.now().toString().slice(-6)}`, name: itemName, qty: addQty, drop: activeDrop }];
+      return [...prev, { sku: itemSku || itemName || `XD-${Date.now().toString().slice(-6)}`, name: itemName, qty: addQty, drop: activeDrop, scanned }];
     });
     setChecked(false);
   };
@@ -217,7 +218,7 @@ export default function MobileDispatchPage() {
     const n = name.trim(); const q = Number(qty);
     if (!n) { toast.error('ใส่ชื่อ/รายการของ'); return; }
     if (!q || q <= 0) { toast.error('จำนวนไม่ถูกต้อง'); return; }
-    addOrMerge(n, n, q);
+    addOrMerge(n, n, q, false);
     setName(''); setQty('1');
   };
   const onScanned = (code: string) => {
@@ -230,13 +231,14 @@ export default function MobileDispatchPage() {
         if (o && (o.name || o.sku)) { itemName = String(o.name || o.sku); itemSku = String(o.sku || o.name || ''); }
       } catch { /* not JSON — keep raw */ }
     }
-    addOrMerge(itemName, itemSku, 1);
+    addOrMerge(itemName, itemSku, 1, true);
     toast.success(`ดรอป ${activeDrop}: ${itemName}`);
   };
   const removeItem = (i: number) => { setItems(prev => prev.filter((_, idx) => idx !== i)); setChecked(false); };
   const setItemDrop = (i: number, d: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, drop: d } : it));
   const bumpQty = (i: number, delta: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, qty: Math.max(1, it.qty + delta) } : it));
   const setQtyVal = (i: number, v: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, qty: Math.max(1, Math.floor(v) || 1) } : it));
+  const overrideItem = (i: number) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, override: true } : it));
 
   const addDrop = () => { setDrops(prev => [...prev, { name: '', phone: '', address: '' }]); setActiveDrop(drops.length + 1); };
   const removeDrop = (idx: number) => {
@@ -258,9 +260,17 @@ export default function MobileDispatchPage() {
 
   const dispatch = async () => {
     if (items.length === 0) { toast.error('ยังไม่มีรายการของ'); return; }
+    // Prefer scanning: hand-typed items must be explicitly confirmed (override)
+    // per row before dispatch, so nothing slips through without either a real
+    // scan or a deliberate manual confirmation.
+    const needConfirm = items.filter(i => !i.scanned && !i.override);
+    if (needConfirm.length > 0) {
+      toast.error(`มีสินค้าที่พิมพ์มือ ${needConfirm.length} รายการ — กด "ยืนยันเอง" ที่รายการนั้น หรือยิงสแกนก่อนส่ง`);
+      return;
+    }
     if (drops.some(d => !d.address.trim())) { toast.error('ใส่ที่อยู่ให้ครบทุกดรอป'); return; }
     if (isFleet && vehicles.length > 0 && !vehicleId) { toast.error('เลือกรถ/ทะเบียนก่อน'); return; }
-    if (!customerStaffSig || !checkerSig) { toast.error('ต้องมีลายเซ็น พนักงานจัดของ(ลูกค้า) + เช็คเกอร์'); return; }
+    if (!customerStaffSig || !checkerSig) { toast.error('ต้องมีลายเซ็น เจ้าหน้าที่คลัง + เช็คเกอร์'); return; }
     if (!checked) { toast.error('กรุณายืนยันว่าเช็คของครบแล้ว'); return; }
     // Driver signature + load-count confirm are OPTIONAL here: one checker serves
     // many trucks and often finishes checking before the truck arrives. The
@@ -297,8 +307,8 @@ export default function MobileDispatchPage() {
       // Cross-dock handover signatures (dock): customer staff + checker + driver.
       // (End-customer POD is captured later in TMS at delivery.)
       const qcSignatures = {
-        customerStaffSignature: customerStaffSig || undefined, customerStaffName: 'พนักงานจัดของ (ลูกค้า)',
-        checkerSignature: checkerSig || undefined, checkerName: 'เช็คเกอร์',
+        customerStaffSignature: customerStaffSig || undefined, customerStaffName: 'เจ้าหน้าที่คลัง',
+        checkerSignature: checkerSig || undefined, checkerName: 'เจ้าหน้าที่เช็คเกอร์',
         signedAt: new Date().toISOString(), notes: 'Cross-dock เช็คของขึ้นรถ (คนขับยืนยันจำนวนในแอป TMS)',
       };
 
@@ -497,7 +507,14 @@ export default function MobileDispatchPage() {
                     {drops.map((_, di) => <option key={di} value={di + 1}>{di + 1}</option>)}
                   </select>
                 ) : <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center font-bold shrink-0">{i + 1}</div>}
-                <div className="min-w-0 flex-1"><div className="font-bold text-slate-900 truncate">{it.name}</div><div className="text-[11px] text-slate-400">1 ลาเบล = ใส่จำนวนชิ้นได้</div></div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-slate-900 truncate">{it.name}</div>
+                  {it.scanned
+                    ? <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-0.5"><Check className="w-3 h-3" />ยิงแล้ว · 1 ลาเบล = ใส่จำนวนได้</div>
+                    : it.override
+                      ? <div className="text-[11px] text-amber-600 font-semibold flex items-center gap-0.5"><Check className="w-3 h-3" />ยืนยันเอง (ไม่ได้ยิง)</div>
+                      : <button onClick={() => overrideItem(i)} className="text-[11px] text-rose-500 font-bold underline underline-offset-2 active:scale-95">⚠ พิมพ์มือ — แตะเพื่อยืนยันเอง</button>}
+                </div>
                 {/* Qty stepper — supports "1 label = N pieces" */}
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => bumpQty(i, -1)} className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90"><Minus className="w-3.5 h-3.5" /></button>

@@ -46,6 +46,8 @@ interface Order {
   pickedAt?: string | null;
   destinations?: DeliveryDestination[];
   qcSignatures?: QCSignatures;
+  pickupName?: string;
+  pickupAddress?: string;
 }
 
 function QCHandoverSlip() {
@@ -100,16 +102,17 @@ function QCHandoverSlip() {
       printLabel="พิมพ์ใบตรวจรับมอบ (PDF)"
       meta={[
         { label: 'วันที่-เวลาตรวจรับ', value: dateStr },
-        { label: 'ลูกค้าผู้ส่งมอบ', value: order.customerName || '-' },
+        { label: 'จุดรับสินค้า', value: order.pickupName || order.customerName || '-' },
         ...(order.phone ? [{ label: 'เบอร์โทรศัพท์', value: order.phone }] : []),
       ]}
     >
       {/* Customer Header Info */}
       <div className="mb-6 rounded-xl bg-slate-50 border border-slate-200/80 p-4">
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-          ลูกค้า / ผู้ส่งมอบสินค้า
+          จุดรับสินค้า
         </div>
-        <div className="font-black text-base text-slate-900">{order.customerName || '-'}</div>
+        <div className="font-black text-base text-slate-900">{order.pickupName || order.customerName || '-'}</div>
+        {order.pickupAddress && <div className="text-sm text-slate-600">{order.pickupAddress}</div>}
         {order.phone && <div className="text-sm text-slate-600">เบอร์ติดต่อ: {order.phone}</div>}
       </div>
 
@@ -203,7 +206,7 @@ function QCHandoverSlip() {
             </div>
             <div className="text-center w-full border-t border-slate-200 pt-2">
               <div className="font-bold text-slate-800 text-xs">
-                ( {order.qcSignatures?.customerStaffName || order.qcSignatures?.clientName || order.customerName || '...................................................'} )
+                ( เจ้าหน้าที่คลัง )
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 วันที่: {dateStr}
@@ -214,7 +217,7 @@ function QCHandoverSlip() {
           {/* Warehouse Staff Signature (Receiver QC) */}
           <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center justify-between min-h-[160px]">
             <div className="text-xs font-bold text-slate-500 uppercase text-center mb-1">
-              ผู้ตรวจรับมอบสินค้า (เจ้าหน้าที่ QC คลัง)
+              ผู้ตรวจรับมอบสินค้า
             </div>
             <div className="h-20 flex items-center justify-center w-full my-1">
               {(order.qcSignatures?.checkerSignature || order.qcSignatures?.staffSignature) ? (
@@ -229,7 +232,7 @@ function QCHandoverSlip() {
             </div>
             <div className="text-center w-full border-t border-slate-200 pt-2">
               <div className="font-bold text-slate-800 text-xs">
-                ( {order.qcSignatures?.checkerName || order.qcSignatures?.staffName || 'เจ้าหน้าที่ QC ตรวจรับ'} )
+                ( เจ้าหน้าที่เช็คเกอร์ )
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 วันที่: {dateStr}
