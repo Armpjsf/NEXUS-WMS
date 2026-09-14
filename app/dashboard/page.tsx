@@ -835,7 +835,7 @@ function KpiCard({ label, value, icon: Icon, color, bg, border, href, title }: a
 
         <div className="relative z-10">
            <p className="mb-2 line-clamp-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{label}</p>
-           <p className={cn("text-3xl font-black tabular-nums tracking-tight", palette.value)}>
+           <p style={{ fontFamily: 'var(--font-outfit), var(--font-prompt), sans-serif' }} className={cn("text-[2.6rem] leading-none font-black tabular-nums tracking-tight", palette.value)}>
               {typeof value === 'number' ? <CountUp end={value} duration={1.8} separator="," /> : value}
            </p>
         </div>

@@ -345,17 +345,17 @@ export default function Sidebar() {
                         onClick={closeMobile}
                         title={collapsed ? item.label : undefined}
                         className={cn(
-                          'group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40',
+                          'group relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0047BB]/40',
                           collapsed ? 'justify-center' : 'justify-start',
                           isActive
-                            ? cn('bg-gradient-to-r text-white shadow-lg shadow-slate-950/10', tone.active)
+                            ? 'bg-[#E7EEFB] text-[#0047BB] ring-1 ring-[#CFDDF6] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-[#0047BB]'
                             : 'text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm'
                         )}
                       >
                         <span
                           className={cn(
                             'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-                            isActive ? 'bg-white/18 text-white ring-1 ring-white/20' : cn('ring-1', tone.soft, tone.icon)
+                            isActive ? 'bg-white text-[#0047BB] ring-1 ring-[#CFDDF6]' : cn('ring-1', tone.soft, tone.icon)
                           )}
                         >
                           <Icon className="h-4 w-4" />
