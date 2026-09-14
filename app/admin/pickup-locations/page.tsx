@@ -5,19 +5,23 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Warehouse, Plus, Trash2, Edit2, ArrowLeft, RefreshCw, MapPin, LocateFixed, Power, X } from 'lucide-react';
 
+type LocationKind = 'PICKUP' | 'DROP' | 'BOTH';
 interface PickupLocation {
   id: string;
   customerId: string | null;
   name: string;
   address: string;
+  phone: string;
   lat: number | null;
   lng: number | null;
+  kind: LocationKind;
   isDefault: boolean;
   status: string;
 }
 interface CustomerOpt { id: string; name: string }
 
-const emptyForm: Partial<PickupLocation> = { name: '', address: '', lat: null, lng: null, customerId: null, isDefault: false, status: 'ACTIVE' };
+const KIND_LABEL: Record<LocationKind, string> = { PICKUP: 'จุดรับ', DROP: 'จุดส่ง', BOTH: 'รับ+ส่ง' };
+const emptyForm: Partial<PickupLocation> = { name: '', address: '', phone: '', lat: null, lng: null, customerId: null, kind: 'PICKUP', isDefault: false, status: 'ACTIVE' };
 
 export default function AdminPickupLocationsPage() {
   const [locations, setLocations] = useState<PickupLocation[]>([]);
@@ -120,16 +124,16 @@ export default function AdminPickupLocationsPage() {
               <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-lg">
                 <Warehouse className="w-6 h-6" />
               </span>
-              จุดรับสินค้า (Pickup Points)
+              จุดรับ / จุดส่ง (Locations)
             </h1>
-            <p className="text-slate-500 font-medium mt-1">คลังจุดรับพร้อมพิกัด — ใช้ตอนเช็คเกอร์สร้างงาน แล้วส่งพิกัดไป TMS</p>
+            <p className="text-slate-500 font-medium mt-1">คลังจุดพร้อมพิกัด — เช็คเกอร์เลือกตอนสร้างงาน แล้วส่งพิกัดไป TMS</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={load} className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm">
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button onClick={openCreate} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-bold shadow-lg active:scale-95">
-              <Plus className="w-5 h-5" /> เพิ่มจุดรับ
+              <Plus className="w-5 h-5" /> เพิ่มจุด
             </button>
           </div>
         </div>
@@ -139,6 +143,7 @@ export default function AdminPickupLocationsPage() {
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] uppercase font-bold text-slate-400 tracking-wider">
                 <th className="py-3.5 px-4">ชื่อจุด / ที่อยู่</th>
+                <th className="py-3.5 px-4">ประเภท</th>
                 <th className="py-3.5 px-4">ลูกค้า</th>
                 <th className="py-3.5 px-4">พิกัด</th>
                 <th className="py-3.5 px-4 text-right">จัดการ</th>
@@ -146,12 +151,15 @@ export default function AdminPickupLocationsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {locations.length === 0 ? (
-                <tr><td colSpan={4} className="py-12 text-center text-slate-400 font-medium">{loading ? 'กำลังโหลด...' : 'ยังไม่มีจุดรับ — กด "เพิ่มจุดรับ"'}</td></tr>
+                <tr><td colSpan={5} className="py-12 text-center text-slate-400 font-medium">{loading ? 'กำลังโหลด...' : 'ยังไม่มีจุด — กด "เพิ่มจุด"'}</td></tr>
               ) : locations.map(l => (
                 <tr key={l.id} className={`hover:bg-slate-50/80 ${l.status === 'INACTIVE' ? 'opacity-50' : ''}`}>
                   <td className="py-3.5 px-4">
                     <div className="font-bold text-slate-800 flex items-center gap-2">{l.name}{l.status === 'INACTIVE' && <span className="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded">ปิด</span>}</div>
                     <div className="text-xs text-slate-400">{l.address || '-'}</div>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-100">{KIND_LABEL[l.kind] || l.kind}</span>
                   </td>
                   <td className="py-3.5 px-4 text-slate-600">{custName(l.customerId)}</td>
                   <td className="py-3.5 px-4">
@@ -184,6 +192,20 @@ export default function AdminPickupLocationsPage() {
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ชื่อจุดรับ *</label>
                 <input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm" placeholder="เช่น คลังลูกค้า A ลาดกระบัง" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ประเภท</label>
+                  <select value={form.kind || 'PICKUP'} onChange={e => setForm({ ...form, kind: e.target.value as LocationKind })} className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm bg-white">
+                    <option value="PICKUP">จุดรับ</option>
+                    <option value="DROP">จุดส่ง</option>
+                    <option value="BOTH">ใช้ได้ทั้งรับ+ส่ง</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เบอร์ (จุดส่ง)</label>
+                  <input value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm" placeholder="เบอร์ผู้รับ" />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ที่อยู่</label>

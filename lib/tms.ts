@@ -178,6 +178,11 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       ...(order.pickupLat != null && order.pickupLon != null
         ? { pickup_lat: order.pickupLat, pickup_lon: order.pickupLon }
         : {}),
+      // Delivery coordinates from the first drop that has them (main dest pin).
+      ...(() => {
+        const d = (order.destinations || []).find(x => x.lat != null && x.lng != null);
+        return d ? { delivery_lat: d.lat, delivery_lon: d.lng } : {};
+      })(),
       wms_order_no: order.orderNo,
       job_id: targetJobId,
       tracking_no: order.trackingNo || targetJobId,
@@ -189,6 +194,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
           phone: d.phone,
           address: d.address,
           notes: d.notes || '',
+          ...(d.lat != null && d.lng != null ? { lat: d.lat, lng: d.lng } : {}),
         })),
       } : {}),
     };

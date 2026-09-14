@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId') || undefined;
-    const locations = await getPickupLocations(customerId);
+    const kind = (searchParams.get('kind') as any) || undefined;
+    const locations = await getPickupLocations(customerId, kind);
     return NextResponse.json({ locations });
   } catch (error: any) {
     console.error('API pickup-locations GET error:', error);

@@ -27,6 +27,8 @@ export interface DeliveryDestination {
   phone: string;
   address: string;
   notes?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface QCSignatures {

@@ -9,11 +9,11 @@ import SignatureModal from '@/components/SignatureModal';
 import { getApiUrl } from '@/lib/config';
 
 interface Item { sku: string; name: string; qty: number; drop: number }
-interface Drop { name: string; phone: string; address: string }
+interface Drop { name: string; phone: string; address: string; lat?: number | null; lng?: number | null }
 interface Carrier { code: string; name: string; isDefault?: boolean }
 interface Vehicle { id: string; plate: string; driverName: string; vehicleType: string }
 interface CustomerOpt { id: string; name: string; phone: string; address: string; defaultCarrier?: string }
-interface PickupOpt { id: string; customerId: string | null; name: string; address: string; lat: number | null; lng: number | null; isDefault: boolean }
+interface PickupOpt { id: string; customerId: string | null; name: string; address: string; phone: string; lat: number | null; lng: number | null; kind: 'PICKUP' | 'DROP' | 'BOTH'; isDefault: boolean }
 
 // Full static class strings (Tailwind can't see dynamically-built class names).
 const DROP_STYLES = [
@@ -77,7 +77,7 @@ export default function MobileDispatchPage() {
         const rp = await fetch(getApiUrl('/api/pickup-locations'), { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
         setPickupOpts((rp.locations || [])
           .filter((p: any) => p.status !== 'INACTIVE')
-          .map((p: any) => ({ id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', lat: p.lat ?? null, lng: p.lng ?? null, isDefault: !!p.isDefault })));
+          .map((p: any) => ({ id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', phone: p.phone || '', lat: p.lat ?? null, lng: p.lng ?? null, kind: p.kind || 'PICKUP', isDefault: !!p.isDefault })));
       } catch { /* keep empty */ }
     } catch { /* keep defaults */ }
   }, []);
@@ -114,10 +114,26 @@ export default function MobileDispatchPage() {
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
 
-  // Pickup point: show this customer's saved points + shared (null customer) ones.
+  // Location library: show this customer's saved points + shared (null customer) ones.
   const selectedCustomerId = customerOpts.find(c => c.name === customer)?.id || null;
-  const visiblePickups = pickupOpts.filter(p => !p.customerId || p.customerId === selectedCustomerId);
+  const forCustomer = (p: PickupOpt) => !p.customerId || p.customerId === selectedCustomerId;
+  const visiblePickups = pickupOpts.filter(p => forCustomer(p) && (p.kind === 'PICKUP' || p.kind === 'BOTH'));
+  const dropPoints = pickupOpts.filter(p => forCustomer(p) && (p.kind === 'DROP' || p.kind === 'BOTH'));
   const selectedPickup = pickupOpts.find(p => p.id === pickupId) || null;
+
+  // Pick a saved destination point → fill that drop's fields + carry coordinates.
+  const applyDropPoint = (idx: number, pointId: string) => {
+    const p = dropPoints.find(x => x.id === pointId);
+    if (!p) return;
+    setDrops(prev => prev.map((d, i) => i === idx ? {
+      ...d,
+      name: p.name || d.name,
+      phone: p.phone || d.phone,
+      address: p.address || d.address,
+      lat: p.lat ?? null,
+      lng: p.lng ?? null,
+    } : d));
+  };
 
   const useGpsForNewPickup = () => {
     if (!navigator.geolocation) { toast.error('อุปกรณ์ไม่รองรับ GPS'); return; }
@@ -127,6 +143,35 @@ export default function MobileDispatchPage() {
       () => toast.error('อ่าน GPS ไม่สำเร็จ — ตรวจสิทธิ์ตำแหน่ง', { id: t }),
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  };
+
+  const useGpsForDrop = (idx: number) => {
+    if (!navigator.geolocation) { toast.error('อุปกรณ์ไม่รองรับ GPS'); return; }
+    const t = toast.loading('กำลังอ่านตำแหน่ง GPS...');
+    navigator.geolocation.getCurrentPosition(
+      pos => { setDrops(prev => prev.map((d, i) => i === idx ? { ...d, lat: Number(pos.coords.latitude.toFixed(6)), lng: Number(pos.coords.longitude.toFixed(6)) } : d)); toast.success('ได้พิกัดจุดส่งแล้ว', { id: t }); },
+      () => toast.error('อ่าน GPS ไม่สำเร็จ', { id: t }),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  // Save the current drop's fields as a reusable destination point.
+  const saveDropAsPoint = async (idx: number) => {
+    const d = drops[idx];
+    const name = (d.name || d.address).trim();
+    if (!name) { toast.error('ใส่ชื่อผู้รับหรือที่อยู่ก่อน'); return; }
+    const t = toast.loading('กำลังบันทึกจุดส่ง...');
+    try {
+      const res = await fetch(getApiUrl('/api/pickup-locations'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, address: d.address, phone: d.phone, lat: d.lat ?? null, lng: d.lng ?? null, kind: 'DROP', customerId: selectedCustomerId }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.location) throw new Error(j.error || 'บันทึกไม่สำเร็จ');
+      const p = j.location;
+      setPickupOpts(prev => [...prev, { id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', phone: p.phone || '', lat: p.lat ?? null, lng: p.lng ?? null, kind: p.kind || 'DROP', isDefault: !!p.isDefault }]);
+      toast.success('บันทึกจุดส่งแล้ว — ครั้งหน้าเลือกได้เลย', { id: t });
+    } catch (e: any) { toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t }); }
   };
 
   const savePickup = async () => {
@@ -144,7 +189,7 @@ export default function MobileDispatchPage() {
       const j = await res.json();
       if (!res.ok || !j.location) throw new Error(j.error || 'บันทึกไม่สำเร็จ');
       const p = j.location;
-      setPickupOpts(prev => [...prev, { id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', lat: p.lat ?? null, lng: p.lng ?? null, isDefault: !!p.isDefault }]);
+      setPickupOpts(prev => [...prev, { id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', phone: p.phone || '', lat: p.lat ?? null, lng: p.lng ?? null, kind: p.kind || 'PICKUP', isDefault: !!p.isDefault }]);
       setPickupId(p.id);
       setAddingPickup(false);
       setNewPickup({ name: '', address: '', lat: '', lng: '' });
@@ -203,7 +248,11 @@ export default function MobileDispatchPage() {
     setActiveDrop(1); setChecked(false);
   };
   const patchDrop = (idx: number, key: keyof Drop, val: string) =>
-    setDrops(prev => prev.map((d, i) => i === idx ? { ...d, [key]: val } : d));
+    // Manually editing the address invalidates any coordinates that came from a
+    // selected destination point (they'd no longer match the typed address).
+    setDrops(prev => prev.map((d, i) => i === idx
+      ? { ...d, [key]: val, ...(key === 'address' ? { lat: null, lng: null } : {}) }
+      : d));
 
   const multi = drops.length > 1;
 
@@ -221,7 +270,7 @@ export default function MobileDispatchPage() {
     try {
       const branchCode = typeof window !== 'undefined'
         ? (new URLSearchParams(window.location.search).get('branchId') || '') : '';
-      const destinations = drops.map((d, i) => ({ drop: i + 1, name: d.name, phone: d.phone, address: d.address }));
+      const destinations = drops.map((d, i) => ({ drop: i + 1, name: d.name, phone: d.phone, address: d.address, lat: d.lat ?? null, lng: d.lng ?? null }));
 
       const createRes = await fetch(getApiUrl('/api/orders'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -381,9 +430,33 @@ export default function MobileDispatchPage() {
                 <span className={`text-xs font-black ${ds(idx).text}`}>📍 ดรอป {idx + 1}{multi ? '' : ' (จุดส่ง)'}</span>
                 {drops.length > 1 && <button onClick={() => removeDrop(idx)} className="text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>}
               </div>
+              {dropPoints.length > 0 && (
+                <div className="relative">
+                  <select
+                    value=""
+                    onChange={e => { if (e.target.value) applyDropPoint(idx, e.target.value); }}
+                    className="w-full appearance-none bg-cyan-50 text-cyan-700 rounded-lg px-3 py-2 text-xs font-bold outline-none border border-cyan-100"
+                  >
+                    <option value="">📍 เลือกจุดส่งที่บันทึกไว้ (ไม่ต้องพิมพ์)</option>
+                    {dropPoints.map(p => <option key={p.id} value={p.id}>{p.name}{p.lat != null ? ' 📍' : ''}</option>)}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-cyan-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              )}
               <input value={d.name} onChange={e => patchDrop(idx, 'name', e.target.value)} placeholder="ชื่อผู้รับ" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
               <input value={d.phone} onChange={e => patchDrop(idx, 'phone', e.target.value)} placeholder="เบอร์โทร" inputMode="tel" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
               <textarea value={d.address} onChange={e => patchDrop(idx, 'address', e.target.value)} placeholder="ที่อยู่จัดส่ง *" rows={2} className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none resize-none" />
+              <div className="flex items-center gap-2">
+                <button onClick={() => useGpsForDrop(idx)} className="flex items-center gap-1 text-[11px] font-bold text-slate-500 active:scale-95">
+                  <LocateFixed className="w-3.5 h-3.5 text-cyan-600" /> ปักพิกัด GPS
+                </button>
+                <button onClick={() => saveDropAsPoint(idx)} className="flex items-center gap-1 text-[11px] font-bold text-cyan-600 active:scale-95">
+                  <Plus className="w-3.5 h-3.5" /> บันทึกเป็นจุดส่ง
+                </button>
+                {d.lat != null && d.lng != null && (
+                  <span className="ml-auto text-[10px] text-emerald-600 font-bold flex items-center gap-0.5"><MapPin className="w-3 h-3" />มีพิกัด</span>
+                )}
+              </div>
             </div>
           ))}
           <button onClick={addDrop} className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 text-slate-500 rounded-2xl py-2.5 text-sm font-bold active:scale-[0.99]">
