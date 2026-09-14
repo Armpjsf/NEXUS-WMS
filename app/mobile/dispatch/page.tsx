@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Minus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown, LocateFixed, Warehouse } from 'lucide-react';
+import { Truck, Plus, Minus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown, LocateFixed, Warehouse, FileText, X } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import SignatureModal from '@/components/SignatureModal';
@@ -40,6 +40,8 @@ export default function MobileDispatchPage() {
   const [addingPickup, setAddingPickup] = useState(false);
   const [newPickup, setNewPickup] = useState({ name: '', address: '', lat: '', lng: '' });
   const [savingPickup, setSavingPickup] = useState(false);
+
+  const [lastSlip, setLastSlip] = useState<{ id: string; orderNo: string } | null>(null);
 
   const [customer, setCustomer] = useState('');
   const [drops, setDrops] = useState<Drop[]>([{ name: '', phone: '', address: '' }]);
@@ -322,6 +324,8 @@ export default function MobileDispatchPage() {
       toast.success(
         `✅ ${created.order.orderNo} ส่งขึ้นรถแล้ว${selectedVehicle ? ` (${selectedVehicle.plate})` : ''}${isFleet ? ' + เข้า TMS' : ''}`,
         { id: t, duration: 5000 });
+      // Keep a link so the checker can open the QC handover slip right away.
+      setLastSlip({ id: created.order.id, orderNo: created.order.orderNo });
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
       setActiveDrop(1); setChecked(false); setVehicleId('');
       setCustomerStaffSig(''); setCheckerSig('');
@@ -339,6 +343,23 @@ export default function MobileDispatchPage() {
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-lg mx-auto">
+        {/* Post-dispatch: open the QC handover slip on this phone */}
+        {lastSlip && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 shadow-sm flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-black text-emerald-800">ส่งขึ้นรถแล้ว · {lastSlip.orderNo}</div>
+              <div className="text-[11px] text-emerald-600">เปิดใบตรวจรับมอบ (QC) ได้เลย</div>
+            </div>
+            <a
+              href={`/print/qc-handover?id=${lastSlip.id}`}
+              target="_blank" rel="noopener noreferrer"
+              className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold active:scale-95 shrink-0"
+            >เปิดใบ</a>
+            <button onClick={() => setLastSlip(null)} className="text-emerald-400 shrink-0"><X className="w-4 h-4" /></button>
+          </div>
+        )}
+
         {/* Vehicle */}
         <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">รถ / ทะเบียน + คนขับ</div>

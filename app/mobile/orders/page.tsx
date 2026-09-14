@@ -377,18 +377,28 @@ export default function MobileOrdersPage() {
               )}
 
               {order.status === 'SHIPPED' && (
-                <div className="flex items-center justify-between pt-1 text-xs text-emerald-600">
+                <div className="flex items-center justify-between gap-2 pt-1 text-xs text-emerald-600">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="w-4 h-4" /> ส่งมอบให้ขนส่งแล้ว
                   </span>
-                  <a
-                    href={`/print/shipping-label?id=${order.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] flex items-center gap-1"
-                  >
-                    <Printer className="w-3 h-3" /> ฉลาก 4x6
-                  </a>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={`/print/qc-handover?id=${order.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] flex items-center gap-1 font-bold"
+                    >
+                      <Printer className="w-3 h-3" /> ใบ QC
+                    </a>
+                    <a
+                      href={`/print/shipping-label?id=${order.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] flex items-center gap-1"
+                    >
+                      <Printer className="w-3 h-3" /> ฉลาก 4x6
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
