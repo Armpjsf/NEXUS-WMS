@@ -24,6 +24,12 @@ interface QCSignatures {
   clientName?: string;
   staffSignature?: string;
   staffName?: string;
+  // Cross-dock handover signatures captured at the loading dock (what the
+  // dispatch screen actually saves).
+  customerStaffSignature?: string;
+  customerStaffName?: string;
+  checkerSignature?: string;
+  checkerName?: string;
   signedAt?: string;
   notes?: string;
 }
@@ -185,9 +191,9 @@ function QCHandoverSlip() {
               ผู้ส่งมอบสินค้า (ตัวแทนลูกค้า)
             </div>
             <div className="h-20 flex items-center justify-center w-full my-1">
-              {order.qcSignatures?.clientSignature ? (
+              {(order.qcSignatures?.customerStaffSignature || order.qcSignatures?.clientSignature) ? (
                 <img
-                  src={order.qcSignatures.clientSignature}
+                  src={order.qcSignatures.customerStaffSignature || order.qcSignatures.clientSignature}
                   alt="ลายเซ็นผู้ส่งมอบ"
                   className="max-h-16 max-w-[90%] object-contain"
                 />
@@ -197,7 +203,7 @@ function QCHandoverSlip() {
             </div>
             <div className="text-center w-full border-t border-slate-200 pt-2">
               <div className="font-bold text-slate-800 text-xs">
-                ( {order.qcSignatures?.clientName || order.customerName || '...................................................'} )
+                ( {order.qcSignatures?.customerStaffName || order.qcSignatures?.clientName || order.customerName || '...................................................'} )
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 วันที่: {dateStr}
@@ -211,9 +217,9 @@ function QCHandoverSlip() {
               ผู้ตรวจรับมอบสินค้า (เจ้าหน้าที่ QC คลัง)
             </div>
             <div className="h-20 flex items-center justify-center w-full my-1">
-              {order.qcSignatures?.staffSignature ? (
+              {(order.qcSignatures?.checkerSignature || order.qcSignatures?.staffSignature) ? (
                 <img
-                  src={order.qcSignatures.staffSignature}
+                  src={order.qcSignatures.checkerSignature || order.qcSignatures.staffSignature}
                   alt="ลายเซ็นผู้ตรวจรับ"
                   className="max-h-16 max-w-[90%] object-contain"
                 />
@@ -223,7 +229,7 @@ function QCHandoverSlip() {
             </div>
             <div className="text-center w-full border-t border-slate-200 pt-2">
               <div className="font-bold text-slate-800 text-xs">
-                ( {order.qcSignatures?.staffName || 'เจ้าหน้าที่ QC ตรวจรับ'} )
+                ( {order.qcSignatures?.checkerName || order.qcSignatures?.staffName || 'เจ้าหน้าที่ QC ตรวจรับ'} )
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 วันที่: {dateStr}
