@@ -17,15 +17,17 @@ interface DocumentShellProps {
 // Shared, system-owned document design. Pulls org branding (logo / accent color)
 // so every printed document is consistent and white-labels per organization.
 export function DocumentShell({ docType, docTypeEn, docNo, meta = [], children, printLabel = 'พิมพ์เอกสาร' }: DocumentShellProps) {
-  const [org, setOrg] = useState<Org>({ name: 'WMS 360', brandingLogo: '', brandingColor: '#0ea5e9' });
+  const [org, setOrg] = useState<Org>({ name: 'NEXUS', brandingLogo: '', brandingColor: '#0ea5e9' });
 
   useEffect(() => {
     fetch('/api/org', { cache: 'no-store' }).then(r => r.json())
-      .then(d => setOrg({ name: d.name || 'WMS 360', brandingLogo: d.brandingLogo || '', brandingColor: d.brandingColor || '#0ea5e9' }))
+      .then(d => setOrg({ name: d.name || 'NEXUS', brandingLogo: d.brandingLogo || '', brandingColor: d.brandingColor || '#0ea5e9' }))
       .catch(() => {});
   }, []);
 
   const accent = org.brandingColor;
+  // Show NEXUS as the system brand; ignore the legacy "WMS 360" org name.
+  const brand = org.name && !/wms\s*360/i.test(org.name) ? org.name : 'NEXUS';
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white py-8 px-4">
@@ -51,7 +53,7 @@ export function DocumentShell({ docType, docTypeEn, docNo, meta = [], children, 
                   : (org.name || 'W').trim().charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <div className="text-xl font-black tracking-tight truncate">{org.name}</div>
+                <div className="text-xl font-black tracking-tight truncate">{brand}</div>
                 <div className="text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: accent }}>Warehouse Management</div>
               </div>
             </div>
@@ -77,7 +79,7 @@ export function DocumentShell({ docType, docTypeEn, docNo, meta = [], children, 
           {children}
 
           <div className="mt-10 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-400">
-            เอกสารสร้างจากระบบ {org.name} · {docNo} · {new Date().toLocaleDateString('th-TH')}
+            เอกสารสร้างจากระบบ {brand} · {docNo} · {new Date().toLocaleDateString('th-TH')}
           </div>
         </div>
       </div>

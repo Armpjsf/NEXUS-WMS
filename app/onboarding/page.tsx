@@ -46,7 +46,7 @@ export default function OnboardingPage() {
             <Warehouse className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">สร้างคลังของคุณ</h1>
-          <p className="text-slate-500 font-medium mt-1">สมัครใช้งาน WMS 360 — พร้อมข้อมูลตัวอย่างให้เริ่มได้ทันที</p>
+          <p className="text-slate-500 font-medium mt-1">สมัครใช้งาน NEXUS — พร้อมข้อมูลตัวอย่างให้เริ่มได้ทันที</p>
         </div>
 
         {done ? (

@@ -298,8 +298,10 @@ export default function Sidebar() {
 
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-black tracking-tight text-slate-950">{org.name}</h1>
-              <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Warehouse Command</p>
+              <h1 className="truncate text-lg font-black tracking-tight text-slate-950">NEXUS</h1>
+              <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
+                {org.name && !/wms\s*360|nexus/i.test(org.name) ? org.name : 'Warehouse System'}
+              </p>
             </div>
           )}
 
