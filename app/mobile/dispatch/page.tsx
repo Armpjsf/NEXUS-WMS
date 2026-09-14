@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Minus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown } from 'lucide-react';
+import { Truck, Plus, Minus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown, LocateFixed, Warehouse } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import SignatureModal from '@/components/SignatureModal';
@@ -13,6 +13,7 @@ interface Drop { name: string; phone: string; address: string }
 interface Carrier { code: string; name: string; isDefault?: boolean }
 interface Vehicle { id: string; plate: string; driverName: string; vehicleType: string }
 interface CustomerOpt { id: string; name: string; phone: string; address: string; defaultCarrier?: string }
+interface PickupOpt { id: string; customerId: string | null; name: string; address: string; lat: number | null; lng: number | null; isDefault: boolean }
 
 // Full static class strings (Tailwind can't see dynamically-built class names).
 const DROP_STYLES = [
@@ -34,6 +35,11 @@ export default function MobileDispatchPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleId, setVehicleId] = useState('');
   const [customerOpts, setCustomerOpts] = useState<CustomerOpt[]>([]);
+  const [pickupOpts, setPickupOpts] = useState<PickupOpt[]>([]);
+  const [pickupId, setPickupId] = useState('');
+  const [addingPickup, setAddingPickup] = useState(false);
+  const [newPickup, setNewPickup] = useState({ name: '', address: '', lat: '', lng: '' });
+  const [savingPickup, setSavingPickup] = useState(false);
 
   const [customer, setCustomer] = useState('');
   const [drops, setDrops] = useState<Drop[]>([{ name: '', phone: '', address: '' }]);
@@ -66,6 +72,13 @@ export default function MobileDispatchPage() {
       setCustomerOpts((rcu.customers || [])
         .filter((c: any) => c.status !== 'INACTIVE')
         .map((c: any) => ({ id: c.id, name: c.name, phone: c.phone || '', address: c.address || '', defaultCarrier: c.defaultCarrier || '' })));
+      // Load the pickup-point library (origins with coordinates).
+      try {
+        const rp = await fetch(getApiUrl('/api/pickup-locations'), { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
+        setPickupOpts((rp.locations || [])
+          .filter((p: any) => p.status !== 'INACTIVE')
+          .map((p: any) => ({ id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', lat: p.lat ?? null, lng: p.lng ?? null, isDefault: !!p.isDefault })));
+      } catch { /* keep empty */ }
     } catch { /* keep defaults */ }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -100,6 +113,46 @@ export default function MobileDispatchPage() {
   const isFleet = /บริษัท|จัดส่งเอง|fleet/i.test(carrier);
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
+
+  // Pickup point: show this customer's saved points + shared (null customer) ones.
+  const selectedCustomerId = customerOpts.find(c => c.name === customer)?.id || null;
+  const visiblePickups = pickupOpts.filter(p => !p.customerId || p.customerId === selectedCustomerId);
+  const selectedPickup = pickupOpts.find(p => p.id === pickupId) || null;
+
+  const useGpsForNewPickup = () => {
+    if (!navigator.geolocation) { toast.error('อุปกรณ์ไม่รองรับ GPS'); return; }
+    const t = toast.loading('กำลังอ่านตำแหน่ง GPS...');
+    navigator.geolocation.getCurrentPosition(
+      pos => { setNewPickup(p => ({ ...p, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) })); toast.success('ได้พิกัดแล้ว', { id: t }); },
+      () => toast.error('อ่าน GPS ไม่สำเร็จ — ตรวจสิทธิ์ตำแหน่ง', { id: t }),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const savePickup = async () => {
+    const name = newPickup.name.trim();
+    if (!name) { toast.error('ใส่ชื่อจุดรับ'); return; }
+    const lat = newPickup.lat.trim() ? Number(newPickup.lat) : null;
+    const lng = newPickup.lng.trim() ? Number(newPickup.lng) : null;
+    if ((lat != null && Number.isNaN(lat)) || (lng != null && Number.isNaN(lng))) { toast.error('พิกัดไม่ถูกต้อง'); return; }
+    setSavingPickup(true);
+    try {
+      const res = await fetch(getApiUrl('/api/pickup-locations'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, address: newPickup.address.trim(), lat, lng, customerId: selectedCustomerId }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.location) throw new Error(j.error || 'บันทึกไม่สำเร็จ');
+      const p = j.location;
+      setPickupOpts(prev => [...prev, { id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', lat: p.lat ?? null, lng: p.lng ?? null, isDefault: !!p.isDefault }]);
+      setPickupId(p.id);
+      setAddingPickup(false);
+      setNewPickup({ name: '', address: '', lat: '', lng: '' });
+      toast.success('เพิ่มจุดรับแล้ว');
+    } catch (e: any) {
+      toast.error(e.message || 'เกิดข้อผิดพลาด');
+    } finally { setSavingPickup(false); }
+  };
 
   // Add qty of an item to the active drop. If the same code/name already exists
   // in that drop, merge (increment) — so scanning one label twice = qty 2, and
@@ -178,6 +231,12 @@ export default function MobileDispatchPage() {
           phone: drops[0].phone,
           shipAddress: drops[0].address,
           carrier, items, branchCode, destinations,
+          ...(selectedPickup ? {
+            pickupName: selectedPickup.name,
+            pickupAddress: selectedPickup.address,
+            pickupLat: selectedPickup.lat,
+            pickupLon: selectedPickup.lng,
+          } : {}),
           vehicleType: selectedVehicle?.vehicleType || '4-Wheel',
           vehiclePlate: selectedVehicle?.plate || '',
           driverName: selectedVehicle?.driverName || '',
@@ -262,6 +321,56 @@ export default function MobileDispatchPage() {
           <datalist id="dispatch-customers">
             {customerOpts.map(c => <option key={c.id} value={c.name} />)}
           </datalist>
+        </div>
+
+        {/* Pickup point (origin) — chosen per job, coords pushed to TMS */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Warehouse className="w-3.5 h-3.5" /> จุดรับสินค้า (ต้นทาง)
+            </div>
+            <button onClick={() => setAddingPickup(v => !v)} className="text-xs font-bold text-cyan-600 active:scale-95 flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" /> เพิ่มจุด
+            </button>
+          </div>
+          <div className="relative">
+            <select value={pickupId} onChange={e => setPickupId(e.target.value)}
+              className="w-full appearance-none bg-slate-100 rounded-xl px-3 py-3 text-sm font-semibold outline-none">
+              <option value="">— ใช้คลังสาขา (ค่าเริ่มต้น) —</option>
+              {visiblePickups.map(p => (
+                <option key={p.id} value={p.id}>{p.name}{p.lat != null ? ' 📍' : ' (ไม่มีพิกัด)'}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          {selectedPickup && (
+            <p className="text-[11px] text-slate-400 flex items-start gap-1">
+              <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+              {selectedPickup.address || 'ไม่มีที่อยู่'}{selectedPickup.lat != null ? ` · ${selectedPickup.lat},${selectedPickup.lng}` : ' · ยังไม่มีพิกัด'}
+            </p>
+          )}
+
+          {addingPickup && (
+            <div className="border-t border-slate-100 pt-2.5 space-y-2">
+              <input value={newPickup.name} onChange={e => setNewPickup(p => ({ ...p, name: e.target.value }))} placeholder="ชื่อจุดรับ *" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
+              <input value={newPickup.address} onChange={e => setNewPickup(p => ({ ...p, address: e.target.value }))} placeholder="ที่อยู่ (ไม่บังคับ)" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
+              <div className="flex gap-2">
+                <input value={newPickup.lat} onChange={e => setNewPickup(p => ({ ...p, lat: e.target.value }))} placeholder="lat" inputMode="decimal" className="w-1/2 bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
+                <input value={newPickup.lng} onChange={e => setNewPickup(p => ({ ...p, lng: e.target.value }))} placeholder="lng" inputMode="decimal" className="w-1/2 bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={useGpsForNewPickup} className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 rounded-lg py-2 text-xs font-bold active:scale-95">
+                  <LocateFixed className="w-4 h-4 text-cyan-600" /> ใช้ตำแหน่งปัจจุบัน (GPS)
+                </button>
+                <button onClick={savePickup} disabled={savingPickup} className="flex-1 bg-cyan-600 text-white rounded-lg py-2 text-xs font-bold active:scale-95 disabled:opacity-50">
+                  {savingPickup ? 'กำลังบันทึก...' : 'บันทึกจุดรับ'}
+                </button>
+              </div>
+              {selectedCustomerId
+                ? <p className="text-[10px] text-slate-400">จะผูกกับลูกค้าที่เลือก · เลือกซ้ำได้ในงานถัดไป</p>
+                : <p className="text-[10px] text-amber-500">ยังไม่ได้เลือกลูกค้า → จะบันทึกเป็นจุดกลาง (ใช้ได้ทุกลูกค้า)</p>}
+            </div>
+          )}
         </div>
 
         {/* Drops */}

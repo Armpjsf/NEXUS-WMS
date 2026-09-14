@@ -82,6 +82,12 @@ export interface OutboundOrder {
   tmsSyncedAt?: string | null;
   destinations?: DeliveryDestination[];
   qcSignatures?: QCSignatures;
+  // Cross-dock pickup point (chosen by the checker). Pushed to TMS as
+  // Origin_Location + Pickup_Lat/Lon so the job has a real pickup pin.
+  pickupName?: string;
+  pickupAddress?: string;
+  pickupLat?: number | null;
+  pickupLon?: number | null;
 }
 
 export function stripQcMetaFromNotes(notes: string): string {
@@ -89,6 +95,7 @@ export function stripQcMetaFromNotes(notes: string): string {
   return notes
     .replace(/<!--DESTINATIONS:[\s\S]*?-->/g, '')
     .replace(/<!--QC_SIGS:[\s\S]*?-->/g, '')
+    .replace(/<!--PICKUP:[\s\S]*?-->/g, '')
     .trim();
 }
 
@@ -150,6 +157,15 @@ function mapOrder(r: any): OutboundOrder {
     }];
   }
 
+  // Extract cross-dock pickup point from column or notes tag.
+  let pickup: { name?: string; address?: string; lat?: number | null; lon?: number | null } = {};
+  if (r.pickup_name || r.pickup_lat != null) {
+    pickup = { name: r.pickup_name || '', address: r.pickup_address || '', lat: r.pickup_lat ?? null, lon: r.pickup_lon ?? null };
+  } else if (r.notes) {
+    const pm = String(r.notes).match(/<!--PICKUP:(.*?)-->/);
+    if (pm) { try { pickup = JSON.parse(pm[1]); } catch (_) {} }
+  }
+
   // Extract QC Dual Signatures from columns or notes tag
   let qcSignatures: QCSignatures | undefined = undefined;
   if (r.qc_signatures) {
@@ -204,6 +220,10 @@ function mapOrder(r: any): OutboundOrder {
     tmsSyncedAt: r.tms_synced_at || null,
     destinations,
     qcSignatures,
+    pickupName: pickup.name || undefined,
+    pickupAddress: pickup.address || undefined,
+    pickupLat: pickup.lat ?? null,
+    pickupLon: pickup.lon ?? null,
   };
 }
 
@@ -248,6 +268,10 @@ export async function createOrder(input: {
   status?: OrderStatus;
   destinations?: DeliveryDestination[];
   qcSignatures?: QCSignatures;
+  pickupName?: string;
+  pickupAddress?: string;
+  pickupLat?: number | null;
+  pickupLon?: number | null;
 }): Promise<OutboundOrder | null> {
   const targetStatus = input.status || 'NEW';
   const isPrePicked = targetStatus === 'PICKED';
@@ -269,6 +293,10 @@ export async function createOrder(input: {
   }
   if (input.qcSignatures) {
     initialNotes = `${initialNotes} <!--QC_SIGS:${JSON.stringify(input.qcSignatures)}-->`.trim();
+  }
+  if (input.pickupName || input.pickupLat != null) {
+    const pickupMeta = { name: input.pickupName || '', address: input.pickupAddress || '', lat: input.pickupLat ?? null, lon: input.pickupLon ?? null };
+    initialNotes = `${initialNotes} <!--PICKUP:${JSON.stringify(pickupMeta)}-->`.trim();
   }
 
   const insertPayload: Record<string, any> = {

@@ -111,8 +111,10 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       ? order.orderNo.replace(/^ORD-/, 'JOB-')
       : (order.orderNo.startsWith('JOB-') ? order.orderNo : `JOB-${order.orderNo}`);
 
-    // Resolve pickup origin name from branch/warehouse settings
-    let pickup = (process.env.TMS_PICKUP_ADDRESS || '').trim();
+    // Prefer the pickup point the checker chose for this job (name + coords).
+    // Fall back to branch/warehouse settings only when none was selected.
+    let pickup = (order.pickupName || order.pickupAddress || '').trim();
+    if (!pickup) pickup = (process.env.TMS_PICKUP_ADDRESS || '').trim();
     if (!pickup) {
       try {
         const branchCode = (order.branchCode || process.env.TMS_BRANCH_ID || 'URT').trim();
@@ -171,6 +173,11 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       // Pre-assigned company vehicle/driver (checker picked the plate at the dock).
       ...(order.vehiclePlate ? { vehicle_plate: order.vehiclePlate } : {}),
       ...(order.driverName ? { driver_name: order.driverName } : {}),
+      // Pickup coordinates (from the checker's chosen pickup point) so the TMS
+      // job gets a real origin pin instead of only a text location.
+      ...(order.pickupLat != null && order.pickupLon != null
+        ? { pickup_lat: order.pickupLat, pickup_lon: order.pickupLon }
+        : {}),
       wms_order_no: order.orderNo,
       job_id: targetJobId,
       tracking_no: order.trackingNo || targetJobId,

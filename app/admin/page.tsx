@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, History, ShieldAlert, Settings, LayoutGrid, Printer, Building2, TrendingUp } from 'lucide-react';
+import { Users, History, ShieldAlert, Settings, LayoutGrid, Printer, Building2, TrendingUp, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { motion } from 'framer-motion';
@@ -45,12 +45,19 @@ export default function AdminPage() {
       href: '/admin/labels',
       color: 'from-rose-600 to-pink-700'
     },
-    { 
-      title: t('branch_management_title'), 
-      desc: t('admin_branches_desc'), 
-      icon: Building2, 
+    {
+      title: t('branch_management_title'),
+      desc: t('admin_branches_desc'),
+      icon: Building2,
       href: '/admin/branches',
       color: 'from-teal-500 to-cyan-600'
+    },
+    {
+      title: 'จุดรับสินค้า',
+      desc: 'คลังจุดรับพร้อมพิกัด (ต้นทาง) ใช้ตอนสร้างงานส่งขึ้นรถ',
+      icon: Warehouse,
+      href: '/admin/pickup-locations',
+      color: 'from-cyan-500 to-blue-600'
     }
   ];
 
