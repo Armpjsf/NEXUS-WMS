@@ -22,11 +22,13 @@ import {
   X,
   PackageCheck,
   TrendingUp,
+  ArrowLeftRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { LocationSwapModal } from '@/components/LocationSwapModal';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/config';
 import { toast } from 'react-hot-toast';
@@ -69,6 +71,7 @@ function WarehouseMapContent() {
   const [heatmapMode, setHeatmapMode] = useState<'STOCK' | 'VELOCITY'>('STOCK');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBin, setSelectedBin] = useState<WarehouseBin | null>(null);
+  const [swapProduct, setSwapProduct] = useState<any>(null);
 
   // Fetch Real Products and Transactions from API / Cache
   const fetchData = async () => {
@@ -609,18 +612,28 @@ function WarehouseMapContent() {
                           </div>
                         </div>
 
-                        <div className="text-right font-mono">
-                          <span
-                            className={cn(
-                              'text-sm font-black',
-                              p.stock <= p.minStock ? 'text-amber-600' : 'text-[#dee2ec]'
-                            )}
+                        <div className="flex items-center gap-3">
+                          <div className="text-right font-mono">
+                            <span
+                              className={cn(
+                                'text-sm font-black',
+                                p.stock <= p.minStock ? 'text-amber-600' : 'text-[#dee2ec]'
+                              )}
+                            >
+                              {p.stock.toLocaleString()} {p.unit}
+                            </span>
+                            <span className="block text-[10px] text-[#8a92a6]">
+                              Min: {p.minStock}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => setSwapProduct({ id: p.id, name: p.name, sku: (p as any).sku || p.id, location: selectedBin.binCode, stock: p.stock })}
+                            className="px-2 py-1 bg-[#1b2027] hover:bg-[#facc15] hover:text-[#1b1600] text-[#facc15] border border-[#facc15]/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition"
+                            title="สลับพิกัดสินค้านี้"
                           >
-                            {p.stock.toLocaleString()} {p.unit}
-                          </span>
-                          <span className="block text-[10px] text-[#8a92a6]">
-                            Min: {p.minStock}
-                          </span>
+                            <ArrowLeftRight className="w-3 h-3" />
+                            <span>สลับที่</span>
+                          </button>
                         </div>
                       </div>
                     ))
@@ -645,6 +658,18 @@ function WarehouseMapContent() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 1-Click Location Swap Modal */}
+        <LocationSwapModal
+          isOpen={!!swapProduct}
+          onClose={() => setSwapProduct(null)}
+          sourceProduct={swapProduct}
+          allProducts={products}
+          onSwapSuccess={() => {
+            fetchData();
+            setSelectedBin(null);
+          }}
+        />
       </div>
     </div>
   );

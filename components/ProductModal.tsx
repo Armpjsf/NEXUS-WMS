@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Loader2, Image as ImageIcon, MapPin, Tag, DollarSign, Package, Upload } from 'lucide-react';
+import { X, Save, Loader2, Image as ImageIcon, MapPin, Tag, DollarSign, Package, Upload, FileSpreadsheet } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface ProductModalProps {
@@ -10,9 +10,10 @@ interface ProductModalProps {
     onClose: () => void;
     product?: any; // If provided, Edit Mode
     onSuccess: () => void;
+    onOpenImport?: () => void;
 }
 
-export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductModalProps) {
+export function ProductModal({ isOpen, onClose, product, onSuccess, onOpenImport }: ProductModalProps) {
     const { t } = useLanguage();
     const isEdit = !!product;
     const [loading, setLoading] = useState(false);
@@ -227,9 +228,25 @@ export function ProductModal({ isOpen, onClose, product, onSuccess }: ProductMod
                                 {isEdit ? `Editing: ${product.name}` : 'Create a new inventory item'}
                             </p>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-[#252a32] rounded-lg text-[#d1c6ab] hover:text-[#dee2ec] transition-colors">
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {!isEdit && onOpenImport && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onClose();
+                                        onOpenImport();
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#57ec7f]/40 bg-[#57ec7f]/10 text-[#57ec7f] hover:bg-[#57ec7f]/20 font-mono text-xs font-bold transition-all"
+                                    title="นำเข้าสินค้าจากไฟล์ Excel หรือ CSV"
+                                >
+                                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                                    <span>นำเข้า Excel / CSV</span>
+                                </button>
+                            )}
+                            <button onClick={onClose} className="p-2 hover:bg-[#252a32] rounded-lg text-[#d1c6ab] hover:text-[#dee2ec] transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">

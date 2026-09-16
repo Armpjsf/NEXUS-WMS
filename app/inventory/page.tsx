@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { ProductModal } from '@/components/ProductModal';
+import { ProductImportModal } from '@/components/ProductImportModal';
 import { LotBreakdownModal } from '@/components/LotBreakdownModal';
-import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera, Layers } from 'lucide-react';
+import { LocationSwapModal } from '@/components/LocationSwapModal';
+import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, ArrowLeftRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera, Layers, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -39,7 +41,9 @@ function InventoryContent() {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [showCamScan, setShowCamScan] = useState(false);
   const [selectedProductForLots, setSelectedProductForLots] = useState<any>(null);
+  const [selectedProductForSwap, setSelectedProductForSwap] = useState<any>(null);
   const [showGlobalLotsModal, setShowGlobalLotsModal] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
   const seedDemoProducts = async () => {
@@ -281,6 +285,15 @@ function InventoryContent() {
               >
                   <Plus className="w-4 h-4" />
                   {t('add_product')}
+              </button>
+
+              <button 
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#57ec7f] hover:border-[#57ec7f]/50 px-4 py-2.5 rounded-lg font-mono text-xs font-bold transition-all shadow-sm"
+                  title="นำเข้ารายการสินค้าจากไฟล์ Excel หรือ CSV"
+              >
+                  <FileSpreadsheet className="w-4 h-4 text-[#57ec7f]" />
+                  <span>นำเข้า Excel / CSV</span>
               </button>
 
               <button 
@@ -572,6 +585,19 @@ function InventoryContent() {
                                         <span>FEFO Lots</span>
                                     </button>
                                     <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setSelectedProductForSwap(product);
+                                        }}
+                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-[#facc15] hover:text-white rounded border border-[#facc15]/30 font-mono text-[10px] transition-colors"
+                                        title="สลับพิกัดจัดเก็บ (1-Click Location Swap)"
+                                    >
+                                        <ArrowLeftRight className="w-3 h-3" />
+                                        <span>สลับพิกัด</span>
+                                    </button>
+                                    <button
                                         onClick={(e) => openEditModal(product, e)}
                                         className="h-7 w-7 flex items-center justify-center bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] rounded border border-[#30353d] transition-colors"
                                         title="แก้ไข"
@@ -646,6 +672,13 @@ function InventoryContent() {
                         <span>เพิ่มสินค้าใหม่</span>
                     </button>
                     <button 
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-[#57ec7f]/50 bg-[#57ec7f]/10 text-[#57ec7f] font-bold hover:bg-[#57ec7f]/20 transition-all shadow-md"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        <span>นำเข้าไฟล์ Excel / CSV</span>
+                    </button>
+                    <button 
                         onClick={seedDemoProducts} 
                         disabled={seeding}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#4cd7f6]/50 bg-[#4cd7f6]/10 text-[#4cd7f6] font-bold hover:bg-[#4cd7f6]/20 transition-all shadow-md disabled:opacity-50"
@@ -677,6 +710,17 @@ function InventoryContent() {
             onClose={() => setIsModalOpen(false)}
             product={editingProduct}
             onSuccess={fetchData} 
+            onOpenImport={() => {
+                setIsModalOpen(false);
+                setIsImportModalOpen(true);
+            }}
+        />
+
+        {/* Batch Product Import Modal (Excel / CSV) */}
+        <ProductImportModal 
+            isOpen={isImportModalOpen}
+            onClose={() => setIsImportModalOpen(false)}
+            onSuccess={fetchData}
         />
 
         {/* Embedded Camera Scanner for Instant Product Search */}
@@ -707,6 +751,15 @@ function InventoryContent() {
             product={selectedProductForLots}
             allProducts={products}
             onRefresh={fetchData}
+        />
+
+        {/* 1-Click Location Swap & Relocation Modal */}
+        <LocationSwapModal
+            isOpen={!!selectedProductForSwap}
+            onClose={() => setSelectedProductForSwap(null)}
+            sourceProduct={selectedProductForSwap}
+            allProducts={products}
+            onSwapSuccess={fetchData}
         />
     </div>
   );
