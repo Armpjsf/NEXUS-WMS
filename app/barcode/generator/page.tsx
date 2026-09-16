@@ -106,24 +106,24 @@ export default function BarcodeGeneratorPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/admin"
-            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-lg transition-all"
+            className="p-2 bg-[#171c23] border border-[#30353d] rounded-xl text-[#8a92a6] hover:text-indigo-600 hover:border-indigo-500/30 hover:shadow-lg transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-              <Barcode className="w-6 h-6 text-indigo-600" />
+            <h1 className="text-2xl font-black text-[#dee2ec] flex items-center gap-2">
+              <Barcode className="w-6 h-6 text-[#facc15]" />
               {t('barcode_title')}
             </h1>
-            <p className="text-sm text-slate-500">{t('barcode_subtitle')}</p>
+            <p className="text-sm text-[#d1c6ab]">{t('barcode_subtitle')}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Product Selection */}
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-slate-100 bg-slate-50">
-              <h2 className="font-bold text-slate-700 flex items-center gap-2">
+          <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-[#30353d] bg-[#1b2027]">
+              <h2 className="font-bold text-[#d1c6ab] flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 {t('select_product')}
               </h2>
@@ -131,21 +131,21 @@ export default function BarcodeGeneratorPage() {
 
             <div className="p-4">
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8a92a6]" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t('search_product')}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#1b2027] border border-[#30353d] rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                 />
               </div>
 
               <div className="max-h-80 overflow-y-auto space-y-2">
                 {loading ? (
-                  <p className="text-center text-slate-400 py-8">{t('loading')}</p>
+                  <p className="text-center text-[#8a92a6] py-8">{t('loading')}</p>
                 ) : filteredProducts.length === 0 ? (
-                  <p className="text-center text-slate-400 py-8">{t('no_products_found')}</p>
+                  <p className="text-center text-[#8a92a6] py-8">{t('no_products_found')}</p>
                 ) : (
                   filteredProducts.slice(0, 20).map(product => (
                     <button
@@ -154,12 +154,12 @@ export default function BarcodeGeneratorPage() {
                       className={cn(
                         "w-full p-3 rounded-xl border text-left transition-all",
                         selectedProduct?.id === product.id
-                          ? "border-indigo-500 bg-indigo-50"
-                          : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                          ? "border-indigo-500 bg-indigo-500/10"
+                          : "border-[#30353d] hover:border-[#30353d] hover:bg-[#1b2027]"
                       )}
                     >
-                      <p className="font-medium text-slate-800 text-sm truncate">{product.name}</p>
-                      <p className="text-xs text-slate-400">{product.location || '-'}</p>
+                      <p className="font-medium text-[#dee2ec] text-sm truncate">{product.name}</p>
+                      <p className="text-xs text-[#8a92a6]">{product.location || '-'}</p>
                     </button>
                   ))
                 )}
@@ -168,19 +168,19 @@ export default function BarcodeGeneratorPage() {
           </div>
 
           {/* Code Preview */}
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <h2 className="font-bold text-slate-700">{t('preview')}</h2>
+          <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-[#30353d] bg-[#1b2027] flex items-center justify-between">
+              <h2 className="font-bold text-[#d1c6ab]">{t('preview')}</h2>
               
               {/* Type Toggle */}
-              <div className="flex bg-slate-100 rounded-lg p-1">
+              <div className="flex bg-[#252a32] rounded-lg p-1">
                 <button
                   onClick={() => setCodeType('qrcode')}
                   className={cn(
                     "px-3 py-1 rounded-md text-xs font-bold transition-all",
                     codeType === 'qrcode' 
-                      ? "bg-white text-indigo-600 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-[#171c23] text-indigo-600 shadow-sm" 
+                      : "text-[#8a92a6] hover:text-[#d1c6ab]"
                   )}
                 >
                   QR Code
@@ -190,8 +190,8 @@ export default function BarcodeGeneratorPage() {
                   className={cn(
                     "px-3 py-1 rounded-md text-xs font-bold transition-all",
                     codeType === 'barcode' 
-                      ? "bg-white text-indigo-600 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-[#171c23] text-indigo-600 shadow-sm" 
+                      : "text-[#8a92a6] hover:text-[#d1c6ab]"
                   )}
                 >
                   Barcode
@@ -203,11 +203,11 @@ export default function BarcodeGeneratorPage() {
               {selectedProduct ? (
                 <>
                   {/* Printable Area */}
-                  <div 
+                  <div
                     ref={printRef}
-                    className="bg-white p-6 border border-dashed border-slate-200 rounded-2xl text-center"
+                    className="bg-white p-6 border border-dashed border-slate-300 rounded-2xl text-center"
                   >
-                    <p className="text-sm font-bold text-slate-700 mb-4">{selectedProduct.name}</p>
+                    <p className="text-sm font-bold text-slate-800 mb-4">{selectedProduct.name}</p>
                     
                     {codeType === 'qrcode' ? (
                       <div className="flex justify-center">
@@ -230,7 +230,7 @@ export default function BarcodeGeneratorPage() {
                     )}
 
                     <p className="text-xs text-slate-500 mt-4">{selectedProduct.location || '-'}</p>
-                    <p className="text-xs text-slate-400">฿{selectedProduct.price?.toLocaleString()}</p>
+                    <p className="text-xs text-slate-500">฿{selectedProduct.price?.toLocaleString()}</p>
                   </div>
 
                   {/* Actions */}
@@ -245,7 +245,7 @@ export default function BarcodeGeneratorPage() {
                     {codeType === 'qrcode' && (
                       <button
                         onClick={handleDownload}
-                        className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                        className="px-4 py-3 bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab] font-bold rounded-xl transition-colors"
                       >
                         <Download className="w-4 h-4" />
                       </button>
@@ -254,10 +254,10 @@ export default function BarcodeGeneratorPage() {
                 </>
               ) : (
                 <div className="py-12 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-slate-50 rounded-2xl flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-[#1b2027] rounded-2xl flex items-center justify-center">
                     <QrCode className="w-8 h-8 text-slate-300" />
                   </div>
-                  <p className="text-slate-400">{t('select_product')}</p>
+                  <p className="text-[#8a92a6]">{t('select_product')}</p>
                 </div>
               )}
             </div>

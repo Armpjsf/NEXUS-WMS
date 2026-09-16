@@ -26,30 +26,33 @@ export default function YearlyComparisonChart({ data, year1Label = "This Year", 
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
         <XAxis 
           dataKey="month" 
-          stroke="#94a3b8" 
-          fontSize={12} 
+          stroke="#64748b" 
+          fontSize={11} 
           tickLine={false} 
           axisLine={false} 
+          tick={{ fill: '#d1c6ab' }}
         />
         <YAxis 
-          stroke="#94a3b8" 
-          fontSize={12} 
+          stroke="#64748b" 
+          fontSize={11} 
           tickLine={false} 
           axisLine={false} 
+          tick={{ fill: '#d1c6ab' }}
           tickFormatter={(value) => `${value}`} 
         />
         <Tooltip
-          cursor={{ fill: '#f1f5f9' }}
+          cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
           contentStyle={{
-            backgroundColor: '#fff',
-            border: '1px solid #e2e8f0',
+            backgroundColor: '#171c23',
+            border: '1px solid #30353d',
             borderRadius: '12px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+            color: '#dee2ec'
           }}
-          itemStyle={{ color: '#1e293b', fontSize: '12px', fontWeight: 600 }}
+          itemStyle={{ color: '#dee2ec', fontSize: '12px', fontWeight: 600 }}
           // Use the series name (e.g. "Inbound 2026") as the label instead of a
           // generic "Qty" so each row says which year and inbound/outbound it is.
           formatter={(value: any, name: any) => [value?.toLocaleString() || '0', name] as [string, string]}
@@ -59,7 +62,7 @@ export default function YearlyComparisonChart({ data, year1Label = "This Year", 
             align="right" 
             height={36} 
             iconType="circle"
-            wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
+            wrapperStyle={{ fontSize: '11px', fontWeight: 500, color: '#dee2ec' }}
         />
         {/* Inbound Bars */}
         <Bar 

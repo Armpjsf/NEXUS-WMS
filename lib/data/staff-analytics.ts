@@ -26,107 +26,18 @@ export interface StaffPerformanceSummary {
   staffList: StaffMetric[];
 }
 
+/**
+ * ระบบยังไม่มีการเก็บสถิติประสิทธิภาพรายบุคคล (stock_transactions ไม่มี field ผู้ทำรายการ)
+ * จึงคืนค่าว่างตามจริง แทนการโชว์ข้อมูลตัวอย่าง เมื่อเปิดใช้การบันทึกผู้ปฏิบัติงานแล้ว
+ * ค่อยผูกกับข้อมูลจริงที่นี่
+ */
 export function getStaffPerformanceData(): StaffPerformanceSummary {
-  const staffList: StaffMetric[] = [
-    {
-      id: 'st-01',
-      name: 'สมชาย ใจมั่นคง',
-      avatar: '👨‍💼',
-      role: 'Lead Picker',
-      branch: 'สำนักงานใหญ่ (HQ)',
-      totalPicks: 342,
-      picksPerHour: 48,
-      packedOrders: 92,
-      cycleCountsCompleted: 14,
-      accuracyRate: 99.8,
-      avgTurnaroundMinutes: 8.5,
-      status: 'ACTIVE',
-      score: 98,
-      badge: '🏆 Top Picker',
-    },
-    {
-      id: 'st-02',
-      name: 'วิภาดา รุ่งอรุณ',
-      avatar: '👩‍💼',
-      role: 'Picker & Packer',
-      branch: 'สำนักงานใหญ่ (HQ)',
-      totalPicks: 298,
-      picksPerHour: 42,
-      packedOrders: 118,
-      cycleCountsCompleted: 9,
-      accuracyRate: 99.5,
-      avgTurnaroundMinutes: 9.2,
-      status: 'ACTIVE',
-      score: 95,
-      badge: '⚡ Speed Master',
-    },
-    {
-      id: 'st-03',
-      name: 'ธีรศักดิ์ สุขประเสริฐ',
-      avatar: '👨‍🔧',
-      role: 'Inventory Controller',
-      branch: 'สาขาสุราษฎร์ธานี (URT)',
-      totalPicks: 245,
-      picksPerHour: 36,
-      packedOrders: 64,
-      cycleCountsCompleted: 28,
-      accuracyRate: 100.0,
-      avgTurnaroundMinutes: 11.0,
-      status: 'ACTIVE',
-      score: 94,
-      badge: '🎯 Zero Error',
-    },
-    {
-      id: 'st-04',
-      name: 'กานดา ชูเชิด',
-      avatar: '👩‍🔧',
-      role: 'Picker',
-      branch: 'สาขาสมุทรสาคร (SKN)',
-      totalPicks: 215,
-      picksPerHour: 32,
-      packedOrders: 51,
-      cycleCountsCompleted: 12,
-      accuracyRate: 98.9,
-      avgTurnaroundMinutes: 12.4,
-      status: 'BREAK',
-      score: 89,
-    },
-    {
-      id: 'st-05',
-      name: 'อนุชา เพชรดี',
-      avatar: '👨‍💼',
-      role: 'Warehouse Assistant',
-      branch: 'สำนักงานใหญ่ (HQ)',
-      totalPicks: 180,
-      picksPerHour: 28,
-      packedOrders: 45,
-      cycleCountsCompleted: 8,
-      accuracyRate: 98.2,
-      avgTurnaroundMinutes: 14.2,
-      status: 'ACTIVE',
-      score: 84,
-    },
-    {
-      id: 'st-06',
-      name: 'ปรีชา วงศ์สว่าง',
-      avatar: '👨‍🔧',
-      role: 'Forklift & Putaway',
-      branch: 'สาขาเชียงใหม่ (CMI)',
-      totalPicks: 165,
-      picksPerHour: 25,
-      packedOrders: 38,
-      cycleCountsCompleted: 22,
-      accuracyRate: 99.1,
-      avgTurnaroundMinutes: 15.0,
-      status: 'OFFLINE',
-      score: 86,
-    },
-  ];
+  const staffList: StaffMetric[] = [];
 
   const activeStaff = staffList.filter(s => s.status === 'ACTIVE');
-  const avgPicksHr = Math.round(staffList.reduce((a, b) => a + b.picksPerHour, 0) / staffList.length);
-  const avgAccuracy = +(staffList.reduce((a, b) => a + b.accuracyRate, 0) / staffList.length).toFixed(1);
-  const avgMinutes = +(staffList.reduce((a, b) => a + b.avgTurnaroundMinutes, 0) / staffList.length).toFixed(1);
+  const avgPicksHr = staffList.length ? Math.round(staffList.reduce((a, b) => a + b.picksPerHour, 0) / staffList.length) : 0;
+  const avgAccuracy = staffList.length ? +(staffList.reduce((a, b) => a + b.accuracyRate, 0) / staffList.length).toFixed(1) : 0;
+  const avgMinutes = staffList.length ? +(staffList.reduce((a, b) => a + b.avgTurnaroundMinutes, 0) / staffList.length).toFixed(1) : 0;
 
   return {
     activeStaffCount: activeStaff.length,

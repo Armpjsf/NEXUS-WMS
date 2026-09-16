@@ -106,20 +106,20 @@ export default function ReportsPage() {
       <AmbientBackground />
 
       <div className="max-w-[1500px] mx-auto space-y-7 relative z-10">
-        <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 print:hidden">
+        <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-blue-500/30 hover:bg-blue-500/10 hover:text-blue-700 print:hidden">
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
           {t('back_to_analytics')}
         </Link>
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-blue-200 bg-white/85 p-6 shadow-xl shadow-blue-900/10 backdrop-blur-xl">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-blue-500/30 bg-[#171c23] p-6 shadow-xl shadow-blue-900/10 backdrop-blur-xl">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-cyan-500 to-slate-700" />
           <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">Report Center</p>
-          <h1 className="text-3xl font-black text-slate-950 flex items-center gap-3">
+          <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
             <span className="p-2 bg-blue-700 rounded-xl text-white">
               <BarChart className="w-6 h-6" />
             </span>
             {t('report_center_title')}
           </h1>
-          <p className="text-slate-500 mt-2 font-semibold">{t('report_center_subtitle')}</p>
+          <p className="text-[#8a92a6] mt-2 font-semibold">{t('report_center_subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -146,7 +146,7 @@ export default function ReportsPage() {
                   
                   <div className="pt-6 border-t border-white/20 flex items-center justify-between">
                     <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">CSV / PDF</span>
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-indigo-600 transition-all duration-500">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-[#171c23] group-hover:text-indigo-600 transition-all duration-500">
                         <ArrowRight className="w-5 h-5" />
                     </div>
                   </div>
@@ -157,13 +157,13 @@ export default function ReportsPage() {
         </div>
 
         {/* Configuration Panel (Mock) */}
-        <div className="bg-white rounded-3xl p-8 border border-slate-200">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-slate-400" />
+        <div className="bg-[#171c23] rounded-3xl p-8 border border-[#30353d]">
+          <h3 className="font-bold text-[#dee2ec] mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-[#8a92a6]" />
             {t('scheduled_reports')}
           </h3>
-          <div className="p-8 bg-slate-50 rounded-2xl text-center border border-dashed border-slate-300">
-             <p className="text-slate-400 font-medium">{t('scheduled_reports_desc')}</p>
+          <div className="p-8 bg-[#1b2027] rounded-2xl text-center border border-dashed border-[#30353d]">
+             <p className="text-[#8a92a6] font-medium">{t('scheduled_reports_desc')}</p>
           </div>
         </div>
       </div>

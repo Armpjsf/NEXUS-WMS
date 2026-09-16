@@ -157,16 +157,16 @@ export default function BarcodeScannerPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all"
+              className="p-2 bg-[#171c23] border border-[#30353d] rounded-xl text-[#8a92a6] hover:text-[#d1c6ab] hover:border-[#30353d] transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                <QrCode className="w-6 h-6 text-indigo-600" />
+              <h1 className="text-2xl font-black text-[#dee2ec] flex items-center gap-2">
+                <QrCode className="w-6 h-6 text-[#facc15]" />
                 Barcode Scanner
               </h1>
-              <p className="text-sm text-slate-500">สแกนบาร์โค้ดหรือ QR Code เพื่อค้นหาสินค้า</p>
+              <p className="text-sm text-[#d1c6ab]">สแกนบาร์โค้ดหรือ QR Code เพื่อค้นหาสินค้า</p>
             </div>
           </div>
           <button
@@ -174,8 +174,8 @@ export default function BarcodeScannerPage() {
             className={cn(
               "p-2 rounded-xl border transition-all",
               soundEnabled 
-                ? "bg-indigo-50 border-indigo-200 text-indigo-600" 
-                : "bg-slate-50 border-slate-200 text-slate-400"
+                ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-600" 
+                : "bg-[#1b2027] border-[#30353d] text-[#8a92a6]"
             )}
           >
             {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
@@ -183,16 +183,16 @@ export default function BarcodeScannerPage() {
         </div>
 
         {/* Scanner Area */}
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm">
           {!isScanning && !scanResult ? (
             <div className="p-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-4 bg-indigo-50 rounded-2xl flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-indigo-500/10 rounded-2xl flex items-center justify-center">
                 <Camera className="w-10 h-10 text-indigo-500" />
               </div>
-              <h2 className="text-lg font-bold text-slate-800 mb-2">พร้อมสแกน</h2>
-              <p className="text-slate-500 text-sm mb-4">กดปุ่มด้านล่างเพื่อเปิดกล้อง หรือยิงด้วยปืนสแกนไร้สาย / PDA ได้ทันที</p>
+              <h2 className="text-lg font-bold text-[#dee2ec] mb-2">พร้อมสแกน</h2>
+              <p className="text-[#8a92a6] text-sm mb-4">กดปุ่มด้านล่างเพื่อเปิดกล้อง หรือยิงด้วยปืนสแกนไร้สาย / PDA ได้ทันที</p>
               
-              <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-full">
+              <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 text-xs font-semibold rounded-full">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                 <Zap className="w-3.5 h-3.5 text-emerald-600" />
                 <span>PDA Scanner Gun Ready (สแกนได้ทันที ไม่ต้องคลิกโฟกัส)</span>
@@ -208,8 +208,8 @@ export default function BarcodeScannerPage() {
               </button>
 
               {/* Manual Input */}
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <p className="text-xs text-slate-400 mb-3">หรือพิมพ์รหัสสินค้า</p>
+              <div className="mt-6 pt-6 border-t border-[#30353d]">
+                <p className="text-xs text-[#8a92a6] mb-3">หรือพิมพ์รหัสสินค้า</p>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -217,7 +217,7 @@ export default function BarcodeScannerPage() {
                     onChange={(e) => setManualCode(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
                     placeholder="พิมพ์ชื่อหรือรหัสสินค้า..."
-                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    className="flex-1 px-4 py-3 bg-[#1b2027] border border-[#30353d] rounded-xl text-[#d1c6ab] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                   />
                   <button
                     onClick={handleManualSearch}
@@ -238,7 +238,7 @@ export default function BarcodeScannerPage() {
                 <X className="w-5 h-5" />
               </button>
               {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/90">
+                <div className="absolute inset-0 flex items-center justify-center bg-[#171c23]">
                   <div className="text-center p-4">
                     <p className="text-rose-500 font-medium">{error}</p>
                     <button
@@ -261,11 +261,11 @@ export default function BarcodeScannerPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm"
+              className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm"
             >
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <span className="text-sm font-bold text-slate-600">ผลการสแกน</span>
-                <button onClick={clearResult} className="text-slate-400 hover:text-slate-600">
+              <div className="p-4 border-b border-[#30353d] flex items-center justify-between bg-[#1b2027]">
+                <span className="text-sm font-bold text-[#d1c6ab]">ผลการสแกน</span>
+                <button onClick={clearResult} className="text-[#8a92a6] hover:text-[#d1c6ab]">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -273,7 +273,7 @@ export default function BarcodeScannerPage() {
               {scanResult.product ? (
                 <div className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-16 h-16 bg-[#252a32] rounded-xl flex items-center justify-center flex-shrink-0">
                       {scanResult.product.image ? (
                         <img 
                           src={`/api/proxy/image?url=${encodeURIComponent(scanResult.product.image)}`} 
@@ -281,26 +281,26 @@ export default function BarcodeScannerPage() {
                           className="w-full h-full object-cover rounded-xl"
                         />
                       ) : (
-                        <Package className="w-8 h-8 text-slate-400" />
+                        <Package className="w-8 h-8 text-[#8a92a6]" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-slate-900 text-lg">{scanResult.product.name}</h3>
-                      <p className="text-sm text-slate-500">{scanResult.product.category}</p>
+                      <h3 className="font-bold text-[#dee2ec] text-lg">{scanResult.product.name}</h3>
+                      <p className="text-sm text-[#8a92a6]">{scanResult.product.category}</p>
                       
                       <div className="mt-3 grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 p-3 rounded-xl">
-                          <p className="text-xs text-slate-400">สต็อก</p>
+                        <div className="bg-[#1b2027] p-3 rounded-xl">
+                          <p className="text-xs text-[#8a92a6]">สต็อก</p>
                           <p className={cn(
                             "text-xl font-black",
-                            scanResult.product.stock <= scanResult.product.minStock ? "text-rose-500" : "text-slate-900"
+                            scanResult.product.stock <= scanResult.product.minStock ? "text-rose-500" : "text-[#dee2ec]"
                           )}>
                             {scanResult.product.stock}
                           </p>
                         </div>
-                        <div className="bg-slate-50 p-3 rounded-xl">
-                          <p className="text-xs text-slate-400">ตำแหน่ง</p>
-                          <p className="text-sm font-bold text-slate-700">{scanResult.product.location || '-'}</p>
+                        <div className="bg-[#1b2027] p-3 rounded-xl">
+                          <p className="text-xs text-[#8a92a6]">ตำแหน่ง</p>
+                          <p className="text-sm font-bold text-[#d1c6ab]">{scanResult.product.location || '-'}</p>
                         </div>
                       </div>
                     </div>
@@ -315,7 +315,7 @@ export default function BarcodeScannerPage() {
                     </Link>
                     <button
                       onClick={() => { clearResult(); startScanner(); }}
-                      className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                      className="px-4 py-3 bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab] font-bold rounded-xl transition-colors"
                     >
                       สแกนอีกครั้ง
                     </button>
@@ -323,11 +323,11 @@ export default function BarcodeScannerPage() {
                 </div>
               ) : (
                 <div className="p-6 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-2xl flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-amber-500/10 rounded-2xl flex items-center justify-center">
                     <Search className="w-8 h-8 text-amber-500" />
                   </div>
-                  <p className="font-medium text-slate-800 mb-1">ไม่พบสินค้า</p>
-                  <p className="text-sm text-slate-500 mb-4">รหัส: {scanResult.code}</p>
+                  <p className="font-medium text-[#dee2ec] mb-1">ไม่พบสินค้า</p>
+                  <p className="text-sm text-[#8a92a6] mb-4">รหัส: {scanResult.code}</p>
                   <button
                     onClick={() => { clearResult(); startScanner(); }}
                     className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors"
@@ -342,29 +342,29 @@ export default function BarcodeScannerPage() {
 
         {/* Scan History */}
         {scanHistory.length > 0 && !isScanning && (
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
-              <History className="w-4 h-4 text-slate-400" />
-              <span className="text-sm font-bold text-slate-600">ประวัติการสแกน</span>
+          <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden">
+            <div className="p-4 border-b border-[#30353d] flex items-center gap-2 bg-[#1b2027]">
+              <History className="w-4 h-4 text-[#8a92a6]" />
+              <span className="text-sm font-bold text-[#d1c6ab]">ประวัติการสแกน</span>
             </div>
-            <ul className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+            <ul className="divide-y divide-[#30353d] max-h-60 overflow-y-auto">
               {scanHistory.map((item, idx) => (
                 <li 
                   key={idx}
-                  className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="p-4 hover:bg-[#1b2027] transition-colors cursor-pointer"
                   onClick={() => setScanResult(item)}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-slate-800">
+                      <p className="font-medium text-[#dee2ec]">
                         {item.product?.name || item.code}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-[#8a92a6]">
                         {item.timestamp.toLocaleTimeString('th-TH')}
                       </p>
                     </div>
                     {item.product && (
-                      <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-600 rounded-lg font-bold">
+                      <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-600 rounded-lg font-bold">
                         พบสินค้า
                       </span>
                     )}

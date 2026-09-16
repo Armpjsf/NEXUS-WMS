@@ -236,6 +236,42 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
   }
 }
 
+// เพิ่มสินค้าเข้างาน TMS ที่สร้างไปแล้ว (ลูกค้าเพิ่มของหลังเช็คเกอร์สร้างงาน). Never throws.
+export interface TmsAppendItem { code?: string; label?: string; qty?: number; drop?: number; }
+export async function appendTmsJobItems(
+  jobId: string,
+  items: TmsAppendItem[],
+  wmsOrderNo?: string
+): Promise<{ ok: boolean; added?: number; error?: string; skipped?: boolean }> {
+  if (!isTmsEnabled()) return { ok: false, skipped: true, error: 'disabled' };
+  if (!jobId || !items?.length) return { ok: false, error: 'no-items' };
+  try {
+    const base = (process.env.TMS_API_URL as string).replace(/\/+$/, '');
+    const url = `${base}/${encodeURIComponent(jobId)}/items`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.TMS_API_KEY}`,
+      },
+      body: JSON.stringify({ items, wms_order_no: wmsOrderNo }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      console.error(`[tms] append items failed for ${jobId}: HTTP ${res.status} ${txt}`);
+      return { ok: false, error: `HTTP ${res.status}` };
+    }
+    const data: any = await res.json().catch(() => ({}));
+    return { ok: true, added: Number(data?.items_added ?? items.length) };
+  } catch (e: any) {
+    console.error(`[tms] append items error for ${jobId}:`, e?.message || e);
+    return { ok: false, error: e?.message || 'error' };
+  }
+}
+
 // Query real-time status and POD proof from TMS for a job or order. Never throws.
 export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: string }): Promise<TmsJobStatusResult> {
   if (!isTmsEnabled()) return { ok: false, error: 'disabled' };

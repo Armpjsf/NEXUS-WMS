@@ -133,15 +133,15 @@ export default function RulesPage() {
         <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8">
             <AmbientBackground />
             <div className="relative z-10 mx-auto max-w-7xl">
-            <header className="mb-8 flex flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-indigo-200 bg-white/85 p-6 shadow-xl shadow-indigo-900/10 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+            <header className="mb-8 flex flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-indigo-500/30 bg-[#171c23] p-6 shadow-xl shadow-indigo-900/10 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
                 <div>
                      <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-700">Automation Control</p>
-                     <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                     <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
                         <Bot className="w-8 h-8 text-indigo-600" />
                         {t('rules_title')}
-                        <span className="px-3 py-1 bg-indigo-100 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-wider">Beta</span>
+                        <span className="px-3 py-1 bg-indigo-500/20 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-wider">Beta</span>
                      </h1>
-                     <p className="text-slate-500 mt-2">{t('rules_subtitle')}</p>
+                     <p className="text-[#8a92a6] mt-2">{t('rules_subtitle')}</p>
                 </div>
                 <button 
                     onClick={() => setIsCreating(!isCreating)}
@@ -157,9 +157,9 @@ export default function RulesPage() {
                 <motion.div 
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl mb-8"
+                    className="bg-[#171c23] rounded-3xl p-8 border border-[#30353d] shadow-xl mb-8"
                 >
-                    <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-[#dee2ec] mb-6 flex items-center gap-2">
                         <Save className="w-5 h-5 text-indigo-500" />
                         {t('define_new_rule')}
                     </h2>
@@ -168,25 +168,25 @@ export default function RulesPage() {
                         {/* Left: Trigger */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-bold text-slate-600 mb-2">Rule Name</label>
+                                <label className="block text-sm font-bold text-[#d1c6ab] mb-2">Rule Name</label>
                                 <input 
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     placeholder="e.g. Low Stock Alert for Electronics"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-3 font-bold text-[#d1c6ab] focus:ring-2 focus:ring-indigo-500 outline-none"
                                 />
                             </div>
                             
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-4">{t('if_condition')}</label>
+                            <div className="p-4 bg-[#1b2027] rounded-2xl border border-[#30353d]">
+                                <label className="block text-xs font-black text-[#8a92a6] uppercase tracking-wider mb-4">{t('if_condition')}</label>
                                 <div className="flex gap-2">
-                                    <select disabled className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-600">
+                                    <select disabled className="bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-2 text-sm font-bold text-[#d1c6ab]">
                                         <option>When Stock Level</option>
                                     </select>
                                     <select 
                                         value={condOp}
                                         onChange={e => setCondOp(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-indigo-600 text-center w-20"
+                                        className="bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-2 text-sm font-bold text-indigo-600 text-center w-20"
                                     >
                                         <option value="<">&lt;</option>
                                         <option value=">">&gt;</option>
@@ -196,7 +196,7 @@ export default function RulesPage() {
                                         type="number"
                                         value={condVal}
                                         onChange={e => setCondVal(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 w-24"
+                                        className="bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-2 text-sm font-bold text-[#d1c6ab] w-24"
                                     />
                                 </div>
                             </div>
@@ -204,13 +204,13 @@ export default function RulesPage() {
 
                         {/* Right: Action */}
                         <div className="space-y-4">
-                            <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 h-full">
+                            <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 h-full">
                                 <label className="block text-xs font-black text-indigo-400 uppercase tracking-wider mb-4">{t('then_action')}</label>
                                 <div className="space-y-3">
                                     <select 
                                         value={actionType}
                                         onChange={e => setActionType(e.target.value)}
-                                        className="w-full bg-white border border-indigo-200 rounded-lg px-4 py-3 text-sm font-bold text-indigo-700"
+                                        className="w-full bg-[#171c23] border border-indigo-500/30 rounded-lg px-4 py-3 text-sm font-bold text-indigo-700"
                                     >
                                         <option value="LOG_ALERT">Show Dashboard Alert 🚨</option>
                                         <option value="LINE_NOTIFY" disabled>Send LINE Notify (Coming Soon)</option>
@@ -221,7 +221,7 @@ export default function RulesPage() {
                                         value={actionMsg}
                                         onChange={e => setActionMsg(e.target.value)}
                                         placeholder="Alert Message..."
-                                        className="w-full bg-white border border-indigo-200 rounded-lg px-4 py-3 text-sm font-medium text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full bg-[#171c23] border border-indigo-500/30 rounded-lg px-4 py-3 text-sm font-medium text-[#d1c6ab] focus:ring-2 focus:ring-indigo-500 outline-none"
                                     />
                                 </div>
                             </div>
@@ -231,7 +231,7 @@ export default function RulesPage() {
                     <div className="mt-8 flex justify-end gap-4">
                         <button 
                             onClick={() => setIsCreating(false)}
-                            className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                            className="px-6 py-3 rounded-xl font-bold text-[#8a92a6] hover:bg-[#252a32] transition-colors"
                         >
                             Cancel
                         </button>
@@ -247,12 +247,12 @@ export default function RulesPage() {
 
             {/* Rules List */}
             {loading ? (
-                <div className="text-center py-12 text-slate-400">Loading rules...</div>
+                <div className="text-center py-12 text-[#8a92a6]">Loading rules...</div>
             ) : rules.length === 0 ? (
-                <div className="text-center py-20 bg-white/80 rounded-3xl border border-dashed border-slate-200">
+                <div className="text-center py-20 bg-[#171c23] rounded-3xl border border-dashed border-[#30353d]">
                     <Bot className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-600">{t('no_history')}</h3>
-                    <p className="text-slate-400">{t('no_rules_desc')}</p>
+                    <h3 className="text-lg font-bold text-[#d1c6ab]">{t('no_history')}</h3>
+                    <p className="text-[#8a92a6]">{t('no_rules_desc')}</p>
                 </div>
             ) : (
                 <div className="grid gap-4">
@@ -263,24 +263,24 @@ export default function RulesPage() {
                             animate={{ opacity: 1, y: 0 }}
                             className={`p-6 rounded-2xl border flex items-center justify-between transition-colors ${
                                 rule.isActive 
-                                    ? "bg-white border-slate-200 shadow-sm" 
-                                    : "bg-slate-50 border-slate-200 opacity-70 grayscale"
+                                    ? "bg-[#171c23] border-[#30353d] shadow-sm" 
+                                    : "bg-[#1b2027] border-[#30353d] opacity-70 grayscale"
                             }`}
                         >
                             <div className="flex items-center gap-4">
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                    rule.isActive ? "bg-indigo-100 text-indigo-600" : "bg-slate-200 text-slate-500"
+                                    rule.isActive ? "bg-indigo-500/20 text-indigo-600" : "bg-[#30353d] text-[#8a92a6]"
                                 }`}>
                                     <Bot className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-800 text-lg">{rule.name}</h3>
-                                    <div className="text-xs font-mono text-slate-500 mt-1 flex items-center gap-2">
-                                        <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                    <h3 className="font-bold text-[#dee2ec] text-lg">{rule.name}</h3>
+                                    <div className="text-xs font-mono text-[#8a92a6] mt-1 flex items-center gap-2">
+                                        <span className="bg-[#252a32] px-2 py-0.5 rounded border border-[#30353d]">
                                             IF {JSON.parse(rule.condition).field} {JSON.parse(rule.condition).operator} {JSON.parse(rule.condition).value}
                                         </span>
                                         <span className="text-slate-300">➜</span>
-                                        <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded border border-indigo-100">
+                                        <span className="bg-indigo-500/10 text-indigo-600 px-2 py-0.5 rounded border border-indigo-500/20">
                                             {JSON.parse(rule.action).type}
                                         </span>
                                     </div>
@@ -289,8 +289,8 @@ export default function RulesPage() {
                             
                             <div className="flex items-center gap-6">
                                 <div className="text-right hidden md:block">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Triggered</p>
-                                    <p className="text-xs font-medium text-slate-600">
+                                    <p className="text-[10px] font-bold text-[#8a92a6] uppercase tracking-wider">Last Triggered</p>
+                                    <p className="text-xs font-medium text-[#d1c6ab]">
                                         {rule.lastTriggered ? new Date(rule.lastTriggered).toLocaleString() : 'Never'}
                                     </p>
                                 </div>
@@ -302,7 +302,7 @@ export default function RulesPage() {
                                     }`}
                                 >
                                     <motion.div 
-                                        className="absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md"
+                                        className="absolute top-1 left-1 w-6 h-6 bg-[#171c23] rounded-full shadow-md"
                                         animate={{ x: rule.isActive ? 24 : 0 }}
                                     />
                                 </button>

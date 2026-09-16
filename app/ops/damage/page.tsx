@@ -156,31 +156,31 @@ export default function DamagePage() {
       <AmbientBackground />
       <div className="relative z-10 mx-auto max-w-[1500px] space-y-7">
       
-      <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition-colors hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700">
+      <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-700">
         <ArrowLeft className="w-4 h-4" /> {t('back_to_dashboard')}
       </Link>
       
       {/* Header */}
-      <div className="relative overflow-hidden rounded-[1.75rem] border border-amber-200 bg-white/85 p-6 shadow-xl shadow-amber-900/10 backdrop-blur-xl flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-amber-500/30 bg-[#171c23] p-6 shadow-xl shadow-amber-900/10 backdrop-blur-xl flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-slate-700" />
         <div>
             <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-amber-700">Exception Control</p>
-            <h1 className="text-3xl font-black text-slate-950 mb-2 flex items-center gap-3">
+            <h1 className="text-3xl font-black text-[#dee2ec] mb-2 flex items-center gap-3">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-rose-600 text-white shadow-lg shadow-amber-900/20">
                     <AlertTriangle className="w-6 h-6" />
                 </span>
                 {t('damage_report_title')}
             </h1>
-            <p className="text-slate-500 font-semibold">{t('damage_subtitle')}</p>
+            <p className="text-[#8a92a6] font-semibold">{t('damage_subtitle')}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <a
             href="/print/damage-report"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-xl flex items-center gap-2 transition-colors shadow-sm text-sm"
+            className="border border-[#30353d] bg-[#171c23] hover:bg-[#1b2027] text-[#d1c6ab] font-bold py-3 px-4 rounded-xl flex items-center gap-2 transition-colors shadow-sm text-sm"
           >
-            <Printer className="w-4 h-4 text-slate-500" />
+            <Printer className="w-4 h-4 text-[#8a92a6]" />
             พิมพ์รายงานชำรุด
           </a>
           <button 
@@ -198,27 +198,27 @@ export default function DamagePage() {
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="bg-white/90 p-6 rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/5 backdrop-blur-xl"
+            className="bg-[#171c23] p-6 rounded-2xl border border-[#30353d] shadow-xl shadow-slate-900/5 backdrop-blur-xl"
           >
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                      <label className="block text-slate-400 mb-2">{t('found_date')}</label>
+                      <label className="block text-[#8a92a6] mb-2">{t('found_date')}</label>
                       <input 
                         type="date" 
                         value={formData.date}
                         onChange={e => setFormData({...formData, date: e.target.value})}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                       />
                   </div>
                   <div>
-                      <label className="block text-slate-400 mb-2">{t('product')}</label>
+                      <label className="block text-[#8a92a6] mb-2">{t('product')}</label>
                       <select 
                         value={formData.product_name}
                         onChange={e => {
                             const p = products.find(prod => prod.name === e.target.value);
                             setFormData({...formData, product_name: e.target.value, unit: p?.unit || 'pcs'});
                         }}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                       >
                           <option value="">-- {t('select_product')} --</option>
                           {products.map(p => (
@@ -227,21 +227,21 @@ export default function DamagePage() {
                       </select>
                   </div>
                   <div>
-                      <label className="block text-slate-400 mb-2">{t('qty')}</label>
+                      <label className="block text-[#8a92a6] mb-2">{t('qty')}</label>
                       <input 
                         type="number" 
                         min="0"
                         value={formData.quantity}
                         onChange={e => setFormData({...formData, quantity: parseFloat(e.target.value)})}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                       />
                   </div>
                   <div>
-                      <label className="block text-slate-400 mb-2">{t('col_category')} (Reason)</label>
+                      <label className="block text-[#8a92a6] mb-2">{t('col_category')} (Reason)</label>
                       <select 
                         value={formData.reason}
                         onChange={e => setFormData({...formData, reason: e.target.value})}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                       >
                           <option value="Production Defect">{t('cause_production')}</option>
                           <option value="Transport Damage">{t('cause_transport')}</option>
@@ -251,11 +251,11 @@ export default function DamagePage() {
                       </select>
                   </div>
                   <div className="md:col-span-2">
-                       <label className="block text-slate-400 mb-2">{t('notes')}</label>
+                       <label className="block text-[#8a92a6] mb-2">{t('notes')}</label>
                        <textarea 
                          value={formData.notes}
                          onChange={e => setFormData({...formData, notes: e.target.value})}
-                         className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 h-24"
+                         className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 h-24"
                        />
                   </div>
                   <div className="md:col-span-2 flex justify-end">
@@ -268,9 +268,9 @@ export default function DamagePage() {
       )}
 
       {/* Table Section */}
-      <div className="bg-white/95 border border-slate-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5">
+      <div className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5">
            <div className="overflow-x-auto">
-           <table className="w-full text-left text-sm text-slate-600">
+           <table className="w-full text-left text-sm text-[#d1c6ab]">
                 <thead className="bg-slate-900 text-white uppercase tracking-wider font-black text-[11px]">
                     <tr>
                         <th className="p-4">{t('date')}</th>
@@ -283,16 +283,16 @@ export default function DamagePage() {
                         <th className="p-4 text-center">{t('col_actions')}</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[#30353d]">
                     {loading ? (
                          <tr><td colSpan={8} className="p-8 text-center animate-pulse">{t('processing')}</td></tr>
                     ) : records.length === 0 ? (
                          <tr><td colSpan={8} className="p-8 text-center">{t('no_logs')}</td></tr>
                     ) : (
                         records.map((r, i) => (
-                            <tr key={i} className="hover:bg-amber-50/40 transition-colors">
+                            <tr key={i} className="hover:bg-amber-500/10/40 transition-colors">
                                 <td className="p-4">{r.date}</td>
-                                <td className="p-4 font-bold text-slate-900">{r.product_name}</td>
+                                <td className="p-4 font-bold text-[#dee2ec]">{r.product_name}</td>
                                 <td className="p-4 text-right text-red-400 font-bold">{r.quantity} {r.unit}</td>
                                 <td className="p-4">{getReasonLabel(r.reason)}</td>
                                 <td className="p-4">{r.reported_by}</td>
@@ -305,7 +305,7 @@ export default function DamagePage() {
                                 </td>
                                 <td className="p-4 text-center">
                                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                        r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                                        r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-[#8a92a6] border border-slate-500/20'
                                     }`}>
                                         {r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent' ? t('status_sent') : t('status_not_sent')}
                                     </span>
@@ -315,10 +315,10 @@ export default function DamagePage() {
                                         {(r.status !== 'อนุมัติแล้ว' && r.status !== 'Approved') ? (
                                             <button 
                                                 onClick={() => handleApprove(i, r.status)}
-                                                className="p-2 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors group"
+                                                className="p-2 bg-[#252a32] hover:bg-emerald-600 hover:text-white rounded-lg transition-colors group"
                                                 title={t('approve_btn')}
                                             >
-                                                <CheckCircle className="w-4 h-4 text-slate-400 group-hover:text-white" />
+                                                <CheckCircle className="w-4 h-4 text-[#8a92a6] group-hover:text-white" />
                                             </button>
                                         ) : (
                                             <span className="text-emerald-400 flex items-center gap-1 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
@@ -329,10 +329,10 @@ export default function DamagePage() {
                                         {(r.sent_to_hq !== 'ส่งกลับแล้ว' && r.sent_to_hq !== 'Sent') ? (
                                             <button 
                                                 onClick={() => handleSendToHq(i)}
-                                                className="p-2 bg-slate-100 hover:bg-amber-600 hover:text-white rounded-lg transition-colors group"
+                                                className="p-2 bg-[#252a32] hover:bg-amber-600 hover:text-white rounded-lg transition-colors group"
                                                 title={t('mark_as_sent')}
                                             >
-                                                <Truck className="w-4 h-4 text-slate-400 group-hover:text-white" />
+                                                <Truck className="w-4 h-4 text-[#8a92a6] group-hover:text-white" />
                                             </button>
                                         ) : (
                                             <span className="text-emerald-400 flex items-center gap-1 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">

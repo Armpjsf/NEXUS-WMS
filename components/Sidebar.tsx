@@ -265,7 +265,7 @@ export default function Sidebar() {
 
       <button
         type="button"
-        className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-lg shadow-slate-900/10 transition-colors hover:bg-slate-50 md:hidden"
+        className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#30353d] bg-[#171c23] text-[#dee2ec] hover:text-[#facc15] shadow-lg transition-colors md:hidden"
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation"
       >
@@ -286,57 +286,80 @@ export default function Sidebar() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_48%,#eef6f4_100%)] shadow-2xl shadow-slate-950/5 backdrop-blur-xl transition-[width,transform] duration-300',
-          collapsed ? 'w-20' : 'w-72',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#30353d]/60 bg-[#090f15] text-[#dee2ec] shadow-2xl transition-[width,transform] duration-300 select-none',
+          collapsed ? 'w-20' : 'w-80',
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        <div className="flex h-20 items-center gap-3 border-b border-slate-200 px-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center">
-            <img src={org.brandingLogo || '/nexus-icon.png'} className="h-10 w-10 object-contain drop-shadow-sm" alt={`${org.name} logo`} />
+        {/* Stitch Brand & Telemetry Header */}
+        <div className="border-b border-[#30353d]/60 bg-[#171c23]/80 p-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-[#1b2027] border border-[#30353d]">
+                <img
+                  src={org.brandingLogo || '/nexus-icon.png'}
+                  className="h-7 w-7 object-contain drop-shadow"
+                  alt="NEXUS WMS"
+                />
+              </div>
+
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <span className="font-headline text-sm font-extrabold tracking-wider text-[#facc15] uppercase leading-none block">
+                    NEXUS WMS
+                  </span>
+                  <span className="font-mono text-[9px] text-[#d1c6ab] tracking-tight leading-tight block mt-0.5">
+                    COMMAND PLATFORM v4.8
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {!collapsed && (
+                <div className="flex items-center gap-1 bg-[#1b2027] px-1.5 py-0.5 rounded border border-[#30353d] text-[10px] font-mono font-bold">
+                  <span className="w-2 h-2 rounded-full bg-[#57ec7f] animate-pulse"></span>
+                  <span className="text-[#57ec7f]">SYNC LIVE</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleToggleCollapse}
+                className="hidden h-7 w-7 shrink-0 items-center justify-center rounded border border-[#30353d] bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] transition-colors md:inline-flex"
+                aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              >
+                <ChevronLeft className={cn('h-3.5 w-3.5 transition-transform', collapsed && 'rotate-180')} />
+              </button>
+            </div>
           </div>
 
           {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-black tracking-tight text-slate-950">NEXUS</h1>
-              <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
-                {org.name && !/wms\s*360|nexus/i.test(org.name) ? org.name : 'Warehouse System'}
-              </p>
-            </div>
+            <>
+              {/* Branch Selector wrapper */}
+              <div className="mt-2.5 bg-[#1b2027] p-2 rounded border border-[#30353d]/80">
+                <BranchSelector />
+              </div>
+            </>
           )}
-
-          <button
-            type="button"
-            onClick={handleToggleCollapse}
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900 md:inline-flex"
-            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-          >
-            <ChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
-          </button>
         </div>
 
-        {!collapsed && (
-          <div className="border-b border-slate-100 p-3">
-            <BranchSelector />
-          </div>
-        )}
-
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="space-y-5">
+        {/* Navigation Groups */}
+        <nav className="flex-1 overflow-y-auto px-2 py-3">
+          <div className="space-y-4">
             {visibleGroups.map((group) => (
               <div key={group.label}>
                 {!collapsed && (
-                  <div className="mb-2 flex items-center gap-2 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-                    <span className={cn('h-1.5 w-1.5 rounded-full', group.accent)} />
+                  <div className="mb-1.5 flex items-center gap-1.5 px-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#d1c6ab]/70">
+                    <span className="h-1 w-1 rounded-full bg-[#facc15]" />
                     <span>{group.label}</span>
                   </div>
                 )}
 
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`));
-                    const tone = toneStyles[item.tone];
 
                     return (
                       <Link
@@ -345,22 +368,22 @@ export default function Sidebar() {
                         onClick={closeMobile}
                         title={collapsed ? item.label : undefined}
                         className={cn(
-                          'group relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0047BB]/40',
-                          collapsed ? 'justify-center' : 'justify-start',
+                          'group relative flex min-h-9 items-center gap-2.5 rounded px-2.5 py-1.5 text-xs font-semibold transition-all duration-150',
+                          collapsed ? 'justify-center' : 'justify-between',
                           isActive
-                            ? 'bg-[#E7EEFB] text-[#0047BB] ring-1 ring-[#CFDDF6] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-[#0047BB]'
-                            : 'text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm'
+                            ? 'bg-[#252a32] text-[#facc15] font-bold border-l-4 border-[#facc15]'
+                            : 'text-[#d1c6ab] hover:bg-[#171c23] hover:text-[#dee2ec]'
                         )}
                       >
-                        <span
-                          className={cn(
-                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-                            isActive ? 'bg-white text-[#0047BB] ring-1 ring-[#CFDDF6]' : cn('ring-1', tone.soft, tone.icon)
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        {!collapsed && <span className="truncate">{item.label}</span>}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#facc15]' : 'text-[#d1c6ab] group-hover:text-[#dee2ec]')} />
+                          {!collapsed && <span className="truncate">{item.label}</span>}
+                        </div>
+                        {!collapsed && isActive && (
+                          <span className="font-mono text-[9px] bg-[#facc15] text-[#1b1600] px-1 py-0.5 rounded font-bold shrink-0">
+                            LIVE
+                          </span>
+                        )}
                       </Link>
                     );
                   })}
@@ -370,43 +393,42 @@ export default function Sidebar() {
           </div>
         </nav>
 
-        <div className="border-t border-slate-200 bg-slate-50/80 p-3">
+        {/* Bottom Tactical Operator Card & Scanner [F2] */}
+        <div className="border-t border-[#30353d]/60 bg-[#171c23]/90 p-3 flex flex-col gap-2">
           {!collapsed && (
-            <button
-              type="button"
-              onClick={() => setLanguage(language === 'en' ? 'th' : 'en')}
-              className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:bg-slate-50"
+            <Link
+              href="/barcode/scanner"
+              className="w-full py-2 px-3 bg-[#facc15] text-[#1b1600] font-mono text-xs font-bold rounded flex items-center justify-center gap-1.5 hover:bg-[#eec200] active:translate-y-px transition-all shadow-sm"
             >
-              <span className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                <Globe className="h-4 w-4 text-slate-400" />
-                Language
-              </span>
-              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-700">
-                {language.toUpperCase()}
-              </span>
-            </button>
+              <ScanLine className="w-4 h-4" />
+              <span>เปิดสแกนเนอร์บาร์โค้ด [F2]</span>
+            </Link>
           )}
 
-          <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-sm">
+          <div className={cn('flex items-center gap-2.5 pt-1 border-t border-[#30353d]/40', collapsed && 'justify-center')}>
+            <div className="w-8 h-8 rounded-full bg-[#facc15] text-[#1b1600] flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-[#ffe083]/40">
               {session?.user?.name?.charAt(0) || 'U'}
             </div>
 
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-slate-950">{session?.user?.name || 'Guest'}</p>
-                <p className="truncate text-[11px] font-semibold text-slate-500">{userRole}</p>
+                <p className="truncate text-xs font-bold text-[#dee2ec] leading-tight">
+                  {session?.user?.name || 'ผู้ใช้งาน'}
+                </p>
+                <p className="truncate font-mono text-[10px] text-[#d1c6ab] leading-none mt-0.5">
+                  {userRole}
+                </p>
               </div>
             )}
 
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: '/login' })}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              className="inline-flex h-7 w-7 items-center justify-center rounded border border-[#30353d] bg-[#252a32] text-[#d1c6ab] hover:text-[#ffb4ab] hover:border-[#ffb4ab]/40 transition-colors"
               title={t('menu_signout')}
               aria-label={t('menu_signout')}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

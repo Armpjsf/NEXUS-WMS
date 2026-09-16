@@ -234,11 +234,11 @@ export default function OutboundPage() {
         <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative mb-8 overflow-hidden rounded-[1.75rem] border border-rose-200 bg-white/85 p-6 shadow-xl shadow-rose-900/10 backdrop-blur-xl"
+            className="relative mb-8 overflow-hidden rounded-[1.75rem] border border-rose-500/30 bg-[#171c23] p-6 shadow-xl shadow-rose-900/10 backdrop-blur-xl"
         >
            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-600 via-amber-500 to-blue-500" />
            
-           <Link href="/dashboard" className="relative z-10 text-slate-500 hover:text-rose-600 flex items-center gap-2 mb-6 transition-colors font-bold uppercase text-xs tracking-widest">
+           <Link href="/dashboard" className="relative z-10 text-[#8a92a6] hover:text-rose-600 flex items-center gap-2 mb-6 transition-colors font-bold uppercase text-xs tracking-widest">
               <ArrowLeft className="w-4 h-4" /> {t('back_to_dashboard')}
            </Link>
            <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -248,16 +248,16 @@ export default function OutboundPage() {
                    </div>
                    <div>
                        <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-rose-700">Dispatch Workspace</p>
-                       <h1 className="text-4xl font-black text-slate-950 tracking-tight mb-1">
+                       <h1 className="text-4xl font-black text-[#dee2ec] tracking-tight mb-1">
                           {t('outbound_order')}
                        </h1>
-                       <p className="text-slate-500 font-semibold text-sm">{t('outbound_subtitle')}</p>
+                       <p className="text-[#8a92a6] font-semibold text-sm">{t('outbound_subtitle')}</p>
                    </div>
                 </div>
                 
                 <button
                     onClick={() => setIsImportOpen(true)}
-                    className="flex items-center gap-2 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-rose-200 px-6 py-3.5 rounded-2xl font-bold transition-all active:scale-95 shadow-sm"
+                    className="flex items-center gap-2 bg-[#171c23] hover:bg-rose-500/10 text-[#d1c6ab] hover:text-rose-700 border border-rose-500/30 px-6 py-3.5 rounded-2xl font-bold transition-all active:scale-95 shadow-sm"
                 >
                     <FileSpreadsheet className="w-5 h-5 text-rose-500" />
                     <span>{t('import_excel')}</span>
@@ -274,32 +274,32 @@ export default function OutboundPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-900/5 backdrop-blur-xl"
+                    className="rounded-2xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg shadow-slate-900/5 backdrop-blur-xl"
                 >
-                    <h3 className="font-bold text-slate-800 mb-6 uppercase text-sm tracking-wider flex items-center gap-2">
+                    <h3 className="font-bold text-[#dee2ec] mb-6 uppercase text-sm tracking-wider flex items-center gap-2">
                         <FileText className="w-4 h-4 text-rose-500" /> {t('document_info')}
                     </h3>
                     <div className="space-y-5">
                         <div className="group">
-                             <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('date')}</label>
+                             <label className="text-xs text-[#8a92a6] font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('date')}</label>
                              <div className="relative">
-                                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8a92a6]" />
                                  <input 
                                     type="date" 
                                     value={date} 
                                     onChange={e => setDate(e.target.value)} 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 text-slate-900 outline-none focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all font-medium" 
+                                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl pl-12 pr-4 py-3 text-[#dee2ec] outline-none focus:bg-[#171c23] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all font-medium" 
                                  />
                              </div>
                         </div>
                         <div className="group">
-                             <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('reference_inv')}</label>
+                             <label className="text-xs text-[#8a92a6] font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('reference_inv')}</label>
                              <input 
                                 type="text" 
                                 value={docRef} 
                                 onChange={e => setDocRef(e.target.value)} 
                                 placeholder="e.g. INV-2024-001" 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 outline-none focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all font-medium" 
+                                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-3 text-[#dee2ec] outline-none focus:bg-[#171c23] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all font-medium" 
                              />
                         </div>
                     </div>
@@ -310,15 +310,15 @@ export default function OutboundPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-900/5 backdrop-blur-xl"
+                    className="rounded-2xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg shadow-slate-900/5 backdrop-blur-xl"
                 >
-                    <h3 className="font-bold text-slate-800 mb-6 uppercase text-sm tracking-wider flex items-center gap-2">
+                    <h3 className="font-bold text-[#dee2ec] mb-6 uppercase text-sm tracking-wider flex items-center gap-2">
                         <Plus className="w-4 h-4 text-rose-500" /> {t('add_item')}
                     </h3>
                     <div className="space-y-5">
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                                <label className="text-xs text-slate-400 font-bold block uppercase tracking-wider">{t('product')}</label>
+                                <label className="text-xs text-[#8a92a6] font-bold block uppercase tracking-wider">{t('product')}</label>
                                 <button
                                     type="button"
                                     onClick={() => setShowCamera(true)}
@@ -345,7 +345,7 @@ export default function OutboundPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowCamera(true)}
-                                    className="p-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl border border-rose-200 transition-colors shrink-0"
+                                    className="p-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-xl border border-rose-500/30 transition-colors shrink-0"
                                     title="เปิดกล้องสแกนบาร์โค้ดสินค้า"
                                 >
                                     <Camera className="w-5 h-5" />
@@ -357,7 +357,7 @@ export default function OutboundPage() {
                             const p = products.find(prod => prod.name === currentSku);
                             if (p?.fifo?.maxDaysOld > 90) {
                                 return (
-                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-200">
                                             <Calendar className="w-5 h-5" />
                                         </div>
@@ -377,22 +377,22 @@ export default function OutboundPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                              <div className="group">
-                                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('qty')}</label>
+                                <label className="text-xs text-[#8a92a6] font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('qty')}</label>
                                 <input 
                                     type="number" 
                                     value={currentQty} 
                                     onChange={e => setCurrentQty(e.target.value)} 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-bold outline-none focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all" 
+                                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-3 text-[#dee2ec] font-bold outline-none focus:bg-[#171c23] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all" 
                                     placeholder="0" 
                                 />
                              </div>
                              <div className="group">
-                                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('price_opt')}</label>
+                                <label className="text-xs text-[#8a92a6] font-bold mb-2 block uppercase tracking-wider group-focus-within:text-rose-600 transition-colors">{t('price_opt')}</label>
                                 <input 
                                     type="number" 
                                     value={currentPrice} 
                                     onChange={e => setCurrentPrice(e.target.value)} 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 outline-none focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all" 
+                                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-3 text-[#dee2ec] outline-none focus:bg-[#171c23] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all" 
                                     placeholder="0.00" 
                                 />
                              </div>
@@ -400,7 +400,7 @@ export default function OutboundPage() {
 
                         {/* FIFO/FEFO Preview Info Box */}
                         {fifoPreview && currentSku && currentQty && (
-                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                            <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
                                 <div className="flex items-start gap-2">
                                     <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                     <div className="text-sm w-full">
@@ -410,11 +410,11 @@ export default function OutboundPage() {
                                             <div className="flex gap-1">
                                                 <button 
                                                     onClick={() => setFifoMethod('FIFO')}
-                                                    className={`px-2 py-1 text-xs rounded-lg font-bold ${fifoMethod === 'FIFO' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600'}`}
+                                                    className={`px-2 py-1 text-xs rounded-lg font-bold ${fifoMethod === 'FIFO' ? 'bg-blue-600 text-white' : 'bg-blue-500/20 text-blue-600'}`}
                                                 >FIFO</button>
                                                 <button 
                                                     onClick={() => setFifoMethod('FEFO')}
-                                                    className={`px-2 py-1 text-xs rounded-lg font-bold ${fifoMethod === 'FEFO' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-600'}`}
+                                                    className={`px-2 py-1 text-xs rounded-lg font-bold ${fifoMethod === 'FEFO' ? 'bg-amber-600 text-white' : 'bg-amber-500/20 text-amber-600'}`}
                                                 >FEFO</button>
                                             </div>
                                         </div>
@@ -429,7 +429,7 @@ export default function OutboundPage() {
                                                         <li key={i}>
                                                             <strong>{a.qtyFromLayer}</strong> ชิ้น 
                                                             {a.expiryDate ? ` (หมดอายุ ${a.expiryDate})` : ` (รับ ${a.date})`}
-                                                            <span className="text-slate-400"> • {a.daysOld} วัน</span>
+                                                            <span className="text-[#8a92a6]"> • {a.daysOld} วัน</span>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -460,10 +460,10 @@ export default function OutboundPage() {
                 transition={{ delay: 0.3 }}
                 className="lg:col-span-2"
             >
-                 <div className="bg-white/95 border border-slate-200 rounded-2xl overflow-hidden min-h-[500px] flex flex-col shadow-lg shadow-slate-900/5">
-                     <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center backdrop-blur-sm">
-                         <h3 className="font-bold text-slate-900 flex items-center gap-3 text-lg">
-                            {t('items_list')} <span className="bg-rose-100 text-rose-800 text-xs px-3 py-1 rounded-full border border-rose-200 font-bold">{items.length}</span>
+                 <div className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-hidden min-h-[500px] flex flex-col shadow-lg shadow-slate-900/5">
+                     <div className="p-6 bg-[#1b2027]/50 border-b border-[#30353d] flex justify-between items-center backdrop-blur-sm">
+                         <h3 className="font-bold text-[#dee2ec] flex items-center gap-3 text-lg">
+                            {t('items_list')} <span className="bg-rose-500/20 text-rose-800 text-xs px-3 py-1 rounded-full border border-rose-500/30 font-bold">{items.length}</span>
                          </h3>
                          {items.length > 0 && (
                             <button onClick={() => setItems([])} className="text-xs text-red-500 hover:text-red-700 font-bold uppercase tracking-wider transition-colors">
@@ -474,13 +474,13 @@ export default function OutboundPage() {
                      
                      <div className="flex-1 overflow-auto p-2">
                         {items.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60 py-20">
+                            <div className="flex flex-col items-center justify-center h-full text-[#8a92a6] opacity-60 py-20">
                                 <PackageMinus className="w-16 h-16 mb-4 stroke-1" />
                                 <p className="text-lg font-medium">{t('no_items_added')}</p>
                                 <p className="text-sm">{t('select_product_prompt')}</p>
                             </div>
                         ) : (
-                            <table className="w-full text-left text-sm text-slate-600">
+                            <table className="w-full text-left text-sm text-[#d1c6ab]">
                                 <thead className="text-white uppercase font-black text-[10px] tracking-[0.1em] sticky top-0 z-20">
                                     <tr className="bg-gradient-to-r from-rose-600 to-pink-600 shadow-md">
                                         <th className="p-5 rounded-l-2xl">{t('product')}</th>
@@ -497,13 +497,13 @@ export default function OutboundPage() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="group hover:bg-slate-50 transition-colors"
+                                            className="group hover:bg-[#1b2027] transition-colors"
                                         >
-                                            <td className="p-4 font-bold text-slate-800 text-base">{item.sku}</td>
+                                            <td className="p-4 font-bold text-[#dee2ec] text-base">{item.sku}</td>
                                             <td className="p-4 text-right font-mono text-rose-600 font-bold text-lg">{parseInt(item.qty).toLocaleString()}</td>
-                                            <td className="p-4 text-right font-mono text-slate-500">{item.salePrice ? `฿${item.salePrice}` : '-'}</td>
+                                            <td className="p-4 text-right font-mono text-[#8a92a6]">{item.salePrice ? `฿${item.salePrice}` : '-'}</td>
                                             <td className="p-4 text-center">
-                                                <button onClick={() => removeItem(i)} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors">
+                                                <button onClick={() => removeItem(i)} className="p-2 hover:bg-red-500/10 text-[#8a92a6] hover:text-red-500 rounded-xl transition-colors">
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
                                             </td>
@@ -515,7 +515,7 @@ export default function OutboundPage() {
                         )}
                      </div>
 
-                     <div className="p-6 bg-white border-t border-slate-100">
+                     <div className="p-6 bg-[#171c23] border-t border-[#30353d]">
                         <button
                             onClick={handleSubmit}
                             disabled={items.length === 0 || submitting}

@@ -226,27 +226,27 @@ export default function MarketplaceIntegrationsPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-slate-50">
+    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-[#1b2027]">
       <AmbientBackground />
 
       <div className="relative z-10 mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <header className="relative overflow-hidden rounded-[1.75rem] border border-orange-200 bg-white/90 p-6 shadow-xl shadow-orange-900/5 backdrop-blur-xl">
+        <header className="relative overflow-hidden rounded-[1.75rem] border border-orange-500/30 bg-[#171c23] p-6 shadow-xl shadow-orange-900/5 backdrop-blur-xl">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-orange-500 via-rose-500 to-blue-500" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Link
                 href="/dashboard"
-                className="p-3 bg-orange-50 hover:bg-orange-100 rounded-xl border border-orange-200 text-orange-700 transition-colors"
+                className="p-3 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl border border-orange-500/30 text-orange-700 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-black text-[#dee2ec] flex items-center gap-2.5">
                   <ShoppingBag className="w-8 h-8 text-orange-600" />
                   Marketplace Integration Hub
                 </h1>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-[#8a92a6] mt-0.5">
                   เชื่อมต่อคำสั่งซื้อ Shopee, TikTok Shop, Lazada • นำเข้าไฟล์ออเดอร์ • รองรับการเชื่อมต่อ API ในอนาคต
                 </p>
               </div>
@@ -254,13 +254,13 @@ export default function MarketplaceIntegrationsPage() {
 
             {/* Platform Badges */}
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-orange-100 text-orange-800 font-bold rounded-lg text-xs border border-orange-200">
+              <span className="px-3 py-1 bg-orange-500/20 text-orange-800 font-bold rounded-lg text-xs border border-orange-500/30">
                 Shopee
               </span>
               <span className="px-3 py-1 bg-slate-900 text-cyan-300 font-bold rounded-lg text-xs border border-slate-800">
                 TikTok
               </span>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 font-bold rounded-lg text-xs border border-blue-200">
+              <span className="px-3 py-1 bg-blue-500/20 text-blue-800 font-bold rounded-lg text-xs border border-blue-500/30">
                 Lazada
               </span>
             </div>
@@ -268,14 +268,14 @@ export default function MarketplaceIntegrationsPage() {
         </header>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 bg-[#171c23] p-2 rounded-2xl border border-[#30353d] shadow-sm">
           <button
             onClick={() => setActiveTab('IMPORT')}
             className={cn(
               'flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2',
               activeTab === 'IMPORT'
                 ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                : 'text-slate-600 hover:bg-slate-50'
+                : 'text-[#d1c6ab] hover:bg-[#1b2027]'
             )}
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -288,7 +288,7 @@ export default function MarketplaceIntegrationsPage() {
               'flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2',
               activeTab === 'API_CONFIG'
                 ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                : 'text-slate-600 hover:bg-slate-50'
+                : 'text-[#d1c6ab] hover:bg-[#1b2027]'
             )}
           >
             <Settings2 className="w-4 h-4" />
@@ -300,17 +300,17 @@ export default function MarketplaceIntegrationsPage() {
         {activeTab === 'IMPORT' && (
           <div className="space-y-6">
             {/* Top Action Bar: Template Download */}
-            <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm">
               <div className="flex items-center gap-2">
                 <FileDown className="w-5 h-5 text-orange-600" />
-                <span className="text-xs font-bold text-slate-700">
+                <span className="text-xs font-bold text-[#d1c6ab]">
                   ต้องการเทมเพลตตัวอย่างสำหรับกรอกออเดอร์?
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTemplateModal(true)}
-                className="px-4 py-2 bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-800 border border-orange-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 ดาวน์โหลดเทมเพลตตัวอย่าง (.xlsx)
@@ -327,10 +327,10 @@ export default function MarketplaceIntegrationsPage() {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                'border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all bg-white shadow-sm flex flex-col items-center justify-center space-y-4',
+                'border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all bg-[#171c23] shadow-sm flex flex-col items-center justify-center space-y-4',
                 isDragging
-                  ? 'border-orange-500 bg-orange-50/50 scale-[1.01]'
-                  : 'border-slate-300 hover:border-orange-400 hover:bg-orange-50/20'
+                  ? 'border-orange-500 bg-orange-500/10/50 scale-[1.01]'
+                  : 'border-[#30353d] hover:border-orange-400 hover:bg-orange-500/10/20'
               )}
             >
               <input
@@ -345,28 +345,28 @@ export default function MarketplaceIntegrationsPage() {
                 }}
               />
 
-              <div className="p-4 bg-orange-50 text-orange-600 rounded-2xl border border-orange-200">
+              <div className="p-4 bg-orange-500/10 text-orange-600 rounded-2xl border border-orange-500/30">
                 <UploadCloud className="w-10 h-10" />
               </div>
 
               <div className="max-w-md space-y-1">
-                <h3 className="text-base font-black text-slate-800">
+                <h3 className="text-base font-black text-[#dee2ec]">
                   ลากไฟล์ Excel / CSV คำสั่งซื้อมาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์
                 </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-[#8a92a6] leading-relaxed">
                   รองรับไฟล์ Export จาก <strong>Shopee Seller Centre</strong>, <strong>TikTok Shop</strong>,{' '}
                   <strong>Lazada</strong> หรือไฟล์ออเดอร์ทั่วไป (.xlsx, .csv)
                 </p>
               </div>
 
               <div className="flex items-center gap-2 pt-2">
-                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-mono">
+                <span className="px-2.5 py-1 bg-[#252a32] text-[#d1c6ab] rounded-md text-[11px] font-mono">
                   .XLSX
                 </span>
-                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-mono">
+                <span className="px-2.5 py-1 bg-[#252a32] text-[#d1c6ab] rounded-md text-[11px] font-mono">
                   .CSV
                 </span>
-                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-mono">
+                <span className="px-2.5 py-1 bg-[#252a32] text-[#d1c6ab] rounded-md text-[11px] font-mono">
                   Auto Platform Detection
                 </span>
               </div>
@@ -374,16 +374,16 @@ export default function MarketplaceIntegrationsPage() {
 
             {/* Parsed Orders Preview Table */}
             {parsedOrders.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden space-y-4 p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="bg-[#171c23] border border-[#30353d] rounded-2xl shadow-xl overflow-hidden space-y-4 p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#30353d] pb-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-orange-100 text-orange-800 font-mono font-black text-xs rounded-md">
+                      <span className="px-3 py-1 bg-orange-500/20 text-orange-800 font-mono font-black text-xs rounded-md">
                         {detectedPlatform}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono">ไฟล์: {fileName}</span>
+                      <span className="text-xs text-[#8a92a6] font-mono">ไฟล์: {fileName}</span>
                     </div>
-                    <h3 className="text-lg font-black text-slate-900 mt-1">
+                    <h3 className="text-lg font-black text-[#dee2ec] mt-1">
                       พบคำสั่งซื้อทั้งหมด {new Set(parsedOrders.map(o => o.orderNo)).size} ออเดอร์ ({parsedOrders.length} รายการ)
                     </h3>
                   </div>
@@ -408,7 +408,7 @@ export default function MarketplaceIntegrationsPage() {
                         setParsedOrders([]);
                         setDetectedPlatform(null);
                       }}
-                      className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-slate-50"
+                      className="p-2 text-[#8a92a6] hover:text-rose-600 rounded-xl hover:bg-[#1b2027]"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -417,7 +417,7 @@ export default function MarketplaceIntegrationsPage() {
 
                 <div className="overflow-x-auto max-h-[50vh]">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
+                    <thead className="bg-[#252a32] text-[#d1c6ab] font-bold border-b border-[#30353d] sticky top-0">
                       <tr>
                         <th className="py-2.5 px-3">แพลตฟอร์ม</th>
                         <th className="py-2.5 px-3">เลขออเดอร์ (Order No)</th>
@@ -428,22 +428,22 @@ export default function MarketplaceIntegrationsPage() {
                         <th className="py-2.5 px-3">เลขพัสดุ (Tracking)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-[#30353d]">
                       {parsedOrders.map((ord, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                        <tr key={idx} className="hover:bg-[#1b2027] transition-colors">
                           <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-800">
+                            <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-[#252a32] text-[#dee2ec]">
                               {ord.platform}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{ord.orderNo}</td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-[#dee2ec]">{ord.orderNo}</td>
                           <td className="py-2.5 px-3">{ord.customerName}</td>
                           <td className="py-2.5 px-3 font-mono font-bold text-orange-700">{ord.sku}</td>
                           <td className="py-2.5 px-3 truncate max-w-[200px]">{ord.productName}</td>
-                          <td className="py-2.5 px-3 text-center font-black text-slate-900 text-sm">
+                          <td className="py-2.5 px-3 text-center font-black text-[#dee2ec] text-sm">
                             {ord.qty}
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-slate-500">
+                          <td className="py-2.5 px-3 font-mono text-[#8a92a6]">
                             {ord.trackingNo || '-'}
                           </td>
                         </tr>
@@ -459,7 +459,7 @@ export default function MarketplaceIntegrationsPage() {
         {/* TAB 2: DIRECT API CONFIGURATIONS (Future Readiness) */}
         {activeTab === 'API_CONFIG' && (
           <div className="space-y-6">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 flex items-start gap-3">
+            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-xs text-blue-900 flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-bold text-blue-950">โครงสร้างรองรับการเชื่อมต่อ Direct API</h4>
@@ -471,59 +471,59 @@ export default function MarketplaceIntegrationsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* SHOPEE CARD */}
-              <div className="bg-white border-2 border-orange-200 rounded-3xl p-6 shadow-md space-y-4 relative overflow-hidden">
+              <div className="bg-[#171c23] border-2 border-orange-500/30 rounded-3xl p-6 shadow-md space-y-4 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black text-sm">
                       S
                     </div>
-                    <h3 className="font-black text-slate-900">Shopee Open API</h3>
+                    <h3 className="font-black text-[#dee2ec]">Shopee Open API</h3>
                   </div>
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
+                  <span className="px-2 py-0.5 bg-[#252a32] text-[#d1c6ab] text-[10px] font-bold rounded-full">
                     พร้อมเชื่อมต่อ
                   </span>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">Partner ID</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">Partner ID</label>
                     <input
                       type="text"
                       placeholder="e.g. 2005432"
                       value={shopeeConfig.partnerId}
                       onChange={e => setShopeeConfig({ ...shopeeConfig, partnerId: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">Partner Key</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">Partner Key</label>
                     <input
                       type="password"
                       placeholder="••••••••••••••••"
                       value={shopeeConfig.partnerKey}
                       onChange={e => setShopeeConfig({ ...shopeeConfig, partnerKey: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">Shop ID</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">Shop ID</label>
                     <input
                       type="text"
                       placeholder="e.g. 98765432"
                       value={shopeeConfig.shopId}
                       onChange={e => setShopeeConfig({ ...shopeeConfig, shopId: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
-                  <span className="text-[10px] text-slate-400 font-bold block mb-1">Webhook Callback URL:</span>
-                  <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-lg text-[10px] font-mono text-slate-600 truncate">
+                <div className="pt-2 border-t border-[#30353d]">
+                  <span className="text-[10px] text-[#8a92a6] font-bold block mb-1">Webhook Callback URL:</span>
+                  <div className="flex items-center gap-1 bg-[#252a32] p-1.5 rounded-lg text-[10px] font-mono text-[#d1c6ab] truncate">
                     <span className="truncate">https://wms-360-pro.vercel.app/api/webhooks/shopee</span>
                     <button
                       onClick={() => handleCopyWebhook('https://wms-360-pro.vercel.app/api/webhooks/shopee')}
-                      className="text-slate-400 hover:text-slate-700 p-1"
+                      className="text-[#8a92a6] hover:text-[#d1c6ab] p-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
@@ -532,59 +532,59 @@ export default function MarketplaceIntegrationsPage() {
               </div>
 
               {/* TIKTOK CARD */}
-              <div className="bg-white border-2 border-slate-800 rounded-3xl p-6 shadow-md space-y-4 relative overflow-hidden">
+              <div className="bg-[#171c23] border-2 border-slate-800 rounded-3xl p-6 shadow-md space-y-4 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-slate-950 text-cyan-400 flex items-center justify-center font-black text-sm">
                       TT
                     </div>
-                    <h3 className="font-black text-slate-900">TikTok Shop Partner</h3>
+                    <h3 className="font-black text-[#dee2ec]">TikTok Shop Partner</h3>
                   </div>
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
+                  <span className="px-2 py-0.5 bg-[#252a32] text-[#d1c6ab] text-[10px] font-bold rounded-full">
                     พร้อมเชื่อมต่อ
                   </span>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">App Key</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">App Key</label>
                     <input
                       type="text"
                       placeholder="e.g. 6xxyyzz"
                       value={tiktokConfig.appKey}
                       onChange={e => setTiktokConfig({ ...tiktokConfig, appKey: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">App Secret</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">App Secret</label>
                     <input
                       type="password"
                       placeholder="••••••••••••••••"
                       value={tiktokConfig.appSecret}
                       onChange={e => setTiktokConfig({ ...tiktokConfig, appSecret: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">Shop Cipher</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">Shop Cipher</label>
                     <input
                       type="text"
                       placeholder="e.g. ROW_xyz..."
                       value={tiktokConfig.shopCipher}
                       onChange={e => setTiktokConfig({ ...tiktokConfig, shopCipher: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
-                  <span className="text-[10px] text-slate-400 font-bold block mb-1">Webhook Callback URL:</span>
-                  <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-lg text-[10px] font-mono text-slate-600 truncate">
+                <div className="pt-2 border-t border-[#30353d]">
+                  <span className="text-[10px] text-[#8a92a6] font-bold block mb-1">Webhook Callback URL:</span>
+                  <div className="flex items-center gap-1 bg-[#252a32] p-1.5 rounded-lg text-[10px] font-mono text-[#d1c6ab] truncate">
                     <span className="truncate">https://wms-360-pro.vercel.app/api/webhooks/tiktok</span>
                     <button
                       onClick={() => handleCopyWebhook('https://wms-360-pro.vercel.app/api/webhooks/tiktok')}
-                      className="text-slate-400 hover:text-slate-700 p-1"
+                      className="text-[#8a92a6] hover:text-[#d1c6ab] p-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
@@ -593,59 +593,59 @@ export default function MarketplaceIntegrationsPage() {
               </div>
 
               {/* LAZADA CARD */}
-              <div className="bg-white border-2 border-blue-200 rounded-3xl p-6 shadow-md space-y-4 relative overflow-hidden">
+              <div className="bg-[#171c23] border-2 border-blue-500/30 rounded-3xl p-6 shadow-md space-y-4 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
                       L
                     </div>
-                    <h3 className="font-black text-slate-900">Lazada Open Platform</h3>
+                    <h3 className="font-black text-[#dee2ec]">Lazada Open Platform</h3>
                   </div>
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
+                  <span className="px-2 py-0.5 bg-[#252a32] text-[#d1c6ab] text-[10px] font-bold rounded-full">
                     พร้อมเชื่อมต่อ
                   </span>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">App Key</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">App Key</label>
                     <input
                       type="text"
                       placeholder="e.g. 102938"
                       value={lazadaConfig.appKey}
                       onChange={e => setLazadaConfig({ ...lazadaConfig, appKey: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">App Secret</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">App Secret</label>
                     <input
                       type="password"
                       placeholder="••••••••••••••••"
                       value={lazadaConfig.appSecret}
                       onChange={e => setLazadaConfig({ ...lazadaConfig, appSecret: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 font-bold mb-1">Access Token</label>
+                    <label className="block text-[#8a92a6] font-bold mb-1">Access Token</label>
                     <input
                       type="text"
                       placeholder="e.g. 50000..."
                       value={lazadaConfig.accessToken}
                       onChange={e => setLazadaConfig({ ...lazadaConfig, accessToken: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
-                  <span className="text-[10px] text-slate-400 font-bold block mb-1">Webhook Callback URL:</span>
-                  <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-lg text-[10px] font-mono text-slate-600 truncate">
+                <div className="pt-2 border-t border-[#30353d]">
+                  <span className="text-[10px] text-[#8a92a6] font-bold block mb-1">Webhook Callback URL:</span>
+                  <div className="flex items-center gap-1 bg-[#252a32] p-1.5 rounded-lg text-[10px] font-mono text-[#d1c6ab] truncate">
                     <span className="truncate">https://wms-360-pro.vercel.app/api/webhooks/lazada</span>
                     <button
                       onClick={() => handleCopyWebhook('https://wms-360-pro.vercel.app/api/webhooks/lazada')}
-                      className="text-slate-400 hover:text-slate-700 p-1"
+                      className="text-[#8a92a6] hover:text-[#d1c6ab] p-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
@@ -671,22 +671,22 @@ export default function MarketplaceIntegrationsPage() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 20 }}
                 onClick={e => e.stopPropagation()}
-                className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 text-slate-900"
+                className="bg-[#171c23] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#30353d] space-y-5 text-[#dee2ec]"
               >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="font-black text-lg text-slate-900 flex items-center gap-2">
+                <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
+                  <h3 className="font-black text-lg text-[#dee2ec] flex items-center gap-2">
                     <Download className="w-5 h-5 text-orange-600" />
                     เลือกรูปแบบไฟล์เทมเพลต
                   </h3>
                   <button
                     onClick={() => setShowTemplateModal(false)}
-                    className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                    className="text-[#8a92a6] hover:text-[#d1c6ab] text-xs font-bold"
                   >
                     ปิด
                   </button>
                 </div>
 
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#8a92a6]">
                   เลือกว่าคุณต้องการดาวน์โหลดเทมเพลตมาตรฐานทั่วไป หรือตัวอย่างไฟล์ตามรูปแบบของแต่ละแพลตฟอร์ม (.xlsx):
                 </p>
 
@@ -694,15 +694,15 @@ export default function MarketplaceIntegrationsPage() {
                   <button
                     type="button"
                     onClick={() => downloadSampleTemplate('GENERIC')}
-                    className="w-full p-3.5 rounded-2xl border border-slate-200 hover:border-orange-400 hover:bg-orange-50/40 text-left transition-all flex items-center justify-between text-xs"
+                    className="w-full p-3.5 rounded-2xl border border-[#30353d] hover:border-orange-400 hover:bg-orange-500/10/40 text-left transition-all flex items-center justify-between text-xs"
                   >
                     <div>
-                      <div className="font-bold text-slate-900">1. เทมเพลตมาตรฐาน WMS 360 PRO</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="font-bold text-[#dee2ec]">1. เทมเพลตมาตรฐาน WMS 360 PRO</div>
+                      <div className="text-[11px] text-[#8a92a6] mt-0.5">
                         เหมาะสำหรับออเดอร์ทั่วไป, หน้าร้าน, Facebook, LINE OA
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 bg-orange-100 text-orange-800 rounded-lg font-bold text-[10px]">
+                    <span className="px-2.5 py-1 bg-orange-500/20 text-orange-800 rounded-lg font-bold text-[10px]">
                       .xlsx
                     </span>
                   </button>
@@ -710,7 +710,7 @@ export default function MarketplaceIntegrationsPage() {
                   <button
                     type="button"
                     onClick={() => downloadSampleTemplate('SHOPEE')}
-                    className="w-full p-3.5 rounded-2xl border border-orange-200 hover:bg-orange-50/40 text-left transition-all flex items-center justify-between text-xs"
+                    className="w-full p-3.5 rounded-2xl border border-orange-500/30 hover:bg-orange-500/10/40 text-left transition-all flex items-center justify-between text-xs"
                   >
                     <div>
                       <div className="font-bold text-orange-950">2. ตัวอย่างรูปแบบไฟล์ Shopee</div>
@@ -729,8 +729,8 @@ export default function MarketplaceIntegrationsPage() {
                     className="w-full p-3.5 rounded-2xl border border-slate-800 hover:bg-slate-900/5 text-left transition-all flex items-center justify-between text-xs"
                   >
                     <div>
-                      <div className="font-bold text-slate-950">3. ตัวอย่างรูปแบบไฟล์ TikTok Shop</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="font-bold text-[#dee2ec]">3. ตัวอย่างรูปแบบไฟล์ TikTok Shop</div>
+                      <div className="text-[11px] text-[#8a92a6] mt-0.5">
                         โครงสร้างหัวคอลัมน์เหมือน TikTok Seller Center
                       </div>
                     </div>
@@ -742,7 +742,7 @@ export default function MarketplaceIntegrationsPage() {
                   <button
                     type="button"
                     onClick={() => downloadSampleTemplate('LAZADA')}
-                    className="w-full p-3.5 rounded-2xl border border-blue-200 hover:bg-blue-50/40 text-left transition-all flex items-center justify-between text-xs"
+                    className="w-full p-3.5 rounded-2xl border border-blue-500/30 hover:bg-blue-500/10/40 text-left transition-all flex items-center justify-between text-xs"
                   >
                     <div>
                       <div className="font-bold text-blue-950">4. ตัวอย่างรูปแบบไฟล์ Lazada</div>

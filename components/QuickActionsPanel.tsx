@@ -10,36 +10,32 @@ const quickActions = [
     labelEn: 'Inbound',
     href: '/ops/receiving',
     icon: PackagePlus,
-    color: 'bg-emerald-500',
-    hoverColor: 'hover:bg-emerald-600',
-    shadow: 'shadow-emerald-500/30'
+    badgeColor: 'text-[#57ec7f] bg-[#57ec7f]/10 border-[#57ec7f]/30',
+    hoverBorder: 'hover:border-[#57ec7f]/60'
   },
   {
     label: 'จ่ายออก',
     labelEn: 'Outbound',
     href: '/ops/outbound',
     icon: PackageMinus,
-    color: 'bg-rose-500',
-    hoverColor: 'hover:bg-rose-600',
-    shadow: 'shadow-rose-500/30'
+    badgeColor: 'text-[#ffb4ab] bg-[#93000a]/30 border-[#ffb4ab]/30',
+    hoverBorder: 'hover:border-[#ffb4ab]/60'
   },
   {
     label: 'แจ้งเสีย',
     labelEn: 'Damage',
-    href: '/damage',
+    href: '/ops/damage',
     icon: AlertTriangle,
-    color: 'bg-amber-500',
-    hoverColor: 'hover:bg-amber-600',
-    shadow: 'shadow-amber-500/30'
+    badgeColor: 'text-[#facc15] bg-[#facc15]/10 border-[#facc15]/30',
+    hoverBorder: 'hover:border-[#facc15]/60'
   },
   {
-    label: 'สแกน',
+    label: 'สแกน (F2)',
     labelEn: 'Scan',
     href: '/barcode/scanner',
     icon: QrCode,
-    color: 'bg-indigo-500',
-    hoverColor: 'hover:bg-indigo-600',
-    shadow: 'shadow-indigo-500/30'
+    badgeColor: 'text-[#4cd7f6] bg-[#4cd7f6]/10 border-[#4cd7f6]/30',
+    hoverBorder: 'hover:border-[#4cd7f6]/60'
   }
 ];
 
@@ -51,7 +47,7 @@ export default function QuickActionsPanel() {
       transition={{ delay: 0.1 }}
       className="mb-6"
     >
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2.5">
         {quickActions.map((action) => {
           const Icon = action.icon;
           return (
@@ -59,17 +55,18 @@ export default function QuickActionsPanel() {
               key={action.href}
               href={action.href}
               className={`
-                flex items-center gap-2 px-4 py-2.5 rounded-xl
-                ${action.color} ${action.hoverColor}
-                text-white font-bold text-sm
-                shadow-lg ${action.shadow}
-                transition-all duration-200
-                hover:scale-105 hover:-translate-y-0.5
-                active:scale-95
+                flex items-center gap-2 px-3.5 py-2 rounded-lg border border-[#30353d]
+                bg-[#171c23] hover:bg-[#252a32] ${action.hoverBorder}
+                text-[#dee2ec] font-mono font-bold text-xs
+                transition-all duration-200 shadow-sm
+                hover:-translate-y-0.5 active:scale-95
               `}
             >
-              <Icon className="w-4 h-4" />
+              <div className={`p-1 rounded border ${action.badgeColor}`}>
+                <Icon className="w-3.5 h-3.5" />
+              </div>
               <span>{action.label}</span>
+              <span className="text-[10px] text-[#8a92a6] font-normal">[{action.labelEn}]</span>
             </Link>
           );
         })}

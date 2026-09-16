@@ -54,23 +54,23 @@ function PrintLabelsContent() {
   }, [handlePrint]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#1b2027] flex flex-col md:flex-row">
       {/* Sidebar Controls - Hidden on Print */}
-      <div className="w-full md:w-80 bg-white border-r border-slate-200 p-6 flex flex-col h-auto md:h-screen overflow-y-auto print:hidden z-10 shadow-lg md:shadow-none">
+      <div className="w-full md:w-80 bg-[#171c23] border-r border-[#30353d] p-6 flex flex-col h-auto md:h-screen overflow-y-auto print:hidden z-10 shadow-lg md:shadow-none">
         <div className="mb-8">
-            <Link href="/inventory" className="inline-flex items-center text-slate-500 hover:text-slate-800 transition-colors mb-4">
+            <Link href="/inventory" className="inline-flex items-center text-[#8a92a6] hover:text-[#dee2ec] transition-colors mb-4">
                 <ArrowLeft className="w-4 h-4 mr-1" /> {t('back_to_inventory')}
             </Link>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">{t('label_printer_title')}</h1>
-            <p className="text-sm text-slate-500 mt-1">{t('label_printer_subtitle')}</p>
+            <h1 className="text-2xl font-black text-[#dee2ec] tracking-tight">{t('label_printer_title')}</h1>
+            <p className="text-sm text-[#8a92a6] mt-1">{t('label_printer_subtitle')}</p>
         </div>
 
         {/* Item Details */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">
-            <h3 className="font-bold text-slate-700 mb-1">{name}</h3>
+        <div className="bg-[#1b2027] p-4 rounded-xl border border-[#30353d] mb-6">
+            <h3 className="font-bold text-[#d1c6ab] mb-1">{name}</h3>
             <div className="flex justify-between items-center text-sm">
-                <span className="font-mono text-slate-500">{sku}</span>
-                <span className="font-bold text-slate-800">฿{Number(price).toLocaleString()}</span>
+                <span className="font-mono text-[#8a92a6]">{sku}</span>
+                <span className="font-bold text-[#dee2ec]">฿{Number(price).toLocaleString()}</span>
             </div>
         </div>
 
@@ -78,11 +78,11 @@ function PrintLabelsContent() {
         <div className="space-y-6 flex-1">
             {/* Copies */}
             <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('copies')}</label>
+                <label className="block text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2">{t('copies')}</label>
                 <div className="flex items-center space-x-3">
                     <button 
                         onClick={() => setCopies(Math.max(1, copies - 1))}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#30353d] hover:bg-[#1b2027] text-[#d1c6ab] transition-colors"
                     >
                         <Minus className="w-4 h-4" />
                     </button>
@@ -90,11 +90,11 @@ function PrintLabelsContent() {
                         type="number" 
                         value={copies}
                         onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="flex-1 h-10 border border-slate-200 rounded-lg text-center font-bold text-slate-800 focus:border-indigo-500 outline-none"
+                        className="flex-1 h-10 border border-[#30353d] rounded-lg text-center font-bold text-[#dee2ec] focus:border-indigo-500 outline-none"
                     />
                     <button 
                          onClick={() => setCopies(copies + 1)}
-                         className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+                         className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#30353d] hover:bg-[#1b2027] text-[#d1c6ab] transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                     </button>
@@ -103,7 +103,7 @@ function PrintLabelsContent() {
 
             {/* Sizes */}
             <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('size')}</label>
+                <label className="block text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2">{t('size')}</label>
                 <div className="grid grid-cols-3 gap-2">
                     {['small', 'standard', 'large'].map((s) => (
                         <button
@@ -111,8 +111,8 @@ function PrintLabelsContent() {
                             onClick={() => setLabelSize(s as any)}
                             className={`px-2 py-2 rounded-lg text-xs font-bold capitalize border transition-all ${
                                 labelSize === s 
-                                ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-200' 
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/30' 
+                                : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:border-[#30353d]'
                             }`}
                         >
                             {s}
@@ -123,22 +123,22 @@ function PrintLabelsContent() {
 
             {/* Options */}
             <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('options')}</label>
+                <label className="block text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2">{t('options')}</label>
                 <div className="space-y-2">
-                    <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-[#1b2027] transition-colors">
                         <input type="checkbox" checked={showPrice} onChange={(e) => setShowPrice(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                        <span className="text-sm font-medium text-slate-700">{t('show_price')}</span>
+                        <span className="text-sm font-medium text-[#d1c6ab]">{t('show_price')}</span>
                     </label>
-                    <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-[#1b2027] transition-colors">
                         <input type="checkbox" checked={showQR} onChange={(e) => setShowQR(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                        <span className="text-sm font-medium text-slate-700">{t('use_qr')}</span>
+                        <span className="text-sm font-medium text-[#d1c6ab]">{t('use_qr')}</span>
                     </label>
                 </div>
             </div>
         </div>
 
         {/* Action Button */}
-        <div className="mt-8 pt-6 border-t border-slate-100">
+        <div className="mt-8 pt-6 border-t border-[#30353d]">
             <button
                 type="button"
                 onClick={() => window.print()}
@@ -147,21 +147,21 @@ function PrintLabelsContent() {
                 <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 <span>{t('print_labels_btn')}</span>
             </button>
-            <p className="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
-                <span className="bg-slate-100 px-1 py-0.5 rounded border border-slate-200 font-mono">Ctrl</span> + <span className="bg-slate-100 px-1 py-0.5 rounded border border-slate-200 font-mono">Enter</span> to print
+            <p className="text-center text-xs text-[#8a92a6] mt-3 flex items-center justify-center gap-1">
+                <span className="bg-[#252a32] px-1 py-0.5 rounded border border-[#30353d] font-mono">Ctrl</span> + <span className="bg-[#252a32] px-1 py-0.5 rounded border border-[#30353d] font-mono">Enter</span> to print
             </p>
         </div>
       </div>
 
       {/* Preview Area */}
       {/* (Omit unmodified surrounding elements but target the Label props inside the loop) */}
-      <div className="flex-1 bg-slate-100 p-8 overflow-y-auto flex justify-center items-start">
+      <div className="flex-1 bg-[#252a32] p-8 overflow-y-auto flex justify-center items-start">
         <div className="w-full max-w-3xl">
             <div className="mb-4 flex items-center justify-between print:hidden">
-                <h2 className="font-bold text-slate-400 uppercase tracking-wider text-sm flex items-center gap-2">
+                <h2 className="font-bold text-[#8a92a6] uppercase tracking-wider text-sm flex items-center gap-2">
                     <Settings className="w-4 h-4" /> {t('preview')}
                 </h2>
-                <span className="text-xs text-slate-400">{t('total_labels').replace('{0}', copies.toString())}</span>
+                <span className="text-xs text-[#8a92a6]">{t('total_labels').replace('{0}', copies.toString())}</span>
             </div>
 
             {/* THE PRINTABLE AREA */}
@@ -238,9 +238,9 @@ function Label({ sku, name, price, code, size, showPrice, showQR, stock, locatio
             </div>
 
             <div className="w-full flex justify-between items-end mt-1 border-t-2 border-black pt-1">
-                <span className={`font-mono font-bold ${s.text}`}>{code !== sku ? `${code}` : sku}</span>
+                <span className={`font-mono font-bold text-black ${s.text}`}>{code !== sku ? `${code}` : sku}</span>
                 {showPrice && (
-                    <span className={`font-black ${s.title}`}>฿{Number(price).toLocaleString()}</span>
+                    <span className={`font-black text-black ${s.title}`}>฿{Number(price).toLocaleString()}</span>
                 )}
             </div>
         </div>

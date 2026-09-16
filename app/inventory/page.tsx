@@ -238,42 +238,53 @@ function InventoryContent() {
         <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative mx-auto mb-7 flex max-w-[1500px] flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/85 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl md:flex-row md:items-center md:justify-between"
+            className="relative mx-auto mb-6 flex max-w-[1500px] flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between"
         >
-           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-600 via-blue-600 to-amber-500" />
+           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
            
            <div className="relative z-10">
-              <p className="mb-1 ml-1 text-[11px] font-black uppercase tracking-[0.2em] text-teal-700">Inventory Control</p>
-              <h1 className="text-4xl font-black text-slate-950 tracking-tight mb-2 flex items-center gap-3">
-                <div className="bg-gradient-to-br from-teal-700 to-blue-700 text-white p-3 rounded-2xl shadow-lg shadow-teal-900/20">
-                    <Package className="w-8 h-8" />
+              <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6]">
+                Tactical Inventory Control & Stock Master
+              </p>
+              <h1 className="font-headline text-2xl md:text-3xl font-black text-[#dee2ec] tracking-tight mb-1 flex items-center gap-3">
+                <div className="bg-[#facc15] text-[#1b1600] p-2.5 rounded-lg shadow-md">
+                    <Package className="w-6 h-6" />
                 </div>
                 {t('inventory_title')}
               </h1>
-              <p className="text-slate-500 font-semibold text-sm ml-2">{t('inventory_subtitle')}</p>
+              <p className="text-[#d1c6ab] font-mono text-xs ml-1">{t('inventory_subtitle')}</p>
            </div>
            
-           <div className="flex gap-3 relative z-10">
+           <div className="flex flex-wrap gap-2.5 relative z-10">
               <button 
                   onClick={openAddModal}
-                  className="hidden md:flex items-center gap-2 bg-gradient-to-r from-teal-700 to-emerald-600 text-white px-7 py-4 rounded-2xl font-bold hover:shadow-xl hover:shadow-teal-700/25 transition-all active:scale-95"
+                  className="flex items-center gap-2 bg-[#facc15] text-[#1b1600] px-5 py-2.5 rounded-lg font-mono text-xs font-bold hover:bg-[#eec200] transition-all shadow-sm active:translate-y-px"
               >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                   {t('add_product')}
               </button>
 
+              <Link
+                  href="/ops/cycle-count"
+                  className="hidden xl:flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#57ec7f] px-4 py-2.5 rounded-lg font-mono text-xs font-bold hover:border-[#57ec7f]/50 transition-all"
+              >
+                  <RefreshCcw className="w-4 h-4" />
+                  ตรวจนับ Cycle Count
+              </Link>
+
               <button 
                 onClick={fetchData} 
-                className={cn("p-4 rounded-2xl transition-all active:scale-95", loading ? "bg-slate-100 text-slate-400" : "bg-white text-blue-700 shadow-lg shadow-slate-900/5 border border-blue-100 hover:bg-blue-50")}
+                className={cn("p-2.5 rounded-lg transition-all border border-[#30353d]", loading ? "bg-[#1b2027] text-[#8a92a6]" : "bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15]")}
+                title="รีเฟรชข้อมูลสต็อก"
               >
-                  <RefreshCcw className={cn("w-6 h-6", loading && "animate-spin")} />
+                  <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
               </button>
               
                <button 
                   onClick={exportCSV}
-                  className="flex items-center gap-2 bg-slate-900 text-white px-7 py-4 rounded-2xl font-bold hover:bg-blue-900 transition-all active:scale-95 shadow-xl shadow-slate-900/15"
+                  className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] px-4 py-2.5 rounded-lg font-mono text-xs font-bold hover:text-[#facc15] transition-all"
                >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4" />
                   {t('export_csv')}
                </button>
            </div>
@@ -283,56 +294,49 @@ function InventoryContent() {
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.1 }}
-             className="mx-auto mb-7 flex max-w-[1500px] flex-col gap-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-lg shadow-slate-900/5 backdrop-blur-xl md:flex-row md:items-center"
+             className="mx-auto mb-6 flex max-w-[1500px] flex-col gap-3 rounded-xl border border-[#30353d] bg-[#171c23]/80 p-3 shadow-xl backdrop-blur-xl md:flex-row md:items-center"
          >
-            <div className="flex-1 relative group w-full flex gap-3 items-center">
+            <div className="flex-1 relative group w-full flex gap-2.5 items-center">
                 <div className="relative flex-1">
-                    <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-[#d1c6ab]" />
                     <input 
                        type="text" 
                        placeholder={t('search_placeholder')}
                        value={search}
                        onChange={e => setSearch(e.target.value)}
-                       className="w-full pl-11 pr-28 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all font-semibold"
+                       className="w-full pl-9 pr-24 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-xs font-mono text-[#dee2ec] placeholder-[#d1c6ab]/50 focus:border-[#facc15] outline-none transition-all"
                     />
-                    <div className="absolute right-2 top-2 flex items-center gap-1.5">
+                    <div className="absolute right-2 top-1.5 flex items-center gap-1">
                       {search && (
                         <button
                           type="button"
                           onClick={() => setSearch('')}
-                          className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                          className="p-1 text-[#d1c6ab] hover:text-[#dee2ec] rounded"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                       <button
                         type="button"
                         onClick={() => setShowCamScan(true)}
                         title="สแกนบาร์โค้ดสินค้า"
-                        className="px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                        className="px-2 py-1 bg-[#252a32] border border-[#30353d] hover:border-[#facc15] text-[#facc15] rounded text-[11px] font-mono font-bold flex items-center gap-1 transition-all"
                       >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">สแกน</span>
+                        <Camera className="w-3 h-3" />
+                        <span>สแกน</span>
                       </button>
                     </div>
                 </div>
-                <span className="px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-bold whitespace-nowrap shadow-sm">
+                <span className="px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-[#d1c6ab] font-mono text-xs whitespace-nowrap">
                     {search ? `ค้นพบ ${filtered.length.toLocaleString()} รายการ` : `ทั้งหมด ${filtered.length.toLocaleString()} รายการ`}
                 </span>
             </div>
            
-           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-                <button 
-                  onClick={openAddModal}
-                  className="md:hidden px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold whitespace-nowrap"
-                >
-                    <Plus className="w-5 h-5 inline mr-1" /> Add
-                </button>
-
+           <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 font-mono text-xs">
                 <select 
                     value={filterMovement}
                     onChange={e => setFilterMovement(e.target.value)}
-                    className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold outline-none focus:border-teal-500/50 hover:bg-teal-50 transition-colors cursor-pointer"
+                    className="px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-[#dee2ec] outline-none focus:border-[#facc15] cursor-pointer"
                 >
                     <option value="ALL">{t('filter_all_movements')}</option>
                     <option value="Fast Moving">{t('filter_fast_moving')}</option>
@@ -344,7 +348,7 @@ function InventoryContent() {
                 <select 
                     value={filterStatus}
                     onChange={e => setFilterStatus(e.target.value)}
-                    className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold outline-none focus:border-teal-500/50 hover:bg-teal-50 transition-colors cursor-pointer"
+                    className="px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-[#dee2ec] outline-none focus:border-[#facc15] cursor-pointer"
                 >
                     <option value="ALL">{t('filter_all_status')}</option>
                     <option value="LOW">{t('filter_low_stock')}</option>
@@ -357,10 +361,10 @@ function InventoryContent() {
                 <button 
                   onClick={() => setShowInactive(!showInactive)}
                   className={cn(
-                    "px-4 py-3 rounded-xl border font-bold text-sm whitespace-nowrap transition-all",
+                    "px-3 py-2 rounded-lg border font-mono text-xs whitespace-nowrap transition-all",
                     showInactive 
-                        ? "bg-slate-800 text-white border-slate-800" 
-                        : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300"
+                        ? "bg-[#facc15] text-[#1b1600] border-[#facc15] font-bold" 
+                        : "bg-[#090f15] text-[#d1c6ab] border-[#30353d] hover:text-[#dee2ec]"
                   )}
                 >
                     {showInactive ? t('show_active_only') : t('show_inactive')}
@@ -389,149 +393,150 @@ function InventoryContent() {
                         key={product.id}
                         variants={item}
                         layout
-                        className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-lg shadow-slate-900/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                        className="group relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-4 shadow-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#facc15]/60"
                     >
-                        <div className="h-full relative z-10">
-                            <div className={cn("absolute inset-x-0 top-0 h-1.5", product.stock <= product.minStock ? "bg-gradient-to-r from-rose-500 to-amber-500" : "bg-gradient-to-r from-teal-500 to-blue-500")} />
+                        <div className="h-full relative z-10 flex flex-col justify-between">
+                            <div className={cn("absolute inset-x-0 top-0 h-1", product.stock <= product.minStock ? "bg-[#ffb4ab]" : "bg-[#facc15]")} />
                             
-                            <div className="relative z-10 h-full flex flex-col justify-between">
-                                <div>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 p-1 relative group/image">
-                                            <div className="hidden md:flex absolute inset-0 bg-black/40 rounded-xl items-center justify-center gap-2 opacity-0 group-hover/image:opacity-100 transition-all duration-200 z-20 backdrop-blur-sm pointer-events-none">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setZoomedImage(product.image);
-                                                    }}
-                                                    className="p-2 bg-white/20 hover:bg-white text-white hover:text-indigo-600 rounded-lg transition-colors backdrop-blur-md pointer-events-auto"
-                                                    title="Zoom Image"
-                                                >
-                                                    <Maximize2 className="w-4 h-4" />
-                                                </button>
-                                                <Link 
-                                                    href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
-                                                    target="_blank"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="p-2 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-lg transition-colors backdrop-blur-md pointer-events-auto"
-                                                    title="Print Label"
-                                                >
-                                                    <Printer className="w-4 h-4" />
-                                                </Link>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); 
-                                                        openEditModal(product, e);
-                                                    }}
-                                                    className="p-2 bg-white/20 hover:bg-white text-white hover:text-indigo-600 rounded-lg transition-colors backdrop-blur-md pointer-events-auto"
-                                                    title="Edit Product"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                            </div>
-
-                                        {product.image ? (
-                                            <div 
-                                                className="w-full h-full cursor-zoom-in"
+                            <div>
+                                <div className="flex justify-between items-start mb-3 pt-1">
+                                    <div className="w-14 h-14 rounded-lg bg-[#090f15] border border-[#30353d] p-1 relative group/image">
+                                        <div className="hidden md:flex absolute inset-0 bg-black/60 rounded-lg items-center justify-center gap-1.5 opacity-0 group-hover/image:opacity-100 transition-all duration-150 z-20 backdrop-blur-sm pointer-events-none">
+                                            <button
                                                 onClick={(e) => {
-                                                    e.preventDefault();
                                                     e.stopPropagation();
                                                     setZoomedImage(product.image);
                                                 }}
+                                                className="p-1.5 bg-[#252a32] hover:bg-[#facc15] text-[#dee2ec] hover:text-[#1b1600] rounded transition-colors pointer-events-auto"
+                                                title="Zoom Image"
                                             >
-                                                <img src={`/api/proxy/image?url=${encodeURIComponent(product.image)}`} alt={product.name} className="w-full h-full object-cover rounded-xl" />
-                                            </div>
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                                <Package className="w-8 h-8" />
-                                            </div>
-                                        )}
+                                                <Maximize2 className="w-3.5 h-3.5" />
+                                            </button>
+                                            <Link 
+                                                href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
+                                                target="_blank"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-1.5 bg-[#252a32] hover:bg-[#facc15] text-[#dee2ec] hover:text-[#1b1600] rounded transition-colors pointer-events-auto"
+                                                title="Print Label"
+                                            >
+                                                <Printer className="w-3.5 h-3.5" />
+                                            </Link>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); 
+                                                    openEditModal(product, e);
+                                                }}
+                                                className="p-1.5 bg-[#252a32] hover:bg-[#facc15] text-[#dee2ec] hover:text-[#1b1600] rounded transition-colors pointer-events-auto"
+                                                title="Edit Product"
+                                            >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
-                                        <span className={cn("px-4 py-1.5 rounded-full text-[10px] uppercase font-black tracking-[0.1em] shadow-sm", status.bg, status.color, status.border)}>
-                                            {status.label}
-                                        </span>
+
+                                    {product.image ? (
+                                        <div 
+                                            className="w-full h-full cursor-zoom-in"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setZoomedImage(product.image);
+                                            }}
+                                        >
+                                            <img src={`/api/proxy/image?url=${encodeURIComponent(product.image)}`} alt={product.name} className="w-full h-full object-cover rounded" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[#d1c6ab]/40">
+                                            <Package className="w-6 h-6" />
+                                        </div>
+                                    )}
                                     </div>
-
-                                    <Link href={`/stock-card?search=${encodeURIComponent(product.name)}`} className="block">
-                                        <div className="mb-4 h-14">
-                                            <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-indigo-600 transition-colors" title={product.name}>
-                                                {product.name}
-                                            </h3>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-4">
-                                            <div className="bg-slate-50 p-2 rounded-lg ring-1 ring-slate-100">
-                                                <span className="block text-slate-400 text-[10px] uppercase font-bold mb-0.5">{t('col_category')}</span>
-                                                <span className="font-semibold text-slate-700 truncate block" title={product.category}>{product.category}</span>
-                                            </div>
-                                            <div className="bg-slate-50 p-2 rounded-lg ring-1 ring-slate-100">
-                                                <span className="block text-slate-400 text-[10px] uppercase font-bold mb-0.5">{t('no_loc')}</span>
-                                                <span className="font-semibold text-slate-700 truncate block">{product.location || '-'}</span>
-                                            </div>
-                                        </div>
-
-                                        {(product.lotNo || product.expiryDate) && (
-                                            <div className="flex items-center gap-1.5 text-[11px] mb-3 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/70">
-                                                {product.lotNo && (
-                                                    <span className="font-mono font-bold text-slate-700 truncate" title={`Lot: ${product.lotNo}`}>
-                                                        Lot: {product.lotNo}
-                                                    </span>
-                                                )}
-                                                {product.expiryDate && (
-                                                    <span className={cn(
-                                                        "ml-auto font-bold px-2 py-0.5 rounded-md text-[10px] whitespace-nowrap",
-                                                        new Date(product.expiryDate).getTime() < Date.now()
-                                                            ? "bg-rose-100 text-rose-700 border border-rose-200"
-                                                            : (new Date(product.expiryDate).getTime() - Date.now() <= 30 * 86400000)
-                                                            ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                                            : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                                    )}>
-                                                        Exp: {product.expiryDate}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </Link>
+                                    <span className={cn(
+                                        "px-2.5 py-1 rounded font-mono text-[9px] uppercase font-bold tracking-wider",
+                                        product.stock <= product.minStock
+                                            ? "bg-[#93000a] text-[#ffdad6] border border-[#ffb4ab]/30 animate-pulse"
+                                            : "bg-[#1b2027] text-[#57ec7f] border border-[#57ec7f]/30"
+                                    )}>
+                                        {status.label}
+                                    </span>
                                 </div>
 
                                 <Link href={`/stock-card?search=${encodeURIComponent(product.name)}`} className="block">
-                                    <div className="space-y-2 mb-4">
-                                        <div className="flex justify-between items-end border-b border-slate-50 pb-2">
-                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('label_stock')}</span>
-                                            <span className="text-2xl font-black tabular-nums tracking-tight">
-                                                {product.stock.toLocaleString()}
-                                            </span>
+                                    <div className="mb-3 h-12">
+                                        <h3 className="font-headline font-bold text-sm text-[#dee2ec] line-clamp-2 leading-tight group-hover:text-[#facc15] transition-colors" title={product.name}>
+                                            {product.name}
+                                        </h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-3">
+                                        <div className="bg-[#090f15] p-1.5 rounded border border-[#30353d]">
+                                            <span className="block text-[#d1c6ab]/60 text-[9px] uppercase font-bold">{t('col_category')}</span>
+                                            <span className="text-[#dee2ec] truncate block font-semibold" title={product.category}>{product.category}</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-slate-400 font-bold">{t('label_min')} {product.minStock}</span>
-                                            <div className="flex items-center gap-1 font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                                                <span>฿</span>
-                                                <span>{product.price.toLocaleString()}</span>
-                                            </div>
+                                        <div className="bg-[#090f15] p-1.5 rounded border border-[#30353d]">
+                                            <span className="block text-[#d1c6ab]/60 text-[9px] uppercase font-bold">{t('no_loc')}</span>
+                                            <span className="text-[#4cd7f6] truncate block font-bold">{product.location || '-'}</span>
                                         </div>
                                     </div>
+
+                                    {(product.lotNo || product.expiryDate) && (
+                                        <div className="flex items-center gap-1.5 text-[10px] font-mono mb-3 px-2 py-1 rounded bg-[#090f15] border border-[#30353d]">
+                                            {product.lotNo && (
+                                                <span className="font-bold text-[#dee2ec] truncate" title={`Lot: ${product.lotNo}`}>
+                                                    Lot: {product.lotNo}
+                                                </span>
+                                            )}
+                                            {product.expiryDate && (
+                                                <span className={cn(
+                                                    "ml-auto font-bold px-1.5 py-0.5 rounded text-[9px] whitespace-nowrap",
+                                                    new Date(product.expiryDate).getTime() < Date.now()
+                                                        ? "bg-[#93000a] text-[#ffdad6]"
+                                                        : (new Date(product.expiryDate).getTime() - Date.now() <= 30 * 86400000)
+                                                        ? "bg-[#eec200]/20 text-[#facc15]"
+                                                        : "bg-[#57ec7f]/20 text-[#57ec7f]"
+                                                )}>
+                                                    Exp: {product.expiryDate}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </Link>
                             </div>
 
-                            <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-white px-4 pb-3 pt-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="md:hidden flex items-center gap-2">
-                                        <Link 
-                                            href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
-                                            target="_blank"
-                                            className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 active:scale-90 transition-all border border-slate-200"
-                                        >
-                                            <Printer className="w-4 h-4" />
-                                        </Link>
-                                        <button
-                                            onClick={(e) => openEditModal(product, e)}
-                                            className="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 active:scale-90 transition-all border border-indigo-100"
-                                        >
-                                            <Pencil className="w-4 h-4" />
-                                        </button>
+                            <Link href={`/stock-card?search=${encodeURIComponent(product.name)}`} className="block">
+                                <div className="space-y-1.5 pt-2 border-t border-[#30353d]/50 font-mono">
+                                    <div className="flex justify-between items-baseline">
+                                        <span className="text-[10px] font-bold text-[#d1c6ab] uppercase tracking-wider">{t('label_stock')}</span>
+                                        <span className="text-xl font-bold text-white">
+                                            {product.stock.toLocaleString()}
+                                        </span>
                                     </div>
+                                    <div className="flex justify-between items-center text-[10px] text-[#d1c6ab]">
+                                        <span>{t('label_min')} {product.minStock}</span>
+                                        <div className="flex items-center gap-1 font-bold text-[#facc15] bg-[#090f15] px-1.5 py-0.5 rounded border border-[#30353d]">
+                                            <span>฿</span>
+                                            <span>{product.price.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
 
-
+                            <div className="mt-2.5 pt-2 border-t border-[#30353d]/40 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <Link 
+                                        href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
+                                        target="_blank"
+                                        className="h-7 px-2 flex items-center gap-1 bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15] rounded border border-[#30353d] font-mono text-[10px] transition-colors"
+                                    >
+                                        <Printer className="w-3 h-3" />
+                                        <span>พิมพ์บาร์โค้ด</span>
+                                    </Link>
+                                    <button
+                                        onClick={(e) => openEditModal(product, e)}
+                                        className="h-7 w-7 flex items-center justify-center bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] rounded border border-[#30353d] transition-colors"
+                                        title="แก้ไข"
+                                    >
+                                        <Pencil className="w-3 h-3" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -579,13 +584,13 @@ function InventoryContent() {
         </AnimatePresence>
 
         {filtered.length === 0 && !loading && (
-            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                    <Filter className="w-10 h-10 text-slate-300" />
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center border border-[#30353d] rounded-2xl bg-[#171c23]/50 p-8 my-8">
+                <div className="w-16 h-16 bg-[#252a32] border border-[#30353d] rounded-full flex items-center justify-center mb-4">
+                    <Filter className="w-8 h-8 text-[#d1c6ab]" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">{t('no_products_found')}</h3>
-                <p className="text-slate-500 max-w-sm">{t('try_adjusting_filters')}</p>
-                <button onClick={() => {setSearch(''); setFilterStatus('ALL'); setFilterMovement('ALL'); }} className="mt-6 text-indigo-600 font-bold hover:underline">
+                <h3 className="text-base font-mono font-bold text-[#dee2ec] mb-1">{t('no_products_found')}</h3>
+                <p className="text-xs font-mono text-[#8a92a6] max-w-sm">{t('try_adjusting_filters')}</p>
+                <button onClick={() => {setSearch(''); setFilterStatus('ALL'); setFilterMovement('ALL'); }} className="mt-4 px-4 py-1.5 rounded-lg border border-[#facc15]/40 bg-[#facc15]/10 text-[#facc15] font-mono text-xs font-bold hover:bg-[#facc15]/20 transition-colors">
                     Clear all filters
                 </button>
             </div>

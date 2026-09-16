@@ -46,21 +46,21 @@ export default function SlottingPage() {
     <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8">
       <AmbientBackground />
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
-       <Link href="/admin" className="text-slate-500 hover:text-indigo-600 flex items-center gap-2 mb-4 transition-colors font-medium">
+       <Link href="/admin" className="text-[#8a92a6] hover:text-indigo-600 flex items-center gap-2 mb-4 transition-colors font-medium">
          <ArrowLeft className="w-4 h-4" /> {t('back_to_admin')}
        </Link>
        {/* Header */}
-       <header className="overflow-hidden rounded-[1.75rem] border border-indigo-200 bg-white/85 p-6 shadow-xl shadow-indigo-900/10 backdrop-blur-xl">
+       <header className="overflow-hidden rounded-[1.75rem] border border-indigo-500/30 bg-[#171c23] p-6 shadow-xl shadow-indigo-900/10 backdrop-blur-xl">
           <div className="h-1 bg-gradient-to-r from-indigo-600 via-emerald-500 to-amber-500 -mx-6 -mt-6 mb-6" />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-[#dee2ec] flex items-center gap-3">
                  <div className="p-2 bg-indigo-500/10 rounded-lg">
                     <LayoutGrid className="w-8 h-8 text-indigo-600" />
                  </div>
                  Smart Slotting (ABC Analysis)
               </h1>
-              <p className="text-slate-500 mt-2">Optimize your warehouse layout based on product velocity.</p>
+              <p className="text-[#8a92a6] mt-2">Optimize your warehouse layout based on product velocity.</p>
             </div>
             <Link
               href="/inventory/map"
@@ -106,17 +106,17 @@ export default function SlottingPage() {
 
        {/* Recommendations */}
        {data?.recommendations && data.recommendations.length > 0 && (
-           <div className="bg-white/90 rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/5 overflow-hidden">
-               <div className="p-6 border-b border-slate-100 bg-slate-50">
-                   <h3 className="font-bold text-slate-800 flex items-center gap-2">
+           <div className="bg-[#171c23] rounded-2xl border border-[#30353d] shadow-xl shadow-slate-900/5 overflow-hidden">
+               <div className="p-6 border-b border-[#30353d] bg-[#1b2027]">
+                   <h3 className="font-bold text-[#dee2ec] flex items-center gap-2">
                        <MoveRight className="w-5 h-5 text-indigo-600" />
                        Optimization Recommendations
                    </h3>
                </div>
-               <div className="divide-y divide-slate-100">
+               <div className="divide-y divide-[#30353d]">
                    {data.recommendations.map((item, idx) => (
-                       <div key={idx} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                            <div className={`p-3 rounded-full ${item.action === 'MOVE_FORWARD' ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                       <div key={idx} className="p-4 flex items-center gap-4 hover:bg-[#1b2027] transition-colors">
+                            <div className={`p-3 rounded-full ${item.action === 'MOVE_FORWARD' ? 'bg-emerald-500/20' : 'bg-amber-500/20'}`}>
                                 {item.action === 'MOVE_FORWARD' ? (
                                     <ArrowUpCircle className="w-6 h-6 text-emerald-600" />
                                 ) : (
@@ -124,18 +124,18 @@ export default function SlottingPage() {
                                 )}
                             </div>
                             <div className="flex-1">
-                                <h4 className="font-bold text-slate-900">{item.productName}</h4>
-                                <p className="text-sm text-slate-500">
-                                    Current: <span className="font-mono text-slate-700">{item.currentLocation}</span> 
+                                <h4 className="font-bold text-[#dee2ec]">{item.productName}</h4>
+                                <p className="text-sm text-[#8a92a6]">
+                                    Current: <span className="font-mono text-[#d1c6ab]">{item.currentLocation}</span> 
                                     {' '} → {' '}
                                     Ideal: <span className="font-mono text-indigo-600 font-bold">{item.idealZone}</span>
                                 </p>
-                                <p className="text-xs text-slate-400 mt-1">{item.reason}</p>
+                                <p className="text-xs text-[#8a92a6] mt-1">{item.reason}</p>
                             </div>
                             <div className="text-right">
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                    item.class === 'A' ? 'bg-emerald-100 text-emerald-700' : 
-                                    item.class === 'D' ? 'bg-slate-100 text-slate-700' : 'bg-blue-100 text-blue-700'
+                                    item.class === 'A' ? 'bg-emerald-500/20 text-emerald-700' : 
+                                    item.class === 'D' ? 'bg-[#252a32] text-[#d1c6ab]' : 'bg-blue-500/20 text-blue-700'
                                 }`}>
                                     Class {item.class}
                                 </span>
@@ -147,14 +147,14 @@ export default function SlottingPage() {
        )}
 
        {/* Full List (Optional, or just top items) */}
-       <div className="bg-white/90 rounded-2xl border border-slate-200 p-6 shadow-xl shadow-slate-900/5">
-           <h3 className="font-bold text-slate-800 mb-4">Velocity Analysis</h3>
+       <div className="bg-[#171c23] rounded-2xl border border-[#30353d] p-6 shadow-xl shadow-slate-900/5">
+           <h3 className="font-bold text-[#dee2ec] mb-4">Velocity Analysis</h3>
            {loading ? (
-               <div className="text-center py-10 text-slate-400">Analyzing thousands of transactions...</div>
+               <div className="text-center py-10 text-[#8a92a6]">Analyzing thousands of transactions...</div>
            ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="text-xs uppercase text-slate-400 font-bold border-b border-slate-100">
+                        <thead className="text-xs uppercase text-[#8a92a6] font-bold border-b border-[#30353d]">
                             <tr>
                                 <th className="pb-3 pl-4">Product</th>
                                 <th className="pb-3">Class</th>
@@ -164,24 +164,24 @@ export default function SlottingPage() {
                         </thead>
                         <tbody className="text-sm divide-y divide-slate-50">
                             {data?.all.slice(0, 20).map((row, i) => (
-                                <tr key={i} className="hover:bg-slate-50">
-                                    <td className="py-3 pl-4 font-medium text-slate-700">{row.productName}</td>
+                                <tr key={i} className="hover:bg-[#1b2027]">
+                                    <td className="py-3 pl-4 font-medium text-[#d1c6ab]">{row.productName}</td>
                                     <td className="py-3">
                                         <span className={`font-bold ${
                                             row.class === 'A' ? 'text-emerald-600' :
                                             row.class === 'B' ? 'text-blue-600' :
-                                            row.class === 'C' ? 'text-amber-600' : 'text-slate-400'
+                                            row.class === 'C' ? 'text-amber-600' : 'text-[#8a92a6]'
                                         }`}>
                                             {row.class}
                                         </span>
                                     </td>
-                                    <td className="py-3 text-slate-500">{row.velocityScore.toLocaleString()}</td>
-                                    <td className="py-3 font-mono text-slate-500">{row.currentLocation}</td>
+                                    <td className="py-3 text-[#8a92a6]">{row.velocityScore.toLocaleString()}</td>
+                                    <td className="py-3 font-mono text-[#8a92a6]">{row.currentLocation}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                    <p className="text-xs text-center text-slate-400 mt-4">Showing top 20 items by velocity</p>
+                    <p className="text-xs text-center text-[#8a92a6] mt-4">Showing top 20 items by velocity</p>
                 </div>
            )}
        </div>
@@ -192,23 +192,23 @@ export default function SlottingPage() {
 
 function DistributionCard({ label, count = 0, desc, color, icon: Icon }: any) {
     const colors = {
-        emerald: 'bg-emerald-50 text-emerald-600',
-        blue: 'bg-blue-50 text-blue-600',
-        amber: 'bg-amber-50 text-amber-600',
-        slate: 'bg-slate-50 text-slate-600'
+        emerald: 'bg-emerald-500/10 text-emerald-600',
+        blue: 'bg-blue-500/10 text-blue-600',
+        amber: 'bg-amber-500/10 text-amber-600',
+        slate: 'bg-[#1b2027] text-[#d1c6ab]'
     } as any;
 
     return (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-[#171c23] p-6 rounded-2xl border border-[#30353d] shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
                 <div className={`p-3 rounded-xl ${colors[color]}`}>
                     <Icon className="w-6 h-6" />
                 </div>
-                <span className="text-3xl font-black text-slate-900">{count}</span>
+                <span className="text-3xl font-black text-[#dee2ec]">{count}</span>
             </div>
             <div>
-                <h4 className="font-bold text-slate-700">{label}</h4>
-                <p className="text-xs text-slate-500 mt-1">{desc}</p>
+                <h4 className="font-bold text-[#d1c6ab]">{label}</h4>
+                <p className="text-xs text-[#8a92a6] mt-1">{desc}</p>
             </div>
         </div>
     );

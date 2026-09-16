@@ -43,8 +43,8 @@ export default function WarehouseMapPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <div className="text-slate-500 font-bold text-sm flex items-center gap-2">
+        <div className="min-h-screen flex items-center justify-center bg-[#1b2027]">
+          <div className="text-[#8a92a6] font-bold text-sm flex items-center gap-2">
             <RefreshCw className="w-5 h-5 animate-spin text-teal-600" />
             กำลังโหลดแผนผังคลังสินค้า...
           </div>
@@ -165,27 +165,27 @@ function WarehouseMapContent() {
   }, [zones, searchQuery]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-slate-50">
+    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-[#1b2027]">
       <AmbientBackground />
 
       <div className="relative z-10 mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <header className="relative overflow-hidden rounded-[1.75rem] border border-teal-200 bg-white/90 p-6 shadow-xl shadow-teal-900/5 backdrop-blur-xl">
+        <header className="relative overflow-hidden rounded-[1.75rem] border border-teal-500/30 bg-[#171c23] p-6 shadow-xl shadow-teal-900/5 backdrop-blur-xl">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Link
                 href="/inventory"
-                className="p-3 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 text-teal-700 transition-colors"
+                className="p-3 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl border border-teal-500/30 text-teal-700 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-black text-[#dee2ec] flex items-center gap-2.5">
                   <LayoutGrid className="w-8 h-8 text-teal-600" />
                   2D Warehouse Interactive Map
                 </h1>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-[#8a92a6] mt-0.5">
                   ผังคลังสินค้าจำลองเสมือนจริง • แผนผังชั้นวาง (Zone & Rack Heatmap) • จัดสรรพิกัดอัตโนมัติจากสต็อกจริง
                 </p>
               </div>
@@ -194,7 +194,7 @@ function WarehouseMapContent() {
             <div className="flex items-center gap-2">
               <Link
                 href="/admin/slotting"
-                className="px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                className="px-3.5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
               >
                 <Sparkles className="w-4 h-4 text-indigo-600" />
                 คำแนะนำ ABC Slotting
@@ -202,7 +202,7 @@ function WarehouseMapContent() {
               <button
                 onClick={fetchData}
                 disabled={loading}
-                className="p-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200 shadow-sm transition-all"
+                className="p-2.5 bg-[#171c23] hover:bg-[#1b2027] text-[#d1c6ab] rounded-xl border border-[#30353d] shadow-sm transition-all"
                 title="รีเฟรชข้อมูลผัง"
               >
                 <RefreshCw className={cn('w-4 h-4 text-teal-600', loading && 'animate-spin')} />
@@ -213,15 +213,15 @@ function WarehouseMapContent() {
 
         {/* Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-teal-50 text-teal-600 rounded-xl border border-teal-100">
+          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
+            <div className="p-3 bg-teal-500/10 text-teal-600 rounded-xl border border-teal-500/20">
               <Box className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
                 สต็อกจริงในคลัง
               </span>
-              <span className="text-lg font-black text-slate-900 font-mono">
+              <span className="text-lg font-black text-[#dee2ec] font-mono">
                 {stats.totalWarehouseStock.toLocaleString()} ชิ้น
               </span>
               <span className="text-[10px] text-teal-600 block font-bold">
@@ -230,44 +230,44 @@ function WarehouseMapContent() {
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
+            <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl border border-emerald-500/20">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
                 อัตราการใช้งาน (Occupancy)
               </span>
               <span className="text-lg font-black text-emerald-600 font-mono">
                 {stats.occupancyRate}%
               </span>
-              <span className="text-[10px] text-slate-500 block">
+              <span className="text-[10px] text-[#8a92a6] block">
                 {stats.occupiedBins} จาก {stats.totalBins} ช่อง
               </span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
+            <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl border border-amber-500/20">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
                 สต็อกเหลือน้อย
               </span>
               <span className="text-lg font-black text-amber-600 font-mono">
                 {stats.lowStockBins} ช่อง
               </span>
-              <span className="text-[10px] text-slate-500 block">ต่ำกว่าจุด Safety Stock</span>
+              <span className="text-[10px] text-[#8a92a6] block">ต่ำกว่าจุด Safety Stock</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
+            <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl border border-blue-500/20">
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
                 พื้นที่จัดสรร
               </span>
               <span className="text-lg font-black text-blue-600 font-mono">
@@ -279,7 +279,7 @@ function WarehouseMapContent() {
         </div>
 
         {/* Controls Toolbar */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm">
           {/* Zone Selector Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
             {zones.map(z => {
@@ -292,7 +292,7 @@ function WarehouseMapContent() {
                     'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap',
                     isSelected
                       ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      : 'bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab]'
                   )}
                 >
                   <MapPin className="w-3.5 h-3.5" />
@@ -300,7 +300,7 @@ function WarehouseMapContent() {
                   <span
                     className={cn(
                       'ml-1 px-1.5 py-0.2 rounded text-[10px] font-mono',
-                      isSelected ? 'bg-teal-700 text-teal-100' : 'bg-slate-200 text-slate-600'
+                      isSelected ? 'bg-teal-700 text-teal-100' : 'bg-[#30353d] text-[#d1c6ab]'
                     )}
                   >
                     {z.totalStock.toLocaleString()}
@@ -313,23 +313,23 @@ function WarehouseMapContent() {
           {/* Search SKU and Heatmap Toggle */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 md:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="ค้นหา SKU หรือชื่อสินค้าเพื่อชี้เป้า..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-teal-500 focus:bg-white transition-colors"
+                className="w-full pl-9 pr-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl text-xs outline-none focus:border-teal-500 focus:bg-[#171c23] transition-colors"
               />
             </div>
 
             {/* Heatmap Toggle */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
               <button
                 onClick={() => setHeatmapMode('STOCK')}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1',
-                  heatmapMode === 'STOCK' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                  heatmapMode === 'STOCK' ? 'bg-[#171c23] text-[#dee2ec] shadow-sm' : 'text-[#8a92a6]'
                 )}
               >
                 <Layers className="w-3.5 h-3.5" /> ระดับสต็อก
@@ -338,7 +338,7 @@ function WarehouseMapContent() {
                 onClick={() => setHeatmapMode('VELOCITY')}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1',
-                  heatmapMode === 'VELOCITY' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500'
+                  heatmapMode === 'VELOCITY' ? 'bg-orange-500 text-white shadow-sm' : 'text-[#8a92a6]'
                 )}
               >
                 <Flame className="w-3.5 h-3.5" /> ABC หมุนเวียน
@@ -348,8 +348,8 @@ function WarehouseMapContent() {
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-slate-600">
-          <span className="font-bold text-slate-700">สัญลักษณ์สี:</span>
+        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-[#d1c6ab]">
+          <span className="font-bold text-[#d1c6ab]">สัญลักษณ์สี:</span>
           {heatmapMode === 'STOCK' ? (
             <>
               <div className="flex items-center gap-1.5">
@@ -399,12 +399,12 @@ function WarehouseMapContent() {
                 <MapPin className="w-5 h-5" />
                 {activeZone?.name}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[#8a92a6] mt-0.5">
                 คลิกที่ชั้นวาง (Rack / Bin) เพื่อดูสต็อกสินค้าและรายละเอียดภายในช่อง
               </p>
             </div>
             <div className="text-right">
-              <span className="text-xs text-slate-400 block">จำนวนสต็อกในโซนนี้:</span>
+              <span className="text-xs text-[#8a92a6] block">จำนวนสต็อกในโซนนี้:</span>
               <span className="text-xl font-mono font-black text-teal-300">
                 {activeZone?.totalStock.toLocaleString()} ชิ้น
               </span>
@@ -415,7 +415,7 @@ function WarehouseMapContent() {
           <div className="space-y-8">
             {activeZone?.aisles.map(aisle => (
               <div key={aisle.aisleNumber} className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-1 font-mono">
+                <div className="flex items-center justify-between text-xs text-[#8a92a6] border-b border-slate-800/80 pb-1 font-mono">
                   <span className="bg-slate-800 px-3 py-1 rounded-md font-bold text-slate-300">
                     ทางเดินซอย (Aisle {aisle.aisleNumber})
                   </span>
@@ -442,7 +442,7 @@ function WarehouseMapContent() {
                             badgeColor = 'bg-rose-600 text-white';
                           } else if (bin.status === 'LOW_STOCK') {
                             bgClass = 'bg-amber-950/80 border-amber-600 text-amber-200';
-                            badgeColor = 'bg-amber-500 text-slate-950';
+                            badgeColor = 'bg-amber-500 text-[#dee2ec]';
                           } else if (bin.totalStock > 0) {
                             bgClass = 'bg-emerald-950/80 border-emerald-600 text-emerald-200';
                             badgeColor = 'bg-emerald-600 text-white';
@@ -454,7 +454,7 @@ function WarehouseMapContent() {
                             badgeColor = 'bg-red-500 text-white';
                           } else if (bin.dominantVelocityClass === 'B') {
                             bgClass = 'bg-amber-950/80 border-amber-500 text-amber-200';
-                            badgeColor = 'bg-amber-500 text-slate-950';
+                            badgeColor = 'bg-amber-500 text-[#dee2ec]';
                           } else if (bin.dominantVelocityClass === 'C') {
                             bgClass = 'bg-blue-950/80 border-blue-500 text-blue-200';
                             badgeColor = 'bg-blue-600 text-white';
@@ -492,12 +492,12 @@ function WarehouseMapContent() {
 
                             <div className="mt-2 text-[11px] truncate w-full">
                               {bin.products.length === 0 ? (
-                                <span className="text-slate-500 italic">ช่องว่าง</span>
+                                <span className="text-[#8a92a6] italic">ช่องว่าง</span>
                               ) : (
                                 <div className="truncate text-slate-300">
                                   <span className="font-bold">{bin.products[0].name}</span>
                                   {bin.products.length > 1 && (
-                                    <span className="text-slate-400 ml-1">
+                                    <span className="text-[#8a92a6] ml-1">
                                       (+{bin.products.length - 1})
                                     </span>
                                   )}
@@ -505,7 +505,7 @@ function WarehouseMapContent() {
                               )}
                             </div>
 
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                            <div className="flex items-center justify-between text-[10px] text-[#8a92a6] mt-1">
                               <span className="font-mono">{bin.products.length} SKUs</span>
                               {isMatched && (
                                 <span className="text-cyan-400 font-bold flex items-center gap-0.5">
@@ -539,33 +539,33 @@ function WarehouseMapContent() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 20 }}
                 onClick={e => e.stopPropagation()}
-                className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 text-slate-900"
+                className="bg-[#171c23] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#30353d] space-y-5 text-[#dee2ec]"
               >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl">
+                    <div className="p-2.5 bg-teal-500/10 text-teal-600 rounded-xl">
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-black text-lg text-slate-900 font-mono">
+                      <h3 className="font-black text-lg text-[#dee2ec] font-mono">
                         พิกัด: {selectedBin.binCode}
                       </h3>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-[#8a92a6]">
                         โซน {selectedBin.zone} • ซอย {selectedBin.aisle} • แร็ค {selectedBin.rack}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedBin(null)}
-                    className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600"
+                    className="p-2 hover:bg-[#252a32] rounded-xl text-[#8a92a6] hover:text-[#d1c6ab]"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div className="grid grid-cols-2 gap-3 bg-[#1b2027] p-3 rounded-2xl border border-[#30353d]">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">
                       จำนวนสต็อกรวม
                     </span>
                     <span className="text-lg font-black font-mono text-teal-600">
@@ -573,10 +573,10 @@ function WarehouseMapContent() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold block uppercase">
+                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">
                       ความถี่หมุนเวียน (ABC)
                     </span>
-                    <span className="text-lg font-black font-mono text-slate-800">
+                    <span className="text-lg font-black font-mono text-[#dee2ec]">
                       Class {selectedBin.dominantVelocityClass}
                     </span>
                   </div>
@@ -584,23 +584,23 @@ function WarehouseMapContent() {
 
                 {/* Products List in this Bin */}
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  <span className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block">
                     รายการสินค้าในช่องนี้ ({selectedBin.products.length} รายการ):
                   </span>
 
                   {selectedBin.products.length === 0 ? (
-                    <div className="p-4 bg-slate-50 rounded-xl text-center text-slate-400 text-xs">
+                    <div className="p-4 bg-[#1b2027] rounded-xl text-center text-[#8a92a6] text-xs">
                       ไม่มีสินค้าในช่องนี้ (ช่องว่างพร้อมจัดเก็บ)
                     </div>
                   ) : (
                     selectedBin.products.map(p => (
                       <div
                         key={p.id}
-                        className="p-3 bg-slate-50 hover:bg-teal-50/50 rounded-xl border border-slate-200 flex items-center justify-between text-xs transition-colors"
+                        className="p-3 bg-[#1b2027] hover:bg-teal-500/10/50 rounded-xl border border-[#30353d] flex items-center justify-between text-xs transition-colors"
                       >
                         <div>
-                          <div className="font-bold text-slate-900">{p.name}</div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                          <div className="font-bold text-[#dee2ec]">{p.name}</div>
+                          <div className="text-[11px] text-[#8a92a6] flex items-center gap-2 mt-0.5">
                             <span>หมวด: {p.category}</span>
                             <span>•</span>
                             <span className="font-mono text-orange-600 font-bold">
@@ -613,12 +613,12 @@ function WarehouseMapContent() {
                           <span
                             className={cn(
                               'text-sm font-black',
-                              p.stock <= p.minStock ? 'text-amber-600' : 'text-slate-900'
+                              p.stock <= p.minStock ? 'text-amber-600' : 'text-[#dee2ec]'
                             )}
                           >
                             {p.stock.toLocaleString()} {p.unit}
                           </span>
-                          <span className="block text-[10px] text-slate-400">
+                          <span className="block text-[10px] text-[#8a92a6]">
                             Min: {p.minStock}
                           </span>
                         </div>
@@ -627,7 +627,7 @@ function WarehouseMapContent() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <div className="pt-2 border-t border-[#30353d] flex items-center justify-between">
                   <Link
                     href={`/barcode/thermal-labels?bin=${selectedBin.binCode}`}
                     className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
@@ -636,7 +636,7 @@ function WarehouseMapContent() {
                   </Link>
                   <button
                     onClick={() => setSelectedBin(null)}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                    className="px-4 py-2 bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab] font-bold rounded-xl text-xs transition-colors"
                   >
                     ปิด
                   </button>

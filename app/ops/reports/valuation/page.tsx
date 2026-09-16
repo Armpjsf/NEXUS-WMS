@@ -77,7 +77,7 @@ export default function ValuationReportPage() {
   });
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-slate-50/60">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-[#1b2027]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -85,10 +85,10 @@ export default function ValuationReportPage() {
             <ReceiptText className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-[#dee2ec] tracking-tight">
               รายงานมูลค่าสต็อก & Dead Stock (Inventory Valuation)
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-[#8a92a6] font-medium mt-0.5">
               ประเมินมูลค่าสินค้าคงคลัง คำนวณเงินจม และวิเคราะห์สินค้าที่ไม่เคลื่อนไหวเกินกำหนด
             </p>
           </div>
@@ -98,7 +98,7 @@ export default function ValuationReportPage() {
           <button
             onClick={loadReport}
             disabled={loading}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+            className="p-2.5 rounded-xl border border-[#30353d] bg-[#171c23] text-[#d1c6ab] hover:bg-[#1b2027] transition-colors"
             title="รีเฟรช"
           >
             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin text-rose-600")} />
@@ -112,7 +112,7 @@ export default function ValuationReportPage() {
           </button>
           <button
             onClick={() => window.print()}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+            className="p-2.5 rounded-xl border border-[#30353d] bg-[#171c23] text-[#d1c6ab] hover:bg-[#1b2027] transition-colors"
             title="พิมพ์รายงาน"
           >
             <Printer className="w-4 h-4" />
@@ -122,17 +122,17 @@ export default function ValuationReportPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-[11px] font-bold text-slate-500 uppercase">มูลค่าสต็อกตามราคาทุน</div>
-          <div className="text-2xl font-black text-slate-900 mt-1">
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
+          <div className="text-[11px] font-bold text-[#8a92a6] uppercase">มูลค่าสต็อกตามราคาทุน</div>
+          <div className="text-2xl font-black text-[#dee2ec] mt-1">
             ฿{(data?.totalCostValuation || 0).toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
+          <div className="text-[11px] text-[#8a92a6] mt-0.5">
             รวม {data?.totalUnits.toLocaleString() || 0} ชิ้น ({data?.totalSkus || 0} SKU)
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
           <div className="text-[11px] font-bold text-emerald-600 uppercase">มูลค่าสต็อกราคาขาย</div>
           <div className="text-2xl font-black text-emerald-700 mt-1">
             ฿{(data?.totalRetailValuation || 0).toLocaleString()}
@@ -142,7 +142,7 @@ export default function ValuationReportPage() {
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-2xl border border-rose-100 bg-rose-50/20 shadow-sm">
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-rose-500/20 bg-rose-500/10/20 shadow-sm">
           <div className="text-[11px] font-bold text-rose-600 uppercase flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             <span>เงินจมใน Dead Stock (&ge;30 วัน)</span>
@@ -155,10 +155,10 @@ export default function ValuationReportPage() {
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-[11px] font-bold text-slate-500 uppercase">สินค้าวิกฤต (&ge;90 วัน)</div>
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
+          <div className="text-[11px] font-bold text-[#8a92a6] uppercase">สินค้าวิกฤต (&ge;90 วัน)</div>
           <div className="text-2xl font-black text-amber-600 mt-1">
-            {data?.deadStock90DaysCount || 0} <span className="text-xs text-slate-400 font-normal">รายการ</span>
+            {data?.deadStock90DaysCount || 0} <span className="text-xs text-[#8a92a6] font-normal">รายการ</span>
           </div>
           <div className="text-[11px] text-amber-700 font-medium mt-0.5">
             แนะนำจัด Flash Sale / Bundle ด่วน
@@ -167,14 +167,14 @@ export default function ValuationReportPage() {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden mb-6">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto w-full sm:w-auto">
+      <div className="bg-[#171c23] rounded-3xl border border-[#30353d]/80 shadow-sm overflow-hidden mb-6">
+        <div className="p-4 border-b border-[#30353d] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 p-1 bg-[#252a32] rounded-xl overflow-x-auto w-full sm:w-auto">
             <button
               onClick={() => setFilterDays(0)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                filterDays === 0 ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
+                filterDays === 0 ? "bg-[#171c23] text-[#dee2ec] shadow-sm" : "text-[#d1c6ab]"
               )}
             >
               ทั้งหมด ({deadItems.length})
@@ -183,7 +183,7 @@ export default function ValuationReportPage() {
               onClick={() => setFilterDays(30)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                filterDays === 30 ? "bg-white text-amber-800 shadow-sm" : "text-slate-600"
+                filterDays === 30 ? "bg-[#171c23] text-amber-800 shadow-sm" : "text-[#d1c6ab]"
               )}
             >
               ค้าง &ge; 30 วัน ({data?.deadStock30DaysCount || 0})
@@ -192,7 +192,7 @@ export default function ValuationReportPage() {
               onClick={() => setFilterDays(60)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                filterDays === 60 ? "bg-white text-rose-700 shadow-sm" : "text-slate-600"
+                filterDays === 60 ? "bg-[#171c23] text-rose-700 shadow-sm" : "text-[#d1c6ab]"
               )}
             >
               ค้าง &ge; 60 วัน ({data?.deadStock60DaysCount || 0})
@@ -201,7 +201,7 @@ export default function ValuationReportPage() {
               onClick={() => setFilterDays(90)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                filterDays === 90 ? "bg-white text-rose-800 shadow-sm" : "text-slate-600"
+                filterDays === 90 ? "bg-[#171c23] text-rose-800 shadow-sm" : "text-[#d1c6ab]"
               )}
             >
               วิกฤต &ge; 90 วัน ({data?.deadStock90DaysCount || 0})
@@ -209,13 +209,13 @@ export default function ValuationReportPage() {
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#8a92a6] absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="ค้นหา SKU, ชื่อสินค้า..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl focus:bg-[#171c23] focus:outline-none"
             />
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function ValuationReportPage() {
         {/* Dead Stock Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50/80 text-slate-500 font-bold uppercase border-b border-slate-100">
+            <thead className="bg-[#1b2027]/80 text-[#8a92a6] font-bold uppercase border-b border-[#30353d]">
               <tr>
                 <th className="py-3 px-4">สินค้า</th>
                 <th className="py-3 px-4">ตำแหน่ง</th>
@@ -234,31 +234,31 @@ export default function ValuationReportPage() {
                 <th className="py-3 px-4">คำแนะนำการระบายของ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#30353d]">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-8 text-center text-[#8a92a6]">
                     ไม่พบรายการสินค้าที่ตรงกับเงื่อนไข
                   </td>
                 </tr>
               ) : (
                 filteredItems.map(item => (
-                  <tr key={item.sku} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={item.sku} className="hover:bg-[#1b2027] transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">{item.name}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">
+                      <div className="font-bold text-[#dee2ec]">{item.name}</div>
+                      <div className="text-[11px] text-[#8a92a6] font-mono">
                         {item.sku} · {item.category}
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[11px]">
+                      <span className="px-2 py-0.5 rounded bg-[#252a32] text-[#d1c6ab] font-mono text-[11px]">
                         {item.location}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right font-black text-slate-900">
+                    <td className="py-3 px-4 text-right font-black text-[#dee2ec]">
                       {item.stock.toLocaleString()} {item.unit}
                     </td>
-                    <td className="py-3 px-4 text-right text-slate-600">
+                    <td className="py-3 px-4 text-right text-[#d1c6ab]">
                       ฿{item.costPrice.toLocaleString()}
                     </td>
                     <td className="py-3 px-4 text-right font-black text-rose-600">
@@ -269,17 +269,17 @@ export default function ValuationReportPage() {
                         className={cn(
                           "px-2.5 py-0.5 rounded-full text-[10px] font-bold",
                           item.daysDormant >= 90
-                            ? "bg-rose-100 text-rose-800 border border-rose-200"
+                            ? "bg-rose-500/20 text-rose-800 border border-rose-500/30"
                             : item.daysDormant >= 60
-                            ? "bg-amber-100 text-amber-800 border border-amber-200"
-                            : "bg-slate-100 text-slate-700"
+                            ? "bg-amber-500/20 text-amber-800 border border-amber-500/30"
+                            : "bg-[#252a32] text-[#d1c6ab]"
                         )}
                       >
                         {item.daysDormant} วัน
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-slate-700 font-medium text-[11px]">
+                      <span className="text-[#d1c6ab] font-medium text-[11px]">
                         {item.suggestedAction}
                       </span>
                     </td>

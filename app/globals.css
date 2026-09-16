@@ -1,46 +1,117 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f8fb;
-  --foreground: #0f172a;
-  --surface: #ffffff;
-  --surface-muted: #eef2f7;
-  --border-subtle: #d9e2ef;
-  --brand-primary: #1e40af;
-  --brand-accent: #0f766e;
-  --brand-warn: #b45309;
-  --brand-danger: #be123c;
+  --background: #0f141b;
+  --foreground: #dee2ec;
+  --surface: #0f141b;
+  --surface-muted: #171c23;
+  --border-subtle: #252a32;
+  --border-variant: #30353d;
+
+  /* Stitch Tactical Industrial Colors */
+  --surface-container-lowest: #090f15;
+  --surface-container-low: #171c23;
+  --surface-container: #1b2027;
+  --surface-container-high: #252a32;
+  --surface-container-highest: #30353d;
+  --surface-bright: #343941;
+
+  --primary-container: #facc15;
+  --on-primary-container: #6c5700;
+  --primary: #ffecb9;
+  --primary-fixed: #ffe083;
+  --primary-fixed-dim: #eec200;
+
+  --secondary: #4cd7f6;
+  --secondary-container: #03b5d3;
+  --on-secondary: #003640;
+
+  --tertiary: #b3ffbb;
+  --tertiary-container: #57ec7f;
+  --tertiary-fixed: #6bff8f;
+
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --on-error: #690005;
+
+  --on-surface: #dee2ec;
+  --on-surface-variant: #d1c6ab;
+  --outline: #9a9078;
+  --outline-variant: #4d4632;
+
+  --brand-primary: #facc15;
+  --brand-primary-soft: rgba(250, 204, 21, 0.15);
+  --brand-accent: #4cd7f6;
+  --brand-warn: #eec200;
+  --brand-danger: #ffb4ab;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ibm), var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
+  --font-chivo: var(--font-chivo), sans-serif;
+  --font-mono: var(--font-mono), monospace;
   --font-outfit: var(--font-outfit), sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #050510; /* Darker, slightly blue-tinted black */
-    --foreground: #f8fafc;
-  }
-}
-
 body {
-  background:
-    linear-gradient(180deg, rgba(239, 246, 255, 0.85) 0%, rgba(248, 250, 252, 0.95) 36%, rgba(246, 248, 251, 1) 100%);
-  color: #0f172a;
-  font-family: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
+  background-color: #0f141b;
+  color: #dee2ec;
+  font-family: var(--font-ibm), var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
   min-height: 100vh;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #252a32 transparent;
 }
 
 ::selection {
-  background: rgba(30, 64, 175, 0.18);
+  background: rgba(250, 204, 21, 0.25);
+  color: #ffffff;
+}
+
+/* Material Symbols icon support */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Stitch tactical typography helpers */
+.font-headline {
+  font-family: var(--font-chivo), var(--font-outfit), sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.font-telemetry {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Tactical keyboard focus ring */
+:where(a, button, select, summary, input, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Modern enterprise numerals */
+.nx-num {
+  font-family: var(--font-mono), var(--font-outfit), sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 button,
@@ -67,16 +138,53 @@ textarea {
 }
 
 .tabular-nums {
-  font-family: var(--font-outfit), sans-serif;
+  font-family: var(--font-mono), var(--font-outfit), sans-serif;
   font-variant-numeric: tabular-nums;
-}
-
-.font-outfit {
-    font-family: var(--font-outfit), sans-serif;
 }
 
 @media (min-width: 768px) {
   html.sidebar-collapsed #main-content {
     padding-left: 5rem !important;
   }
+}
+
+/* ============================================================
+   Stitch Tactical Industrial Accent Remap (Local Theme)
+   เปลี่ยน Accent หลักจาก Blue เป็น Tactical Yellow #facc15
+   ============================================================ */
+:root {
+  --nx-accent: #facc15;
+  --nx-accent-2: #eec200;
+  --nx-accent-text: #1b1600;
+}
+
+/* Gradients ที่เป็น brand-accent -> ไล่โทน Tactical Amber */
+[class*="from-blue-"], [class*="from-indigo-"] {
+  --tw-gradient-from: var(--nx-accent) var(--tw-gradient-from-position, 0%) !important;
+}
+[class*="via-blue-"], [class*="via-indigo-"] {
+  --tw-gradient-via: var(--nx-accent-2) var(--tw-gradient-via-position, 50%) !important;
+}
+[class*="to-blue-"], [class*="to-indigo-"] {
+  --tw-gradient-to: var(--nx-accent-2) var(--tw-gradient-to-position, 100%) !important;
+}
+
+/* Primary buttons -> High-visibility yellow with dark text */
+.bg-blue-600, .bg-blue-700, .bg-indigo-600, .bg-indigo-700 {
+  background-color: #facc15 !important;
+  color: #1b1600 !important;
+  font-weight: 700 !important;
+}
+.hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
+.hover\:from-blue-700:hover, .hover\:to-cyan-700:hover {
+  background-color: #eec200 !important;
+  color: #1b1600 !important;
+}
+
+/* Rings / borders */
+.ring-blue-500, .ring-indigo-500 {
+  --tw-ring-color: #facc15 !important;
+}
+.shadow-blue-600\/30, .shadow-blue-500\/25, .shadow-blue-500\/30, .shadow-blue-600\/20 {
+  --tw-shadow-color: rgba(250, 204, 21, 0.25) !important;
 }

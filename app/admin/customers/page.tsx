@@ -149,24 +149,24 @@ export default function AdminCustomersPage() {
     <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
       <AmbientBackground />
       <div className="relative z-10 max-w-[1200px] mx-auto space-y-6">
-        <Link href="/admin" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800">
+        <Link href="/admin" className="inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]">
           <ArrowLeft className="w-4 h-4" /> ตั้งค่าระบบ
         </Link>
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+            <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
               <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/25">
                 <Users className="w-6 h-6" />
               </span>
               จัดการลูกค้า (Customer Master)
             </h1>
-            <p className="text-slate-500 font-medium mt-1">ทะเบียนลูกค้า, ที่อยู่ส่งของ, ขนส่งประจำ และเงื่อนไขการชำระเงิน</p>
+            <p className="text-[#d1c6ab] font-medium mt-1">ทะเบียนลูกค้า, ที่อยู่ส่งของ, ขนส่งประจำ และเงื่อนไขการชำระเงิน</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={load}
-              className="p-2.5 rounded-xl border border-slate-200 bg-white/80 hover:bg-white text-slate-600 shadow-sm transition-colors"
+              className="p-2.5 rounded-xl border border-[#30353d] bg-[#171c23] hover:bg-[#171c23] text-[#d1c6ab] shadow-sm transition-colors"
               title="รีเฟรช"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -182,22 +182,22 @@ export default function AdminCustomersPage() {
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a92a6]" />
           <input
             type="text"
             placeholder="ค้นหาชื่อลูกค้า, รหัส, เบอร์โทร, หรือผู้ติดต่อ..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+            className="w-full pl-12 pr-4 py-3 bg-[#171c23] backdrop-blur-md rounded-2xl border border-[#30353d] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-[#dee2ec]"
           />
         </div>
 
         {/* Customers Table */}
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-[#171c23] backdrop-blur-md rounded-2xl border border-[#30353d] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                <tr className="border-b border-[#30353d] bg-[#1b2027]/50 text-[11px] uppercase font-bold text-[#8a92a6] tracking-wider">
                   <th className="py-3.5 px-4">รหัส / ลูกค้า</th>
                   <th className="py-3.5 px-4">ติดต่อ / เบอร์โทร</th>
                   <th className="py-3.5 px-4">ที่อยู่จัดส่ง</th>
@@ -206,52 +206,52 @@ export default function AdminCustomersPage() {
                   <th className="py-3.5 px-4 text-right">จัดการ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#30353d]">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                    <td colSpan={6} className="py-12 text-center text-[#8a92a6] font-medium">
                       {loading ? 'กำลังโหลด...' : 'ยังไม่มีข้อมูลลูกค้า — กดปุ่ม "เพิ่มลูกค้า" เพื่อเริ่มต้น'}
                     </td>
                   </tr>
                 ) : (
                   customers.map((c) => (
-                    <tr key={c.id} className={`hover:bg-slate-50/80 transition-colors ${c.status === 'INACTIVE' ? 'opacity-50' : ''}`}>
+                    <tr key={c.id} className={`hover:bg-[#1b2027]/80 transition-colors ${c.status === 'INACTIVE' ? 'opacity-50' : ''}`}>
                       <td className="py-3.5 px-4">
                         <div className="font-mono text-xs font-bold text-blue-600">{c.code}</div>
-                        <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <div className="font-bold text-[#dee2ec] text-sm flex items-center gap-2">
                           {c.name}
-                          {c.status === 'INACTIVE' && <span className="text-[10px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded">ปิดใช้งาน</span>}
+                          {c.status === 'INACTIVE' && <span className="text-[10px] font-bold bg-[#30353d] text-[#8a92a6] px-1.5 py-0.5 rounded">ปิดใช้งาน</span>}
                         </div>
-                        {c.taxId && <div className="text-[11px] text-slate-400">Tax: {c.taxId}</div>}
+                        {c.taxId && <div className="text-[11px] text-[#8a92a6]">Tax: {c.taxId}</div>}
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-700">{c.contactPerson || '-'}</div>
+                        <div className="font-medium text-[#d1c6ab]">{c.contactPerson || '-'}</div>
                         {c.phone && (
-                          <div className="flex items-center gap-1 text-xs text-slate-500">
-                            <Phone className="w-3 h-3 text-slate-400" /> {c.phone}
+                          <div className="flex items-center gap-1 text-xs text-[#8a92a6]">
+                            <Phone className="w-3 h-3 text-[#8a92a6]" /> {c.phone}
                           </div>
                         )}
                         {c.email && (
-                          <div className="flex items-center gap-1 text-xs text-slate-500 truncate max-w-[180px]">
-                            <Mail className="w-3 h-3 text-slate-400" /> {c.email}
+                          <div className="flex items-center gap-1 text-xs text-[#8a92a6] truncate max-w-[180px]">
+                            <Mail className="w-3 h-3 text-[#8a92a6]" /> {c.email}
                           </div>
                         )}
                       </td>
                       <td className="py-3.5 px-4 max-w-[240px]">
-                        <div className="text-xs text-slate-600 line-clamp-2">{c.address || '-'}</div>
-                        {c.postalCode && <span className="inline-block mt-0.5 text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{c.postalCode}</span>}
+                        <div className="text-xs text-[#d1c6ab] line-clamp-2">{c.address || '-'}</div>
+                        {c.postalCode && <span className="inline-block mt-0.5 text-[10px] font-mono bg-[#252a32] text-[#d1c6ab] px-1.5 py-0.5 rounded">{c.postalCode}</span>}
                       </td>
                       <td className="py-3.5 px-4">
                         {c.defaultCarrier ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-700 ring-1 ring-cyan-500/30">
                             <Truck className="w-3 h-3" /> {c.defaultCarrier}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400">-</span>
+                          <span className="text-xs text-[#8a92a6]">-</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
+                        <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-[#252a32] text-[#d1c6ab]">
                           {c.paymentTerm}
                         </span>
                       </td>
@@ -259,21 +259,21 @@ export default function AdminCustomersPage() {
                         <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() => openEdit(c)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="p-1.5 rounded-lg text-[#8a92a6] hover:text-blue-600 hover:bg-blue-500/10 transition-colors"
                             title="แก้ไข"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => toggleStatus(c)}
-                            className={`p-1.5 rounded-lg transition-colors ${c.status === 'INACTIVE' ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'}`}
+                            className={`p-1.5 rounded-lg transition-colors ${c.status === 'INACTIVE' ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/10'}`}
                             title={c.status === 'INACTIVE' ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                           >
                             <Power className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(c)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            className="p-1.5 rounded-lg text-[#8a92a6] hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
                             title="ลบ"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -296,7 +296,7 @@ export default function AdminCustomersPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden my-8"
+                className="w-full max-w-xl bg-[#171c23] rounded-3xl shadow-2xl overflow-hidden my-8"
               >
                 <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white flex items-center justify-between">
                   <div className="font-black text-lg flex items-center gap-2">
@@ -311,123 +311,123 @@ export default function AdminCustomersPage() {
                 <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">รหัสลูกค้า</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">รหัสลูกค้า</label>
                       <input
                         type="text"
                         placeholder="เช่น CUST-001 (เว้นว่างเพื่อ auto)"
                         value={formData.code || ''}
                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ชื่อลูกค้า / บริษัท *</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ชื่อลูกค้า / บริษัท *</label>
                       <input
                         type="text"
                         required
                         placeholder="ชื่อลูกค้า"
                         value={formData.name || ''}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เลขประจำตัวผู้เสียภาษี</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">เลขประจำตัวผู้เสียภาษี</label>
                       <input
                         type="text"
                         placeholder="13 หลัก"
                         value={formData.taxId || ''}
                         onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">รหัสสาขา</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">รหัสสาขา</label>
                       <input
                         type="text"
                         placeholder="00000 (สำนักงานใหญ่)"
                         value={formData.branchNumber || '00000'}
                         onChange={(e) => setFormData({ ...formData, branchNumber: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ชื่อผู้ติดต่อ</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ชื่อผู้ติดต่อ</label>
                       <input
                         type="text"
                         placeholder="ชื่อผู้ประสานงาน"
                         value={formData.contactPerson || ''}
                         onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เบอร์โทรศัพท์</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">เบอร์โทรศัพท์</label>
                       <input
                         type="text"
                         placeholder="081-xxx-xxxx"
                         value={formData.phone || ''}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">อีเมล</label>
+                    <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">อีเมล</label>
                     <input
                       type="email"
                       placeholder="customer@email.com"
                       value={formData.email || ''}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ที่อยู่สำหรับจัดส่ง</label>
+                    <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ที่อยู่สำหรับจัดส่ง</label>
                     <textarea
                       rows={2}
                       placeholder="ที่อยู่จัดส่งสินค้า..."
                       value={formData.address || ''}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">รหัสไปรษณีย์</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">รหัสไปรษณีย์</label>
                       <input
                         type="text"
                         placeholder="10xxx"
                         value={formData.postalCode || ''}
                         onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ขนส่งประจำ</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ขนส่งประจำ</label>
                       <input
                         type="text"
                         placeholder="เช่น Flash, Kerry"
                         value={formData.defaultCarrier || ''}
                         onChange={(e) => setFormData({ ...formData, defaultCarrier: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เงื่อนไขชำระเงิน</label>
+                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">เงื่อนไขชำระเงิน</label>
                       <select
                         value={formData.paymentTerm || 'CASH'}
                         onChange={(e) => setFormData({ ...formData, paymentTerm: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm bg-white"
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm bg-[#171c23]"
                       >
                         <option value="CASH">เงินสด / โอนทันที</option>
                         <option value="COD">เก็บเงินปลายทาง (COD)</option>
@@ -439,21 +439,21 @@ export default function AdminCustomersPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">หมายเหตุเพิ่มเติม</label>
+                    <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">หมายเหตุเพิ่มเติม</label>
                     <input
                       type="text"
                       placeholder="เช่น ระวังแตก, ให้โทรแจ้งก่อนส่ง"
                       value={formData.notes || ''}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-blue-500 font-medium text-sm"
                     />
                   </div>
 
-                  <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                  <div className="pt-4 flex justify-end gap-3 border-t border-[#30353d]">
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors"
+                      className="px-5 py-2.5 rounded-xl border border-[#30353d] text-[#d1c6ab] font-bold hover:bg-[#1b2027] transition-colors"
                     >
                       ยกเลิก
                     </button>

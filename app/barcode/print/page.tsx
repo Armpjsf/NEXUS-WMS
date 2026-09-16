@@ -146,7 +146,7 @@ export default function BarcodePrintPage() {
                  <p>Select a product to preview label</p>
               </div>
            ) : (
-              <div ref={componentRef} className="bg-white shadow-xl mx-auto p-0 origin-top transform scale-75 md:scale-100 transition-transform">
+              <div ref={componentRef} className="bg-white text-black shadow-xl mx-auto p-0 origin-top transform scale-75 md:scale-100 transition-transform">
                  {printFormat === 'label-4x6' ? (
                    // 4x6 Label Template
                    <div className="w-[4in] h-[6in] p-4 flex flex-col items-center justify-between border border-dashed border-slate-200 relative">

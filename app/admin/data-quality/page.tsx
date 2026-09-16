@@ -63,84 +63,84 @@ export default function DataQualityPage() {
     <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8">
       <AmbientBackground />
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
-       <Link href="/admin" className="text-slate-500 hover:text-rose-600 flex items-center gap-2 mb-4 transition-colors font-medium">
+       <Link href="/admin" className="text-[#8a92a6] hover:text-rose-600 flex items-center gap-2 mb-4 transition-colors font-medium">
          <ArrowLeft className="w-4 h-4" /> {t('back_to_admin')}
        </Link>
-       <header className="overflow-hidden rounded-[1.75rem] border border-rose-200 bg-white/85 p-6 shadow-xl shadow-rose-900/10 backdrop-blur-xl">
+       <header className="overflow-hidden rounded-[1.75rem] border border-rose-500/30 bg-[#171c23] p-6 shadow-xl shadow-rose-900/10 backdrop-blur-xl">
           <div className="h-1 bg-gradient-to-r from-rose-600 via-amber-500 to-blue-600 -mx-6 -mt-6 mb-6" />
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-[#dee2ec] flex items-center gap-3">
              <div className="p-2 bg-rose-500/10 rounded-lg">
                 <ShieldAlert className="w-8 h-8 text-rose-500" />
              </div>
              {t('dq_title')}
           </h1>
-          <p className="text-slate-500 mt-2">{t('dq_subtitle')}</p>
+          <p className="text-[#8a92a6] mt-2">{t('dq_subtitle')}</p>
        </header>
 
        {/* Summary Cards */}
        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-           <div className={`p-6 rounded-xl border ${unknownSkuCount > 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-white border-slate-200'}`}>
-               <h3 className="text-slate-500 text-sm mb-2">{t('dq_unknown_sku')}</h3>
-               <div className={`text-3xl font-bold ${unknownSkuCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+           <div className={`p-6 rounded-xl border ${unknownSkuCount > 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-[#171c23] border-[#30353d]'}`}>
+               <h3 className="text-[#8a92a6] text-sm mb-2">{t('dq_unknown_sku')}</h3>
+               <div className={`text-3xl font-bold ${unknownSkuCount > 0 ? 'text-rose-600' : 'text-[#dee2ec]'}`}>
                    {loading ? '...' : unknownSkuCount}
                </div>
-               <p className="text-xs text-slate-500 mt-2">{t('dq_unknown_sku_desc')}</p>
+               <p className="text-xs text-[#8a92a6] mt-2">{t('dq_unknown_sku_desc')}</p>
            </div>
            
-           <div className={`p-6 rounded-xl border ${invalidQtyCount > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-white border-slate-200'}`}>
-               <h3 className="text-slate-500 text-sm mb-2">{t('dq_invalid_qty')}</h3>
-               <div className={`text-3xl font-bold ${invalidQtyCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+           <div className={`p-6 rounded-xl border ${invalidQtyCount > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-[#171c23] border-[#30353d]'}`}>
+               <h3 className="text-[#8a92a6] text-sm mb-2">{t('dq_invalid_qty')}</h3>
+               <div className={`text-3xl font-bold ${invalidQtyCount > 0 ? 'text-amber-600' : 'text-[#dee2ec]'}`}>
                    {loading ? '...' : invalidQtyCount}
                </div>
-               <p className="text-xs text-slate-500 mt-2">{t('dq_invalid_qty_desc')}</p>
+               <p className="text-xs text-[#8a92a6] mt-2">{t('dq_invalid_qty_desc')}</p>
            </div>
 
-           <div className={`p-6 rounded-xl border ${dateErrorCount > 0 ? 'bg-blue-500/10 border-blue-500/20' : 'bg-white border-slate-200'}`}>
-               <h3 className="text-slate-500 text-sm mb-2">{t('dq_date_error')}</h3>
-               <div className={`text-3xl font-bold ${dateErrorCount > 0 ? 'text-blue-600' : 'text-slate-900'}`}>
+           <div className={`p-6 rounded-xl border ${dateErrorCount > 0 ? 'bg-blue-500/10 border-blue-500/20' : 'bg-[#171c23] border-[#30353d]'}`}>
+               <h3 className="text-[#8a92a6] text-sm mb-2">{t('dq_date_error')}</h3>
+               <div className={`text-3xl font-bold ${dateErrorCount > 0 ? 'text-blue-600' : 'text-[#dee2ec]'}`}>
                    {loading ? '...' : dateErrorCount}
                </div>
-               <p className="text-xs text-slate-500 mt-2">{t('dq_date_error_desc')}</p>
+               <p className="text-xs text-[#8a92a6] mt-2">{t('dq_date_error_desc')}</p>
            </div>
 
-           <div className={`p-6 rounded-xl border ${reconcileErrorCount > 0 ? 'bg-purple-500/10 border-purple-500/20' : 'bg-white border-slate-200'}`}>
-               <h3 className="text-slate-500 text-sm mb-2">{t('dq_stock_mismatch')}</h3>
-               <div className={`text-3xl font-bold ${reconcileErrorCount > 0 ? 'text-purple-600' : 'text-slate-900'}`}>
+           <div className={`p-6 rounded-xl border ${reconcileErrorCount > 0 ? 'bg-purple-500/10 border-purple-500/20' : 'bg-[#171c23] border-[#30353d]'}`}>
+               <h3 className="text-[#8a92a6] text-sm mb-2">{t('dq_stock_mismatch')}</h3>
+               <div className={`text-3xl font-bold ${reconcileErrorCount > 0 ? 'text-purple-600' : 'text-[#dee2ec]'}`}>
                    {loading ? '...' : reconcileErrorCount}
                </div>
-               <p className="text-xs text-slate-500 mt-2">{t('dq_stock_mismatch_desc')}</p>
+               <p className="text-xs text-[#8a92a6] mt-2">{t('dq_stock_mismatch_desc')}</p>
            </div>
        </div>
 
        {/* AI Watchdog Section */}
-       <div className="bg-white/90 rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 border border-slate-200 text-slate-700 relative">
+       <div className="bg-[#171c23] rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 border border-[#30353d] text-[#d1c6ab] relative">
            
-           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
+           <div className="p-6 border-b border-[#30353d] flex justify-between items-center bg-[#1b2027]/80">
                <div className="flex items-center gap-3">
                    <div className="p-2 bg-indigo-500/20 rounded-lg">
                        <ShieldAlert className="w-6 h-6 text-indigo-400" />
                    </div>
                    <div>
-                       <h3 className="text-lg font-bold text-slate-950">AI Watchdog</h3>
-                       <p className="text-sm text-slate-500">Automated Integrity Checks</p>
+                       <h3 className="text-lg font-bold text-[#dee2ec]">AI Watchdog</h3>
+                       <p className="text-sm text-[#8a92a6]">Automated Integrity Checks</p>
                    </div>
                </div>
-               <div className="text-sm text-slate-500 font-mono">
+               <div className="text-sm text-[#8a92a6] font-mono">
                    {anomalies.length} Issues Detected
                </div>
            </div>
 
            {loading ? (
-             <div className="p-8 text-center text-slate-400 animate-pulse">Running diagnostics...</div>
+             <div className="p-8 text-center text-[#8a92a6] animate-pulse">Running diagnostics...</div>
            ) : anomalies.length === 0 ? (
              <div className="p-8 flex flex-col items-center gap-2">
                  <CheckCircle className="w-10 h-10 text-emerald-400" />
                  <p className="font-medium text-emerald-700">All Systems Healthy</p>
              </div>
            ) : (
-             <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+             <div className="divide-y divide-[#30353d] max-h-[400px] overflow-y-auto">
                  {anomalies.map((a) => (
-                     <div key={a.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-4">
+                     <div key={a.id} className="p-4 hover:bg-[#1b2027] transition-colors flex gap-4">
                          <div className="mt-1">
                              {a.type === 'CRITICAL' && <AlertTriangle className="w-5 h-5 text-rose-500" />}
                              {a.type === 'WARNING' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
@@ -155,10 +155,10 @@ export default function DataQualityPage() {
                                  }`}>
                                      {a.type}
                                  </span>
-                                     <span className="text-xs text-slate-500 font-mono truncate">{a.entityName}</span>
+                                     <span className="text-xs text-[#8a92a6] font-mono truncate">{a.entityName}</span>
                              </div>
-                             <h4 className="font-bold text-sm text-slate-900">{a.title}</h4>
-                             <p className="text-xs text-slate-500 mt-0.5">{a.description}</p>
+                             <h4 className="font-bold text-sm text-[#dee2ec]">{a.title}</h4>
+                             <p className="text-xs text-[#8a92a6] mt-0.5">{a.description}</p>
                          </div>
                          {a.action === 'FIX_STOCK' && (
                              <button className="self-center px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition-colors">
@@ -172,28 +172,28 @@ export default function DataQualityPage() {
        </div>
 
        {/* Issues List */}
-       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-               <h3 className="text-slate-800 font-medium">{t('dq_issues_found')}</h3>
-               <div className="text-sm text-slate-500">
+       <div className="bg-[#171c23] border border-[#30353d] rounded-xl overflow-hidden shadow-sm">
+           <div className="p-6 border-b border-[#30353d] flex justify-between items-center bg-[#1b2027]">
+               <h3 className="text-[#dee2ec] font-medium">{t('dq_issues_found')}</h3>
+               <div className="text-sm text-[#8a92a6]">
                    Total: {issues.length} Checkpoints
                </div>
            </div>
            
            {loading ? (
-               <div className="p-12 text-center text-slate-500">{t('ai_analyzing')}</div>
+               <div className="p-12 text-center text-[#8a92a6]">{t('ai_analyzing')}</div>
            ) : issues.length === 0 ? (
                <div className="p-12 text-center flex flex-col items-center gap-4">
                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center">
                        <CheckCircle className="w-8 h-8 text-green-500" />
                    </div>
                    <div className="text-green-400 font-medium">{t('dq_all_good')}</div>
-                   <p className="text-slate-500 text-sm">No data quality issues found.</p>
+                   <p className="text-[#8a92a6] text-sm">No data quality issues found.</p>
                </div>
            ) : (
-               <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+               <div className="divide-y divide-[#30353d] max-h-[500px] overflow-y-auto">
                    {issues.map((issue, idx) => (
-                       <div key={idx} className="p-4 hover:bg-slate-50 flex items-start gap-4 transition-colors">
+                       <div key={idx} className="p-4 hover:bg-[#1b2027] flex items-start gap-4 transition-colors">
                            <div className="mt-1">
                                {issue.type === 'Unknown SKU' && <AlertTriangle className="w-5 h-5 text-rose-500" />}
                                {issue.type === 'Invalid Qty' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
@@ -203,15 +203,15 @@ export default function DataQualityPage() {
                            <div className="flex-1">
                                <div className="flex items-center gap-2 mb-1">
                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full 
-                                       ${issue.type === 'Unknown SKU' ? 'bg-rose-50 text-rose-600 border border-rose-200' : 
-                                         issue.type === 'Invalid Qty' ? 'bg-amber-50 text-amber-600 border border-amber-200' : 
-                                         issue.type === 'Stock Mismatch' ? 'bg-purple-50 text-purple-600 border border-purple-200' :
-                                         'bg-blue-50 text-blue-600 border border-blue-200'}`}>
+                                       ${issue.type === 'Unknown SKU' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/30' : 
+                                         issue.type === 'Invalid Qty' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30' : 
+                                         issue.type === 'Stock Mismatch' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/30' :
+                                         'bg-blue-500/10 text-blue-600 border border-blue-500/30'}`}>
                                        {issue.type}
                                    </span>
-                                   <span className="text-slate-500 text-xs">Source: {issue.source} (Row ~{issue.row})</span>
+                                   <span className="text-[#8a92a6] text-xs">Source: {issue.source} (Row ~{issue.row})</span>
                                </div>
-                               <p className="text-slate-700 text-sm">{issue.description}</p>
+                               <p className="text-[#d1c6ab] text-sm">{issue.description}</p>
                            </div>
                        </div>
                    ))}

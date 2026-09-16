@@ -102,25 +102,25 @@ export default function AuditTrailPage() {
         <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl shadow-slate-900/5 relative overflow-hidden"
+            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 bg-[#171c23] backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl shadow-slate-900/5 relative overflow-hidden"
         >
            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-blue-700 to-slate-800" />
            
            <div className="relative z-10 flex items-center gap-6">
                <Link
                 href="/admin"
-                className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-indigo-600 hover:shadow-lg hover:-translate-x-1 transition-all"
+                className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-indigo-600 hover:shadow-lg hover:-translate-x-1 transition-all"
                >
                 <ArrowLeft className="w-6 h-6" />
                </Link>
                <div>
-                   <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                   <h1 className="text-4xl font-black text-[#dee2ec] tracking-tight flex items-center gap-4">
                        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white p-3 rounded-2xl shadow-lg shadow-indigo-200">
                          <History className="w-8 h-8" />
                        </div>
                        {t('audit_trail_title')}
                    </h1>
-                   <p className="text-slate-500 font-medium text-lg ml-2 mt-1">{t('audit_trail_subtitle')}</p>
+                   <p className="text-[#8a92a6] font-medium text-lg ml-2 mt-1">{t('audit_trail_subtitle')}</p>
                </div>
            </div>
         </motion.div>
@@ -129,28 +129,28 @@ export default function AuditTrailPage() {
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 rounded-2xl border border-slate-200 p-4 shadow-lg shadow-slate-900/5 backdrop-blur-xl"
+          className="bg-[#171c23] rounded-2xl border border-[#30353d] p-4 shadow-lg shadow-slate-900/5 backdrop-blur-xl"
         >
           <div className="flex flex-wrap gap-4">
             {/* Search */}
             <div className="flex-1 min-w-[200px] relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8a92a6]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('search')}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#1b2027] border border-[#30353d] rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
               />
             </div>
 
             {/* Module Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
+              <Filter className="w-4 h-4 text-[#8a92a6]" />
               <select
                 value={moduleFilter}
                 onChange={(e) => setModuleFilter(e.target.value)}
-                className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                className="px-3 py-2.5 bg-[#1b2027] border border-[#30353d] rounded-xl text-sm focus:border-indigo-500 outline-none"
               >
                 {modules.map(m => (
                   <option key={m} value={m}>{m === 'All' ? t('filter_all_modules') : m}</option>
@@ -162,7 +162,7 @@ export default function AuditTrailPage() {
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 outline-none"
+              className="px-3 py-2.5 bg-[#1b2027] border border-[#30353d] rounded-xl text-sm focus:border-indigo-500 outline-none"
             >
               {actions.map(a => (
                 <option key={a} value={a}>{a === 'All' ? t('filter_all_actions') : a}</option>
@@ -176,30 +176,30 @@ export default function AuditTrailPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/90 rounded-2xl border border-slate-200 overflow-hidden shadow-xl shadow-slate-900/5 backdrop-blur-xl"
+          className="bg-[#171c23] rounded-2xl border border-[#30353d] overflow-hidden shadow-xl shadow-slate-900/5 backdrop-blur-xl"
         >
-          <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-700">
+          <div className="p-4 border-b border-[#30353d] bg-[#1b2027] flex items-center justify-between">
+            <span className="text-sm font-bold text-[#d1c6ab]">
               Activity Log
-              <span className="ml-2 px-2 py-0.5 bg-slate-200 rounded-lg text-xs">{filteredLogs.length}</span>
+              <span className="ml-2 px-2 py-0.5 bg-[#30353d] rounded-lg text-xs">{filteredLogs.length}</span>
             </span>
           </div>
 
           <div className="max-h-[600px] overflow-y-auto">
             {loading ? (
-              <div className="p-12 text-center text-slate-400">Loading...</div>
+              <div className="p-12 text-center text-[#8a92a6]">Loading...</div>
             ) : filteredLogs.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
+              <div className="p-12 text-center text-[#8a92a6]">
                 <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p>No activity logs found</p>
               </div>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-[#30353d]">
                 {filteredLogs.map((log) => (
                   <li 
                     key={log.id}
                     onClick={() => setSelectedLog(log)}
-                    className="p-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                    className="p-4 hover:bg-[#1b2027] cursor-pointer transition-colors"
                   >
                     <div className="flex items-start gap-3">
                       <span className={cn(
@@ -211,8 +211,8 @@ export default function AuditTrailPage() {
                       </span>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-800 text-sm">{log.description}</p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                        <p className="font-medium text-[#dee2ec] text-sm">{log.description}</p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-[#8a92a6]">
                           <span className="flex items-center gap-1">
                             <User className="w-3 h-3" />
                             {log.userName}
@@ -221,7 +221,7 @@ export default function AuditTrailPage() {
                             <Clock className="w-3 h-3" />
                             {formatDate(log.timestamp)}
                           </span>
-                          <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-bold uppercase">
+                          <span className="px-1.5 py-0.5 bg-[#252a32] rounded text-[10px] font-bold uppercase">
                             {log.module}
                           </span>
                         </div>
@@ -243,55 +243,55 @@ export default function AuditTrailPage() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+              className="bg-[#171c23] rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-800">{t('log_details')}</h3>
+              <div className="p-4 border-b border-[#30353d] flex items-center justify-between">
+                <h3 className="font-bold text-[#dee2ec]">{t('log_details')}</h3>
                 <button 
                   onClick={() => setSelectedLog(null)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-[#8a92a6] hover:text-[#d1c6ab]"
                 >
                   ✕
                 </button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('col_status')}</p>
+                  <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('col_status')}</p>
                   <span className={cn("px-3 py-1 rounded-lg text-xs font-bold border", getActionColor(selectedLog.action))}>
                     {selectedLog.action}
                   </span>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('col_description')}</p>
-                  <p className="text-slate-700">{selectedLog.description}</p>
+                  <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('col_description')}</p>
+                  <p className="text-[#d1c6ab]">{selectedLog.description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('col_user')}</p>
-                    <p className="text-slate-700">{selectedLog.userName}</p>
+                    <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('col_user')}</p>
+                    <p className="text-[#d1c6ab]">{selectedLog.userName}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('col_module')}</p>
-                    <p className="text-slate-700">{selectedLog.module}</p>
+                    <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('col_module')}</p>
+                    <p className="text-[#d1c6ab]">{selectedLog.module}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('col_timestamp')}</p>
-                  <p className="text-slate-700">{formatDate(selectedLog.timestamp)}</p>
+                  <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('col_timestamp')}</p>
+                  <p className="text-[#d1c6ab]">{formatDate(selectedLog.timestamp)}</p>
                 </div>
                 {selectedLog.oldValues && (
                   <div>
-                    <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('old_value')}</p>
-                    <pre className="bg-slate-50 p-3 rounded-lg text-xs overflow-x-auto">
+                    <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('old_value')}</p>
+                    <pre className="bg-[#1b2027] p-3 rounded-lg text-xs overflow-x-auto">
                       {JSON.stringify(selectedLog.oldValues, null, 2)}
                     </pre>
                   </div>
                 )}
                 {selectedLog.newValues && (
                   <div>
-                    <p className="text-xs text-slate-400 uppercase font-bold mb-1">{t('new_value')}</p>
-                    <pre className="bg-slate-50 p-3 rounded-lg text-xs overflow-x-auto">
+                    <p className="text-xs text-[#8a92a6] uppercase font-bold mb-1">{t('new_value')}</p>
+                    <pre className="bg-[#1b2027] p-3 rounded-lg text-xs overflow-x-auto">
                       {JSON.stringify(selectedLog.newValues, null, 2)}
                     </pre>
                   </div>

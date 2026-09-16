@@ -357,7 +357,7 @@ export default function WavePickingPage() {
     <div
       className={cn(
         'relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 transition-colors',
-        forkliftMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
+        forkliftMode ? 'bg-slate-950 text-white' : 'bg-[#1b2027] text-[#dee2ec]'
       )}
     >
       <AmbientBackground />
@@ -369,7 +369,7 @@ export default function WavePickingPage() {
             'relative overflow-hidden rounded-[1.75rem] border p-6 shadow-xl backdrop-blur-xl print:hidden',
             forkliftMode
               ? 'bg-slate-900/90 border-amber-500/40 text-white'
-              : 'border-amber-200 bg-white/90 shadow-amber-900/5'
+              : 'border-amber-500/30 bg-[#171c23] shadow-amber-900/5'
           )}
         >
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500" />
@@ -381,7 +381,7 @@ export default function WavePickingPage() {
                   'p-3 rounded-xl border transition-colors',
                   forkliftMode
                     ? 'bg-slate-800 border-slate-700 text-amber-400'
-                    : 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-700'
                 )}
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -391,7 +391,7 @@ export default function WavePickingPage() {
                   <Boxes className="w-8 h-8 text-amber-500" />
                   Smart Wave Picking & Voice Assist
                 </h1>
-                <p className={cn('text-sm mt-0.5', forkliftMode ? 'text-slate-400' : 'text-slate-500')}>
+                <p className={cn('text-sm mt-0.5', forkliftMode ? 'text-[#8a92a6]' : 'text-[#8a92a6]')}>
                   ระบบจัดรอบหยิบรวมออเดอร์ • เดินแบบ S-Shape • เสียงพูดนำทางภาษาไทย (Voice Picking)
                 </p>
               </div>
@@ -411,8 +411,8 @@ export default function WavePickingPage() {
                 className={cn(
                   'px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all',
                   voiceEnabled
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md font-black'
-                    : 'bg-slate-100 border-slate-200 text-slate-500'
+                    ? 'bg-emerald-500 text-[#dee2ec] border-emerald-400 shadow-md font-black'
+                    : 'bg-[#252a32] border-[#30353d] text-[#8a92a6]'
                 )}
               >
                 {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -429,8 +429,8 @@ export default function WavePickingPage() {
                 className={cn(
                   'px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all',
                   forkliftMode
-                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-lg font-black'
-                    : 'bg-slate-100 border-slate-200 text-slate-700'
+                    ? 'bg-amber-400 text-[#dee2ec] border-amber-300 shadow-lg font-black'
+                    : 'bg-[#252a32] border-[#30353d] text-[#d1c6ab]'
                 )}
               >
                 <Eye className="w-4 h-4" />
@@ -440,9 +440,9 @@ export default function WavePickingPage() {
               {activeWave && (
                 <button
                   onClick={handlePrint}
-                  className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-2 bg-[#171c23] border border-[#30353d] text-[#d1c6ab] font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
                 >
-                  <Printer className="w-4 h-4 text-slate-600" />
+                  <Printer className="w-4 h-4 text-[#d1c6ab]" />
                   พิมพ์ใบหยิบ
                 </button>
               )}
@@ -477,21 +477,21 @@ export default function WavePickingPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="bg-white text-slate-900 rounded-2xl border border-amber-200 p-6 shadow-xl space-y-6 print:hidden"
+              className="bg-[#171c23] text-[#dee2ec] rounded-2xl border border-amber-500/30 p-6 shadow-xl space-y-6 print:hidden"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between border-b border-[#30353d] pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-[#dee2ec] flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-amber-500" />
                     สร้างรอบการหยิบสินค้า (New Batch Wave)
                   </h2>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-[#8a92a6] mt-1">
                     เลือกรายการสินค้า ระบบจะคำนวณลำดับการเดินหยิบตามพิกัด (Zone & Aisle S-Shape) ให้อัตโนมัติ
                   </p>
                 </div>
                 <button
                   onClick={() => setIsCreatingWave(false)}
-                  className="text-slate-400 hover:text-slate-600 font-bold px-3 py-1 rounded-lg text-xs"
+                  className="text-[#8a92a6] hover:text-[#d1c6ab] font-bold px-3 py-1 rounded-lg text-xs"
                 >
                   ยกเลิก
                 </button>
@@ -501,19 +501,19 @@ export default function WavePickingPage() {
                 {/* Left: Product Selection */}
                 <div className="lg:col-span-2 space-y-4">
                   <div className="relative">
-                    <Search className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
+                    <Search className="w-5 h-5 absolute left-3.5 top-3 text-[#8a92a6]" />
                     <input
                       type="text"
                       placeholder="ค้นหา SKU, ชื่อสินค้า, หรือพิกัดเชลฟ์..."
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-800"
+                      className="w-full pl-11 pr-4 py-2.5 bg-[#1b2027] border border-[#30353d] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-[#dee2ec]"
                     />
                   </div>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-80 overflow-y-auto">
+                  <div className="border border-[#30353d] rounded-xl overflow-hidden max-h-80 overflow-y-auto">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-100/75 text-slate-600 font-semibold text-xs border-b border-slate-200 sticky top-0">
+                      <thead className="bg-[#252a32]/75 text-[#d1c6ab] font-semibold text-xs border-b border-[#30353d] sticky top-0">
                         <tr>
                           <th className="py-2.5 px-4">สินค้า</th>
                           <th className="py-2.5 px-4">พิกัด Location</th>
@@ -521,40 +521,40 @@ export default function WavePickingPage() {
                           <th className="py-2.5 px-4 text-center">จัดการ</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-[#30353d]">
                         {loading ? (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-slate-400">
+                            <td colSpan={4} className="py-8 text-center text-[#8a92a6]">
                               กำลังโหลดสินค้า...
                             </td>
                           </tr>
                         ) : filteredProducts.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-slate-400">
+                            <td colSpan={4} className="py-8 text-center text-[#8a92a6]">
                               ไม่พบสินค้าที่ตรงกับการค้นหา
                             </td>
                           </tr>
                         ) : (
                           filteredProducts.map(p => (
-                            <tr key={p.id || p.name} className="hover:bg-amber-50/50 transition-colors">
-                              <td className="py-2.5 px-4 font-medium text-slate-800">
+                            <tr key={p.id || p.name} className="hover:bg-amber-500/10/50 transition-colors">
+                              <td className="py-2.5 px-4 font-medium text-[#dee2ec]">
                                 <div>{p.name}</div>
-                                <div className="text-xs text-slate-400 font-mono">{p.id}</div>
+                                <div className="text-xs text-[#8a92a6] font-mono">{p.id}</div>
                               </td>
                               <td className="py-2.5 px-4">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#252a32] text-[#d1c6ab] font-mono text-xs font-bold border border-[#30353d]">
                                   <MapPin className="w-3 h-3 text-amber-600" />
                                   {p.location || 'Unassigned'}
                                 </span>
                               </td>
-                              <td className="py-2.5 px-4 text-right font-bold text-slate-700">
+                              <td className="py-2.5 px-4 text-right font-bold text-[#d1c6ab]">
                                 {Number(p.stock || 0).toLocaleString()} {p.unit || 'pcs'}
                               </td>
                               <td className="py-2.5 px-4 text-center">
                                 <button
                                   type="button"
                                   onClick={() => handleAddItemToWave(p)}
-                                  className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1"
+                                  className="px-3 py-1 bg-amber-500/20 hover:bg-amber-200 text-amber-800 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1"
                                 >
                                   <Plus className="w-3.5 h-3.5" /> เพิ่ม
                                 </button>
@@ -568,9 +568,9 @@ export default function WavePickingPage() {
                 </div>
 
                 {/* Right: Selected List */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-4">
+                <div className="bg-[#1b2027] border border-[#30353d] rounded-xl p-4 flex flex-col justify-between space-y-4">
                   <div>
-                    <h3 className="font-bold text-slate-800 mb-2 flex items-center justify-between">
+                    <h3 className="font-bold text-[#dee2ec] mb-2 flex items-center justify-between">
                       <span>รายการที่เลือก ({selectedSkus.length})</span>
                       {selectedSkus.length > 0 && (
                         <button
@@ -584,18 +584,18 @@ export default function WavePickingPage() {
 
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                       {selectedSkus.length === 0 ? (
-                        <div className="text-center py-10 text-slate-400 text-xs">
+                        <div className="text-center py-10 text-[#8a92a6] text-xs">
                           ยังไม่มีรายการที่เลือก<br />กดเพิ่มสินค้าจากตารางด้านซ้าย
                         </div>
                       ) : (
                         selectedSkus.map((item, idx) => (
                           <div
                             key={idx}
-                            className="bg-white p-2.5 rounded-lg border border-slate-200 flex items-center justify-between text-xs"
+                            className="bg-[#171c23] p-2.5 rounded-lg border border-[#30353d] flex items-center justify-between text-xs"
                           >
                             <div className="truncate max-w-[120px]">
-                              <div className="font-bold text-slate-800 truncate">{item.sku}</div>
-                              <div className="text-[10px] text-slate-400">{item.orderRef}</div>
+                              <div className="font-bold text-[#dee2ec] truncate">{item.sku}</div>
+                              <div className="text-[10px] text-[#8a92a6]">{item.orderRef}</div>
                             </div>
                             <div className="flex items-center gap-2">
                               <input
@@ -608,11 +608,11 @@ export default function WavePickingPage() {
                                     selectedSkus.map((x, i) => (i === idx ? { ...x, qty: val } : x))
                                   );
                                 }}
-                                className="w-14 h-7 text-center font-bold bg-slate-50 border border-slate-200 rounded text-xs text-slate-800"
+                                className="w-14 h-7 text-center font-bold bg-[#1b2027] border border-[#30353d] rounded text-xs text-[#dee2ec]"
                               />
                               <button
                                 onClick={() => setSelectedSkus(selectedSkus.filter((_, i) => i !== idx))}
-                                className="text-slate-400 hover:text-rose-600 p-1"
+                                className="text-[#8a92a6] hover:text-rose-600 p-1"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -623,16 +623,16 @@ export default function WavePickingPage() {
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <div className="pt-3 border-t border-[#30353d] space-y-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">
                         ผู้หยิบสินค้า (Picker)
                       </label>
                       <input
                         type="text"
                         value={pickerName}
                         onChange={e => setPickerName(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800"
+                        className="w-full px-3 py-1.5 bg-[#171c23] border border-[#30353d] rounded-lg text-xs font-medium text-[#dee2ec]"
                       />
                     </div>
 
@@ -667,7 +667,7 @@ export default function WavePickingPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-amber-400 text-slate-950 font-black text-xs uppercase rounded-lg">
+                      <span className="px-3 py-1 bg-amber-400 text-[#dee2ec] font-black text-xs uppercase rounded-lg">
                         เป้าหมายถัดไป (Next Pick Target)
                       </span>
                       <span className="font-mono text-xs text-amber-300">
@@ -716,7 +716,7 @@ export default function WavePickingPage() {
                     <button
                       type="button"
                       onClick={() => setShowWaveScanCam(true)}
-                      className="px-5 py-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-2xl shadow-xl flex items-center gap-2 transition-all active:scale-95"
+                      className="px-5 py-4 bg-amber-400 hover:bg-amber-300 text-[#dee2ec] font-black rounded-2xl shadow-xl flex items-center gap-2 transition-all active:scale-95"
                       title="เปิดกล้องสแกนยืนยันสินค้า"
                     >
                       <Camera className="w-5 h-5" />
@@ -727,7 +727,7 @@ export default function WavePickingPage() {
                       type="button"
                       onClick={() => handlePickItem(nextTargetItem.id, nextTargetItem.requestedQty)}
                       className={cn(
-                        'px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black rounded-2xl shadow-xl flex items-center gap-3 transition-all',
+                        'px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-[#dee2ec] font-black rounded-2xl shadow-xl flex items-center gap-3 transition-all',
                         forkliftMode ? 'text-xl' : 'text-base'
                       )}
                     >
@@ -745,21 +745,21 @@ export default function WavePickingPage() {
                 'border rounded-2xl p-6 shadow-xl backdrop-blur-xl',
                 forkliftMode
                   ? 'bg-slate-900 border-slate-800 text-white'
-                  : 'bg-white/95 border-slate-200 text-slate-900'
+                  : 'bg-[#171c23] border-[#30353d] text-[#dee2ec]'
               )}
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100/10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#30353d]/10">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-amber-500 text-slate-950 text-xs font-mono font-black rounded-md">
+                    <span className="px-3 py-1 bg-amber-500 text-[#dee2ec] text-xs font-mono font-black rounded-md">
                       {activeWave.waveNumber}
                     </span>
                     <span
                       className={cn(
                         'px-2.5 py-0.5 text-xs font-bold rounded-full',
                         activeWave.status === 'COMPLETED'
-                          ? 'bg-emerald-500 text-slate-950 font-black'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-emerald-500 text-[#dee2ec] font-black'
+                          : 'bg-blue-500/20 text-blue-800'
                       )}
                     >
                       {activeWave.status === 'COMPLETED' ? 'หยิบเสร็จสิ้น' : 'กำลังดำเนินการหยิบ'}
@@ -795,10 +795,10 @@ export default function WavePickingPage() {
               </div>
 
               {/* Fast Scan Input Bar */}
-              <div className="mt-5 pt-4 border-t border-slate-100/10 print:hidden">
+              <div className="mt-5 pt-4 border-t border-[#30353d]/10 print:hidden">
                 <form onSubmit={handleScanSubmit} className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
-                    <Barcode className="w-5 h-5 absolute left-3.5 top-3.5 text-slate-400" />
+                    <Barcode className="w-5 h-5 absolute left-3.5 top-3.5 text-[#8a92a6]" />
                     <input
                       ref={scanInputRef}
                       type="text"
@@ -808,8 +808,8 @@ export default function WavePickingPage() {
                       className={cn(
                         'w-full pl-11 pr-4 py-3 border-2 rounded-xl font-medium focus:outline-none transition-all shadow-inner',
                         forkliftMode
-                          ? 'bg-slate-800 border-amber-400 text-white placeholder-slate-400 text-lg'
-                          : 'bg-slate-50 border-amber-300 text-slate-900 text-sm'
+                          ? 'bg-slate-800 border-amber-400 text-white placeholder-[#8a92a6] text-lg'
+                          : 'bg-[#1b2027] border-amber-300 text-[#dee2ec] text-sm'
                       )}
                     />
                   </div>
@@ -817,7 +817,7 @@ export default function WavePickingPage() {
                     <button
                       type="button"
                       onClick={() => setShowWaveScanCam(true)}
-                      className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-sm shadow-md transition-all flex items-center gap-2 active:scale-95 shrink-0"
+                      className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-[#dee2ec] font-black rounded-xl text-sm shadow-md transition-all flex items-center gap-2 active:scale-95 shrink-0"
                     >
                       <Camera className="w-4 h-4" />
                       <span>เปิดกล้องสแกน</span>
@@ -837,10 +837,10 @@ export default function WavePickingPage() {
             <div
               className={cn(
                 'border rounded-2xl shadow-xl overflow-hidden',
-                forkliftMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                forkliftMode ? 'bg-slate-900 border-slate-800' : 'bg-[#171c23] border-[#30353d]'
               )}
             >
-              <div className="p-4 bg-slate-100/10 border-b border-slate-200/10 flex items-center justify-between">
+              <div className="p-4 bg-[#252a32]/10 border-b border-[#30353d]/10 flex items-center justify-between">
                 <h3 className="font-black flex items-center gap-2">
                   <Layers className="w-5 h-5 text-amber-500" />
                   รายการสินค้าในรอบ (All Wave Items)
@@ -850,7 +850,7 @@ export default function WavePickingPage() {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50/10 font-bold text-xs border-b border-slate-200/10">
+                  <thead className="bg-[#1b2027]/10 font-bold text-xs border-b border-[#30353d]/10">
                     <tr>
                       <th className="py-3 px-4 text-center w-16">ลำดับ</th>
                       <th className="py-3 px-4">พิกัดจัดเก็บ</th>
@@ -861,7 +861,7 @@ export default function WavePickingPage() {
                       <th className="py-3 px-4 text-center print:hidden">การกระทำ</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100/10">
+                  <tbody className="divide-y divide-[#30353d]/10">
                     {activeWave.items.map(item => (
                       <tr
                         key={item.id}
@@ -877,7 +877,7 @@ export default function WavePickingPage() {
                             className={cn(
                               'w-7 h-7 inline-flex items-center justify-center rounded-full text-xs font-black',
                               item.status === 'PICKED'
-                                ? 'bg-emerald-500 text-slate-950'
+                                ? 'bg-emerald-500 text-[#dee2ec]'
                                 : 'bg-slate-700 text-slate-200'
                             )}
                           >
@@ -907,7 +907,7 @@ export default function WavePickingPage() {
                               <CheckCircle2 className="w-3.5 h-3.5" /> หยิบแล้ว
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-700/50 text-slate-400 rounded-full text-xs font-bold">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-700/50 text-[#8a92a6] rounded-full text-xs font-bold">
                               รอหยิบ
                             </span>
                           )}
@@ -943,7 +943,7 @@ export default function WavePickingPage() {
                       setActiveWave(null);
                     }
                   }}
-                  className="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1 font-bold"
+                  className="text-xs text-[#8a92a6] hover:text-rose-400 flex items-center gap-1 font-bold"
                 >
                   <RotateCcw className="w-3.5 h-3.5" /> ยกเลิก Wave นี้
                 </button>
@@ -955,7 +955,7 @@ export default function WavePickingPage() {
                       toast.success('🎉 บันทึกการหยิบครบถ้วนเรียบร้อย!');
                       setActiveWave(null);
                     }}
-                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-xl text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#dee2ec] font-black rounded-xl text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     เสร็จสิ้น Wave และส่งต่อไปจุดแพ็ก
@@ -966,13 +966,13 @@ export default function WavePickingPage() {
           </div>
         ) : (
           !isCreatingWave && (
-            <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-4">
-              <div className="w-16 h-16 bg-amber-50 border border-amber-200 text-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+            <div className="text-center py-20 bg-[#171c23] rounded-2xl border border-[#30353d] shadow-sm p-8 space-y-4">
+              <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/30 text-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
                 <Boxes className="w-8 h-8" />
               </div>
               <div className="max-w-md mx-auto space-y-1">
-                <h3 className="text-lg font-bold text-slate-800">ยังไม่มีรอบการหยิบสินค้า (Wave) ที่ทำงานอยู่</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h3 className="text-lg font-bold text-[#dee2ec]">ยังไม่มีรอบการหยิบสินค้า (Wave) ที่ทำงานอยู่</h3>
+                <p className="text-xs text-[#8a92a6] leading-relaxed">
                   สร้าง Wave รวมออเดอร์เพื่อประหยัดเวลาเดินหยิบสินค้า พร้อมระบบเสียงพูดนำทางภาษาไทย
                 </p>
               </div>

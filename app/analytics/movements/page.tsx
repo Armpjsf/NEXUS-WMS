@@ -162,22 +162,22 @@ export default function MovementsReportPage() {
       <style>{`@media print { .no-print{display:none!important} .print-area{box-shadow:none!important;border:none!important} @page{margin:12mm} body{-webkit-print-color-adjust:exact} }`}</style>
 
       <div className="relative z-10 max-w-[1200px] mx-auto space-y-5">
-        <Link href="/analytics" className="no-print inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"><ArrowLeft className="w-4 h-4" /> วิเคราะห์</Link>
+        <Link href="/analytics" className="no-print inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]"><ArrowLeft className="w-4 h-4" /> วิเคราะห์</Link>
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+            <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
               <span className={`grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br ${COLOR[active.color]} text-white shadow-lg`}><active.icon className="w-6 h-6" /></span>
               รายงานการเคลื่อนไหว
             </h1>
-            <p className="text-slate-500 font-medium mt-1">ประวัติ รับ / จ่าย / คืน / ชำรุด · ส่งออก Excel &amp; PDF</p>
+            <p className="text-[#d1c6ab] font-medium mt-1">ประวัติ รับ / จ่าย / คืน / ชำรุด · ส่งออก Excel &amp; PDF</p>
           </div>
           <div className="no-print flex flex-wrap gap-2">
-            <button onClick={downloadTemplate} title="ดาวน์โหลดเทมเพลตสำหรับนำเข้า" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-700 border border-slate-200 font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
+            <button onClick={downloadTemplate} title="ดาวน์โหลดเทมเพลตสำหรับนำเข้า" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#171c23] text-[#d1c6ab] border border-[#30353d] font-bold shadow-sm hover:bg-[#1b2027] active:scale-95 transition-all">
               <Download className="w-5 h-5" /> เทมเพลต
             </button>
-            <label className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold shadow-sm cursor-pointer transition-all border ${importing ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 active:scale-95'}`}>
+            <label className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold shadow-sm cursor-pointer transition-all border ${importing ? 'bg-[#252a32] text-[#8a92a6] border-[#30353d]' : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027] active:scale-95'}`}>
               {importing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />} นำเข้าไฟล์
               <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImport} disabled={importing} className="hidden" />
             </label>
@@ -194,7 +194,7 @@ export default function MovementsReportPage() {
         <div className="no-print flex flex-wrap gap-2">
           {TABS.map(tb => (
             <button key={tb.id} onClick={() => setTab(tb.id)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border transition-colors ${tab === tb.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border transition-colors ${tab === tb.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027]'}`}>
               <tb.icon className="w-4 h-4" /> {tb.label}
             </button>
           ))}
@@ -203,38 +203,38 @@ export default function MovementsReportPage() {
         {/* Filters */}
         <div className="no-print flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 w-5 h-5 text-slate-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้า / รหัส / เอกสาร..." className="w-full pl-11 bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-slate-500" />
+            <Search className="absolute left-3.5 top-3 w-5 h-5 text-[#8a92a6]" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้า / รหัส / เอกสาร..." className="w-full pl-11 bg-[#171c23] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-slate-500" />
           </div>
           <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-slate-400" />
-            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-medium outline-none focus:border-slate-500" />
-            <span className="text-slate-400">–</span>
-            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-medium outline-none focus:border-slate-500" />
+            <Calendar className="w-5 h-5 text-[#8a92a6]" />
+            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2.5 font-medium outline-none focus:border-slate-500" />
+            <span className="text-[#8a92a6]">–</span>
+            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2.5 font-medium outline-none focus:border-slate-500" />
           </div>
         </div>
 
         {/* Summary */}
         <div className="flex gap-3">
-          <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="text-2xl font-black tabular-nums text-slate-900">{summary.count.toLocaleString()}</div>
-            <div className="text-xs font-bold text-slate-500">จำนวนรายการ</div>
+          <div className="flex-1 rounded-2xl border border-[#30353d] bg-[#171c23] p-4">
+            <div className="text-2xl font-black tabular-nums text-[#dee2ec]">{summary.count.toLocaleString()}</div>
+            <div className="text-xs font-bold text-[#8a92a6]">จำนวนรายการ</div>
           </div>
-          <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="text-2xl font-black tabular-nums text-slate-900">{summary.totalQty.toLocaleString()}</div>
-            <div className="text-xs font-bold text-slate-500">จำนวนรวม (ชิ้น)</div>
+          <div className="flex-1 rounded-2xl border border-[#30353d] bg-[#171c23] p-4">
+            <div className="text-2xl font-black tabular-nums text-[#dee2ec]">{summary.totalQty.toLocaleString()}</div>
+            <div className="text-xs font-bold text-[#8a92a6]">จำนวนรวม (ชิ้น)</div>
           </div>
         </div>
 
         {/* Table */}
-        <div className="print-area rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <div className="hidden print:block px-5 py-3 border-b border-slate-200 font-black text-slate-900">
+        <div className="print-area rounded-2xl border border-[#30353d] bg-[#171c23] overflow-hidden">
+          <div className="hidden print:block px-5 py-3 border-b border-[#30353d] font-black text-[#dee2ec]">
             รายงาน{active.label} · {start || 'ทั้งหมด'} – {end || 'ปัจจุบัน'} · {summary.count} รายการ
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr className="bg-[#1b2027] text-[#8a92a6] text-xs uppercase tracking-wide">
                   <th className="text-left px-4 py-3 font-semibold">วันที่</th>
                   <th className="text-left px-4 py-3 font-semibold">เอกสาร</th>
                   <th className="text-left px-4 py-3 font-semibold">สินค้า</th>
@@ -245,17 +245,17 @@ export default function MovementsReportPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-slate-400"><Loader2 className="w-6 h-6 animate-spin inline" /></td></tr>
+                  <tr><td colSpan={6} className="text-center py-16 text-[#8a92a6]"><Loader2 className="w-6 h-6 animate-spin inline" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-slate-400">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>
+                  <tr><td colSpan={6} className="text-center py-16 text-[#8a92a6]">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>
                 ) : filtered.map((r, i) => (
-                  <tr key={i} className="border-t border-slate-100">
-                    <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{fmtDate(r.date)}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{r.docRef}</td>
-                    <td className="px-4 py-2.5 font-medium text-slate-800">{r.product}{r.status && <span className="ml-2 text-[10px] text-slate-400">({r.status})</span>}</td>
+                  <tr key={i} className="border-t border-[#30353d]">
+                    <td className="px-4 py-2.5 text-[#8a92a6] whitespace-nowrap">{fmtDate(r.date)}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-[#d1c6ab]">{r.docRef}</td>
+                    <td className="px-4 py-2.5 font-medium text-[#dee2ec]">{r.product}{r.status && <span className="ml-2 text-[10px] text-[#8a92a6]">({r.status})</span>}</td>
                     <td className="px-4 py-2.5 text-right font-bold tabular-nums">{r.qty.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-slate-500">{r.location}</td>
-                    <td className="px-4 py-2.5 text-slate-500 max-w-[220px] truncate">{r.note}</td>
+                    <td className="px-4 py-2.5 text-[#8a92a6]">{r.location}</td>
+                    <td className="px-4 py-2.5 text-[#8a92a6] max-w-[220px] truncate">{r.note}</td>
                   </tr>
                 ))}
               </tbody>

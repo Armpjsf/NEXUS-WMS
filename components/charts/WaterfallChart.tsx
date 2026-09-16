@@ -19,33 +19,33 @@ const WaterfallChart = ({ data }: { data: any[] }) => {
         data={data}
         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
         <XAxis 
           dataKey="name" 
-          stroke="#cbd5e1" 
+          stroke="#64748b" 
           fontSize={10} 
           tickLine={false}
           axisLine={false}
-          tick={{ fill: '#64748b' }}
+          tick={{ fill: '#d1c6ab' }}
         />
         <YAxis 
-          stroke="#cbd5e1" 
+          stroke="#64748b" 
           fontSize={10} 
           tickLine={false}
           axisLine={false}
-          tick={{ fill: '#64748b' }}
+          tick={{ fill: '#d1c6ab' }}
         />
         <Tooltip
-          cursor={{ fill: 'transparent' }}
+          cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
           contentStyle={{ 
-            backgroundColor: '#ffffff', 
-            borderColor: '#e2e8f0',
-            borderRadius: '0.5rem',
+            backgroundColor: '#171c23', 
+            borderColor: '#30353d',
+            borderRadius: '0.75rem',
             fontSize: '12px',
-            color: '#1e293b',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            color: '#dee2ec',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
           }}
-          itemStyle={{ color: '#1e293b' }}
+          itemStyle={{ color: '#dee2ec' }}
           formatter={(value: any) => [Math.abs(value), 'Quantity']}
         />
         <Bar dataKey="value" stackId="a" fill="transparent" />

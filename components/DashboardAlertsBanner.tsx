@@ -61,27 +61,27 @@ export default function DashboardAlertsBanner() {
     <div className="mb-6 space-y-3">
       {/* Critical Alerts Banner */}
       {visibleAlerts.length > 0 && (
-        <div className="bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl p-4 shadow-lg shadow-rose-500/20 animate-in slide-in-from-top duration-500">
+        <div className="bg-[#93000a] text-[#ffdad6] border border-[#ffb4ab]/50 rounded-xl p-4 shadow-xl animate-in slide-in-from-top duration-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-xl">
-                <AlertTriangle className="w-5 h-5 text-white" />
+              <div className="p-2 bg-black/30 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-[#ffdad6]" />
               </div>
-              <div className="text-white">
-                <p className="font-bold">{visibleAlerts[0]?.title}</p>
-                <p className="text-sm text-rose-100">{visibleAlerts[0]?.message}</p>
+              <div>
+                <p className="font-bold text-white font-headline">{visibleAlerts[0]?.title}</p>
+                <p className="text-xs text-[#ffdad6] font-mono">{visibleAlerts[0]?.message}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Link
                 href={visibleAlerts[0]?.actionUrl || '/inventory?status=LOW'}
-                className="px-4 py-2 bg-white text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-50 transition-colors flex items-center gap-1"
+                className="px-3.5 py-1.5 bg-[#facc15] text-[#1b1600] rounded-lg text-xs font-mono font-bold hover:bg-[#eec200] transition-colors flex items-center gap-1"
               >
-                View <ArrowRight className="w-4 h-4" />
+                ดูรายละเอียด <ArrowRight className="w-3.5 h-3.5" />
               </Link>
               <button
                 onClick={dismissAll}
-                className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 text-white/70 hover:text-white rounded-lg transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -92,27 +92,27 @@ export default function DashboardAlertsBanner() {
 
       {/* Quick Summary Pills */}
       {(hasLowStock || hasPendingDamage) && visibleAlerts.length === 0 && (
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-2.5 flex-wrap font-mono text-xs">
           {hasLowStock && (
             <Link
               href="/inventory?status=LOW"
               className={cn(
-                "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all hover:scale-105",
+                "px-3 py-1.5 rounded-lg font-bold flex items-center gap-2 transition-all border",
                 summary.lowStockCount > 5 
-                  ? "bg-rose-100 text-rose-700 border border-rose-200 hover:bg-rose-200"
-                  : "bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200"
+                  ? "bg-[#93000a]/40 text-[#ffdad6] border-[#ffb4ab]/40 hover:bg-[#93000a]/60"
+                  : "bg-[#eec200]/20 text-[#facc15] border-[#facc15]/40 hover:bg-[#eec200]/30"
               )}
             >
-              <AlertTriangle className="w-4 h-4" />
-              {summary.lowStockCount} สินค้าใกล้หมด
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {summary.lowStockCount} สินค้าใกล้หมดสต็อก
             </Link>
           )}
           {hasPendingDamage && (
             <Link
               href="/ops/damage"
-              className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-all hover:scale-105"
+              className="px-3 py-1.5 rounded-lg font-bold flex items-center gap-2 bg-[#eec200]/20 text-[#facc15] border border-[#facc15]/40 hover:bg-[#eec200]/30 transition-all"
             >
-              <AlertTriangle className="w-4 h-4" />
+              <AlertTriangle className="w-3.5 h-3.5" />
               {summary.pendingDamageCount} รอการอนุมัติของเสีย
             </Link>
           )}

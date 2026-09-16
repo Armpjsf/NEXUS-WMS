@@ -28,6 +28,7 @@ export async function GET(request: Request) {
 
         // 3. คำนวณ KPI และ สถิติต่างๆ
         const totalProducts = prods.length;
+        const activeSkuCount = prods.filter(p => Number(p.stock || 0) > 0).length;
         const totalStock = prods.reduce((sum, p) => sum + Number(p.stock || 0), 0);
         const totalValue = prods.reduce((sum, p) => sum + (Number(p.stock || 0) * Number(p.price || 0)), 0);
         const lowStockCount = prods.filter(p => Number(p.stock || 0) > 0 && Number(p.stock || 0) <= Number(p.min_stock || 5)).length;
@@ -58,10 +59,14 @@ export async function GET(request: Request) {
             },
             summary: {
                 totalSkus: totalProducts,
+                activeSkuCount,
+                totalStock,
                 totalQuantity: totalStock,
                 totalValue,
                 lowStockCount,
                 outOfStockCount,
+                inboundPeriod: monthlyIn,
+                outboundPeriod: monthlyOut,
             },
             categoryBreakdown,
             monthlyData: [

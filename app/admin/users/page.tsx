@@ -116,28 +116,28 @@ export default function UserManagerPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'Super Admin':
-        return { text: '👑 Super Admin (ทุกสาขา)', cls: 'border-purple-300 text-purple-700 bg-purple-50' };
+        return { text: '👑 Super Admin (ทุกสาขา)', cls: 'border-purple-300 text-purple-700 bg-purple-500/10' };
       case 'Admin':
-        return { text: '💻 แอดมินสาขา (Admin)', cls: 'border-blue-300 text-blue-700 bg-blue-50' };
+        return { text: '💻 แอดมินสาขา (Admin)', cls: 'border-blue-300 text-blue-700 bg-blue-500/10' };
       case 'Manager':
-        return { text: '👔 หัวหน้าคลัง (Manager)', cls: 'border-indigo-300 text-indigo-700 bg-indigo-50' };
+        return { text: '👔 หัวหน้าคลัง (Manager)', cls: 'border-indigo-300 text-indigo-700 bg-indigo-500/10' };
       case 'Staff - Inbound':
-        return { text: '📥 แผนกรับเข้า (Inbound)', cls: 'border-emerald-300 text-emerald-700 bg-emerald-50' };
+        return { text: '📥 แผนกรับเข้า (Inbound)', cls: 'border-emerald-300 text-emerald-700 bg-emerald-500/10' };
       case 'Staff - Picker':
-        return { text: '🛒 แผนกหยิบสินค้า (Picker)', cls: 'border-sky-300 text-sky-700 bg-sky-50' };
+        return { text: '🛒 แผนกหยิบสินค้า (Picker)', cls: 'border-sky-300 text-sky-700 bg-sky-500/10' };
       case 'Staff - QC & Pack':
-        return { text: '🔍 แผนกตรวจ QC & แพ็ก', cls: 'border-teal-300 text-teal-700 bg-teal-50' };
+        return { text: '🔍 แผนกตรวจ QC & แพ็ก', cls: 'border-teal-300 text-teal-700 bg-teal-500/10' };
       case 'Staff - Dispatch':
-        return { text: '🚚 แผนกจัดส่ง & ขนส่ง', cls: 'border-orange-300 text-orange-700 bg-orange-50' };
+        return { text: '🚚 แผนกจัดส่ง & ขนส่ง', cls: 'border-orange-300 text-orange-700 bg-orange-500/10' };
       case 'Staff - Inventory':
-        return { text: '📋 แผนกตรวจนับ (Inventory)', cls: 'border-amber-300 text-amber-700 bg-amber-50' };
+        return { text: '📋 แผนกตรวจนับ (Inventory)', cls: 'border-amber-300 text-amber-700 bg-amber-500/10' };
       case 'Staff':
       case 'User':
-        return { text: '📱 พนักงานคลังทั่วไป (Staff)', cls: 'border-amber-300 text-amber-700 bg-amber-50' };
+        return { text: '📱 พนักงานคลังทั่วไป (Staff)', cls: 'border-amber-300 text-amber-700 bg-amber-500/10' };
       case 'Viewer':
-        return { text: '👁️ ผู้ตรวจสอบ (Viewer)', cls: 'border-slate-300 text-slate-700 bg-slate-100' };
+        return { text: '👁️ ผู้ตรวจสอบ (Viewer)', cls: 'border-[#30353d] text-[#d1c6ab] bg-[#252a32]' };
       default:
-        return { text: role, cls: 'border-slate-200 text-slate-600 bg-slate-50' };
+        return { text: role, cls: 'border-[#30353d] text-[#d1c6ab] bg-[#1b2027]' };
     }
   };
 
@@ -148,25 +148,25 @@ export default function UserManagerPage() {
       <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl shadow-blue-500/5 relative overflow-hidden"
+          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 bg-[#171c23] backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl shadow-blue-500/5 relative overflow-hidden"
       >
          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-cyan-500 to-emerald-500" />
          
          <div className="relative z-10 flex items-center gap-6">
              <Link
               href="/admin"
-              className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-blue-600 hover:shadow-lg hover:-translate-x-1 transition-all"
+              className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-blue-600 hover:shadow-lg hover:-translate-x-1 transition-all"
              >
               <ArrowLeft className="w-6 h-6" />
              </Link>
              <div>
-                 <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                 <h1 className="text-4xl font-black text-[#dee2ec] tracking-tight flex items-center gap-4">
                      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-3 rounded-2xl shadow-lg shadow-blue-200">
                        <Shield className="w-8 h-8" />
                      </div>
                      {t('admin_users_title')}
                  </h1>
-                 <p className="text-slate-500 font-medium text-lg ml-2 mt-1">{t('admin_users_subtitle')}</p>
+                 <p className="text-[#8a92a6] font-medium text-lg ml-2 mt-1">{t('admin_users_subtitle')}</p>
              </div>
          </div>
          
@@ -183,8 +183,8 @@ export default function UserManagerPage() {
          </button>
       </motion.div>
 
-      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 backdrop-blur-xl">
-        <table className="w-full text-left text-slate-700">
+      <div className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 backdrop-blur-xl">
+        <table className="w-full text-left text-[#d1c6ab]">
           <thead className="text-white uppercase font-black text-[10px] tracking-[0.1em] sticky top-0 z-20">
             <tr className="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-md">
               <th className="px-6 py-5 rounded-l-2xl">{t('user_info')}</th>
@@ -194,19 +194,19 @@ export default function UserManagerPage() {
               <th className="px-6 py-5 text-right rounded-r-2xl">{t('actions')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[#30353d]">
             {loading ? (
-              <tr><td colSpan={5} className="p-8 text-center text-slate-500 bg-slate-50">{t('processing')}</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-[#8a92a6] bg-[#1b2027]">{t('processing')}</td></tr>
             ) : users.map((user) => (
-              <tr key={user.id} className="hover:bg-blue-50/50 transition-colors">
+              <tr key={user.id} className="hover:bg-blue-500/10/50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                      <User className="w-5 h-5 text-slate-600" />
+                    <div className="w-10 h-10 rounded-full bg-[#252a32] flex items-center justify-center">
+                      <User className="w-5 h-5 text-[#d1c6ab]" />
                     </div>
                     <div>
-                      <div className="font-medium text-slate-900">{user.username}</div>
-                      <div className="text-xs text-slate-500">{user.id}</div>
+                      <div className="font-medium text-[#dee2ec]">{user.username}</div>
+                      <div className="text-xs text-[#8a92a6]">{user.id}</div>
                     </div>
                   </div>
                 </td>
@@ -230,28 +230,28 @@ export default function UserManagerPage() {
                     <span className={user.status === 'Active' ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold'}>{user.status}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-slate-500 text-sm font-mono">
+                <td className="px-6 py-4 text-[#8a92a6] text-sm font-mono">
                   {user.lastLogin}
                 </td>
                 <td className="px-6 py-4 text-right relative">
                   <button 
                     onClick={() => setActiveMenu(activeMenu === user.id ? null : user.id)}
-                    className="text-slate-500 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-slate-100"
+                    className="text-[#8a92a6] hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-[#252a32]"
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
                   
                   {activeMenu === user.id && (
-                     <div className="absolute right-8 top-12 z-50 bg-white border border-slate-200 shadow-xl rounded-xl w-48 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                     <div className="absolute right-8 top-12 z-50 bg-[#171c23] border border-[#30353d] shadow-xl rounded-xl w-48 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <button 
                             onClick={() => handleEditUser(user)}
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            className="w-full text-left px-4 py-3 text-sm text-[#d1c6ab] hover:bg-[#1b2027] flex items-center gap-2"
                         >
                             <UserPlus className="w-4 h-4" /> {t('edit_user')}
                         </button>
                         <button 
                              onClick={() => handleDeleteUser(user.id)}
-                            className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-500/10 flex items-center gap-2"
                         >
                             <XCircle className="w-4 h-4" /> {t('delete_user')}
                         </button>
@@ -267,14 +267,14 @@ export default function UserManagerPage() {
       {/* Modal */}
       {showModal && (
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white border border-slate-200 p-6 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl">
-                  <h3 className="text-lg font-bold text-slate-900">{isEditing ? t('edit_user') : t('add_new_user')}</h3>
+              <div className="bg-[#171c23] border border-[#30353d] p-6 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl">
+                  <h3 className="text-lg font-bold text-[#dee2ec]">{isEditing ? t('edit_user') : t('add_new_user')}</h3>
                   
                   {/* Username */}
                   <div>
-                      <label className="text-xs text-slate-500 block mb-1">{t('username')}</label>
+                      <label className="text-xs text-[#8a92a6] block mb-1">{t('username')}</label>
                       <input 
-                        className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" 
+                        className="w-full bg-[#1b2027] border border-[#30353d] rounded p-2 text-[#dee2ec] outline-none focus:ring-2 focus:ring-blue-500" 
                         placeholder={t('username')}
                         value={newUser.username}
                         onChange={e => setNewUser({...newUser, username: e.target.value})}
@@ -283,10 +283,10 @@ export default function UserManagerPage() {
 
                   {/* Password */}
                   <div>
-                      <label className="text-xs text-slate-500 block mb-1">{t('password')}</label>
+                      <label className="text-xs text-[#8a92a6] block mb-1">{t('password')}</label>
                       <input 
                         type="password"
-                        className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500" 
+                        className="w-full bg-[#1b2027] border border-[#30353d] rounded p-2 text-[#dee2ec] outline-none focus:ring-2 focus:ring-blue-500" 
                         placeholder="******"
                         value={newUser.password}
                         onChange={e => setNewUser({...newUser, password: e.target.value})}
@@ -295,9 +295,9 @@ export default function UserManagerPage() {
 
                   {/* Role */}
                   <div>
-                      <label className="text-xs text-slate-700 font-bold block mb-1">บทบาทหน้าที่ &amp; แผนก (Role / Section)</label>
+                      <label className="text-xs text-[#d1c6ab] font-bold block mb-1">บทบาทหน้าที่ &amp; แผนก (Role / Section)</label>
                       <select 
-                         className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                         className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl p-2.5 text-xs text-[#dee2ec] outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                          value={newUser.role}
                          onChange={e => {
                            const r = e.target.value;
@@ -325,7 +325,7 @@ export default function UserManagerPage() {
                           <option value="Viewer">👁️ Viewer — ดูข้อมูลและรายงานอย่างเดียว (Read-only)</option>
                         </optgroup>
                       </select>
-                      <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed bg-slate-50 p-2 rounded-lg border border-slate-200">
+                      <p className="text-[10px] text-[#d1c6ab] mt-1.5 leading-relaxed bg-[#1b2027] p-2 rounded-lg border border-[#30353d]">
                         {newUser.role === 'Super Admin' && '• Super Admin: สิทธิ์สูงสุด เข้าถึงข้อมูลทุกเมนู และเห็นข้อมูลทุกสาขาทั้งหมด'}
                         {newUser.role === 'Admin' && '• Admin: ดูแลระบบคลังประจำสาขา จัดการสต็อก ออเดอร์ ผู้ใช้ และเข้าใช้มือถือได้ทุก Section'}
                         {newUser.role === 'Manager' && '• Manager: หัวหน้าคลัง จัดการสินค้า ออเดอร์ลูกค้า วิเคราะห์รายงาน'}
@@ -341,17 +341,17 @@ export default function UserManagerPage() {
 
                   {/* Branch Access */}
                   <div>
-                      <label className="text-xs text-slate-500 block mb-1">
+                      <label className="text-xs text-[#8a92a6] block mb-1">
                         {t('allowed_branches')} {newUser.role === 'Super Admin' ? '(Super Admin เข้าถึงทุกสาขาโดยอัตโนมัติ)' : ''}
                       </label>
                       {newUser.role === 'Super Admin' ? (
-                        <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-700 font-medium">
+                        <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-xs text-purple-700 font-medium">
                           ✓ บัญชี Super Admin ได้รับสิทธิ์เห็นข้อมูลทุกสาขาขององค์กร
                         </div>
                       ) : (
-                        <div className="bg-slate-50 border border-slate-300 rounded p-2 max-h-32 overflow-y-auto space-y-1">
+                        <div className="bg-[#1b2027] border border-[#30353d] rounded p-2 max-h-32 overflow-y-auto space-y-1">
                             {/* All Access Option */}
-                            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-100 p-1 rounded">
+                            <label className="flex items-center gap-2 text-sm text-[#d1c6ab] cursor-pointer hover:bg-[#252a32] p-1 rounded">
                                 <input 
                                     type="checkbox" 
                                     checked={newUser.allowedBranches?.includes('*')}
@@ -360,9 +360,9 @@ export default function UserManagerPage() {
                                 />
                                  {t('all_branches')}
                             </label>
-                            <div className="h-px bg-slate-200 my-1"/>
+                            <div className="h-px bg-[#30353d] my-1"/>
                             {branches.map(b => (
-                                <label key={b.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-100 p-1 rounded">
+                                <label key={b.id} className="flex items-center gap-2 text-sm text-[#d1c6ab] cursor-pointer hover:bg-[#252a32] p-1 rounded">
                                     <input 
                                         type="checkbox" 
                                         checked={!newUser.allowedBranches?.includes('*') && newUser.allowedBranches?.includes(b.id)}
@@ -379,7 +379,7 @@ export default function UserManagerPage() {
                   </div>
 
                   <div className="flex gap-2 justify-end pt-4">
-                      <button onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl font-bold">{t('cancel')}</button>
+                      <button onClick={() => setShowModal(false)} className="px-4 py-2 text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] rounded-xl font-bold">{t('cancel')}</button>
                       <button 
                         onClick={handleAddUser} 
                         disabled={!newUser.username || (!isEditing && !newUser.password)}

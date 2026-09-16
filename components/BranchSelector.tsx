@@ -93,27 +93,28 @@ export default function BranchSelector() {
         setIsOpen(false);
     };
 
-    if (loading) return <div className="w-8 h-8 rounded-lg bg-slate-100 animate-pulse" />;
+    if (loading) return <div className="w-full h-11 rounded-lg bg-[#1b2027] border border-[#30353d] animate-pulse" />;
 
     return (
         <div className="relative z-50">
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 transition-all shadow-sm group"
+                className="w-full flex items-center justify-between p-2.5 bg-[#090f15] border border-[#30353d] rounded-lg hover:border-[#facc15]/60 transition-all shadow-sm group"
             >
-                <div className="flex items-center gap-3">
-                    <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg",
-                        `bg-gradient-to-br from-${currentBranch.color}-500 to-${currentBranch.color}-700 shadow-${currentBranch.color}-200`
-                    )}>
-                        <Store className="w-5 h-5" />
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-md bg-[#252a32] border border-[#30353d] flex items-center justify-center text-[#facc15] shrink-0">
+                        <Store className="w-4 h-4" />
                     </div>
-                    <div className="text-left">
-                        <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest leading-none mb-1">Current Branch</p>
-                        <p className="text-xs font-black text-slate-900 line-clamp-1 tracking-tight">{currentBranch.name}</p>
+                    <div className="text-left min-w-0 flex-1">
+                        <p className="text-[9px] uppercase font-mono text-[#d1c6ab] tracking-wider leading-none mb-1 truncate">
+                            ศูนย์กระจายสินค้า / สาขา
+                        </p>
+                        <p className="text-xs font-bold text-[#dee2ec] line-clamp-1 tracking-tight">
+                            {currentBranch.name}
+                        </p>
                     </div>
                 </div>
-                <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("w-4 h-4 text-[#d1c6ab] shrink-0 transition-transform", isOpen && "rotate-180")} />
             </button>
 
             <AnimatePresence>
@@ -124,31 +125,31 @@ export default function BranchSelector() {
                             onClick={() => setIsOpen(false)}
                         />
                         <motion.div
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 max-h-60 overflow-y-auto"
+                            exit={{ opacity: 0, y: -5 }}
+                            className="absolute top-full left-0 right-0 mt-1.5 bg-[#171c23] rounded-lg shadow-2xl border border-[#30353d] overflow-hidden z-50 max-h-60 overflow-y-auto font-mono text-xs"
                         >
                             {visibleBranches.map((branch) => (
                                 <button
                                     key={branch.id}
                                     onClick={() => handleSelect(branch.id)}
-                                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors text-left"
+                                    className="w-full flex items-center justify-between p-2.5 hover:bg-[#252a32] transition-colors text-left border-b border-[#30353d]/30"
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2.5">
                                         <div className={cn(
-                                            "w-3 h-3 rounded-full shadow-sm",
-                                            `bg-gradient-to-br from-${branch.color}-500 to-${branch.color}-700`
+                                            "w-2 h-2 rounded-full",
+                                            currentBranchId === branch.id ? "bg-[#facc15]" : "bg-[#4cd7f6]"
                                         )} />
                                         <span className={cn(
-                                            "text-sm font-black tracking-tight transition-colors",
-                                            currentBranchId === branch.id ? "text-slate-900" : "text-slate-500"
+                                            "font-semibold transition-colors",
+                                            currentBranchId === branch.id ? "text-[#facc15]" : "text-[#dee2ec]"
                                         )}>
                                             {branch.name}
                                         </span>
                                     </div>
                                     {currentBranchId === branch.id && (
-                                        <Check className="w-4 h-4 text-indigo-500" />
+                                        <Check className="w-3.5 h-3.5 text-[#facc15]" />
                                     )}
                                 </button>
                             ))}
@@ -159,9 +160,9 @@ export default function BranchSelector() {
                                     router.push('/admin/branches');
                                     setIsOpen(false);
                                 }}
-                                className="w-full p-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-center border-t border-indigo-100"
+                                className="w-full p-2 text-[11px] font-bold text-[#facc15] bg-[#252a32] hover:bg-[#30353d] transition-colors text-center border-t border-[#30353d]"
                             >
-                                + Manage Branches
+                                + จัดการสาขา (Manage Branches)
                             </button>
                         </motion.div>
                     </>

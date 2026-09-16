@@ -39,7 +39,7 @@ export default function LabelDesignerPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-slate-50/60">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-[#1b2027]">
       {/* Non-print controls header */}
       <div className="print:hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -48,10 +48,10 @@ export default function LabelDesignerPage() {
               <Tags className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#dee2ec] tracking-tight">
                 ออกแบบ & พิมพ์ฉลากสินค้า (Barcode & QR Label Designer)
               </h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-xs text-[#8a92a6] font-medium mt-0.5">
                 พิมพ์สติกเกอร์บาร์โค้ด QR Code ระบุ Lot No. วันหมดอายุ และตำแหน่งชั้นวาง
               </p>
             </div>
@@ -69,15 +69,15 @@ export default function LabelDesignerPage() {
         {/* Configuration Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
           {/* Form Settings */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-            <div className="font-bold text-sm text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <div className="lg:col-span-5 bg-[#171c23] p-5 rounded-3xl border border-[#30353d]/80 shadow-sm space-y-4">
+            <div className="font-bold text-sm text-[#dee2ec] flex items-center gap-2 border-b border-[#30353d] pb-3">
               <Sliders className="w-4 h-4 text-amber-500" />
               <span>กำหนดค่าฉลาก (Label Configuration)</span>
             </div>
 
             {/* Size Preset */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">ขนาดสติกเกอร์ / กระดาษ</label>
+              <label className="block text-xs font-bold text-[#d1c6ab] mb-1.5">ขนาดสติกเกอร์ / กระดาษ</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: '50x30', label: '50 x 30 มม. (ติดสินค้า/ชั้น)' },
@@ -92,8 +92,8 @@ export default function LabelDesignerPage() {
                     className={cn(
                       "p-2.5 rounded-xl border text-xs font-bold text-left transition-all",
                       size === p.id
-                        ? "border-amber-500 bg-amber-50 text-amber-900 ring-2 ring-amber-500/20"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-900 ring-2 ring-amber-500/20"
+                        : "border-[#30353d] text-[#d1c6ab] hover:bg-[#1b2027]"
                     )}
                   >
                     {p.label}
@@ -104,7 +104,7 @@ export default function LabelDesignerPage() {
 
             {/* Barcode Type */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">รูปแบบโค้ด</label>
+              <label className="block text-xs font-bold text-[#d1c6ab] mb-1.5">รูปแบบโค้ด</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['BOTH', 'BARCODE', 'QR'] as const).map(t => (
                   <button
@@ -114,8 +114,8 @@ export default function LabelDesignerPage() {
                     className={cn(
                       "py-2 rounded-xl border text-xs font-bold transition-all",
                       barcodeType === t
-                        ? "border-amber-500 bg-amber-50 text-amber-900"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-900"
+                        : "border-[#30353d] text-[#d1c6ab] hover:bg-[#1b2027]"
                     )}
                   >
                     {t === 'BOTH' && 'บาร์โค้ด + QR'}
@@ -127,85 +127,85 @@ export default function LabelDesignerPage() {
             </div>
 
             {/* Field Inputs */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
+            <div className="space-y-3 pt-2 border-t border-[#30353d]">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">รหัส SKU / บาร์โค้ด *</label>
+                  <label className="block text-xs font-bold text-[#d1c6ab] mb-1">รหัส SKU / บาร์โค้ด *</label>
                   <input
                     type="text"
                     value={sku}
                     onChange={e => setSku(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl font-mono focus:bg-[#171c23] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">ราคา (บาท)</label>
+                  <label className="block text-xs font-bold text-[#d1c6ab] mb-1">ราคา (บาท)</label>
                   <input
                     type="text"
                     value={price}
                     onChange={e => setPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl focus:bg-[#171c23] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">ชื่อสินค้า *</label>
+                <label className="block text-xs font-bold text-[#d1c6ab] mb-1">ชื่อสินค้า *</label>
                 <input
                   type="text"
                   value={productName}
                   onChange={e => setProductName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                  className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl focus:bg-[#171c23] focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Lot / Batch No.</label>
+                  <label className="block text-xs font-bold text-[#d1c6ab] mb-1">Lot / Batch No.</label>
                   <input
                     type="text"
                     value={lotNo}
                     onChange={e => setLotNo(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl font-mono focus:bg-[#171c23] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">วันหมดอายุ (Expiry)</label>
+                  <label className="block text-xs font-bold text-[#d1c6ab] mb-1">วันหมดอายุ (Expiry)</label>
                   <input
                     type="date"
                     value={expiryDate}
                     onChange={e => setExpiryDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl focus:bg-[#171c23] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">ตำแหน่งชั้นวาง (Location)</label>
+                  <label className="block text-xs font-bold text-[#d1c6ab] mb-1">ตำแหน่งชั้นวาง (Location)</label>
                   <input
                     type="text"
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-mono focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl font-mono focus:bg-[#171c23] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">จำนวนดวงที่จะพิมพ์</label>
+                  <label className="block text-xs font-bold text-[#d1c6ab] mb-1">จำนวนดวงที่จะพิมพ์</label>
                   <input
                     type="number"
                     min="1"
                     max="100"
                     value={copies}
                     onChange={e => setCopies(Math.max(1, Number(e.target.value)))}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl font-bold focus:bg-[#171c23] focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Toggle fields */}
-            <div className="flex items-center gap-4 text-xs font-medium text-slate-600 pt-2">
+            <div className="flex items-center gap-4 text-xs font-medium text-[#d1c6ab] pt-2">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -237,13 +237,13 @@ export default function LabelDesignerPage() {
           </div>
 
           {/* Live Preview Area */}
-          <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+          <div className="lg:col-span-7 bg-[#171c23] p-6 rounded-3xl border border-[#30353d]/80 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+            <div className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-4 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>ภาพตัวอย่างฉลากจริง (Real-time Preview)</span>
             </div>
 
-            <div className="border border-slate-300 rounded-2xl p-4 bg-slate-50/50 shadow-inner flex items-center justify-center">
+            <div className="border border-[#30353d] rounded-2xl p-4 bg-[#1b2027]/50 shadow-inner flex items-center justify-center">
               <LabelItem
                 size={size}
                 barcodeType={barcodeType}

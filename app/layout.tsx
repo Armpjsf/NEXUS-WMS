@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Prompt, Outfit } from "next/font/google";
+import { Prompt, Outfit, Chivo, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import PushNotificationManager from "@/components/PushNotificationManager";
@@ -18,6 +18,24 @@ const prompt = Prompt({
 
 const outfit = Outfit({
   variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const chivo = Chivo({
+  weight: ['400', '600', '700', '800'],
+  variable: "--font-chivo",
+  subsets: ["latin"],
+});
+
+const ibmPlex = IBM_Plex_Sans({
+  weight: ['400', '500', '600', '700'],
+  variable: "--font-ibm",
+  subsets: ["latin"],
+});
+
+const jetbrains = JetBrains_Mono({
+  weight: ['400', '500', '600', '700'],
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -64,7 +82,7 @@ export const metadata: Metadata = {
   },
 };
 export const viewport = {
-  themeColor: "#0f172a",
+  themeColor: "#0f141b",
 };
 
 export default function RootLayout({
@@ -73,10 +91,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="th" className="dark" suppressHydrationWarning>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
+      </head>
       <body
         suppressHydrationWarning={true}
-        className={`${prompt.variable} ${outfit.variable} antialiased`}
+        className={`${prompt.variable} ${outfit.variable} ${chivo.variable} ${ibmPlex.variable} ${jetbrains.variable} bg-[#0f141b] text-[#dee2ec] font-sans antialiased`}
       >
         <Providers>
             <PushNotificationManager />

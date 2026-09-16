@@ -90,7 +90,7 @@ export default function TransfersPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-slate-50/60">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-[#1b2027]">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -99,10 +99,10 @@ export default function TransfersPage() {
               <ArrowLeftRight className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#dee2ec] tracking-tight">
                 โอนสต็อกข้ามสาขา (Branch Transfer)
               </h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-xs text-[#8a92a6] font-medium mt-0.5">
                 จัดการใบโอนย้ายสินค้าระหว่างคลัง/สาขา ตัดจ่ายและรับเข้าสต็อกอัตโนมัติ
               </p>
             </div>
@@ -113,7 +113,7 @@ export default function TransfersPage() {
           <button
             onClick={fetchTransfers}
             disabled={loading}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+            className="p-2.5 rounded-xl border border-[#30353d] bg-[#171c23] text-[#d1c6ab] hover:bg-[#1b2027] transition-colors"
             title="รีเฟรช"
           >
             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin text-teal-600")} />
@@ -130,27 +130,27 @@ export default function TransfersPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">ทั้งหมด</div>
-          <div className="text-2xl font-black text-slate-900 mt-1">{stats.total} <span className="text-xs font-normal text-slate-400">ใบ</span></div>
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
+          <div className="text-xs text-[#8a92a6] font-bold uppercase tracking-wider">ทั้งหมด</div>
+          <div className="text-2xl font-black text-[#dee2ec] mt-1">{stats.total} <span className="text-xs font-normal text-[#8a92a6]">ใบ</span></div>
         </div>
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
           <div className="text-xs text-amber-600 font-bold uppercase tracking-wider">รอดำเนินการ (Draft)</div>
-          <div className="text-2xl font-black text-amber-600 mt-1">{stats.draft} <span className="text-xs font-normal text-slate-400">ใบ</span></div>
+          <div className="text-2xl font-black text-amber-600 mt-1">{stats.draft} <span className="text-xs font-normal text-[#8a92a6]">ใบ</span></div>
         </div>
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
           <div className="text-xs text-blue-600 font-bold uppercase tracking-wider">ระหว่างขนส่ง (In Transit)</div>
-          <div className="text-2xl font-black text-blue-600 mt-1">{stats.inTransit} <span className="text-xs font-normal text-slate-400">ใบ</span></div>
+          <div className="text-2xl font-black text-blue-600 mt-1">{stats.inTransit} <span className="text-xs font-normal text-[#8a92a6]">ใบ</span></div>
         </div>
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
           <div className="text-xs text-emerald-600 font-bold uppercase tracking-wider">รับเข้าสำเร็จ</div>
-          <div className="text-2xl font-black text-emerald-600 mt-1">{stats.completed} <span className="text-xs font-normal text-slate-400">ใบ</span></div>
+          <div className="text-2xl font-black text-emerald-600 mt-1">{stats.completed} <span className="text-xs font-normal text-[#8a92a6]">ใบ</span></div>
         </div>
       </div>
 
       {/* Filter Tabs & Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-xl overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-[#30353d]/70 rounded-xl overflow-x-auto w-full sm:w-auto">
           {(['ALL', 'DRAFT', 'IN_TRANSIT', 'COMPLETED'] as const).map(tab => (
             <button
               key={tab}
@@ -158,8 +158,8 @@ export default function TransfersPage() {
               className={cn(
                 "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
                 activeTab === tab
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#171c23] text-[#dee2ec] shadow-sm"
+                  : "text-[#d1c6ab] hover:text-[#dee2ec]"
               )}
             >
               {tab === 'ALL' && 'ทั้งหมด'}
@@ -171,13 +171,13 @@ export default function TransfersPage() {
         </div>
 
         <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-3" />
           <input
             type="text"
             placeholder="ค้นหาเลขที่โอน, สาขา, สินค้า..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium"
+            className="w-full pl-9 pr-3.5 py-2 text-xs bg-[#171c23] border border-[#30353d] rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium"
           />
         </div>
       </div>
@@ -185,30 +185,30 @@ export default function TransfersPage() {
       {/* Transfers List */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+          <div className="p-12 text-center bg-[#171c23] rounded-3xl border border-dashed border-[#30353d]">
             <ArrowLeftRight className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <div className="text-sm font-bold text-slate-700">ไม่พบรายการใบโอนสต็อก</div>
-            <p className="text-xs text-slate-400 mt-0.5">กดปุ่ม "สร้างใบโอนสต็อก" เพื่อเริ่มย้ายสินค้าระหว่างสาขา</p>
+            <div className="text-sm font-bold text-[#d1c6ab]">ไม่พบรายการใบโอนสต็อก</div>
+            <p className="text-xs text-[#8a92a6] mt-0.5">กดปุ่ม "สร้างใบโอนสต็อก" เพื่อเริ่มย้ายสินค้าระหว่างสาขา</p>
           </div>
         ) : (
           filtered.map(t => (
             <div
               key={t.id}
-              className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow"
+              className="p-5 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="font-mono font-bold text-sm text-slate-900">
+                    <span className="font-mono font-bold text-sm text-[#dee2ec]">
                       {t.transferNo}
                     </span>
                     <span
                       className={cn(
                         "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                        t.status === 'DRAFT' && "bg-amber-100 text-amber-800 border border-amber-200",
-                        t.status === 'IN_TRANSIT' && "bg-blue-100 text-blue-800 border border-blue-200",
-                        t.status === 'COMPLETED' && "bg-emerald-100 text-emerald-800 border border-emerald-200",
-                        t.status === 'CANCELLED' && "bg-rose-100 text-rose-800 border border-rose-200"
+                        t.status === 'DRAFT' && "bg-amber-500/20 text-amber-800 border border-amber-500/30",
+                        t.status === 'IN_TRANSIT' && "bg-blue-500/20 text-blue-800 border border-blue-500/30",
+                        t.status === 'COMPLETED' && "bg-emerald-500/20 text-emerald-800 border border-emerald-500/30",
+                        t.status === 'CANCELLED' && "bg-rose-500/20 text-rose-800 border border-rose-500/30"
                       )}
                     >
                       {t.status === 'DRAFT' && 'ฉบับร่าง'}
@@ -216,37 +216,37 @@ export default function TransfersPage() {
                       {t.status === 'COMPLETED' && '✅ รับเข้าสำเร็จ'}
                       {t.status === 'CANCELLED' && 'ยกเลิก'}
                     </span>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <span className="text-xs text-[#8a92a6] flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" />
                       {new Date(t.createdAt).toLocaleDateString('th-TH')}
                     </span>
                   </div>
 
                   {/* Route */}
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#d1c6ab]">
+                    <span className="px-2 py-0.5 rounded bg-[#252a32] text-[#dee2ec]">
                       {BRANCH_NAMES[t.fromBranchId] || t.fromBranchId}
                     </span>
                     <ChevronRight className="w-4 h-4 text-teal-600" />
-                    <span className="px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
+                    <span className="px-2 py-0.5 rounded bg-teal-500/10 text-teal-800 border border-teal-500/30">
                       {BRANCH_NAMES[t.toBranchId] || t.toBranchId}
                     </span>
                   </div>
 
                   {/* Items summary */}
-                  <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800">
+                  <div className="text-xs text-[#d1c6ab] flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-[#dee2ec]">
                       รวม {t.totalQty} ชิ้น ({t.items.length} SKU):
                     </span>
                     {t.items.map((it, idx) => (
-                      <span key={idx} className="bg-slate-50 px-2 py-0.5 rounded text-slate-600 border border-slate-200/60">
+                      <span key={idx} className="bg-[#1b2027] px-2 py-0.5 rounded text-[#d1c6ab] border border-[#30353d]/60">
                         {it.name} x{it.qty} {it.unit || 'ชิ้น'}
                       </span>
                     ))}
                   </div>
 
                   {t.notes && (
-                    <div className="text-[11px] text-slate-400 italic">
+                    <div className="text-[11px] text-[#8a92a6] italic">
                       หมายเหตุ: {t.notes}
                     </div>
                   )}
@@ -276,7 +276,7 @@ export default function TransfersPage() {
 
                   <button
                     onClick={() => window.print()}
-                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                    className="p-2 rounded-xl border border-[#30353d] text-[#8a92a6] hover:bg-[#1b2027] transition-colors"
                     title="พิมพ์ใบโอนสต็อก"
                   >
                     <Printer className="w-4 h-4" />
@@ -372,13 +372,13 @@ function CreateTransferModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="w-full max-w-xl bg-[#171c23] rounded-3xl shadow-2xl border border-[#30353d] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="font-bold flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-teal-400" />
             <span>สร้างใบโอนย้ายสต็อกสินค้า</span>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[#8a92a6] hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -386,11 +386,11 @@ function CreateTransferModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">สาขาต้นทาง (จ่ายออก) *</label>
+              <label className="block text-xs font-bold text-[#d1c6ab] mb-1">สาขาต้นทาง (จ่ายออก) *</label>
               <select
                 value={fromBranch}
                 onChange={e => setFromBranch(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] text-xs font-semibold bg-[#171c23]"
               >
                 {Object.entries(BRANCH_NAMES).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -398,11 +398,11 @@ function CreateTransferModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">สาขาปลายทาง (รับเข้า) *</label>
+              <label className="block text-xs font-bold text-[#d1c6ab] mb-1">สาขาปลายทาง (รับเข้า) *</label>
               <select
                 value={toBranch}
                 onChange={e => setToBranch(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] text-xs font-semibold bg-[#171c23]"
               >
                 {Object.entries(BRANCH_NAMES).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -413,7 +413,7 @@ function CreateTransferModal({
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-600">รายการสินค้าที่จะโอนย้าย *</label>
+              <label className="block text-xs font-bold text-[#d1c6ab]">รายการสินค้าที่จะโอนย้าย *</label>
               <button
                 type="button"
                 onClick={addLine}
@@ -425,20 +425,20 @@ function CreateTransferModal({
 
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {lines.map((l, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                <div key={idx} className="flex items-center gap-2 bg-[#1b2027] p-2 rounded-xl border border-[#30353d]">
                   <input
                     type="text"
                     placeholder="SKU"
                     value={l.sku}
                     onChange={e => updateLine(idx, 'sku', e.target.value)}
-                    className="w-24 px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-mono"
+                    className="w-24 px-2.5 py-1.5 text-xs bg-[#171c23] border border-[#30353d] rounded-lg font-mono"
                   />
                   <input
                     type="text"
                     placeholder="ชื่อสินค้า..."
                     value={l.name}
                     onChange={e => updateLine(idx, 'name', e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-medium"
+                    className="flex-1 px-2.5 py-1.5 text-xs bg-[#171c23] border border-[#30353d] rounded-lg font-medium"
                     required
                   />
                   <input
@@ -447,14 +447,14 @@ function CreateTransferModal({
                     placeholder="จำนวน"
                     value={l.qty}
                     onChange={e => updateLine(idx, 'qty', Number(e.target.value))}
-                    className="w-20 px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-bold text-right"
+                    className="w-20 px-2.5 py-1.5 text-xs bg-[#171c23] border border-[#30353d] rounded-lg font-bold text-right"
                     required
                   />
                   {lines.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeLine(idx)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                      className="p-1.5 text-[#8a92a6] hover:text-rose-600 rounded-lg"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -465,21 +465,21 @@ function CreateTransferModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">หมายเหตุ / เหตุผลการโอน</label>
+            <label className="block text-xs font-bold text-[#d1c6ab] mb-1">หมายเหตุ / เหตุผลการโอน</label>
             <input
               type="text"
               placeholder="เช่น เติมสต็อกสาขาหน้าร้านประจำสัปดาห์"
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl"
+              className="w-full px-3.5 py-2 text-xs bg-[#171c23] border border-[#30353d] rounded-xl"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#30353d]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-bold text-[#d1c6ab] hover:bg-[#252a32] rounded-xl transition-colors"
             >
               ยกเลิก
             </button>

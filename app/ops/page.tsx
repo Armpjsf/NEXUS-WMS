@@ -8,7 +8,7 @@ export default function OpsPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
        <div className="mb-8">
           <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Daily Operations</h1>
-          <p className="text-slate-400">ศูนย์รวมงานปฏิบัติการคลังสินค้าประจำวัน (Floor & Fulfillment Operations)</p>
+          <p className="text-[#8a92a6]">ศูนย์รวมงานปฏิบัติการคลังสินค้าประจำวัน (Floor & Fulfillment Operations)</p>
        </div>
 
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -24,7 +24,7 @@ export default function OpsPage() {
                            <PackagePlus className="w-8 h-8 text-emerald-500" />
                        </div>
                        <h2 className="text-2xl font-bold text-white mb-2">1. รับสินค้าเข้า (Inbound Receiving)</h2>
-                       <p className="text-slate-400">สแกนตรวจรับสินค้าตามใบสั่งซื้อ (PO/GRN), ตรวจนับจำนวนจริง, และกำหนดพิกัดจัดเก็บขึ้นชั้นวาง (Putaway)</p>
+                       <p className="text-[#8a92a6]">สแกนตรวจรับสินค้าตามใบสั่งซื้อ (PO/GRN), ตรวจนับจำนวนจริง, และกำหนดพิกัดจัดเก็บขึ้นชั้นวาง (Putaway)</p>
                    </div>
                    <div className="mt-8 flex items-center text-emerald-400 font-medium group-hover:translate-x-2 transition-transform">
                        เปิดหน้ารับสินค้าเข้า &rarr;
@@ -43,7 +43,7 @@ export default function OpsPage() {
                            <ShoppingCart className="w-8 h-8 text-blue-400" />
                        </div>
                        <h2 className="text-2xl font-bold text-white mb-2">2. ออเดอร์ขาออก (Sales Orders)</h2>
-                       <p className="text-slate-400">กระบวนการจัดส่งให้ลูกค้าครบวงจร: ตรวจสอบออเดอร์ใหม่ &rarr; หยิบ &rarr; แพ็กกล่อง &rarr; ยิงเลขพัสดุ Tracking &rarr; ส่งมอบขนส่ง</p>
+                       <p className="text-[#8a92a6]">กระบวนการจัดส่งให้ลูกค้าครบวงจร: ตรวจสอบออเดอร์ใหม่ &rarr; หยิบ &rarr; แพ็กกล่อง &rarr; ยิงเลขพัสดุ Tracking &rarr; ส่งมอบขนส่ง</p>
                    </div>
                    <div className="mt-8 flex items-center text-blue-400 font-medium group-hover:translate-x-2 transition-transform">
                        จัดการออเดอร์ลูกค้า &rarr;
@@ -62,7 +62,7 @@ export default function OpsPage() {
                            <Boxes className="w-8 h-8 text-indigo-400" />
                        </div>
                        <h2 className="text-2xl font-bold text-white mb-2">3. หยิบสินค้ารวม (Wave Picking)</h2>
-                       <p className="text-slate-400">รวมหลายออเดอร์แล้วเดินหยิบรอบเดียวตามลำดับพิกัด S-Shape พร้อมระบบเสียงภาษาไทยนำทาง</p>
+                       <p className="text-[#8a92a6]">รวมหลายออเดอร์แล้วเดินหยิบรอบเดียวตามลำดับพิกัด S-Shape พร้อมระบบเสียงภาษาไทยนำทาง</p>
                    </div>
                    <div className="mt-8 flex items-center text-indigo-400 font-medium group-hover:translate-x-2 transition-transform">
                        เปิดระบบนำทางหยิบของ &rarr;
@@ -81,7 +81,7 @@ export default function OpsPage() {
                            <PackageMinus className="w-8 h-8 text-rose-500" />
                        </div>
                        <h2 className="text-2xl font-bold text-white mb-2">4. เบิกจ่ายตรง / ภายใน (Direct Issue)</h2>
-                       <p className="text-slate-400">ตัดสต็อกทันทีโดยไม่ต้องผ่านออเดอร์ลูกค้า เช่น เบิกวัสดุสิ้นเปลือง กล่อง เทป หรือเบิกสินค้าตัวอย่าง Sample</p>
+                       <p className="text-[#8a92a6]">ตัดสต็อกทันทีโดยไม่ต้องผ่านออเดอร์ลูกค้า เช่น เบิกวัสดุสิ้นเปลือง กล่อง เทป หรือเบิกสินค้าตัวอย่าง Sample</p>
                    </div>
                    <div className="mt-8 flex items-center text-rose-400 font-medium group-hover:translate-x-2 transition-transform">
                        บันทึกเบิกตัดสต็อกตรง &rarr;
@@ -96,7 +96,7 @@ export default function OpsPage() {
                </div>
                <div>
                    <h3 className="text-lg font-bold text-white">5. Cycle Count (ตรวจนับสต็อกตามรอบ)</h3>
-                   <p className="text-slate-400 text-sm">ตรวจนับสินค้าจริงตาม Zone/Shelf เทียบยอดกับระบบ เพื่อตรวจจับผลต่าง (Variance) และสินค้าสูญหาย</p>
+                   <p className="text-[#8a92a6] text-sm">ตรวจนับสินค้าจริงตาม Zone/Shelf เทียบยอดกับระบบ เพื่อตรวจจับผลต่าง (Variance) และสินค้าสูญหาย</p>
                </div>
            </Link>
 

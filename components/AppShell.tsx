@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Smartphone } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import CommandHeader from '@/components/CommandHeader';
 import GlobalAIAssistant from '@/components/GlobalAIAssistant';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -20,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isAuthOrMobile) {
     return (
-      <main id="main-content" className="min-h-screen">
+      <main id="main-content" className="min-h-screen bg-[#0f141b]">
         {children}
       </main>
     );
@@ -29,7 +30,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
-      <main id="main-content" className="min-h-screen pt-20 transition-all duration-300 md:pl-72 md:pt-0">
+      <CommandHeader />
+      <main id="main-content" className="min-h-screen pt-16 transition-all duration-300 md:pl-80 bg-[#0f141b]">
         {children}
       </main>
       {/* In the mobile app, some hub links open full desktop pages (e.g. Direct

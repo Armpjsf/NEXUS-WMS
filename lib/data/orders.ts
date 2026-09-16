@@ -3,7 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
-import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier } from '@/lib/tms';
+import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier, appendTmsJobItems } from '@/lib/tms';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -516,6 +516,79 @@ export async function updateOrder(
   }
 
   return mapped;
+}
+
+// เพิ่มสินค้าเข้าออเดอร์ที่แพ็ก/ส่งงานแล้ว (ลูกค้าเพิ่มของ) — append lines,
+// ตัดสต็อกของใหม่เฉพาะเมื่อ SHIPPED แล้ว, แล้วดันเข้าดรอปใน TMS ถ้ามีงานอยู่
+export async function addItemsToOrder(
+  id: string,
+  newLines: OrderLine[]
+): Promise<{ ok: boolean; order?: OutboundOrder; tms?: { ok: boolean; added?: number; error?: string; skipped?: boolean }; error?: string }> {
+  const orgId = await getCurrentOrgId();
+  const order = await getOrder(id);
+  if (!order) return { ok: false, error: 'ไม่พบออเดอร์' };
+  if (order.status === 'DELIVERED' || order.status === 'CANCELLED') {
+    return { ok: false, error: `เพิ่มของไม่ได้ ออเดอร์อยู่สถานะ ${order.status}` };
+  }
+
+  const lines: OrderLine[] = (newLines || [])
+    .filter((l) => l && l.sku && Number(l.qty) > 0)
+    .map((l) => ({
+      sku: String(l.sku).trim(),
+      name: l.name || String(l.sku).trim(),
+      qty: Number(l.qty),
+      price: Number(l.price || 0),
+      location: l.location || '',
+      drop: l.drop && Number(l.drop) > 0 ? Number(l.drop) : 1,
+    }));
+  if (lines.length === 0) return { ok: false, error: 'ไม่มีรายการสินค้าที่ถูกต้อง' };
+
+  const admin = getServiceSupabase();
+  const mergedItems = [...(order.items || []), ...lines];
+
+  // 1. บันทึกรายการรวม
+  const { error: upErr } = await admin
+    .from('outbound_orders')
+    .update({ items_json: mergedItems, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('org_id', orgId);
+  if (upErr) return { ok: false, error: upErr.message };
+
+  // 2. ตัดสต็อก OUT เฉพาะของใหม่ — เฉพาะเมื่อ SHIPPED แล้ว (ของเดิมถูกตัดตอน SHIPPED,
+  //    ถ้ายังไม่ SHIPPED ของใหม่จะถูกตัดพร้อมกันตอน SHIPPED เอง กันตัดซ้ำ)
+  if (order.status === 'SHIPPED') {
+    for (const line of lines) {
+      const { data: prod } = await admin
+        .from('products').select('stock, name, location, price')
+        .eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
+      const current = Number(prod?.stock || 0);
+      if (prod) {
+        await admin.from('products')
+          .update({ stock: Math.max(0, current - line.qty), updated_at: new Date().toISOString() })
+          .eq('org_id', orgId).eq('sku', line.sku);
+      }
+      await admin.from('stock_transactions').insert({
+        org_id: orgId, type: 'OUT', sku: line.sku,
+        product_name: line.name || prod?.name || line.sku, qty: line.qty,
+        unit_price: line.price || Number(prod?.price || 0),
+        doc_ref: order.orderNo, location: line.location || prod?.location || '',
+        user_name: order.createdBy || 'Warehouse',
+      });
+    }
+  }
+
+  // 3. ดันของใหม่เข้าดรอปใน TMS (ถ้ามีงานสร้างไว้แล้ว) — additive, non-fatal
+  let tms;
+  if (order.tmsJobId && isTmsEnabled()) {
+    tms = await appendTmsJobItems(
+      order.tmsJobId,
+      lines.map((l) => ({ code: l.sku, label: l.name, qty: l.qty, drop: l.drop })),
+      order.orderNo
+    );
+  }
+
+  const updated = await getOrder(id);
+  return { ok: true, order: updated || undefined, tms };
 }
 
 // Close WMS order automatically upon receiving POD from TMS Webhook

@@ -40,19 +40,19 @@ export default function StockDepletionChart({ data, productName, burnRate, daysL
         <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"
+            className="bg-[#171c23] p-6 rounded-xl shadow-lg border border-[#30353d]"
         >
             <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800">Stock Depletion Projection</h3>
-                    <p className="text-sm text-slate-500">
-                        Visualizing burnout for <span className="font-bold text-indigo-600">{productName}</span>
+                    <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-[#dee2ec]">Stock Depletion Projection</h3>
+                    <p className="text-xs text-[#8a92a6] mt-1 font-mono">
+                        Visualizing burnout for <span className="font-bold text-[#facc15]">{productName}</span>
                     </p>
                 </div>
                 <div className="text-right">
-                    <p className="text-xs font-bold text-slate-400 uppercase">Burn Rate</p>
-                    <p className="text-xl font-black text-slate-700">
-                        {burnRate.toFixed(1)} <span className="text-xs font-normal text-slate-400">/day</span>
+                    <p className="text-[10px] font-mono font-bold text-[#d1c6ab] uppercase">Burn Rate</p>
+                    <p className="text-xl font-mono font-bold text-[#dee2ec]">
+                        {burnRate.toFixed(1)} <span className="text-xs font-normal text-[#8a92a6]">/day</span>
                     </p>
                 </div>
             </div>
@@ -60,20 +60,23 @@ export default function StockDepletionChart({ data, productName, burnRate, daysL
             <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                         <XAxis 
                             dataKey="date" 
-                            tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                            stroke="#64748b"
+                            tick={{ fontSize: 10, fill: '#d1c6ab' }} 
                             tickMargin={10}
                         />
                         <YAxis 
-                            tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                            stroke="#64748b"
+                            tick={{ fontSize: 10, fill: '#d1c6ab' }} 
                         />
                         <Tooltip 
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            labelStyle={{ color: '#64748b', fontSize: '12px', fontWeight: 'bold' }}
+                            contentStyle={{ backgroundColor: '#171c23', borderRadius: '12px', border: '1px solid #30353d', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)', color: '#dee2ec' }}
+                            labelStyle={{ color: '#facc15', fontSize: '12px', fontWeight: 'bold' }}
+                            itemStyle={{ color: '#dee2ec' }}
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ color: '#dee2ec', fontSize: '11px' }} />
                         
                         {/* Historical Line */}
                         <Line 

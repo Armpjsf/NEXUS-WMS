@@ -47,7 +47,7 @@ export default function LabelDesignerPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col md:flex-row overflow-hidden bg-slate-50 print:bg-white">
+    <div className="h-[calc(100vh-64px)] flex flex-col md:flex-row overflow-hidden bg-[#1b2027] print:bg-white">
       {/* Hidden print-only section */}
       <div className="hidden print:flex flex-col items-center justify-center min-h-screen w-full">
          {selectedProduct && (
@@ -74,12 +74,12 @@ export default function LabelDesignerPage() {
       <div className="flex-1 flex flex-col md:flex-row h-full w-full print:hidden">
       
       {/* LEFT: Controls & List */}
-      <div className="w-full md:w-96 bg-white border-r border-slate-200 flex flex-col z-10 shadow-lg">
-        <div className="p-4 border-b border-slate-100">
+      <div className="w-full md:w-96 bg-[#171c23] border-r border-[#30353d] flex flex-col z-10 shadow-lg">
+        <div className="p-4 border-b border-[#30353d]">
            <div className="flex items-center gap-3 mb-4">
              <Link
                href="/admin"
-               className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all"
+               className="p-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg text-[#8a92a6] hover:text-indigo-600 hover:border-indigo-500/30 transition-all"
              >
                <ArrowLeft className="w-4 h-4" />
              </Link>
@@ -91,11 +91,11 @@ export default function LabelDesignerPage() {
 
            {/* Product Search */}
            <div className="relative mb-4">
-             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+             <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#8a92a6]" />
              <input 
                type="text" 
                placeholder="Search product..." 
-               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+               className="w-full pl-9 pr-4 py-2 bg-[#1b2027] border border-[#30353d] rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                value={search}
                onChange={e => setSearch(e.target.value)}
              />
@@ -104,18 +104,18 @@ export default function LabelDesignerPage() {
            {/* Settings */}
            <div className="space-y-4">
              <div>
-               <label className="text-xs font-bold text-slate-500 uppercase block mb-2">Paper Size</label>
+               <label className="text-xs font-bold text-[#8a92a6] uppercase block mb-2">Paper Size</label>
                <div className="grid grid-cols-3 gap-2">
                  {/* Simplified options for MVP */}
                  <button 
                     onClick={() => setLabelSize('SINGLE')}
-                    className={`px-2 py-1.5 text-xs rounded border ${labelSize === 'SINGLE' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                    className={`px-2 py-1.5 text-xs rounded border ${labelSize === 'SINGLE' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-700' : 'border-[#30353d] hover:bg-[#1b2027]'}`}
                  >
                     Single Sticker
                  </button>
                   <button 
                     onClick={() => setLabelSize('THERMAL')}
-                    className={`px-2 py-1.5 text-xs rounded border ${labelSize === 'THERMAL' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                    className={`px-2 py-1.5 text-xs rounded border ${labelSize === 'THERMAL' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-700' : 'border-[#30353d] hover:bg-[#1b2027]'}`}
                  >
                     4x6 (Thermal)
                  </button>
@@ -123,7 +123,7 @@ export default function LabelDesignerPage() {
              </div>
 
              <div>
-               <label className="text-xs font-bold text-slate-500 uppercase block mb-2">Content</label>
+               <label className="text-xs font-bold text-[#8a92a6] uppercase block mb-2">Content</label>
                <div className="space-y-2">
                  <label className="flex items-center gap-2 text-sm cursor-pointer">
                    <input type="checkbox" checked={showName} onChange={e => setShowName(e.target.checked)} className="rounded text-indigo-600" />
@@ -141,17 +141,17 @@ export default function LabelDesignerPage() {
              </div>
 
              <div>
-               <label className="text-xs font-bold text-slate-500 uppercase block mb-2">Code Type</label>
-                <div className="flex bg-slate-100 p-1 rounded-lg">
+               <label className="text-xs font-bold text-[#8a92a6] uppercase block mb-2">Code Type</label>
+                <div className="flex bg-[#252a32] p-1 rounded-lg">
                     <button 
                         onClick={() => setCodeType('BARCODE')}
-                        className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${codeType === 'BARCODE' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+                        className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${codeType === 'BARCODE' ? 'bg-[#171c23] shadow-sm text-[#dee2ec]' : 'text-[#8a92a6]'}`}
                     >
                         Barcode (128)
                     </button>
                     <button 
                         onClick={() => setCodeType('QR')}
-                        className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${codeType === 'QR' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+                        className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${codeType === 'QR' ? 'bg-[#171c23] shadow-sm text-[#dee2ec]' : 'text-[#8a92a6]'}`}
                     >
                         QR Code
                     </button>
@@ -166,9 +166,9 @@ export default function LabelDesignerPage() {
              <div 
                key={p.id} 
                onClick={() => setSelectedProduct(p)}
-               className={`p-3 border-b border-slate-50 cursor-pointer hover:bg-slate-50 flex items-center gap-3 transition-colors ${selectedProduct?.id === p.id ? 'bg-indigo-50' : ''}`}
+               className={`p-3 border-b border-slate-50 cursor-pointer hover:bg-[#1b2027] flex items-center gap-3 transition-colors ${selectedProduct?.id === p.id ? 'bg-indigo-500/10' : ''}`}
              >
-                <div className="w-10 h-10 bg-slate-200 rounded-lg shrink-0 overflow-hidden">
+                <div className="w-10 h-10 bg-[#30353d] rounded-lg shrink-0 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {p.image ? (
                       <img 
@@ -182,14 +182,14 @@ export default function LabelDesignerPage() {
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center"><Box className="w-4 h-4 text-slate-400"/></div>
+                      <div className="w-full h-full flex items-center justify-center"><Box className="w-4 h-4 text-[#8a92a6]"/></div>
                     )}
                     {/* Fallback Icon (Hidden by default) */}
-                    <div className="hidden w-full h-full flex items-center justify-center bg-slate-100"><Box className="w-4 h-4 text-slate-300"/></div>
+                    <div className="hidden w-full h-full flex items-center justify-center bg-[#252a32]"><Box className="w-4 h-4 text-slate-300"/></div>
                 </div>
                 <div>
-                   <div className="text-sm font-bold text-slate-800 line-clamp-1">{p.name}</div>
-                   <div className="text-xs text-slate-500 flex items-center gap-1">
+                   <div className="text-sm font-bold text-[#dee2ec] line-clamp-1">{p.name}</div>
+                   <div className="text-xs text-[#8a92a6] flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
                       {p.location || 'No Loc'}
                    </div>
@@ -200,9 +200,9 @@ export default function LabelDesignerPage() {
       </div>
 
       {/* RIGHT: Preview Area */}
-      <div className="flex-1 flex flex-col bg-slate-100">
-         <div className="p-4 border-b border-slate-200 bg-white flex justify-between items-center">
-            <h1 className="font-bold text-slate-700">Print Preview</h1>
+      <div className="flex-1 flex flex-col bg-[#252a32]">
+         <div className="p-4 border-b border-[#30353d] bg-[#171c23] flex justify-between items-center">
+            <h1 className="font-bold text-[#d1c6ab]">Print Preview</h1>
             <button 
                 onClick={() => handlePrint && handlePrint()}
                 disabled={!selectedProduct}
@@ -248,7 +248,7 @@ export default function LabelDesignerPage() {
                     </div>
                 </div>
             ) : (
-                <div className="text-center text-slate-400">
+                <div className="text-center text-[#8a92a6]">
                    <Tag className="w-16 h-16 mx-auto mb-4 opacity-50" />
                    <p>Select a product to start designing</p>
                 </div>

@@ -22,10 +22,10 @@ interface Receipt {
 
 const STATUS_TH: Record<Status, string> = { EXPECTED: 'รอรับ', RECEIVING: 'กำลังรับ', DONE: 'รับ+เก็บแล้ว', CANCELLED: 'ยกเลิก' };
 const STATUS_STYLE: Record<Status, string> = {
-  EXPECTED: 'bg-amber-100 text-amber-700 ring-amber-200',
-  RECEIVING: 'bg-blue-100 text-blue-700 ring-blue-200',
-  DONE: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-  CANCELLED: 'bg-rose-100 text-rose-600 ring-rose-200',
+  EXPECTED: 'bg-amber-500/20 text-amber-700 ring-amber-500/30',
+  RECEIVING: 'bg-blue-500/20 text-blue-700 ring-blue-500/30',
+  DONE: 'bg-emerald-500/20 text-emerald-700 ring-emerald-500/30',
+  CANCELLED: 'bg-rose-500/20 text-rose-600 ring-rose-500/30',
 };
 
 export default function ReceivingPage() {
@@ -110,16 +110,16 @@ export default function ReceivingPage() {
     <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
       <AmbientBackground />
       <div className="relative z-10 max-w-[1200px] mx-auto space-y-6">
-        <Link href="/ops" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"><ArrowLeft className="w-4 h-4" /> ปฏิบัติการ</Link>
+        <Link href="/ops" className="inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]"><ArrowLeft className="w-4 h-4" /> ปฏิบัติการ</Link>
 
         {/* Main Header with prominent Scan Button */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+            <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
               <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25"><PackagePlus className="w-6 h-6" /></span>
               รับเข้า &amp; จัดเก็บ (Inbound &amp; Putaway)
             </h1>
-            <p className="text-slate-500 font-medium mt-1">รับของตาม PO/Supplier → ตรวจนับ → จัดเก็บเข้า bin → เข้าสต็อกอัตโนมัติ</p>
+            <p className="text-[#d1c6ab] font-medium mt-1">รับของตาม PO/Supplier → ตรวจนับ → จัดเก็บเข้า bin → เข้าสต็อกอัตโนมัติ</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -141,16 +141,16 @@ export default function ReceivingPage() {
         {/* Quick Search & PDA Status Bar */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" />
+            <Search className="w-5 h-5 absolute left-3.5 top-3 text-[#8a92a6]" />
             <input
               type="text"
               placeholder="ค้นหาเลขที่ใบรับ (GRN), เลข PO, ชื่อผู้ขาย, หรือชื่อ/รหัสสินค้า..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-2.5 bg-white/90 border border-slate-200 rounded-2xl font-medium text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 shadow-sm"
+              className="w-full pl-11 pr-10 py-2.5 bg-[#171c23] border border-[#30353d] rounded-2xl font-medium text-sm text-[#dee2ec] placeholder:text-[#8a92a6] outline-none focus:border-emerald-500 shadow-sm"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600">
+              <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-3 text-[#8a92a6] hover:text-[#d1c6ab]">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -164,7 +164,7 @@ export default function ReceivingPage() {
               <Camera className="w-4 h-4" />
               <span>สแกนหาใบรับ</span>
             </button>
-            <div className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-2xl border border-slate-200 shrink-0">
+            <div className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-[#252a32] text-[#d1c6ab] text-xs font-bold rounded-2xl border border-[#30353d] shrink-0">
               <Zap className="w-3.5 h-3.5 text-emerald-600" />
               <span className="hidden sm:inline">PDA พร้อมยิง</span>
             </div>
@@ -174,10 +174,10 @@ export default function ReceivingPage() {
         <Section title="รอรับเข้า" icon={<ClipboardCheck className="w-4 h-4" />} empty="ไม่มีใบรอรับ" loading={loading} items={filteredPending}
           render={(r: Receipt) => (
             <div className="flex items-center gap-2 flex-wrap">
-              <a href={`/print/putaway-slip?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบจัดเก็บเข้าที่ (Putaway Slip)" className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+              <a href={`/print/putaway-slip?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบจัดเก็บเข้าที่ (Putaway Slip)" className="p-2 rounded-xl text-[#8a92a6] hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors">
                 <Printer className="w-4 h-4" />
               </a>
-              <a href={`/print/receipt?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจรับ (GRN)" className="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors">
+              <a href={`/print/receipt?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจรับ (GRN)" className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
                 <FileText className="w-4 h-4" />
               </a>
               <button onClick={() => setReceiving(r)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-600/20">
@@ -189,10 +189,10 @@ export default function ReceivingPage() {
         <Section title="รับเข้าแล้ว" icon={<CheckCircle2 className="w-4 h-4" />} empty="ยังไม่มีประวัติ" loading={loading} items={filteredDone}
           render={(r: Receipt) => (
             <div className="flex items-center gap-2 flex-wrap">
-              <a href={`/print/putaway-slip?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบจัดเก็บ (Putaway Slip)" className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+              <a href={`/print/putaway-slip?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบจัดเก็บ (Putaway Slip)" className="p-2 rounded-xl text-[#8a92a6] hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors">
                 <Printer className="w-4 h-4" />
               </a>
-              <a href={`/print/receipt?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบรับเข้า (GRN)" className="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors">
+              <a href={`/print/receipt?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบรับเข้า (GRN)" className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
                 <FileText className="w-4 h-4" />
               </a>
               <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-sm px-2"><CheckCircle2 className="w-4 h-4" /> เสร็จสิ้น</span>
@@ -219,20 +219,20 @@ export default function ReceivingPage() {
 
 function Section({ title, icon, items, render, empty, loading }: any) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100 font-bold text-slate-700">{icon} {title} · {items.length}</div>
-      {loading ? <div className="p-12 text-center text-slate-400">กำลังโหลด...</div>
-        : items.length === 0 ? <div className="p-12 text-center text-slate-400">{empty}</div>
-        : <div className="divide-y divide-slate-100">
+    <div className="rounded-2xl border border-[#30353d] bg-[#171c23] backdrop-blur overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-[#30353d] font-bold text-[#d1c6ab]">{icon} {title} · {items.length}</div>
+      {loading ? <div className="p-12 text-center text-[#8a92a6]">กำลังโหลด...</div>
+        : items.length === 0 ? <div className="p-12 text-center text-[#8a92a6]">{empty}</div>
+        : <div className="divide-y divide-[#30353d]">
             {items.map((r: Receipt) => (
-              <div key={r.id} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-slate-50/60">
+              <div key={r.id} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-[#1b2027]">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-slate-900">{r.receiptNo}</span>
+                    <span className="font-mono font-bold text-[#dee2ec]">{r.receiptNo}</span>
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${STATUS_STYLE[r.status]}`}>{STATUS_TH[r.status]}</span>
-                    {r.poNumber && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 inline-flex items-center gap-1"><FileText className="w-3 h-3" />{r.poNumber}</span>}
+                    {r.poNumber && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#252a32] text-[#8a92a6] inline-flex items-center gap-1"><FileText className="w-3 h-3" />{r.poNumber}</span>}
                   </div>
-                  <div className="text-sm text-slate-500 mt-1 truncate">{r.supplier || 'ไม่ระบุผู้ขาย'} · {r.items.length} รายการ · คาด {r.items.reduce((s, l) => s + l.expectedQty, 0)} ชิ้น</div>
+                  <div className="text-sm text-[#8a92a6] mt-1 truncate">{r.supplier || 'ไม่ระบุผู้ขาย'} · {r.items.length} รายการ · คาด {r.items.reduce((s, l) => s + l.expectedQty, 0)} ชิ้น</div>
                 </div>
                 {render(r)}
               </div>
@@ -315,18 +315,18 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
       <div className="p-6 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">เลือกจากใบสั่งซื้อ (PO)</label>
-            <select onChange={e => prefillFromPO(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm">
+            <label className="block text-xs font-bold text-[#8a92a6] uppercase mb-1">เลือกจากใบสั่งซื้อ (PO)</label>
+            <select onChange={e => prefillFromPO(e.target.value)} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm">
               <option value="">— ไม่ผูกกับ PO —</option>
               {pos.map(p => <option key={p.id} value={p.id}>{p.po_number} · {p.supplier || 'ไม่ระบุ'}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">เลือกผู้จำหน่าย (Supplier)</label>
+            <label className="block text-xs font-bold text-[#8a92a6] uppercase mb-1">เลือกผู้จำหน่าย (Supplier)</label>
             <select
               value={supplier}
               onChange={e => setSupplier(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm"
+              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm"
             >
               <option value="">— ระบุชื่อผู้ขายเอง / เลือกจากรายชื่อ —</option>
               {suppliers.map(s => <option key={s.id} value={s.name}>{s.code} - {s.name}</option>)}
@@ -338,19 +338,19 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
           value={supplier}
           onChange={e => setSupplier(e.target.value)}
           placeholder="ชื่อผู้ขาย / ซัพพลายเออร์ (สามารถพิมพ์แก้ไขได้)"
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm"
+          className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm"
         />
 
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 w-5 h-5 text-slate-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้าเพื่อเพิ่มลงใบรับเข้า..." className="w-full pl-11 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm" />
+            <Search className="absolute left-3.5 top-3 w-5 h-5 text-[#8a92a6]" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้าเพื่อเพิ่มลงใบรับเข้า..." className="w-full pl-11 bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm" />
             {shown.length > 0 && (
-              <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+              <div className="absolute z-20 left-0 right-0 mt-1 bg-[#171c23] border border-[#30353d] rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
                 {shown.map(p => (
-                  <button key={p.id} onClick={() => { addLine(p); setSearch(''); }} className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 flex items-center justify-between">
-                    <span className="font-medium text-slate-700 truncate">{p.name}</span>
-                    <span className="text-xs text-slate-400">{p.location} · สต็อก {p.stock}</span>
+                  <button key={p.id} onClick={() => { addLine(p); setSearch(''); }} className="w-full text-left px-4 py-2.5 hover:bg-emerald-500/10 flex items-center justify-between">
+                    <span className="font-medium text-[#d1c6ab] truncate">{p.name}</span>
+                    <span className="text-xs text-[#8a92a6]">{p.location} · สต็อก {p.stock}</span>
                   </button>
                 ))}
               </div>
@@ -367,13 +367,13 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
         </div>
 
         <div className="space-y-2">
-          {lines.length === 0 ? <div className="text-center text-slate-400 py-8 border-2 border-dashed border-slate-200 rounded-xl">ยังไม่มีสินค้าในใบรับเข้า</div>
+          {lines.length === 0 ? <div className="text-center text-[#8a92a6] py-8 border-2 border-dashed border-[#30353d] rounded-xl">ยังไม่มีสินค้าในใบรับเข้า</div>
             : lines.map(l => (
-              <div key={l.sku} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-2.5">
-                <div className="flex-1 min-w-0"><div className="font-medium text-slate-800 truncate">{l.name}</div><div className="text-xs text-slate-400">{l.sku}</div></div>
-                <div className="text-xs text-slate-400">จำนวนคาดรับ</div>
-                <input type="number" min={1} value={l.expectedQty} onChange={e => setExp(l.sku, parseInt(e.target.value) || 1)} className="w-20 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-center font-bold outline-none focus:border-emerald-500" />
-                <button onClick={() => removeLine(l.sku)} className="p-1.5 text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
+              <div key={l.sku} className="flex items-center gap-3 bg-[#1b2027] rounded-xl px-4 py-2.5">
+                <div className="flex-1 min-w-0"><div className="font-medium text-[#dee2ec] truncate">{l.name}</div><div className="text-xs text-[#8a92a6]">{l.sku}</div></div>
+                <div className="text-xs text-[#8a92a6]">จำนวนคาดรับ</div>
+                <input type="number" min={1} value={l.expectedQty} onChange={e => setExp(l.sku, parseInt(e.target.value) || 1)} className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-1.5 text-center font-bold outline-none focus:border-emerald-500" />
+                <button onClick={() => removeLine(l.sku)} className="p-1.5 text-[#8a92a6] hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
         </div>
@@ -451,7 +451,7 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
     <Modal onClose={onClose} title={`ตรวจรับ & จัดเก็บ: ${receipt.receiptNo}`}>
       <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="text-sm text-slate-500 font-medium">ตรวจนับยอดรับจริงและระบุ Bin ตำแหน่งจัดเก็บเพื่อนำสินค้าเข้าสต็อก</div>
+          <div className="text-sm text-[#8a92a6] font-medium">ตรวจนับยอดรับจริงและระบุ Bin ตำแหน่งจัดเก็บเพื่อนำสินค้าเข้าสต็อก</div>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -461,7 +461,7 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
               <Camera className="w-3.5 h-3.5" />
               <span>เปิดกล้องสแกน</span>
             </button>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/10 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-500/30">
               <Zap className="w-3.5 h-3.5 text-emerald-600" />
               <span>PDA พร้อมยิง</span>
             </div>
@@ -469,24 +469,24 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
         </div>
         <div className="space-y-3">
           {lines.map(l => (
-            <div key={l.sku} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-2">
+            <div key={l.sku} className="p-4 rounded-2xl border border-[#30353d] bg-[#1b2027] space-y-2">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-bold text-slate-900">{l.name}</div>
-                  <div className="text-xs font-mono text-slate-400">{l.sku}</div>
+                  <div className="font-bold text-[#dee2ec]">{l.name}</div>
+                  <div className="text-xs font-mono text-[#8a92a6]">{l.sku}</div>
                 </div>
-                <div className="text-xs text-slate-500">คาดรับ: <b className="text-slate-800">{l.expectedQty}</b></div>
+                <div className="text-xs text-[#8a92a6]">คาดรับ: <b className="text-[#dee2ec]">{l.expectedQty}</b></div>
               </div>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">รับจริง</label>
+                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">รับจริง</label>
                   <input type="number" min={0} value={l.receivedQty} onChange={e => setRecv(l.sku, parseInt(e.target.value) || 0)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-900 outline-none focus:border-emerald-500" />
+                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-bold text-[#dee2ec] outline-none focus:border-emerald-500" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">จัดเก็บที่ Bin</label>
+                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">จัดเก็บที่ Bin</label>
                   <input value={l.putawayBin || ''} onChange={e => setBin(l.sku, e.target.value)} placeholder="เช่น A-01-02-1"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900 outline-none focus:border-emerald-500" />
+                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-mono font-bold text-[#dee2ec] outline-none focus:border-emerald-500" />
                 </div>
               </div>
             </div>
@@ -517,10 +517,10 @@ function Modal({ title, onClose, children }: any) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-          <h2 className="text-xl font-black text-slate-900">{title}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
+        className="bg-[#171c23] rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-6 border-b border-[#30353d] flex justify-between items-center bg-[#171c23] shrink-0">
+          <h2 className="text-xl font-black text-[#dee2ec]">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-[#252a32] rounded-full text-[#8a92a6]"><X className="w-5 h-5" /></button>
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
       </motion.div>
@@ -529,5 +529,5 @@ function Modal({ title, onClose, children }: any) {
 }
 
 function ModalFooter({ children }: any) {
-  return <div className="p-6 border-t border-slate-100 flex justify-end bg-white shrink-0">{children}</div>;
+  return <div className="p-6 border-t border-[#30353d] flex justify-end bg-[#171c23] shrink-0">{children}</div>;
 }

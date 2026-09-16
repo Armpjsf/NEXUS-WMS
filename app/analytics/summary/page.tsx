@@ -49,51 +49,51 @@ export default function SummaryPage() {
     <div className="relative min-h-screen px-4 py-6 sm:px-6 lg:p-8">
        <AmbientBackground />
        <div className="relative z-10 mx-auto max-w-[1500px] space-y-7">
-       <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 print:hidden">
+       <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-700 print:hidden">
            <ArrowLeft className="w-4 h-4" /> {t('back_to_analytics')}
        </Link>
-       <header className="relative overflow-hidden rounded-[1.75rem] border border-emerald-200 bg-white/85 p-6 shadow-xl shadow-emerald-900/10 backdrop-blur-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+       <header className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/30 bg-[#171c23] p-6 shadow-xl shadow-emerald-900/10 backdrop-blur-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-600 via-teal-500 to-blue-600" />
           <div>
               <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700">Movement Summary</p>
-              <h1 className="text-3xl font-black text-slate-950 flex items-center gap-3">
-                 <div className="p-2 bg-emerald-100 rounded-xl ring-1 ring-emerald-200">
+              <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
+                 <div className="p-2 bg-emerald-500/20 rounded-xl ring-1 ring-emerald-500/30">
                     <BarChart3 className="w-8 h-8 text-emerald-600" />
                  </div>
                  {t('transaction_summary_title')}
               </h1>
-              <p className="text-slate-500 mt-2 font-semibold">{t('transaction_summary_subtitle')}</p>
+              <p className="text-[#8a92a6] mt-2 font-semibold">{t('transaction_summary_subtitle')}</p>
           </div>
           
           <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
               {/* Date Filter */}
-              <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-inner shadow-slate-100">
+              <div className="flex items-center gap-2 bg-[#171c23] p-1.5 rounded-xl border border-[#30353d] shadow-inner shadow-slate-100">
                   <input 
                     type="date" 
                     value={startDate} 
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-transparent text-slate-600 text-sm px-2 py-1 focus:outline-none" 
+                    className="bg-transparent text-[#d1c6ab] text-sm px-2 py-1 focus:outline-none" 
                   />
-                  <span className="text-slate-600">-</span>
+                  <span className="text-[#d1c6ab]">-</span>
                   <input 
                     type="date" 
                     value={endDate} 
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-transparent text-slate-600 text-sm px-2 py-1 focus:outline-none"
+                    className="bg-transparent text-[#d1c6ab] text-sm px-2 py-1 focus:outline-none"
                   />
               </div>
 
               {/* Granularity Toggle */}
-              <div className="bg-white p-1 rounded-xl flex border border-slate-200 shadow-inner shadow-slate-100">
+              <div className="bg-[#171c23] p-1 rounded-xl flex border border-[#30353d] shadow-inner shadow-slate-100">
                   <button 
                      onClick={() => setGranularity('day')}
-                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${granularity === 'day' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-emerald-700 hover:bg-emerald-50'}`}
+                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${granularity === 'day' ? 'bg-emerald-600 text-white' : 'text-[#d1c6ab] hover:text-emerald-700 hover:bg-emerald-500/10'}`}
                   >
                       {t('daily')}
                   </button>
                   <button 
                      onClick={() => setGranularity('month')}
-                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${granularity === 'month' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-emerald-700 hover:bg-emerald-50'}`}
+                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${granularity === 'month' ? 'bg-emerald-600 text-white' : 'text-[#d1c6ab] hover:text-emerald-700 hover:bg-emerald-500/10'}`}
                   >
                       {t('monthly')}
                   </button>
@@ -138,7 +138,7 @@ export default function SummaryPage() {
               background: white !important;
             }
             /* Text Colors */
-            .text-white, .text-slate-300, .text-slate-400 {
+            .text-white, .text-slate-300, .text-[#8a92a6] {
               color: black !important;
             }
             /* Adjust Chart Size */
@@ -149,10 +149,10 @@ export default function SummaryPage() {
        `}</style>
 
        {/* Comparison Chart */}
-       <div className="bg-white border border-slate-200 p-6 rounded-xl h-[450px] shadow-sm">
-           <h3 className="text-slate-800 font-bold mb-6">{t('inbound_vs_outbound')} ({granularity === 'day' ? t('daily') : t('monthly')})</h3>
+       <div className="bg-[#171c23] border border-[#30353d] p-6 rounded-xl h-[450px] shadow-sm">
+           <h3 className="text-[#dee2ec] font-bold mb-6">{t('inbound_vs_outbound')} ({granularity === 'day' ? t('daily') : t('monthly')})</h3>
            {loading || !data || !mounted ? (
-               <div className="h-full flex items-center justify-center text-slate-500">{t('loading')}</div>
+               <div className="h-full flex items-center justify-center text-[#8a92a6]">{t('loading')}</div>
            ) : (
                <ResponsiveContainer width="100%" height="85%">
                    <BarChart data={data.chartData}>
@@ -172,14 +172,14 @@ export default function SummaryPage() {
        </div>
 
        {/* Weekday Analysis (Legacy Parity) */}
-       <div className="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
-           <h3 className="text-slate-800 font-bold mb-6 flex items-center gap-2">
+       <div className="bg-[#171c23] border border-[#30353d] p-6 rounded-xl shadow-sm">
+           <h3 className="text-[#dee2ec] font-bold mb-6 flex items-center gap-2">
                <Calendar className="w-5 h-5 text-indigo-500" />
                {t('weekday_analysis')}
            </h3>
            <div className="h-[300px]">
                {loading || !data ? (
-                   <div className="h-full flex items-center justify-center text-slate-500">{t('loading')}</div>
+                   <div className="h-full flex items-center justify-center text-[#8a92a6]">{t('loading')}</div>
                ) : (
                    <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data.weekdayAnalysis} layout="vertical">
@@ -195,21 +195,21 @@ export default function SummaryPage() {
                    </ResponsiveContainer>
                )}
            </div>
-           <p className="text-xs text-slate-500 mt-4 text-center">
+           <p className="text-xs text-[#8a92a6] mt-4 text-center">
                {t('weekday_analysis_desc')}
            </p>
        </div>
        {/* Transaction Table */}
-       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden col-span-1 md:col-span-2 shadow-sm">
-           <div className="p-6 border-b border-slate-200">
-               <h3 className="text-slate-800 font-bold flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-slate-500" />
-                  {t('recent_transactions_logger')} <span className="text-xs text-slate-400 font-normal">{t('last_100_items')}</span>
+       <div className="bg-[#171c23] border border-[#30353d] rounded-xl overflow-hidden col-span-1 md:col-span-2 shadow-sm">
+           <div className="p-6 border-b border-[#30353d]">
+               <h3 className="text-[#dee2ec] font-bold flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-[#8a92a6]" />
+                  {t('recent_transactions_logger')} <span className="text-xs text-[#8a92a6] font-normal">{t('last_100_items')}</span>
                </h3>
            </div>
            <div className="overflow-x-auto">
-               <table className="w-full text-left text-sm text-slate-600">
-                   <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+               <table className="w-full text-left text-sm text-[#d1c6ab]">
+                   <thead className="bg-[#1b2027] text-[#8a92a6] text-xs uppercase">
                        <tr>
                            <th className="px-6 py-4">{t('col_date')}</th>
                            <th className="px-6 py-4">{t('col_type')}</th>
@@ -217,22 +217,22 @@ export default function SummaryPage() {
                            <th className="px-6 py-4 text-right">{t('col_qty')}</th>
                        </tr>
                    </thead>
-                   <tbody className="divide-y divide-slate-100">
+                   <tbody className="divide-y divide-[#30353d]">
                        {loading || !data?.recentTransactions ? (
-                           <tr><td colSpan={4} className="p-8 text-center text-slate-500">{t('loading')}</td></tr>
+                           <tr><td colSpan={4} className="p-8 text-center text-[#8a92a6]">{t('loading')}</td></tr>
                        ) : data.recentTransactions.map((t: any, i: number) => (
-                           <tr key={i} className="hover:bg-slate-50 transition-colors">
+                           <tr key={i} className="hover:bg-[#1b2027] transition-colors">
                                <td className="px-6 py-4 font-mono text-xs">{t.date ? new Date(t.date).toLocaleDateString('th-TH') : '-'}</td>
                                <td className="px-6 py-4">
                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                                       t.type === 'IN' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                                       t.type === 'IN' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-rose-500/20 text-rose-600'
                                    }`}>
                                        {t.type === 'IN' ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
                                        {t.type}
                                    </span>
                                </td>
-                               <td className="px-6 py-4 font-medium text-slate-800">{t.product}</td>
-                               <td className="px-6 py-4 text-right font-mono text-slate-800">{t.qty}</td>
+                               <td className="px-6 py-4 font-medium text-[#dee2ec]">{t.product}</td>
+                               <td className="px-6 py-4 text-right font-mono text-[#dee2ec]">{t.qty}</td>
                            </tr>
                        ))}
                    </tbody>

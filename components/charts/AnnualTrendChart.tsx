@@ -32,30 +32,33 @@ export default function AnnualTrendChart({ data }: AnnualTrendProps) {
             <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
         <XAxis 
           dataKey="year" 
-          stroke="#94a3b8" 
-          fontSize={12} 
+          stroke="#64748b" 
+          fontSize={11} 
           tickLine={false} 
           axisLine={false} 
+          tick={{ fill: '#d1c6ab' }}
         />
         <YAxis 
-          stroke="#94a3b8" 
-          fontSize={12} 
+          stroke="#64748b" 
+          fontSize={11} 
           tickLine={false} 
           axisLine={false} 
+          tick={{ fill: '#d1c6ab' }}
           tickFormatter={(value) => `${value}`} 
         />
         <Tooltip
-          cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '3 3' }}
+          cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '3 3' }}
           contentStyle={{
-            backgroundColor: '#fff',
-            border: '1px solid #e2e8f0',
+            backgroundColor: '#171c23',
+            border: '1px solid #30353d',
             borderRadius: '12px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+            color: '#dee2ec'
           }}
-          itemStyle={{ fontSize: '12px', fontWeight: 600 }}
+          itemStyle={{ fontSize: '12px', fontWeight: 600, color: '#dee2ec' }}
           formatter={(value: any, name: any) => [value?.toLocaleString() || '0', name === 'inbound' ? 'Inbound' : 'Outbound'] as [string, string]}
         />
         <Area 
