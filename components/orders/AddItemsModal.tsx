@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Plus, Minus, Trash2, ScanLine, PackagePlus, Search } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ScanLine, PackagePlus, Search, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
+import CameraScannerModal from '@/components/CameraScannerModal';
 
 // product API (mapProductRow) เก็บ SKU ไว้ใน field `id` ไม่ใช่ `sku`
 interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
@@ -27,6 +28,7 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   const [lines, setLines] = useState<Line[]>([]);
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  const [camOpen, setCamOpen] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
 
   const drops = useMemo(() => {
@@ -126,16 +128,22 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
 
         {/* Scan / search */}
         <div className="p-4 space-y-2 border-b border-[#30353d]">
-          <div className="relative">
-            <ScanLine className="w-4 h-4 absolute left-3 top-3 text-[#facc15]" />
-            <input
-              ref={scanRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleScan(query); } }}
-              placeholder="สแกนบาร์โค้ด / พิมพ์ SKU หรือชื่อสินค้า แล้วกด Enter"
-              className="w-full pl-9 pr-3 py-2.5 bg-[#090f15] border border-[#30353d] rounded-lg text-sm text-[#dee2ec] placeholder:text-[#8a92a6]/60 outline-none focus:border-[#facc15]"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <ScanLine className="w-4 h-4 absolute left-3 top-3 text-[#facc15]" />
+              <input
+                ref={scanRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleScan(query); } }}
+                placeholder="สแกนบาร์โค้ด / พิมพ์ SKU หรือชื่อสินค้า แล้วกด Enter"
+                className="w-full pl-9 pr-3 py-2.5 bg-[#090f15] border border-[#30353d] rounded-lg text-sm text-[#dee2ec] placeholder:text-[#8a92a6]/60 outline-none focus:border-[#facc15]"
+              />
+            </div>
+            <button type="button" onClick={() => setCamOpen(true)}
+              className="shrink-0 px-3 rounded-lg bg-[#facc15] text-[#1b1600] flex items-center justify-center hover:bg-[#eec200] active:scale-95" aria-label="เปิดกล้องสแกน">
+              <Camera className="w-4 h-4" />
+            </button>
           </div>
           {searchResults.length > 0 && (
             <div className="rounded-lg border border-[#30353d] bg-[#1b2027] divide-y divide-[#30353d] max-h-44 overflow-y-auto">
@@ -210,6 +218,15 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
           </div>
         </div>
       </div>
+
+      {/* กล้องสแกนบาร์โค้ด — เพิ่มเข้ารายการทันทีต่อการยิง */}
+      <CameraScannerModal
+        isOpen={camOpen}
+        onClose={() => setCamOpen(false)}
+        onScan={(code) => handleScan(code)}
+        title="สแกนบาร์โค้ดเพิ่มสินค้า"
+        description="ส่องกล้องไปที่บาร์โค้ด/QR บนสินค้า — เพิ่มเข้ารายการทันที สแกนต่อได้เลย"
+      />
     </div>
   );
 }

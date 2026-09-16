@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Plus, Minus, Trash2, ScanLine, PackagePlus } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ScanLine, PackagePlus, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
+import CameraScannerModal from '@/components/CameraScannerModal';
 
 interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
 interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; }
@@ -28,6 +29,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
   const [lines, setLines] = useState<Line[]>([]);
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  const [camOpen, setCamOpen] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
 
   const drops = useMemo(() => {
@@ -68,7 +70,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
   };
 
   // ยิงบาร์โค้ดจาก PDA (hardware) — เพิ่มของอัตโนมัติ
-  usePdaScanner({ onScan: (code) => { if (order) matchAndAdd(code); }, enabled: !!order && !saving });
+  usePdaScanner({ onScan: (code) => { if (order) matchAndAdd(code); }, enabled: !!order && !saving && !camOpen });
 
   const searchResults = query.trim()
     ? products.filter(p =>
@@ -129,17 +131,27 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
 
         {/* Scan / search */}
         <div className="p-4 space-y-2 bg-white border-b border-slate-200">
-          <div className="relative">
-            <ScanLine className="w-5 h-5 absolute left-3 top-3.5 text-amber-500" />
-            <input
-              ref={scanRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); matchAndAdd(query); } }}
-              inputMode="search"
-              placeholder="สแกน / พิมพ์ SKU หรือชื่อสินค้า"
-              className="w-full pl-10 pr-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-500"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <ScanLine className="w-5 h-5 absolute left-3 top-3.5 text-amber-500" />
+              <input
+                ref={scanRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); matchAndAdd(query); } }}
+                inputMode="search"
+                placeholder="สแกน / พิมพ์ SKU หรือชื่อสินค้า"
+                className="w-full pl-10 pr-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-500"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setCamOpen(true)}
+              className="shrink-0 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white flex items-center justify-center active:scale-95"
+              aria-label="เปิดกล้องสแกน"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
           </div>
           {searchResults.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 max-h-52 overflow-y-auto shadow-sm">
@@ -215,6 +227,15 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
           </button>
         </div>
       </div>
+
+      {/* กล้องสแกนบาร์โค้ด — สแกนได้หลายชิ้นต่อเนื่อง (เพิ่มทันทีต่อการยิง) */}
+      <CameraScannerModal
+        isOpen={camOpen}
+        onClose={() => setCamOpen(false)}
+        onScan={(code) => matchAndAdd(code)}
+        title="สแกนบาร์โค้ดเพิ่มสินค้า"
+        description="ส่องกล้องไปที่บาร์โค้ด/QR บนสินค้า — เพิ่มเข้ารายการทันที สแกนต่อได้เลย"
+      />
     </div>
   );
 }
