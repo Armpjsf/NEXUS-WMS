@@ -182,48 +182,61 @@ export default function BarcodeScannerPage() {
           </button>
         </div>
 
+        {/* Mode Switcher */}
+        <div className="flex p-1 bg-[#171c23] border border-[#30353d] rounded-2xl gap-1">
+          <button
+            onClick={() => {
+              if (isScanning) stopScanner();
+            }}
+            className="flex-1 py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all bg-[#252a32] text-[#dee2ec] border border-[#30353d]"
+          >
+            <Zap className="w-4 h-4 text-[#57ec7f]" />
+            <span>โหมดเลเซอร์ฮาร์ดแวร์ (Industrial Scanner Ready)</span>
+          </button>
+        </div>
+
         {/* Scanner Area */}
-        <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm">
+        <div className="bg-[#171c23] rounded-2xl border border-[#30353d] overflow-hidden shadow-lg">
           {!isScanning && !scanResult ? (
-            <div className="p-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-4 bg-indigo-500/10 rounded-2xl flex items-center justify-center">
-                <Camera className="w-10 h-10 text-indigo-500" />
+            <div className="p-8 text-center font-mono">
+              <div className="w-20 h-20 mx-auto mb-4 bg-[#facc15]/10 border border-[#facc15]/30 rounded-2xl flex items-center justify-center">
+                <QrCode className="w-10 h-10 text-[#facc15]" />
               </div>
-              <h2 className="text-lg font-bold text-[#dee2ec] mb-2">พร้อมสแกน</h2>
-              <p className="text-[#8a92a6] text-sm mb-4">กดปุ่มด้านล่างเพื่อเปิดกล้อง หรือยิงด้วยปืนสแกนไร้สาย / PDA ได้ทันที</p>
+              <h2 className="text-lg font-bold text-[#dee2ec] mb-1">ฮาร์ดแวร์สแกนเนอร์พร้อมทำงาน</h2>
+              <p className="text-[#8a92a6] text-xs mb-5">
+                ยิงด้วยปืนสแกนเนอร์ไร้สาย, PDA Zebra DataWedge, เครื่องสแกนบาร์โค้ด USB ได้ทันที
+              </p>
               
-              <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 text-xs font-semibold rounded-full">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                <span>PDA Scanner Gun Ready (สแกนได้ทันที ไม่ต้องคลิกโฟกัส)</span>
+              <div className="mb-6 inline-flex items-center gap-2 px-3.5 py-2 bg-[#57ec7f]/10 border border-[#57ec7f]/30 text-[#57ec7f] text-xs font-bold rounded-xl">
+                <span className="w-2 h-2 rounded-full bg-[#57ec7f] animate-ping" />
+                <Zap className="w-4 h-4 text-[#57ec7f]" />
+                <span>LISTENING TO SCANNER (ตรวจจับสัญญาณอัตโนมัติ)</span>
               </div>
 
-              <button
-                onClick={startScanner}
-                disabled={loading}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
-              >
-                <Camera className="w-5 h-5" />
-                เปิดกล้องสแกน
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={startScanner}
+                  disabled={loading}
+                  className="py-3.5 px-4 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs"
+                >
+                  <Camera className="w-4 h-4 text-[#4cd7f6]" />
+                  เปิดกล้องมือถือสแกน (Camera Mode)
+                </button>
 
-              {/* Manual Input */}
-              <div className="mt-6 pt-6 border-t border-[#30353d]">
-                <p className="text-xs text-[#8a92a6] mb-3">หรือพิมพ์รหัสสินค้า</p>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
-                    placeholder="พิมพ์ชื่อหรือรหัสสินค้า..."
-                    className="flex-1 px-4 py-3 bg-[#1b2027] border border-[#30353d] rounded-xl text-[#d1c6ab] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                    placeholder="ยิงหรือพิมพ์บาร์โค้ด..."
+                    className="flex-1 px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-xl text-xs text-[#dee2ec] placeholder-[#8a92a6]/50 focus:border-[#facc15] outline-none"
                   />
                   <button
                     onClick={handleManualSearch}
-                    className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
+                    className="px-3.5 bg-[#facc15] hover:bg-[#ffe083] text-[#1b1600] rounded-xl transition-colors font-bold text-xs"
                   >
-                    <Search className="w-5 h-5" />
+                    <Search className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -306,31 +319,31 @@ export default function BarcodeScannerPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex gap-2 font-mono">
                     <Link
-                      href={`/stock-card?search=${encodeURIComponent(scanResult.product.name)}`}
-                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-center transition-colors"
+                      href={`/inventory/stock-card?search=${encodeURIComponent(scanResult.product.name)}`}
+                      className="flex-1 py-2.5 bg-[#facc15] hover:bg-[#ffe083] text-[#1b1600] font-bold rounded-xl text-center text-xs transition-colors shadow-md"
                     >
                       ดู Stock Card
                     </Link>
                     <button
                       onClick={() => { clearResult(); startScanner(); }}
-                      className="px-4 py-3 bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab] font-bold rounded-xl transition-colors"
+                      className="px-4 py-2.5 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#d1c6ab] font-bold rounded-xl text-xs transition-colors"
                     >
                       สแกนอีกครั้ง
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-6 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-amber-500/10 rounded-2xl flex items-center justify-center">
-                    <Search className="w-8 h-8 text-amber-500" />
+                <div className="p-6 text-center font-mono">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-[#facc15]/10 border border-[#facc15]/30 rounded-2xl flex items-center justify-center">
+                    <Search className="w-8 h-8 text-[#facc15]" />
                   </div>
-                  <p className="font-medium text-[#dee2ec] mb-1">ไม่พบสินค้า</p>
-                  <p className="text-sm text-[#8a92a6] mb-4">รหัส: {scanResult.code}</p>
+                  <p className="font-bold text-[#dee2ec] mb-1">ไม่พบสินค้าในระบบ</p>
+                  <p className="text-xs text-[#8a92a6] mb-4">รหัสบาร์โค้ด: {scanResult.code}</p>
                   <button
                     onClick={() => { clearResult(); startScanner(); }}
-                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors"
+                    className="px-6 py-2.5 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] font-bold rounded-xl text-xs transition-colors"
                   >
                     สแกนอีกครั้ง
                   </button>

@@ -45,3 +45,7 @@ credentials.json
 token.json
 gmail_token.json
 android/app/google-services.json
+
+# Local agent & scratch
+.claude/
+scratch/

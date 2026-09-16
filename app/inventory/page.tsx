@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { ProductModal } from '@/components/ProductModal';
-import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera } from 'lucide-react';
+import { LotBreakdownModal } from '@/components/LotBreakdownModal';
+import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -37,6 +38,24 @@ function InventoryContent() {
   const [showInactive, setShowInactive] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [showCamScan, setShowCamScan] = useState(false);
+  const [selectedProductForLots, setSelectedProductForLots] = useState<any>(null);
+  const [showGlobalLotsModal, setShowGlobalLotsModal] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+
+  const seedDemoProducts = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/products/seed', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'โหลดข้อมูลตัวอย่างไม่สำเร็จ');
+      toast.success(data.message || 'โหลดสินค้าตัวอย่างพร้อม FEFO Lots สำเร็จแล้ว');
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลตัวอย่าง');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   // Hardware PDA / Laser Scanner Gun support for instant product lookup
   usePdaScanner({
@@ -262,6 +281,15 @@ function InventoryContent() {
               >
                   <Plus className="w-4 h-4" />
                   {t('add_product')}
+              </button>
+
+              <button 
+                  onClick={() => setShowGlobalLotsModal(true)}
+                  className="flex items-center gap-2 bg-[#252a32] border border-[#4cd7f6]/40 text-[#4cd7f6] px-4 py-2.5 rounded-lg font-mono text-xs font-bold hover:bg-[#4cd7f6]/10 hover:border-[#4cd7f6] transition-all shadow-sm"
+                  title="เปิดภาพรวมและการจัดการ Lot / FEFO ทั้งคลัง"
+              >
+                  <Layers className="w-4 h-4" />
+                  <span>ภาพรวม Lots & FEFO</span>
               </button>
 
               <Link
@@ -531,6 +559,19 @@ function InventoryContent() {
                                         <span>พิมพ์บาร์โค้ด</span>
                                     </Link>
                                     <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setSelectedProductForLots(product);
+                                        }}
+                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-[#4cd7f6] hover:text-white rounded border border-[#4cd7f6]/30 font-mono text-[10px] transition-colors"
+                                        title="ตรวจสอบ Lot & FEFO"
+                                    >
+                                        <Layers className="w-3 h-3" />
+                                        <span>FEFO Lots</span>
+                                    </button>
+                                    <button
                                         onClick={(e) => openEditModal(product, e)}
                                         className="h-7 w-7 flex items-center justify-center bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] rounded border border-[#30353d] transition-colors"
                                         title="แก้ไข"
@@ -584,15 +625,49 @@ function InventoryContent() {
         </AnimatePresence>
 
         {filtered.length === 0 && !loading && (
-            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center border border-[#30353d] rounded-2xl bg-[#171c23]/50 p-8 my-8">
-                <div className="w-16 h-16 bg-[#252a32] border border-[#30353d] rounded-full flex items-center justify-center mb-4">
-                    <Filter className="w-8 h-8 text-[#d1c6ab]" />
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center border border-[#30353d] rounded-2xl bg-[#171c23]/50 p-8 my-8 shadow-xl">
+                <div className="w-16 h-16 bg-[#252a32] border border-[#30353d] rounded-full flex items-center justify-center mb-4 text-[#4cd7f6]">
+                    <Layers className="w-8 h-8" />
                 </div>
-                <h3 className="text-base font-mono font-bold text-[#dee2ec] mb-1">{t('no_products_found')}</h3>
-                <p className="text-xs font-mono text-[#8a92a6] max-w-sm">{t('try_adjusting_filters')}</p>
-                <button onClick={() => {setSearch(''); setFilterStatus('ALL'); setFilterMovement('ALL'); }} className="mt-4 px-4 py-1.5 rounded-lg border border-[#facc15]/40 bg-[#facc15]/10 text-[#facc15] font-mono text-xs font-bold hover:bg-[#facc15]/20 transition-colors">
-                    Clear all filters
-                </button>
+                <h3 className="text-lg font-headline font-bold text-[#dee2ec] mb-1">
+                    {search ? 'ไม่พบสินค้าตามคำค้นหา' : 'ยังไม่มีรายการสินค้าในสาขานี้'}
+                </h3>
+                <p className="text-xs font-mono text-[#8a92a6] max-w-md mb-5">
+                    {search 
+                        ? 'ลองปรับตัวกรองหรือคำค้นหาใหม่ หรือล้างตัวกรองทั้งหมด' 
+                        : 'คุณสามารถกดเพิ่มสินค้าใหม่ หรือคลิกโหลดข้อมูลตัวอย่างเพื่อทดสอบระบบจัดเก็บ, คิวงาน, และการจัดการ Lot / FEFO ได้ทันที'}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 font-mono text-xs">
+                    <button 
+                        onClick={openAddModal} 
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#facc15] text-[#1b1600] font-bold hover:bg-[#eec200] transition-all shadow-md active:translate-y-px"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>เพิ่มสินค้าใหม่</span>
+                    </button>
+                    <button 
+                        onClick={seedDemoProducts} 
+                        disabled={seeding}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#4cd7f6]/50 bg-[#4cd7f6]/10 text-[#4cd7f6] font-bold hover:bg-[#4cd7f6]/20 transition-all shadow-md disabled:opacity-50"
+                    >
+                        <RefreshCcw className={cn("w-4 h-4", seeding && "animate-spin")} />
+                        <span>{seeding ? 'กำลังสร้างข้อมูล...' : '📦 โหลดสินค้าตัวอย่างพร้อม FEFO Lots (Demo)'}</span>
+                    </button>
+                    <button 
+                        onClick={() => setShowGlobalLotsModal(true)} 
+                        className="px-4 py-2.5 rounded-lg border border-[#30353d] bg-[#252a32] text-[#dee2ec] font-bold hover:border-[#4cd7f6] hover:text-[#4cd7f6] transition-all"
+                    >
+                        เปิดหน้าต่าง Lots & FEFO
+                    </button>
+                    {search && (
+                        <button 
+                            onClick={() => { setSearch(''); setFilterStatus('ALL'); setFilterMovement('ALL'); }} 
+                            className="px-4 py-2.5 rounded-lg border border-[#ffb4ab]/30 bg-[#93000a]/20 text-[#ffdad6] font-bold hover:bg-[#93000a]/30 transition-all"
+                        >
+                            ล้างตัวกรอง
+                        </button>
+                    )}
+                </div>
             </div>
         )}
 
@@ -615,6 +690,23 @@ function InventoryContent() {
             }}
             title="สแกนบาร์โค้ดค้นหาสินค้าคงคลัง"
             description="ส่องกล้องไปที่บาร์โค้ดบนตัวสินค้าเพื่อค้นหาข้อมูลสต็อก พิกัดจัดเก็บ และประวัติ"
+        />
+
+        {/* Global FEFO Lots Modal */}
+        <LotBreakdownModal
+            isOpen={showGlobalLotsModal}
+            onClose={() => setShowGlobalLotsModal(false)}
+            allProducts={products}
+            onRefresh={fetchData}
+        />
+
+        {/* Single Product FEFO Lots Modal */}
+        <LotBreakdownModal
+            isOpen={!!selectedProductForLots}
+            onClose={() => setSelectedProductForLots(null)}
+            product={selectedProductForLots}
+            allProducts={products}
+            onRefresh={fetchData}
         />
     </div>
   );

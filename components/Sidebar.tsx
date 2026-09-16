@@ -26,6 +26,7 @@ import {
   LogOut,
   Mail,
   Menu,
+  Network,
   PackageCheck,
   Printer,
   QrCode,
@@ -189,6 +190,7 @@ export default function Sidebar() {
       label: 'ปฏิบัติการ',
       accent: 'bg-emerald-500',
       items: [
+        { label: 'คิวงานอัจฉริยะ (Smart Tasks)', href: '/ops/tasks', icon: Boxes, tone: 'amber' },
         { label: 'รับเข้า & จัดเก็บ (GRN)', href: '/ops/receiving', icon: ArrowDownToLine, tone: 'emerald' },
         { label: 'Smart Wave Picking', href: '/ops/wave-picking', icon: Boxes, tone: 'amber' },
         { label: 'โอนสต็อกข้ามสาขา', href: '/ops/transfers', icon: ArrowLeftRight, tone: 'teal' },
@@ -206,6 +208,7 @@ export default function Sidebar() {
         { label: 'ออเดอร์ขาออก', href: '/ops/orders', icon: PackageCheck, tone: 'cyan' },
         { label: 'ลูกค้า (Customers)', href: '/admin/customers', icon: Users, tone: 'blue' },
         { label: 'คืนสินค้า (RMA)', href: '/ops/returns', icon: History, tone: 'rose' },
+        { label: 'เชื่อมต่อ ERP & Hardware', href: '/integrations/erp', icon: Network, tone: 'cyan', adminOnly: true },
         { label: 'Marketplace Hub', href: '/integrations/marketplaces', icon: ShoppingBag, tone: 'rose' },
       ],
     },
