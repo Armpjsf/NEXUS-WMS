@@ -8,7 +8,7 @@ import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
 
 interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
-interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; }
+interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; custom?: boolean; }
 export interface MobileAddItemsOrder {
   id: string;
   orderNo: string;
@@ -30,6 +30,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
+  const [crossDock, setCrossDock] = useState(false); // ของนอกคลัง (ลูกค้าเอามาเอง) — ไม่ต้องมีใน catalog, ไม่ตัดสต็อก
   const scanRef = useRef<HTMLInputElement>(null);
 
   const drops = useMemo(() => {
@@ -62,20 +63,36 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
     });
   };
 
+  // เพิ่มของนอกคลัง (cross-dock) — ไม่ต้องมีใน catalog, ไม่ตัดสต็อก
+  const addCustom = (raw: string) => {
+    const t = raw.trim();
+    if (!t) return;
+    setLines(prev => {
+      const i = prev.findIndex(l => l.custom && l.name.toLowerCase() === t.toLowerCase());
+      if (i >= 0) { const next = [...prev]; next[i] = { ...next[i], qty: next[i].qty + 1 }; return next; }
+      return [...prev, { sku: t, name: t, qty: 1, price: 0, location: '', drop: targetDrop, custom: true }];
+    });
+    setQuery('');
+  };
+
   const matchAndAdd = (raw: string) => {
     const q = raw.trim().toLowerCase();
     if (!q) return;
+    if (crossDock) { addCustom(raw); return; } // โหมดนอกคลัง = เพิ่มตามที่พิมพ์/สแกนเลย
     // จับคู่: SKU/บาร์โค้ดตรงตัว → บาร์โค้ด/SKU/ชื่อมีคำนี้ → SKU/บาร์โค้ดเป็นส่วนหนึ่งของโค้ดที่ยิง (เผื่อมี prefix)
     const hit = products.find(p => p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q)
       || products.find(p => (p.barcode && p.barcode.toLowerCase().includes(q)) || p.id?.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q))
       || products.find(p => (p.id && q.includes(p.id.toLowerCase())) || (p.barcode && q.includes(p.barcode.toLowerCase())));
     if (hit) { addLine(hit); setQuery(''); }
     else {
-      // ไม่เจอ: คงคำที่ยิงไว้ในช่องค้นหา ให้ผู้ใช้เห็นผลลัพธ์ใกล้เคียง/เลือกเองได้
+      // ไม่เจอ: คงคำไว้ในช่อง + เตือน (มีปุ่ม "เพิ่มเป็นของนอกคลัง" ให้กดได้)
       setQuery(raw.trim());
-      toast.error(`ไม่พบสินค้าที่ตรงกับ "${raw}" — ลองค้นด้วยชื่อ หรือเช็คบาร์โค้ดในระบบ`);
+      toast.error(`ไม่พบ "${raw}" ในคลัง — ถ้าเป็นของลูกค้า (cross-dock) กด "เพิ่มเป็นของนอกคลัง"`);
     }
   };
+
+  const renameLine = (idx: number, name: string) =>
+    setLines(prev => prev.map((l, i) => i === idx ? { ...l, name } : l));
 
   // ยิงบาร์โค้ดจาก PDA (hardware) — เพิ่มของอัตโนมัติ
   usePdaScanner({ onScan: (code) => { if (order) matchAndAdd(code); }, enabled: !!order && !saving && !camOpen });
@@ -162,6 +179,12 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
             </button>
           </div>
 
+          {/* โหมดของนอกคลัง (cross-dock) — ลูกค้าเอาของมาเอง ไม่มีในคลัง ไม่ตัดสต็อก */}
+          <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+            <span className="text-xs font-semibold text-slate-700">🔀 ของนอกคลัง (Cross-dock) — พิมพ์/สแกนเพิ่มได้เลย</span>
+            <input type="checkbox" checked={crossDock} onChange={(e) => setCrossDock(e.target.checked)} className="w-5 h-5 accent-amber-500" />
+          </label>
+
           {/* เลือกดรอปที่จะเพิ่มของเข้า (ของที่เพิ่มใหม่จะเข้าดรอปนี้) */}
           {drops.length > 1 ? (
             <div>
@@ -179,7 +202,8 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
             <p className="text-[11px] text-slate-400">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
           )}
 
-          {searchResults.length > 0 && (
+          {/* ผลค้นหา catalog (เฉพาะโหมดปกติ) */}
+          {!crossDock && searchResults.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 max-h-52 overflow-y-auto shadow-sm">
               {searchResults.map(p => (
                 <button
@@ -196,6 +220,21 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
               ))}
             </div>
           )}
+
+          {/* ปุ่มเพิ่มของนอกคลังตามที่พิมพ์/สแกน (โหมดนอกคลัง หรือ โหมดปกติเมื่อหาไม่เจอ) */}
+          {query.trim() && (crossDock || searchResults.length === 0) && (
+            <button
+              type="button"
+              onClick={() => { addCustom(query); scanRef.current?.focus(); }}
+              className="w-full flex items-center justify-between gap-2 px-3 py-3 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 text-left active:scale-[0.99]"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-amber-800 truncate">เพิ่ม “{query.trim()}” เป็นของนอกคลัง</span>
+                <span className="block text-[11px] text-amber-600">Cross-dock · ไม่ตัดสต็อก (แก้ชื่อได้ทีหลัง)</span>
+              </span>
+              <Plus className="w-5 h-5 text-amber-600 shrink-0" />
+            </button>
+          )}
         </div>
 
         {/* Lines */}
@@ -205,12 +244,21 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
               <ScanLine className="w-10 h-10 text-slate-300 mb-2" />
               <p className="text-xs text-slate-400">สแกนหรือค้นหาสินค้าเพื่อเพิ่ม</p>
             </div>
-          ) : lines.map(l => (
+          ) : lines.map((l, idx) => (
             <div key={l.sku} className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900 leading-tight">{l.name}</p>
-                  <p className="font-mono text-[11px] text-slate-500 mt-0.5">{l.sku}</p>
+                  {l.custom ? (
+                    <input
+                      value={l.name}
+                      onChange={(e) => renameLine(idx, e.target.value)}
+                      placeholder="ชื่อสินค้า (นอกคลัง)"
+                      className="w-full text-sm font-semibold text-slate-900 leading-tight bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 outline-none focus:border-amber-500"
+                    />
+                  ) : (
+                    <p className="text-sm font-semibold text-slate-900 leading-tight">{l.name}</p>
+                  )}
+                  <p className="font-mono text-[11px] text-slate-500 mt-0.5">{l.custom ? '🔀 ของนอกคลัง' : l.sku}</p>
                 </div>
                 <button onClick={() => removeLine(l.sku)} className="text-slate-400 active:text-rose-500 p-1"><Trash2 className="w-4 h-4" /></button>
               </div>

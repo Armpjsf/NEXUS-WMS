@@ -8,7 +8,7 @@ import CameraScannerModal from '@/components/CameraScannerModal';
 
 // product API (mapProductRow) เก็บ SKU ไว้ใน field `id` ไม่ใช่ `sku`
 interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
-interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; }
+interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; custom?: boolean; }
 export interface AddItemsOrder {
   id: string;
   orderNo: string;
@@ -29,6 +29,7 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
+  const [crossDock, setCrossDock] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
 
   const [targetDrop, setTargetDrop] = useState(1);
@@ -66,14 +67,28 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
     });
   };
 
+  const addCustom = (raw: string) => {
+    const t = raw.trim();
+    if (!t) return;
+    setLines(prev => {
+      const i = prev.findIndex(l => l.custom && l.name.toLowerCase() === t.toLowerCase());
+      if (i >= 0) { const next = [...prev]; next[i] = { ...next[i], qty: next[i].qty + 1 }; return next; }
+      return [...prev, { sku: t, name: t, qty: 1, price: 0, location: '', drop: targetDrop, custom: true }];
+    });
+    setQuery('');
+  };
+  const renameLine = (idx: number, name: string) =>
+    setLines(prev => prev.map((l, i) => i === idx ? { ...l, name } : l));
+
   const handleScan = (raw: string) => {
     const q = raw.trim().toLowerCase();
     if (!q) return;
+    if (crossDock) { addCustom(raw); return; }
     const hit = products.find(p => p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q)
       || products.find(p => (p.barcode && p.barcode.toLowerCase().includes(q)) || p.id?.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q))
       || products.find(p => (p.id && q.includes(p.id.toLowerCase())) || (p.barcode && q.includes(p.barcode.toLowerCase())));
     if (hit) { addLine(hit); setQuery(''); }
-    else { setQuery(raw.trim()); toast.error(`ไม่พบสินค้าที่ตรงกับ "${raw}" — ลองค้นด้วยชื่อ`); }
+    else { setQuery(raw.trim()); toast.error(`ไม่พบ "${raw}" ในคลัง — ถ้าเป็นของลูกค้า (cross-dock) กด "เพิ่มเป็นของนอกคลัง"`); }
   };
 
   const searchResults = query.trim()
@@ -151,6 +166,12 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
             </button>
           </div>
 
+          {/* โหมดของนอกคลัง (cross-dock) */}
+          <label className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[#1b2027] border border-[#30353d] cursor-pointer">
+            <span className="text-[11px] font-semibold text-[#d1c6ab]">🔀 ของนอกคลัง (Cross-dock) — พิมพ์/สแกนเพิ่มได้เลย ไม่ตัดสต็อก</span>
+            <input type="checkbox" checked={crossDock} onChange={(e) => setCrossDock(e.target.checked)} className="w-4 h-4 accent-[#facc15]" />
+          </label>
+
           {/* เลือกดรอปที่จะเพิ่มของเข้า */}
           {drops.length > 1 ? (
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -166,7 +187,7 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
             <p className="text-[11px] text-[#8a92a6]">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
           )}
 
-          {searchResults.length > 0 && (
+          {!crossDock && searchResults.length > 0 && (
             <div className="rounded-lg border border-[#30353d] bg-[#1b2027] divide-y divide-[#30353d] max-h-44 overflow-y-auto">
               {searchResults.map(p => (
                 <button
@@ -183,6 +204,17 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
               ))}
             </div>
           )}
+
+          {query.trim() && (crossDock || searchResults.length === 0) && (
+            <button type="button" onClick={() => { addCustom(query); scanRef.current?.focus(); }}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-dashed border-[#facc15]/50 bg-[#facc15]/10 text-left hover:bg-[#facc15]/15">
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-[#facc15] truncate">เพิ่ม “{query.trim()}” เป็นของนอกคลัง</span>
+                <span className="block text-[10px] text-[#8a92a6]">Cross-dock · ไม่ตัดสต็อก (แก้ชื่อได้ทีหลัง)</span>
+              </span>
+              <Plus className="w-4 h-4 text-[#facc15] shrink-0" />
+            </button>
+          )}
         </div>
 
         {/* Lines */}
@@ -192,11 +224,16 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
               <Search className="w-8 h-8 text-[#30353d] mb-2" />
               <p className="text-[11px] text-[#8a92a6]">สแกนหรือค้นหาสินค้าเพื่อเพิ่มเข้าออเดอร์</p>
             </div>
-          ) : lines.map(l => (
+          ) : lines.map((l, idx) => (
             <div key={l.sku} className="flex items-center gap-2 bg-[#1b2027] border border-[#30353d] rounded-lg p-2.5">
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-[#dee2ec] truncate">{l.name}</p>
-                <p className="font-mono text-[10px] text-[#8a92a6]">{l.sku}</p>
+                {l.custom ? (
+                  <input value={l.name} onChange={(e) => renameLine(idx, e.target.value)} placeholder="ชื่อสินค้า (นอกคลัง)"
+                    className="w-full text-xs text-[#dee2ec] bg-[#090f15] border border-[#facc15]/40 rounded px-2 py-1 outline-none focus:border-[#facc15]" />
+                ) : (
+                  <p className="text-xs text-[#dee2ec] truncate">{l.name}</p>
+                )}
+                <p className="font-mono text-[10px] text-[#8a92a6]">{l.custom ? '🔀 ของนอกคลัง' : l.sku}</p>
               </div>
               {drops.length > 1 && (
                 <select

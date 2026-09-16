@@ -564,17 +564,18 @@ export async function addItemsToOrder(
       const { data: prod } = await admin
         .from('products').select('stock, name, location, price')
         .eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
-      const current = Number(prod?.stock || 0);
-      if (prod) {
-        await admin.from('products')
-          .update({ stock: Math.max(0, current - line.qty), updated_at: new Date().toISOString() })
-          .eq('org_id', orgId).eq('sku', line.sku);
-      }
+      // ของนอกคลัง (cross-dock / custom ที่ไม่มีใน products) = ไม่แตะสต็อก ไม่ลง OUT
+      // ของขึ้นรถแบบเช็คผ่าน ไม่ได้เบิกจากคลัง จึงไม่สร้างรายการเคลื่อนไหวหลอกๆ
+      if (!prod) continue;
+      const current = Number(prod.stock || 0);
+      await admin.from('products')
+        .update({ stock: Math.max(0, current - line.qty), updated_at: new Date().toISOString() })
+        .eq('org_id', orgId).eq('sku', line.sku);
       await admin.from('stock_transactions').insert({
         org_id: orgId, type: 'OUT', sku: line.sku,
-        product_name: line.name || prod?.name || line.sku, qty: line.qty,
-        unit_price: line.price || Number(prod?.price || 0),
-        doc_ref: order.orderNo, location: line.location || prod?.location || '',
+        product_name: line.name || prod.name || line.sku, qty: line.qty,
+        unit_price: line.price || Number(prod.price || 0),
+        doc_ref: order.orderNo, location: line.location || prod.location || '',
         user_name: actor || order.createdBy || 'Warehouse',
       });
     }
