@@ -1,54 +1,112 @@
 @import "tailwindcss";
 
 :root {
+  /* Canvas Background & Main Foreground */
   --background: #0f141b;
   --foreground: #dee2ec;
   --surface: #0f141b;
   --surface-muted: #171c23;
-  --border-subtle: #252a32;
-  --border-variant: #30353d;
 
-  /* Stitch Tactical Industrial Colors */
-  --surface-container-lowest: #090f15;
-  --surface-container-low: #171c23;
-  --surface-container: #1b2027;
-  --surface-container-high: #252a32;
-  --surface-container-highest: #30353d;
-  --surface-bright: #343941;
+  /* Surfaces & Containers (Stitch Tactical Industrial Layers) */
+  --surface-lowest: #090f15;              /* Deepest black background for inputs, base panels */
+  --surface-card: #171c23;                /* Main tactical card & modal glass background */
+  --surface-panel: #1b2027;               /* Secondary container / sub-panel */
+  --surface-steel: #252a32;               /* Elevated steel container, dark buttons */
+  --surface-input: #12161d;               /* Input field dark fill */
+  --surface-bright: #343941;              /* Highlight surface */
 
-  --primary-container: #facc15;
+  /* Borders & Dividers */
+  --border-edge: #30353d;                 /* Primary tactical border, dividers, input borders */
+  --border-subtle: #252a32;               /* Subtle secondary border */
+
+  /* Typography / Text Tokens */
+  --text-main: #dee2ec;                   /* Main high-contrast body & heading text */
+  --text-muted: #8a92a6;                  /* Secondary text, muted labels, timestamps */
+  --text-tactical: #d1c6ab;               /* Warm tactical subtext, industrial labels */
+
+  /* Tactical Signal Accents */
+  --accent-gold: #facc15;                 /* Brand primary gold / active highlight */
+  --accent-gold-dark: #1b1600;            /* Contrast text on gold buttons */
+  --accent-cyan: #4cd7f6;                 /* Telemetry cyan, technical specs */
+  --accent-cyan-dark: #042027;            /* Contrast text on cyan */
+  --accent-emerald: #57ec7f;              /* Success, active LED, online status */
+  --accent-emerald-dark: #090f15;         /* Contrast text on emerald */
+  --accent-rose: #ffb4ab;                 /* Danger, error alert text */
+  --accent-rose-bright: #ff5449;          /* High-urgency alert badge */
+
+  /* Backward-compatible Stitch variable aliases */
+  --surface-container-lowest: var(--surface-lowest);
+  --surface-container-low: var(--surface-card);
+  --surface-container: var(--surface-panel);
+  --surface-container-high: var(--surface-steel);
+  --surface-container-highest: var(--border-edge);
+  --border-variant: var(--border-edge);
+  --primary-container: var(--accent-gold);
   --on-primary-container: #6c5700;
   --primary: #ffecb9;
   --primary-fixed: #ffe083;
   --primary-fixed-dim: #eec200;
-
-  --secondary: #4cd7f6;
+  --secondary: var(--accent-cyan);
   --secondary-container: #03b5d3;
   --on-secondary: #003640;
-
   --tertiary: #b3ffbb;
-  --tertiary-container: #57ec7f;
+  --tertiary-container: var(--accent-emerald);
   --tertiary-fixed: #6bff8f;
-
-  --error: #ffb4ab;
+  --error: var(--accent-rose);
   --error-container: #93000a;
   --on-error: #690005;
-
-  --on-surface: #dee2ec;
-  --on-surface-variant: #d1c6ab;
+  --on-surface: var(--text-main);
+  --on-surface-variant: var(--text-tactical);
   --outline: #9a9078;
   --outline-variant: #4d4632;
-
-  --brand-primary: #facc15;
+  --brand-primary: var(--accent-gold);
   --brand-primary-soft: rgba(250, 204, 21, 0.15);
-  --brand-accent: #4cd7f6;
+  --brand-accent: var(--accent-cyan);
   --brand-warn: #eec200;
-  --brand-danger: #ffb4ab;
+  --brand-danger: var(--accent-rose);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Surface layers */
+  --color-surface-lowest: var(--surface-lowest);
+  --color-surface-card: var(--surface-card);
+  --color-surface-panel: var(--surface-panel);
+  --color-surface-steel: var(--surface-steel);
+  --color-surface-input: var(--surface-input);
+  --color-surface-bright: var(--surface-bright);
+
+  /* Borders */
+  --color-border-edge: var(--border-edge);
+  --color-border-subtle: var(--border-subtle);
+
+  /* Typography / Text */
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-tactical: var(--text-tactical);
+
+  /* Accents */
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-gold-dark: var(--accent-gold-dark);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-cyan-dark: var(--accent-cyan-dark);
+  --color-accent-emerald: var(--accent-emerald);
+  --color-accent-emerald-dark: var(--accent-emerald-dark);
+  --color-accent-rose: var(--accent-rose);
+  --color-accent-rose-bright: var(--accent-rose-bright);
+
+  /* Short Ergonomic Aliases */
+  --color-edge: var(--border-edge);
+  --color-card: var(--surface-card);
+  --color-panel: var(--surface-panel);
+  --color-steel: var(--surface-steel);
+  --color-muted: var(--text-muted);
+  --color-gold: var(--accent-gold);
+  --color-cyan: var(--accent-cyan);
+  --color-emerald: var(--accent-emerald);
+
   --font-sans: var(--font-ibm), var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
   --font-chivo: var(--font-chivo), sans-serif;
   --font-mono: var(--font-mono), monospace;

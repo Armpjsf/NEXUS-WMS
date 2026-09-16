@@ -279,7 +279,7 @@ export default function Sidebar() {
 
       <button
         type="button"
-        className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#30353d] bg-[#171c23] text-[#dee2ec] hover:text-[#facc15] shadow-lg transition-colors md:hidden"
+        className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-edge bg-surface-card text-foreground hover:text-accent-gold shadow-lg transition-colors md:hidden"
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation"
       >
@@ -300,16 +300,16 @@ export default function Sidebar() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#30353d]/60 bg-[#090f15] text-[#dee2ec] shadow-2xl transition-[width,transform] duration-300 select-none',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-edge/60 bg-surface-lowest text-foreground shadow-2xl transition-[width,transform] duration-300 select-none',
           collapsed ? 'w-20' : 'w-80',
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
         {/* Stitch Brand & Telemetry Header */}
-        <div className="border-b border-[#30353d]/60 bg-[#171c23]/80 p-3.5">
+        <div className="border-b border-edge/60 bg-surface-card/80 p-3.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-[#1b2027] border border-[#30353d]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface-panel border border-edge">
                 <img
                   src={org.brandingLogo || '/nexus-icon.png'}
                   className="h-7 w-7 object-contain drop-shadow"
@@ -319,10 +319,10 @@ export default function Sidebar() {
 
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <span className="font-headline text-sm font-extrabold tracking-wider text-[#facc15] uppercase leading-none block">
+                  <span className="font-headline text-sm font-extrabold tracking-wider text-accent-gold uppercase leading-none block">
                     NEXUS WMS
                   </span>
-                  <span className="font-mono text-[9px] text-[#d1c6ab] tracking-tight leading-tight block mt-0.5">
+                  <span className="font-mono text-[9px] text-text-tactical tracking-tight leading-tight block mt-0.5">
                     COMMAND PLATFORM v4.8
                   </span>
                 </div>
@@ -331,16 +331,16 @@ export default function Sidebar() {
 
             <div className="flex items-center gap-1.5">
               {!collapsed && (
-                <div className="flex items-center gap-1 bg-[#1b2027] px-1.5 py-0.5 rounded border border-[#30353d] text-[10px] font-mono font-bold">
-                  <span className="w-2 h-2 rounded-full bg-[#57ec7f] animate-pulse"></span>
-                  <span className="text-[#57ec7f]">SYNC LIVE</span>
+                <div className="flex items-center gap-1 bg-surface-panel px-1.5 py-0.5 rounded border border-edge text-[10px] font-mono font-bold">
+                  <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse"></span>
+                  <span className="text-accent-emerald">SYNC LIVE</span>
                 </div>
               )}
 
               <button
                 type="button"
                 onClick={handleToggleCollapse}
-                className="hidden h-7 w-7 shrink-0 items-center justify-center rounded border border-[#30353d] bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] transition-colors md:inline-flex"
+                className="hidden h-7 w-7 shrink-0 items-center justify-center rounded border border-edge bg-surface-steel text-text-tactical hover:text-foreground transition-colors md:inline-flex"
                 aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
               >
                 <ChevronLeft className={cn('h-3.5 w-3.5 transition-transform', collapsed && 'rotate-180')} />
@@ -351,7 +351,7 @@ export default function Sidebar() {
           {!collapsed && (
             <>
               {/* Branch Selector wrapper */}
-              <div className="mt-2.5 bg-[#1b2027] p-2 rounded border border-[#30353d]/80">
+              <div className="mt-2.5 bg-surface-panel p-2 rounded border border-edge/80">
                 <BranchSelector />
               </div>
             </>
@@ -364,8 +364,8 @@ export default function Sidebar() {
             {visibleGroups.map((group) => (
               <div key={group.label}>
                 {!collapsed && (
-                  <div className="mb-1.5 flex items-center gap-1.5 px-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#d1c6ab]/70">
-                    <span className="h-1 w-1 rounded-full bg-[#facc15]" />
+                  <div className="mb-1.5 flex items-center gap-1.5 px-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-text-tactical/70">
+                    <span className="h-1 w-1 rounded-full bg-accent-gold" />
                     <span>{group.label}</span>
                   </div>
                 )}
@@ -385,16 +385,16 @@ export default function Sidebar() {
                           'group relative flex min-h-9 items-center gap-2.5 rounded px-2.5 py-1.5 text-xs font-semibold transition-all duration-150',
                           collapsed ? 'justify-center' : 'justify-between',
                           isActive
-                            ? 'bg-[#252a32] text-[#facc15] font-bold border-l-4 border-[#facc15]'
-                            : 'text-[#d1c6ab] hover:bg-[#171c23] hover:text-[#dee2ec]'
+                            ? 'bg-surface-steel text-accent-gold font-bold border-l-4 border-accent-gold'
+                            : 'text-text-tactical hover:bg-surface-card hover:text-foreground'
                         )}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#facc15]' : 'text-[#d1c6ab] group-hover:text-[#dee2ec]')} />
+                          <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-accent-gold' : 'text-text-tactical group-hover:text-foreground')} />
                           {!collapsed && <span className="truncate">{item.label}</span>}
                         </div>
                         {!collapsed && isActive && (
-                          <span className="font-mono text-[9px] bg-[#facc15] text-[#1b1600] px-1 py-0.5 rounded font-bold shrink-0">
+                          <span className="font-mono text-[9px] bg-accent-gold text-accent-gold-dark px-1 py-0.5 rounded font-bold shrink-0">
                             LIVE
                           </span>
                         )}
@@ -408,28 +408,28 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom Tactical Operator Card & Scanner [F2] */}
-        <div className="border-t border-[#30353d]/60 bg-[#171c23]/90 p-3 flex flex-col gap-2">
+        <div className="border-t border-edge/60 bg-surface-card/90 p-3 flex flex-col gap-2">
           {!collapsed && (
             <Link
               href="/barcode/scanner"
-              className="w-full py-2 px-3 bg-[#facc15] text-[#1b1600] font-mono text-xs font-bold rounded flex items-center justify-center gap-1.5 hover:bg-[#eec200] active:translate-y-px transition-all shadow-sm"
+              className="w-full py-2 px-3 bg-accent-gold text-accent-gold-dark font-mono text-xs font-bold rounded flex items-center justify-center gap-1.5 hover:bg-[#eec200] active:translate-y-px transition-all shadow-sm"
             >
               <ScanLine className="w-4 h-4" />
               <span>เปิดสแกนเนอร์บาร์โค้ด [F2]</span>
             </Link>
           )}
 
-          <div className={cn('flex items-center gap-2.5 pt-1 border-t border-[#30353d]/40', collapsed && 'justify-center')}>
-            <div className="w-8 h-8 rounded-full bg-[#facc15] text-[#1b1600] flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-[#ffe083]/40">
+          <div className={cn('flex items-center gap-2.5 pt-1 border-t border-edge/40', collapsed && 'justify-center')}>
+            <div className="w-8 h-8 rounded-full bg-accent-gold text-accent-gold-dark flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-[#ffe083]/40">
               {session?.user?.name?.charAt(0) || 'U'}
             </div>
 
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-[#dee2ec] leading-tight">
+                <p className="truncate text-xs font-bold text-foreground leading-tight">
                   {session?.user?.name || 'ผู้ใช้งาน'}
                 </p>
-                <p className="truncate font-mono text-[10px] text-[#d1c6ab] leading-none mt-0.5">
+                <p className="truncate font-mono text-[10px] text-text-tactical leading-none mt-0.5">
                   {userRole}
                 </p>
               </div>
@@ -438,7 +438,7 @@ export default function Sidebar() {
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: '/login' })}
-              className="inline-flex h-7 w-7 items-center justify-center rounded border border-[#30353d] bg-[#252a32] text-[#d1c6ab] hover:text-[#ffb4ab] hover:border-[#ffb4ab]/40 transition-colors"
+              className="inline-flex h-7 w-7 items-center justify-center rounded border border-edge bg-surface-steel text-text-tactical hover:text-accent-rose hover:border-accent-rose/40 transition-colors"
               title={t('menu_signout')}
               aria-label={t('menu_signout')}
             >

@@ -134,33 +134,34 @@ export default function MobileReceivingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Top Mobile Bar */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 shadow-md">
+      {/* Top Mobile Bar - Tactical Hybrid */}
+      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link 
               href="/mobile" 
-              className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
+              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95 transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="font-bold text-base text-slate-900 leading-tight">รับสินค้าเข้า (Inbound)</h1>
-              <p className="text-[11px] text-slate-500">สแกนตรวจนับ PO และขึ้นชั้นวาง</p>
+              <h1 className="font-bold text-base text-[#dee2ec] leading-tight">รับสินค้าเข้า (Inbound)</h1>
+              <p className="text-[11px] text-[#8a92a6]">สแกนตรวจนับ PO และขึ้นชั้นวาง</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCameraOpen(true)}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all"
+              className="px-3 py-1.5 bg-[#57ec7f] hover:bg-[#46c368] active:scale-95 text-[#090f15] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#57ec7f]/20 transition-all font-mono"
             >
               <Camera className="w-4 h-4" />
               <span>สแกนกล้อง</span>
             </button>
             <button
               onClick={load}
-              className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-95"
+              className="p-2 rounded-lg bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -170,31 +171,33 @@ export default function MobileReceivingPage() {
         {/* Search & PDA Indicator */}
         <div className="mt-3 flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="ค้นหาเลขที่ PO, ใบรับ หรือ SKU..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[#090f15] border border-[#30353d] rounded-xl pl-9 pr-8 py-2 text-xs text-[#dee2ec] placeholder-[#8a92a6] focus:outline-none focus:border-[#57ec7f]"
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-900"
+                className="absolute right-2.5 top-2.5 text-[#8a92a6] hover:text-[#dee2ec]"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-          <div className="px-2.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-[10px] font-mono text-emerald-600 flex items-center gap-1 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="px-2.5 py-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[10px] font-mono text-[#57ec7f] flex items-center gap-1 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#57ec7f] animate-pulse" />
             PDA พร้อม
           </div>
         </div>
+      </header>
 
-        {/* Tabs: Pending vs Done */}
-        <div className="grid grid-cols-2 gap-2 mt-3 p-1 bg-slate-50 rounded-xl border border-slate-200">
+      {/* Tabs: Pending vs Done */}
+      <div className="px-4 mt-3 max-w-lg mx-auto">
+        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-xl border border-slate-200">
           <button
             onClick={() => setActiveTab('pending')}
             className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
@@ -216,7 +219,7 @@ export default function MobileReceivingPage() {
             เสร็จแล้ว ({done.length})
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Main List */}
       <main className="p-4 space-y-3 max-w-lg mx-auto">

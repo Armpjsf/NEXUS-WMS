@@ -295,19 +295,20 @@ export default function MobilePickingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 shadow-md">
+      {/* Header - Tactical Hybrid */}
+      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link 
               href="/mobile" 
-              className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 active:scale-95 transition-all"
+              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95 transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="font-bold text-base text-slate-900 leading-tight">หยิบสินค้า (Wave Picking)</h1>
-              <p className="text-[11px] text-slate-500">เดินตามเส้นทาง S-Shape พร้อมเสียงนำทาง</p>
+              <h1 className="font-bold text-base text-[#dee2ec] leading-tight">หยิบสินค้า (Wave Picking)</h1>
+              <p className="text-[11px] text-[#8a92a6]">เดินตามเส้นทาง S-Shape พร้อมเสียงนำทาง</p>
             </div>
           </div>
 
@@ -316,8 +317,8 @@ export default function MobilePickingPage() {
               onClick={() => setVoiceEnabled(!voiceEnabled)}
               className={`p-2 rounded-xl border transition-all ${
                 voiceEnabled 
-                  ? 'bg-blue-100 text-blue-600 border-blue-200' 
-                  : 'bg-slate-100 text-slate-500 border-slate-200'
+                  ? 'bg-[#facc15]/10 text-[#facc15] border-[#facc15]/30' 
+                  : 'bg-[#252a32] text-[#8a92a6] border-[#30353d]'
               }`}
               title={voiceEnabled ? 'เปิดเสียงภาษาไทยอยู่' : 'ปิดเสียง'}
             >
@@ -326,7 +327,7 @@ export default function MobilePickingPage() {
             {activeWave && (
               <button
                 onClick={() => setCameraOpen(true)}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition-all"
+                className="px-3 py-1.5 bg-[#facc15] hover:bg-[#eec200] active:scale-95 text-[#1b1600] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#facc15]/20 transition-all font-mono"
               >
                 <Camera className="w-4 h-4" />
                 <span>สแกนหยิบ</span>

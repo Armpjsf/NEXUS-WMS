@@ -76,7 +76,7 @@ export default function MobileNav() {
     <>
       {/* App-styled alert/confirm host for all mobile pages */}
       <MobileDialogHost />
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 z-50 shadow-[0_-2px_12px_rgba(15,23,42,0.06)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#171c23]/95 backdrop-blur-md border-t border-[#30353d] z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
         <div className="flex justify-around items-center h-16">
           {navItems.map(item => {
             const Icon = item.icon;
@@ -86,12 +86,17 @@ export default function MobileNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                  isActive ? 'text-blue-700 bg-blue-50' : 'text-slate-500 hover:text-slate-800'
+                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all ${
+                  isActive
+                    ? 'text-[#facc15] font-bold bg-[#252a32]/30'
+                    : 'text-[#8a92a6] hover:text-[#dee2ec]'
                 }`}
               >
-                <Icon className="w-6 h-6 mb-1" />
-                <span className="text-xs font-medium">{item.label}</span>
+                {isActive && (
+                  <span className="absolute top-0 w-8 h-1 bg-[#facc15] rounded-full shadow-[0_0_8px_#facc15]" />
+                )}
+                <Icon className={`w-5 h-5 mb-1 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                <span className="text-[10px] font-mono tracking-tight">{item.label}</span>
               </Link>
             );
           })}

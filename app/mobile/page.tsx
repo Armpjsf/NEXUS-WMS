@@ -25,7 +25,10 @@ import {
   X,
   ShieldCheck,
   UserCheck,
-  RotateCcw
+  RotateCcw,
+  Mic,
+  ArrowLeftRight,
+  Zap
 } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
@@ -195,6 +198,30 @@ export default function MobileHubPage() {
       border: 'border-purple-500/30',
       iconBg: 'bg-purple-500/20 text-purple-400',
     },
+    {
+      id: 'smart-tasks',
+      section: 'all',
+      title: 'คิวงานอัจฉริยะ (Smart Tasks)',
+      subtitle: 'รับงานหยิบ/จัดเก็บ/เติมสต็อกตามลำดับความสำคัญ',
+      icon: Zap,
+      href: '/mobile/tasks',
+      color: 'from-amber-500 to-orange-600',
+      tag: 'คิวงาน',
+      border: 'border-amber-200',
+      iconBg: 'bg-amber-100 text-amber-600',
+    },
+    {
+      id: 'voice-picking',
+      section: 'Staff - Picker',
+      title: 'สั่งหยิบด้วยเสียง (Voice Picking)',
+      subtitle: 'หยิบแบบมือว่าง มีเสียงภาษาไทยนำทาง + ยืนยันด้วยสแกน',
+      icon: Mic,
+      href: '/mobile/voice-picking',
+      color: 'from-amber-500 to-orange-600',
+      tag: 'Hands-Free',
+      border: 'border-amber-200',
+      iconBg: 'bg-amber-100 text-amber-600',
+    },
   ];
 
   // Re-order based on role
@@ -255,27 +282,68 @@ export default function MobileHubPage() {
       href: '/mobile/outbound',
       badge: 'Direct Issue',
     },
+    {
+      id: 'lpn-pallet',
+      title: 'จัดการพาเลท (LPN)',
+      desc: 'สแกนเลขพาเลทเพื่อดู/ย้ายพิกัด',
+      icon: Boxes,
+      href: '/mobile/lpn',
+      badge: 'Pallet',
+    },
+    {
+      id: 'kitting',
+      title: 'รวมชุดสินค้า (Kitting)',
+      desc: 'ประกอบชุดสินค้าตามสูตร (BOM) หน้างาน',
+      icon: Layers,
+      href: '/mobile/kitting',
+      badge: 'Assembly',
+    },
+    {
+      id: 'dock',
+      title: 'คิวเทียบท่า (Dock)',
+      desc: 'เช็คอินรถ นำเข้าเบย์ และปิดงานเทียบท่า',
+      icon: Truck,
+      href: '/mobile/dock',
+      badge: 'Yard',
+    },
+    {
+      id: 'transfers',
+      title: 'โอนสต็อกข้ามสาขา',
+      desc: 'ส่งออก & รับเข้าของโอนระหว่างสาขา',
+      icon: ArrowLeftRight,
+      href: '/mobile/transfers',
+      badge: 'Transfer',
+    },
+    {
+      id: 'adjust-approve',
+      title: 'อนุมัติปรับยอด (Checker)',
+      desc: 'ตรวจ & อนุมัติคำขอปรับสต็อก',
+      icon: ClipboardCheck,
+      href: '/mobile/adjustments',
+      badge: 'Approve',
+    },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Top App Bar */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 shadow-md">
+      {/* Top App Bar - NEXUS Tactical Command Header */}
+      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl overflow-hidden p-0.5 flex items-center justify-center">
-              <img src="/nexus-icon.png" alt="NEXUS WMS" className="w-full h-full object-contain drop-shadow-sm" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden p-0.5 flex items-center justify-center bg-[#1b2027] border border-[#30353d]">
+              <img src="/nexus-icon.png" alt="NEXUS WMS" className="w-full h-full object-contain drop-shadow" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-base text-slate-900 tracking-tight leading-tight">NEXUS Mobile</h1>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1" />
+                <h1 className="font-headline font-black text-base text-[#facc15] tracking-wide leading-tight">NEXUS Mobile</h1>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#57ec7f] animate-pulse mr-1" />
                   {isOnline ? 'Online' : 'Offline'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                <Clock className="w-3 h-3 text-slate-500" /> อัปเดต {lastSync || 'กำลังซิงค์...'}
+              <p className="text-xs text-[#8a92a6] font-mono flex items-center gap-1 mt-0.5">
+                <Clock className="w-3 h-3 text-[#8a92a6]" /> อัปเดต {lastSync || 'กำลังซิงค์...'}
               </p>
             </div>
           </div>
@@ -283,7 +351,7 @@ export default function MobileHubPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCameraOpen(true)}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition-all"
+              className="px-3 py-1.5 bg-[#facc15] hover:bg-[#eec200] active:scale-95 text-[#1b1600] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#facc15]/20 transition-all font-mono"
             >
               <Camera className="w-4 h-4" />
               <span>สแกนกล้อง</span>
@@ -291,7 +359,7 @@ export default function MobileHubPage() {
             <button
               onClick={loadData}
               title="รีเฟรชข้อมูล"
-              className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-95 transition-all"
+              className="p-2 rounded-lg bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95 transition-all"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
