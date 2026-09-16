@@ -522,7 +522,8 @@ export async function updateOrder(
 // ตัดสต็อกของใหม่เฉพาะเมื่อ SHIPPED แล้ว, แล้วดันเข้าดรอปใน TMS ถ้ามีงานอยู่
 export async function addItemsToOrder(
   id: string,
-  newLines: OrderLine[]
+  newLines: OrderLine[],
+  actor?: string
 ): Promise<{ ok: boolean; order?: OutboundOrder; tms?: { ok: boolean; added?: number; error?: string; skipped?: boolean }; error?: string }> {
   const orgId = await getCurrentOrgId();
   const order = await getOrder(id);
@@ -545,11 +546,13 @@ export async function addItemsToOrder(
 
   const admin = getServiceSupabase();
   const mergedItems = [...(order.items || []), ...lines];
+  const totalQty = mergedItems.reduce((s, l) => s + (Number(l.qty) || 0), 0);
+  const totalAmount = mergedItems.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.price) || 0), 0);
 
-  // 1. บันทึกรายการรวม
+  // 1. บันทึกรายการรวม + อัปเดตยอดรวม (total_qty/total_amount เป็นคอลัมน์แยก)
   const { error: upErr } = await admin
     .from('outbound_orders')
-    .update({ items_json: mergedItems, updated_at: new Date().toISOString() })
+    .update({ items_json: mergedItems, total_qty: totalQty, total_amount: totalAmount, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('org_id', orgId);
   if (upErr) return { ok: false, error: upErr.message };
@@ -572,7 +575,7 @@ export async function addItemsToOrder(
         product_name: line.name || prod?.name || line.sku, qty: line.qty,
         unit_price: line.price || Number(prod?.price || 0),
         doc_ref: order.orderNo, location: line.location || prod?.location || '',
-        user_name: order.createdBy || 'Warehouse',
+        user_name: actor || order.createdBy || 'Warehouse',
       });
     }
   }

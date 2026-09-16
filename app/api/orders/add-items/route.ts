@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addItemsToOrder } from '@/lib/data/orders';
+import { requireAuth } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,10 @@ export const dynamic = 'force-dynamic';
 // body: { id, items: [{ sku, name, qty, price?, location?, drop? }] }
 export async function POST(request: Request) {
   try {
+    // กระทบสต็อกจริง — ต้องล็อกอิน (กันเรียก endpoint ตรงโดยไม่ผ่านสิทธิ์)
+    const guard = await requireAuth();
+    if (guard.error) return guard.error;
+
     const body = await request.json();
     const { id, items } = body || {};
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -14,7 +19,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ไม่มีรายการสินค้าที่จะเพิ่ม' }, { status: 400 });
     }
 
-    const result = await addItemsToOrder(id, items);
+    const actor = guard.user.name || guard.user.username || guard.user.email || 'Warehouse';
+    const result = await addItemsToOrder(id, items, actor);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
     return NextResponse.json({ success: true, order: result.order, tms: result.tms });

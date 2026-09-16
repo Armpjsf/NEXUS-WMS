@@ -5,7 +5,8 @@ import { X, Plus, Minus, Trash2, ScanLine, PackagePlus, Search } from 'lucide-re
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 
-interface Prod { sku: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
+// product API (mapProductRow) เก็บ SKU ไว้ใน field `id` ไม่ใช่ `sku`
+interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
 interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; }
 export interface AddItemsOrder {
   id: string;
@@ -46,14 +47,15 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   if (!order) return null;
 
   const addLine = (p: Prod) => {
+    if (!p.id) return;
     setLines(prev => {
-      const i = prev.findIndex(l => l.sku === p.sku);
+      const i = prev.findIndex(l => l.sku === p.id);
       if (i >= 0) {
         const next = [...prev];
         next[i] = { ...next[i], qty: next[i].qty + 1 };
         return next;
       }
-      return [...prev, { sku: p.sku, name: p.name, qty: 1, price: Number(p.price || 0), location: p.location || '', drop: drops[0] }];
+      return [...prev, { sku: p.id, name: p.name, qty: 1, price: Number(p.price || 0), location: p.location || '', drop: drops[0] }];
     });
   };
 
@@ -61,8 +63,8 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
     const q = raw.trim().toLowerCase();
     if (!q) return;
     const hit = products.find(p =>
-      p.sku?.toLowerCase() === q || p.barcode?.toLowerCase() === q
-    ) || products.find(p => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
+      p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q
+    ) || products.find(p => p.name?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q));
     if (hit) { addLine(hit); setQuery(''); }
     else toast.error(`ไม่พบสินค้า "${raw}"`);
   };
@@ -70,7 +72,7 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   const searchResults = query.trim()
     ? products.filter(p =>
         p.name?.toLowerCase().includes(query.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(query.toLowerCase())
+        p.id?.toLowerCase().includes(query.toLowerCase())
       ).slice(0, 6)
     : [];
 
@@ -139,13 +141,13 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
             <div className="rounded-lg border border-[#30353d] bg-[#1b2027] divide-y divide-[#30353d] max-h-44 overflow-y-auto">
               {searchResults.map(p => (
                 <button
-                  key={p.sku}
+                  key={p.id}
                   onClick={() => { addLine(p); setQuery(''); scanRef.current?.focus(); }}
                   className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-[#252a32] transition-colors"
                 >
                   <span className="min-w-0">
                     <span className="block text-xs text-[#dee2ec] truncate">{p.name}</span>
-                    <span className="block font-mono text-[10px] text-[#8a92a6]">{p.sku} · คงเหลือ {p.stock ?? 0}</span>
+                    <span className="block font-mono text-[10px] text-[#8a92a6]">{p.id} · คงเหลือ {p.stock ?? 0}</span>
                   </span>
                   <Plus className="w-4 h-4 text-[#facc15] shrink-0" />
                 </button>
