@@ -36,10 +36,12 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
     const ds = (order?.destinations || []).map(d => d.drop).filter(Boolean);
     return ds.length ? Array.from(new Set(ds)).sort((a, b) => a - b) : [1];
   }, [order]);
+  const dropName = (d: number) => (order?.destinations || []).find(x => x.drop === d)?.name || '';
+  const [targetDrop, setTargetDrop] = useState(1);
 
   useEffect(() => {
     if (!order) return;
-    setLines([]); setQuery('');
+    setLines([]); setQuery(''); setTargetDrop(drops[0]);
     fetch(getApiUrl('/api/products'), { cache: 'no-store' })
       .then(r => r.json())
       .then((rows) => setProducts(Array.isArray(rows) ? rows : []))
@@ -56,17 +58,23 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
         next[i] = { ...next[i], qty: next[i].qty + 1 };
         return next;
       }
-      return [...prev, { sku: p.id, name: p.name, qty: 1, price: Number(p.price || 0), location: p.location || '', drop: drops[0] }];
+      return [...prev, { sku: p.id, name: p.name, qty: 1, price: Number(p.price || 0), location: p.location || '', drop: targetDrop }];
     });
   };
 
   const matchAndAdd = (raw: string) => {
     const q = raw.trim().toLowerCase();
     if (!q) return;
+    // จับคู่: SKU/บาร์โค้ดตรงตัว → บาร์โค้ด/SKU/ชื่อมีคำนี้ → SKU/บาร์โค้ดเป็นส่วนหนึ่งของโค้ดที่ยิง (เผื่อมี prefix)
     const hit = products.find(p => p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q)
-      || products.find(p => p.name?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q));
+      || products.find(p => (p.barcode && p.barcode.toLowerCase().includes(q)) || p.id?.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q))
+      || products.find(p => (p.id && q.includes(p.id.toLowerCase())) || (p.barcode && q.includes(p.barcode.toLowerCase())));
     if (hit) { addLine(hit); setQuery(''); }
-    else toast.error(`ไม่พบสินค้า "${raw}"`);
+    else {
+      // ไม่เจอ: คงคำที่ยิงไว้ในช่องค้นหา ให้ผู้ใช้เห็นผลลัพธ์ใกล้เคียง/เลือกเองได้
+      setQuery(raw.trim());
+      toast.error(`ไม่พบสินค้าที่ตรงกับ "${raw}" — ลองค้นด้วยชื่อ หรือเช็คบาร์โค้ดในระบบ`);
+    }
   };
 
   // ยิงบาร์โค้ดจาก PDA (hardware) — เพิ่มของอัตโนมัติ
@@ -153,6 +161,24 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
               <Camera className="w-5 h-5" />
             </button>
           </div>
+
+          {/* เลือกดรอปที่จะเพิ่มของเข้า (ของที่เพิ่มใหม่จะเข้าดรอปนี้) */}
+          {drops.length > 1 ? (
+            <div>
+              <p className="text-[11px] font-bold text-slate-500 mb-1.5">เพิ่มของเข้าดรอป</p>
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                {drops.map(d => (
+                  <button key={d} type="button" onClick={() => setTargetDrop(d)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${targetDrop === d ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200'}`}>
+                    ดรอป {d}{dropName(d) ? ` · ${dropName(d)}` : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-400">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
+          )}
+
           {searchResults.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 max-h-52 overflow-y-auto shadow-sm">
               {searchResults.map(p => (

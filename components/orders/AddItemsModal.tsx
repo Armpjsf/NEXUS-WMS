@@ -31,14 +31,19 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   const [camOpen, setCamOpen] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
 
+  const [targetDrop, setTargetDrop] = useState(1);
+
   const drops = useMemo(() => {
     const ds = (order?.destinations || []).map(d => d.drop).filter(Boolean);
     return ds.length ? Array.from(new Set(ds)).sort((a, b) => a - b) : [1];
   }, [order]);
+  const dropName = (d: number) => (order?.destinations || []).find(x => x.drop === d)?.name || '';
 
   useEffect(() => {
     if (!order) return;
     setLines([]); setQuery('');
+    const ds = (order.destinations || []).map(d => d.drop).filter(Boolean);
+    setTargetDrop(ds.length ? Math.min(...ds) : 1);
     fetch(getApiUrl('/api/products'), { cache: 'no-store' })
       .then(r => r.json())
       .then((rows) => setProducts(Array.isArray(rows) ? rows : []))
@@ -57,18 +62,18 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
         next[i] = { ...next[i], qty: next[i].qty + 1 };
         return next;
       }
-      return [...prev, { sku: p.id, name: p.name, qty: 1, price: Number(p.price || 0), location: p.location || '', drop: drops[0] }];
+      return [...prev, { sku: p.id, name: p.name, qty: 1, price: Number(p.price || 0), location: p.location || '', drop: targetDrop }];
     });
   };
 
   const handleScan = (raw: string) => {
     const q = raw.trim().toLowerCase();
     if (!q) return;
-    const hit = products.find(p =>
-      p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q
-    ) || products.find(p => p.name?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q));
+    const hit = products.find(p => p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q)
+      || products.find(p => (p.barcode && p.barcode.toLowerCase().includes(q)) || p.id?.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q))
+      || products.find(p => (p.id && q.includes(p.id.toLowerCase())) || (p.barcode && q.includes(p.barcode.toLowerCase())));
     if (hit) { addLine(hit); setQuery(''); }
-    else toast.error(`ไม่พบสินค้า "${raw}"`);
+    else { setQuery(raw.trim()); toast.error(`ไม่พบสินค้าที่ตรงกับ "${raw}" — ลองค้นด้วยชื่อ`); }
   };
 
   const searchResults = query.trim()
@@ -145,6 +150,22 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
               <Camera className="w-4 h-4" />
             </button>
           </div>
+
+          {/* เลือกดรอปที่จะเพิ่มของเข้า */}
+          {drops.length > 1 ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-bold text-[#8a92a6]">เพิ่มเข้าดรอป:</span>
+              {drops.map(d => (
+                <button key={d} type="button" onClick={() => setTargetDrop(d)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${targetDrop === d ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]' : 'bg-[#1b2027] text-[#d1c6ab] border-[#30353d]'}`}>
+                  ดรอป {d}{dropName(d) ? ` · ${dropName(d)}` : ''}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-[#8a92a6]">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
+          )}
+
           {searchResults.length > 0 && (
             <div className="rounded-lg border border-[#30353d] bg-[#1b2027] divide-y divide-[#30353d] max-h-44 overflow-y-auto">
               {searchResults.map(p => (
