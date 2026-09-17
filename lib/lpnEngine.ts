@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { binMoveAll } from '@/lib/stockLocations';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 
@@ -126,6 +127,21 @@ export async function moveLPN(lpnNumber: string, newLocation: string, operator =
         .update({ location_code: newLocation, updated_at: new Date().toISOString() })
         .eq('id', existing.id);
 
+      // ย้ายสต็อกราย SKU จาก bin เดิมของพาเลท → bin ปลายทาง (ยอดตามไปจริงต่อ bin)
+      // ย้ายเฉพาะจำนวนที่อยู่ bin ต้นทางของพาเลท ไม่ไปแตะ bin อื่นของ SKU เดียวกัน
+      const movedSkus: string[] = [];
+      const itemSkus: string[] = (existing.lpn_items || [])
+        .map((it: any) => it.sku)
+        .filter(Boolean);
+      for (const sku of itemSkus) {
+        try {
+          const { moved } = await binMoveAll(orgId, sku, oldLocation, newLocation);
+          if (moved > 0) movedSkus.push(sku);
+        } catch (stockErr) {
+          console.warn(`LPN move: bin move failed for ${sku}:`, stockErr);
+        }
+      }
+
       target = {
         id: existing.id,
         lpnNumber: existing.lpn_number,
@@ -148,10 +164,11 @@ export async function moveLPN(lpnNumber: string, newLocation: string, operator =
         action: 'UPDATE',
         entityName: 'license_plate_numbers',
         entityId: lpnNumber,
-        beforeState: { location: oldLocation },
-        afterState: { location: newLocation },
+        beforeState: { location: oldLocation, movedSkus: [] },
+        afterState: { location: newLocation, movedSkus },
         performedBy: operator,
-        reason: `Bulk moved LPN ${lpnNumber} from ${oldLocation} to ${newLocation}`
+        reason: `Bulk moved LPN ${lpnNumber} from ${oldLocation} to ${newLocation}` +
+          (movedSkus.length ? ` (relocated ${movedSkus.length} SKU stock: ${movedSkus.join(', ')})` : '')
       });
     }
   } catch (err) {

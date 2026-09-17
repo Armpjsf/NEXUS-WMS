@@ -17,6 +17,7 @@ import { toast } from 'react-hot-toast';
 import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 export default function OutboundPage() {
   const { t } = useLanguage();
@@ -34,6 +35,7 @@ export default function OutboundPage() {
   const [currentSku, setCurrentSku] = useState('');
   const [currentQty, setCurrentQty] = useState('');
   const [currentPrice, setCurrentPrice] = useState('');
+  const [currentBin, setCurrentBin] = useState('');
   const [docRef, setDocRef] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [showCamera, setShowCamera] = useState(false);
@@ -52,6 +54,7 @@ export default function OutboundPage() {
     );
     if (matched) {
       setCurrentSku(matched.name);
+      setCurrentBin('');
       if (!currentQty) setCurrentQty('1');
       setShowCamera(false);
       toast.success(`เลือกสินค้า: ${matched.name}`);
@@ -134,12 +137,13 @@ export default function OutboundPage() {
 
      setItems(prev => [
         ...prev,
-        { sku: currentSku, qty: currentQty, salePrice: currentPrice }
+        { sku: currentSku, qty: currentQty, salePrice: currentPrice, location: currentBin }
      ]);
      // Clear inputs
      setCurrentSku('');
      setCurrentQty('');
      setCurrentPrice('');
+     setCurrentBin('');
   };
 
   const removeItem = (idx: number) => {
@@ -337,7 +341,10 @@ export default function OutboundPage() {
                                             subLabel: `Stock: ${p.stock}`
                                         }))}
                                         value={currentSku}
-                                        onChange={setCurrentSku}
+                                        onChange={(val) => {
+                                            setCurrentSku(val);
+                                            setCurrentBin('');
+                                        }}
                                         placeholder="-- Select Product --"
                                         disabled={loading}
                                     />
@@ -373,6 +380,23 @@ export default function OutboundPage() {
                                 );
                             }
                             return null;
+                        })()}
+
+                        {currentSku && (() => {
+                            const foundProd = products.find(prod => prod.name === currentSku || prod.id === currentSku);
+                            const realSku = foundProd?.sku || foundProd?.id || currentSku;
+                            return (
+                                <div className="p-3 bg-[#1b2027] border border-[#30353d] rounded-xl">
+                                    <BinQuickSelect
+                                        sku={realSku}
+                                        selectedBin={currentBin}
+                                        onSelectBin={setCurrentBin}
+                                        mode="picking"
+                                        theme="dark"
+                                        label="ช่องเก็บที่ต้องการหยิบออก (คลิกเลือก):"
+                                    />
+                                </div>
+                            );
                         })()}
 
                         <div className="grid grid-cols-2 gap-4">
@@ -499,7 +523,14 @@ export default function OutboundPage() {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className="group hover:bg-[#1b2027] transition-colors"
                                         >
-                                            <td className="p-4 font-bold text-[#dee2ec] text-base">{item.sku}</td>
+                                            <td className="p-4 font-bold text-[#dee2ec] text-base">
+                                                <div>{item.sku}</div>
+                                                {item.location && (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 mt-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono font-normal">
+                                                        ช่อง: {item.location}
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="p-4 text-right font-mono text-rose-600 font-bold text-lg">{parseInt(item.qty).toLocaleString()}</td>
                                             <td className="p-4 text-right font-mono text-[#8a92a6]">{item.salePrice ? `฿${item.salePrice}` : '-'}</td>
                                             <td className="p-4 text-center">

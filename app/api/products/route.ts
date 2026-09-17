@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { mapProductRows, mapProductRow } from '@/lib/data/products';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { checkPlanLimit } from '@/lib/planLimits';
+import { resetBinsBulk } from '@/lib/stockLocations';
 
 export async function GET(request: Request) {
   try {
@@ -66,6 +67,14 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Supabase Add Product Error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Keep the multi-bin ledger in sync with this absolute stock value:
+    // one bin at the declared location = the declared stock.
+    try {
+      await resetBinsBulk(orgId, [{ sku: itemSku, binCode: location || 'UNASSIGNED', quantity: Number(stock || 0) }]);
+    } catch (e) {
+      console.warn('Product create/edit: bin resync failed', e);
     }
 
     return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });

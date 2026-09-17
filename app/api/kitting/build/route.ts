@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { binAdd, binConsume } from '@/lib/stockLocations';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,11 +48,11 @@ export async function POST(req: Request) {
     // 2. ปรับสต็อกชิ้นส่วน (ASSEMBLE = ตัดออก, DISASSEMBLE = คืนเข้า)
     for (const c of components) {
       const p: any = stockMap.get(c.componentSku);
-      const delta = c.quantity * buildQty * (isAssemble ? -1 : 1);
-      const current = Number(p?.stock || 0);
+      const moveQty = c.quantity * buildQty;
       if (p) {
-        await admin.from('products').update({ stock: Math.max(0, current + delta), updated_at: new Date().toISOString() })
-          .eq('org_id', orgId).eq('sku', c.componentSku);
+        // ASSEMBLE consumes components from bins; DISASSEMBLE returns them
+        if (isAssemble) await binConsume(orgId, c.componentSku, moveQty);
+        else await binAdd(orgId, c.componentSku, p.location || 'KIT', moveQty);
       }
       txns.push({
         org_id: orgId, type: isAssemble ? 'OUT' : 'IN', sku: c.componentSku,
@@ -63,16 +64,17 @@ export async function POST(req: Request) {
 
     // 3. ปรับสต็อกชุดสินค้า (ASSEMBLE = เพิ่ม, DISASSEMBLE = ตัด) — สร้าง product ชุดถ้ายังไม่มี
     const { data: kitProd } = await admin.from('products').select('sku, stock, price').eq('org_id', orgId).eq('sku', bomRow.kit_sku).maybeSingle();
-    const kitCurrent = Number(kitProd?.stock || 0);
-    const kitDelta = buildQty * (isAssemble ? 1 : -1);
-    if (kitProd) {
-      await admin.from('products').update({ stock: Math.max(0, kitCurrent + kitDelta), updated_at: new Date().toISOString() })
-        .eq('org_id', orgId).eq('sku', bomRow.kit_sku);
-    } else if (isAssemble) {
+    if (!kitProd && isAssemble) {
+      // create the kit product with 0 stock; binAdd reconciles the total from bins
       await admin.from('products').insert({
         org_id: orgId, sku: bomRow.kit_sku, name: bomRow.kit_name, category: 'Kit',
-        stock: buildQty, min_stock: 0, unit: 'ชุด', price: 0, location: 'KIT',
+        stock: 0, min_stock: 0, unit: 'ชุด', price: 0, location: 'KIT',
       });
+    }
+    if (kitProd || isAssemble) {
+      // ASSEMBLE adds finished kits to the KIT bin; DISASSEMBLE consumes them
+      if (isAssemble) await binAdd(orgId, bomRow.kit_sku, 'KIT', buildQty);
+      else await binConsume(orgId, bomRow.kit_sku, buildQty);
     }
     txns.push({
       org_id: orgId, type: isAssemble ? 'IN' : 'OUT', sku: bomRow.kit_sku,

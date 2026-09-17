@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { resetBinsBulk } from '@/lib/stockLocations';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,17 @@ export async function POST(request: Request) {
     }
     if (!data || data.length === 0) {
       return NextResponse.json({ error: `Product not found: ${oldName}` }, { status: 404 });
+    }
+
+    // If the manual edit set an absolute stock value, resync the bin ledger to a
+    // single bin at the product's location so the multi-bin total won't drift.
+    if (patch.stock !== undefined) {
+      try {
+        const row: any = data[0];
+        await resetBinsBulk(orgId, [{ sku: row.sku, binCode: row.location || 'UNASSIGNED', quantity: Number(row.stock) || 0 }]);
+      } catch (e) {
+        console.warn('Product update: bin resync failed', e);
+      }
     }
 
     try {

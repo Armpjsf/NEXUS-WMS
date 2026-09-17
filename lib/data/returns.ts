@@ -3,6 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { binAdd } from '@/lib/stockLocations';
 
 export type RmaStatus = 'REQUESTED' | 'APPROVED' | 'RECEIVED' | 'RESTOCKED' | 'SCRAPPED' | 'REJECTED';
 
@@ -76,7 +77,8 @@ async function restock(rma: ReturnOrder, orgId: string) {
   for (const line of rma.items) {
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
     if (prod) {
-      await admin.from('products').update({ stock: Number(prod.stock || 0) + line.qty, updated_at: new Date().toISOString() }).eq('org_id', orgId).eq('sku', line.sku);
+      // restock returned goods into their location bin; total reconciled inside
+      await binAdd(orgId, line.sku, prod.location || 'RETURNS', line.qty);
     }
     await admin.from('stock_transactions').insert({
       org_id: orgId,

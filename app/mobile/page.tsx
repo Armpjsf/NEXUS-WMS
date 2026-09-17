@@ -229,7 +229,14 @@ export default function MobileHubPage() {
   // Re-order based on role
   const isSectionStaff = userRole.startsWith('Staff - ');
   // เปิดเมนูได้จริงตามสิทธิ์ section (ตรงกับที่ proxy บังคับ) — กันโชว์ tile ที่กดแล้วเด้งกลับ
-  const canOpen = (href: string) => !isSectionStaff || canAccessSection(userRole, sectionForPath(href));
+  // สำหรับ section staff: ถ้า map section ไม่ได้ (unknown) ให้ซ่อนไว้เลย ไม่ปล่อยผ่าน
+  // เพื่อให้การจำกัดสิทธิ์ตาม role มีผลจริง (ไม่งั้นสร้าง user ตาม role ก็ไม่มีประโยชน์)
+  const canOpen = (href: string) => {
+    if (!isSectionStaff) return true;
+    const section = sectionForPath(href);
+    if (!section) return false;
+    return canAccessSection(userRole, section);
+  };
   const myWorkflows = isSectionStaff
     ? allWorkflows.filter(w => (w.section === userRole || w.section === 'all') && canOpen(w.href))
     : allWorkflows;
@@ -472,6 +479,7 @@ export default function MobileHubPage() {
         )}
 
         {/* Secondary Floor Actions */}
+        {secondaryWorkflows.filter(a => canOpen(a.href)).length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2.5 px-1 mt-6">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">งานเสริม & ขนส่ง</span>
@@ -507,6 +515,7 @@ export default function MobileHubPage() {
             })}
           </div>
         </div>
+        )}
 
         {/* Quick Shift Tips */}
         <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 text-xs text-slate-500 space-y-1.5">

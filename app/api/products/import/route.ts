@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { resetBinsBulk } from '@/lib/stockLocations';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,14 @@ export async function POST(request: Request) {
       }
 
       totalImported += chunk.length;
+
+      // Keep the multi-bin ledger in sync with the imported absolute stock:
+      // one bin per SKU at its declared location = its declared stock.
+      try {
+        await resetBinsBulk(orgId, chunk.map(p => ({ sku: p.sku, binCode: p.location || 'UNASSIGNED', quantity: p.stock })));
+      } catch (e) {
+        console.warn('Import: bin resync failed for chunk', e);
+      }
 
       // Also register lots if given
       for (const p of chunk) {

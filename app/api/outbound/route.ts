@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { binConsume } from '@/lib/stockLocations';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,19 +55,9 @@ export async function POST(request: Request) {
       // Reuse the product fetched during validation
       const prodData = stockCache[sku];
 
-      const currentStock = Number(prodData?.stock || 0);
-      const newStock = Math.max(0, currentStock - qtyNum);
-
-      // 2. Update Product Stock
+      // 2. Update Product Stock — deduct across bins; products.stock reconciled inside
       if (prodData) {
-        await supabase
-          .from('products')
-          .update({
-            stock: newStock,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('org_id', orgId)
-          .eq('sku', sku);
+        await binConsume(orgId, sku, qtyNum, { preferBin: item.location || prodData?.location });
       }
 
       // 3. Prepare Transaction Record
@@ -78,7 +69,7 @@ export async function POST(request: Request) {
         qty: qtyNum,
         unit_price: Number(item.salePrice || item.price || prodData?.price || 0),
         doc_ref: item.docRef || '',
-        location: prodData?.location || 'Unassigned',
+        location: item.location || prodData?.location || 'Unassigned',
         user_name: 'Warehouse Operator',
         created_at: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),
       });

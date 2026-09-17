@@ -43,6 +43,7 @@ import {
   speakScanMismatch 
 } from '@/lib/voiceAssistant';
 import { getApiUrl } from '@/lib/config';
+import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 export default function MobilePickingPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -213,6 +214,21 @@ export default function MobilePickingPage() {
   const totalCount = activeWave?.items.length || 0;
   const isCompleted = activeWave && totalCount > 0 && pickedCount === totalCount;
 
+  // Switch picking bin for current target
+  const handleSwitchBin = (newBin: string) => {
+    if (!currentTarget || !activeWave) return;
+    const updatedItems = activeWave.items.map(it =>
+      it.id === currentTarget.id
+        ? { ...it, location: newBin, parsedLocation: parseLocation(newBin) }
+        : it
+    );
+    setActiveWave({ ...activeWave, items: updatedItems });
+    if (voiceEnabled) {
+      speakThai(`เปลี่ยนไปช่อง ${newBin}`);
+    }
+    toast.success(`เปลี่ยนไปหยิบจากช่อง: ${newBin}`);
+  };
+
   // Handle Pick Confirmation
   const confirmPickItem = (item: PickWaveItem) => {
     if (!activeWave) return;
@@ -250,14 +266,34 @@ export default function MobilePickingPage() {
       toast.success('หยิบครบถ้วนทั้ง Wave แล้ว! อัปเดตสถานะออเดอร์เป็น PICKED เรียบร้อย');
 
       if (waveOrderIds.length > 0) {
+        const itemsByOrder: Record<string, any[]> = {};
+        nextItems.forEach(it => {
+          if (!it.orderId) return;
+          if (!itemsByOrder[it.orderId]) itemsByOrder[it.orderId] = [];
+          itemsByOrder[it.orderId].push(it);
+        });
+
         Promise.all(
-          waveOrderIds.map(id =>
-            fetch(getApiUrl('/api/orders'), {
+          waveOrderIds.map(async id => {
+            const originalOrder = orders.find(o => o.id === id);
+            const pickedLines = itemsByOrder[id] || [];
+            let updatedLines = originalOrder?.items;
+            if (Array.isArray(updatedLines)) {
+              updatedLines = updatedLines.map((line: any) => {
+                const matched = pickedLines.find(p => p.sku === line.sku);
+                return matched ? { ...line, location: matched.location, picked: matched.pickedQty } : line;
+              });
+            }
+            return fetch(getApiUrl('/api/orders'), {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id, status: 'PICKED' }),
-            })
-          )
+              body: JSON.stringify({ 
+                id, 
+                status: 'PICKED',
+                ...(updatedLines ? { items: updatedLines } : {})
+              }),
+            });
+          })
         ).then(() => {
           loadData();
         }).catch(err => {
@@ -468,6 +504,19 @@ export default function MobilePickingPage() {
                   <span className="text-3xl font-black text-amber-600 tracking-wider font-mono">
                     {currentTarget.location}
                   </span>
+                </div>
+
+                {/* Alternate Bins with Stock */}
+                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-200">
+                  <BinQuickSelect
+                    sku={currentTarget.sku}
+                    selectedBin={currentTarget.location}
+                    onSelectBin={handleSwitchBin}
+                    mode="picking"
+                    theme="light"
+                    unit={currentTarget.unit || 'ชิ้น'}
+                    label="ช่องเก็บที่มีสต็อก (แตะเพื่อสลับช่องหยิบ)"
+                  />
                 </div>
 
                 {/* Target Product Details */}

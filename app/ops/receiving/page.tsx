@@ -12,6 +12,7 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { speakScanSuccess, speakScanMismatch, speakPutawayLocation, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; done?: boolean; }
@@ -485,8 +486,15 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">จัดเก็บที่ Bin</label>
-                  <input value={l.putawayBin || ''} onChange={e => setBin(l.sku, e.target.value)} placeholder="เช่น A-01-02-1"
-                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-mono font-bold text-[#dee2ec] outline-none focus:border-emerald-500" />
+                  <input value={l.putawayBin || ''} onChange={e => setBin(l.sku, e.target.value.toUpperCase())} placeholder="เช่น A-01-02-1"
+                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-mono font-bold text-[#dee2ec] outline-none focus:border-emerald-500 uppercase mb-1.5" />
+                  <BinQuickSelect
+                    sku={l.sku}
+                    selectedBin={l.putawayBin || ''}
+                    onSelectBin={bin => setBin(l.sku, bin)}
+                    mode="putaway"
+                    theme="dark"
+                  />
                 </div>
               </div>
             </div>

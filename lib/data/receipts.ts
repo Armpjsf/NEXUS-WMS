@@ -4,6 +4,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { binAdd } from '@/lib/stockLocations';
 
 export type ReceiptStatus = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 
@@ -114,17 +115,16 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
     if (recv <= 0) continue;
 
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
-    if (prod) {
-      const newStock = Number(prod.stock || 0) + recv;
-      const update: any = { stock: newStock, updated_at: new Date().toISOString() };
-      if (line.putawayBin) update.location = line.putawayBin;
-      await admin.from('products').update(update).eq('org_id', orgId).eq('sku', line.sku);
-    } else {
+    const binCode = line.putawayBin || prod?.location || 'RECEIVING-DOCK';
+    if (!prod) {
+      // create the product first with 0 stock; binAdd reconciles the total from bins
       await admin.from('products').insert({
-        org_id: orgId, sku: line.sku, name: line.name || line.sku, stock: recv,
-        location: line.putawayBin || 'Unassigned',
+        org_id: orgId, sku: line.sku, name: line.name || line.sku, stock: 0,
+        location: binCode,
       });
     }
+    // add to the put-away bin; products.stock (= sum of bins) is reconciled inside
+    await binAdd(orgId, line.sku, binCode, recv);
 
     await admin.from('stock_transactions').insert({
       org_id: orgId,

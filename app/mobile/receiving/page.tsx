@@ -26,6 +26,7 @@ import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
 import { speakPutawayLocation, triggerHaptic } from '@/lib/voiceAssistant';
+import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 interface Line {
@@ -512,29 +513,38 @@ function MobileReceiveModal({
                 </div>
               </div>
 
-              {/* Putaway Bin Coordinates */}
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>พิกัดจัดเก็บ (Bin):</span>
+              {/* Putaway Bin Coordinates with Multi-Bin Quick Selection */}
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>พิกัดจัดเก็บ (Putaway Bin):</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={l.putawayBin || ''}
+                      onChange={e => updateBin(idx, e.target.value.toUpperCase())}
+                      placeholder="เช่น A-01-01"
+                      className="w-24 py-1 px-2 text-center text-xs font-mono font-bold bg-white border border-slate-200 rounded-lg text-emerald-700 focus:outline-none focus:border-emerald-500 uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => speakPutawayLocation(l.putawayBin || 'A-01')}
+                      className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900"
+                      title="ฟังเสียงพิกัด"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={l.putawayBin || ''}
-                    onChange={e => updateBin(idx, e.target.value.toUpperCase())}
-                    placeholder="เช่น A-01-01"
-                    className="w-28 py-1 px-2 text-center text-xs font-mono font-bold bg-white border border-slate-200 rounded-lg text-emerald-700 focus:outline-none focus:border-emerald-500 uppercase"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => speakPutawayLocation(l.putawayBin || 'A-01')}
-                    className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900"
-                    title="ฟังเสียงพิกัด"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <BinQuickSelect
+                  sku={l.sku}
+                  selectedBin={l.putawayBin || ''}
+                  onSelectBin={bin => updateBin(idx, bin)}
+                  mode="putaway"
+                  theme="light"
+                />
               </div>
             </div>
           ))}

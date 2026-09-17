@@ -4,6 +4,7 @@
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier, appendTmsJobItems } from '@/lib/tms';
+import { binConsume } from '@/lib/stockLocations';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -368,10 +369,9 @@ async function commitStockOut(order: OutboundOrder, orgId: string) {
   const admin = getServiceSupabase();
   for (const line of order.items) {
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
-    const current = Number(prod?.stock || 0);
-    const newStock = Math.max(0, current - line.qty);
     if (prod) {
-      await admin.from('products').update({ stock: newStock, updated_at: new Date().toISOString() }).eq('org_id', orgId).eq('sku', line.sku);
+      // deduct across bins (prefers the picked line.location); products.stock reconciled inside
+      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location });
     }
     await admin.from('stock_transactions').insert({
       org_id: orgId,
@@ -567,10 +567,7 @@ export async function addItemsToOrder(
       // ของนอกคลัง (cross-dock / custom ที่ไม่มีใน products) = ไม่แตะสต็อก ไม่ลง OUT
       // ของขึ้นรถแบบเช็คผ่าน ไม่ได้เบิกจากคลัง จึงไม่สร้างรายการเคลื่อนไหวหลอกๆ
       if (!prod) continue;
-      const current = Number(prod.stock || 0);
-      await admin.from('products')
-        .update({ stock: Math.max(0, current - line.qty), updated_at: new Date().toISOString() })
-        .eq('org_id', orgId).eq('sku', line.sku);
+      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location });
       await admin.from('stock_transactions').insert({
         org_id: orgId, type: 'OUT', sku: line.sku,
         product_name: line.name || prod.name || line.sku, qty: line.qty,

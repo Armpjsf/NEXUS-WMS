@@ -9,6 +9,7 @@ import { useLanguage } from '@/components/providers/LanguageProvider';
 import { usePullToRefresh, PullIndicator } from '@/components/ui/PullToRefresh';
 
 interface Product {
+  id?: string; // = SKU (product API maps sku -> id)
   name: string;
   category?: string;
   stock?: number;
@@ -18,6 +19,8 @@ interface Product {
   price?: number;
 }
 
+interface BinRow { binCode: string; quantity: number; lotNo?: string }
+
 export default function MobileInventoryPage() {
   const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,6 +28,23 @@ export default function MobileInventoryPage() {
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
   const [selected, setSelected] = useState<Product | null>(null);
+  const [bins, setBins] = useState<BinRow[] | null>(null);
+  const [binsLoading, setBinsLoading] = useState(false);
+
+  // Load per-bin breakdown whenever a product detail opens.
+  useEffect(() => {
+    const sku = selected?.id;
+    if (!sku) { setBins(null); return; }
+    let cancelled = false;
+    setBinsLoading(true);
+    setBins(null);
+    fetch(getApiUrl(`/api/stock/bins?sku=${encodeURIComponent(sku)}`), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setBins(Array.isArray(d.bins) ? d.bins : []); })
+      .catch(() => { if (!cancelled) setBins([]); })
+      .finally(() => { if (!cancelled) setBinsLoading(false); });
+    return () => { cancelled = true; };
+  }, [selected?.id]);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const scannerRef = useRef<any>(null);
@@ -210,9 +230,35 @@ export default function MobileInventoryPage() {
                 <div className={`text-2xl font-black ${typeof selected.stock === 'number' && selected.stock <= 0 ? 'text-red-500' : 'text-slate-900'}`}>{selected.stock ?? '-'} <span className="text-sm text-slate-400 font-medium">{selected.unit || ''}</span></div>
               </div>
               <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
-                <div className="text-[10px] uppercase font-bold text-orange-400 flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> ตำแหน่ง</div>
+                <div className="text-[10px] uppercase font-bold text-orange-400 flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> ตำแหน่งหลัก</div>
                 <div className="text-2xl font-black text-orange-700">{selected.location || '-'}</div>
               </div>
+            </div>
+
+            {/* Per-bin breakdown (multi-location stock) */}
+            <div className="mt-4">
+              <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-2">
+                <Boxes className="w-3 h-3" /> กระจายตามพิกัด (Bin)
+              </div>
+              {binsLoading ? (
+                <div className="text-xs text-slate-400 py-2">กำลังโหลด...</div>
+              ) : !bins || bins.length === 0 ? (
+                <div className="text-xs text-slate-400 py-2">ยังไม่มีข้อมูลแยกพิกัด</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {bins.map((b, i) => (
+                    <div key={b.binCode + i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                      <span className="flex items-center gap-1.5 text-sm font-mono text-slate-700">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" />{b.binCode}
+                        {b.lotNo ? <span className="text-[10px] text-slate-400">L:{b.lotNo}</span> : null}
+                      </span>
+                      <span className={`text-sm font-black ${b.quantity <= 0 ? 'text-slate-300' : 'text-slate-900'}`}>
+                        {b.quantity} <span className="text-[10px] text-slate-400 font-medium">{selected.unit || ''}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button onClick={() => setSelected(null)} className="w-full mt-5 min-h-[52px] bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-2xl font-bold active:scale-[0.98] transition-all">

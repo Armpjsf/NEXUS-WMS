@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { binAdd } from '@/lib/stockLocations';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
 
+    const orgId = await getCurrentOrgId();
     const transactionInserts: any[] = [];
 
     for (const item of items) {
@@ -28,32 +31,24 @@ export async function POST(request: Request) {
       const { data: prodData } = await supabase
         .from('products')
         .select('*')
+        .eq('org_id', orgId)
         .eq('sku', sku)
         .maybeSingle();
 
-      const currentStock = Number(prodData?.stock || 0);
-      const newStock = currentStock + qtyNum;
+      const binCode = item.location || prodData?.location || 'RECEIVING-DOCK';
 
-      // 2. Update Product Stock
-      if (prodData) {
-        await supabase
-          .from('products')
-          .update({
-            stock: newStock,
-            location: item.location || prodData.location,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('sku', sku);
-      } else {
-        // Create product if not exists
+      // 2. Update Product Stock — add to bin; products.stock (= sum of bins) reconciled inside
+      if (!prodData) {
         await supabase.from('products').insert({
+          org_id: orgId,
           sku,
           name: sku,
-          stock: qtyNum,
-          location: item.location || 'Unassigned',
+          stock: 0,
+          location: binCode,
           price: Number(item.salePrice || item.price || 0),
         });
       }
+      await binAdd(orgId, sku, binCode, qtyNum, { lotNo: item.batch || undefined });
 
       // 3. Prepare Transaction Record
       transactionInserts.push({

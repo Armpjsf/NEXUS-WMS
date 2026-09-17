@@ -43,6 +43,7 @@ import {
 import { speakPickInstruction, speakThai, triggerHaptic, speakScanSuccess, speakScanMismatch, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 export default function WavePickingPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -273,6 +274,26 @@ export default function WavePickingPage() {
         status: stats.isCompleted ? 'COMPLETED' : 'IN_PROGRESS',
       };
     });
+  };
+
+  // Switch picking bin for a wave item
+  const handleSwitchBin = (itemId: string, newBin: string) => {
+    if (!activeWave) return;
+    setActiveWave(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        items: prev.items.map(it =>
+          it.id === itemId
+            ? { ...it, location: newBin, parsedLocation: parseLocation(newBin) }
+            : it
+        ),
+      };
+    });
+    if (voiceEnabled) {
+      speakThai(`เปลี่ยนไปช่อง ${newBin}`);
+    }
+    toast.success(`เปลี่ยนไปหยิบจากช่อง: ${newBin}`);
   };
 
   // Handle Barcode Scan to Pick
@@ -697,6 +718,19 @@ export default function WavePickingPage() {
                       <span className="text-xs text-slate-300">
                         Zone {nextTargetItem.parsedLocation.zone} • Aisle {nextTargetItem.parsedLocation.aisle} • Rack {nextTargetItem.parsedLocation.rack}
                       </span>
+                    </div>
+
+                    {/* Multi-bin Quick Select / Alternate Bins */}
+                    <div className="pt-2 max-w-xl">
+                      <BinQuickSelect
+                        sku={nextTargetItem.sku}
+                        selectedBin={nextTargetItem.location}
+                        onSelectBin={(newBin) => handleSwitchBin(nextTargetItem.id, newBin)}
+                        mode="picking"
+                        theme="dark"
+                        unit={nextTargetItem.unit || 'ชิ้น'}
+                        label="ช่องเก็บที่มีสต็อกสำหรับสินค้านี้ (คลิกเพื่อสลับช่องหยิบ):"
+                      />
                     </div>
                   </div>
 
