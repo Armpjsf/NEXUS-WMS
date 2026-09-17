@@ -50,10 +50,31 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.uid = (user as any).id;
         token.role = (user as any).role;
         token.orgId = (user as any).orgId || '00000000-0000-0000-0000-000000000001';
         token.allowedBranches = (user as any).allowedBranches;
         token.allowedOwners = (user as any).allowedOwners;
+        token.roleSyncedAt = Date.now();
+      } else if (token.uid) {
+        // Re-sync role/permissions from DB so an admin's change in user
+        // settings takes effect without forcing the user to re-login.
+        // Throttled to at most once every 30s to avoid a DB hit per request.
+        const last = (token.roleSyncedAt as number) || 0;
+        if (Date.now() - last > 30_000) {
+          try {
+            const { getUserById } = await import('./users');
+            const fresh = await getUserById(token.uid as string);
+            if (fresh) {
+              token.role = fresh.role;
+              token.allowedBranches = fresh.allowedBranches || ['*'];
+              token.allowedOwners = fresh.allowedOwners || ['*'];
+            }
+          } catch (e) {
+            console.warn('[auth] role re-sync failed:', e);
+          }
+          token.roleSyncedAt = Date.now();
+        }
       }
       return token;
     },

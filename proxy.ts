@@ -2,7 +2,7 @@ import { withAuth } from "next-auth/middleware"
 import { getToken } from "next-auth/jwt"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { MANAGEMENT_ROLES, isManagementOnlyPath } from "./lib/rbac"
+import { MANAGEMENT_ROLES, isManagementOnlyPath, isManagementRole, canAccessSection, sectionForPath } from "./lib/rbac"
 
 // Must match the secret used in authOptions (same fallback) so getToken can
 // decode the session cookie even when NEXTAUTH_SECRET is unset — otherwise
@@ -85,6 +85,21 @@ export default async function proxy(req: NextRequest, event: any) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.next();
+  }
+
+  // Section-based access for floor staff roles (Staff - Inbound/Outbound/Dispatch/…).
+  // Management sees everything; Viewer is handled in pageAuth. A staff role that
+  // opens a page outside its allowed sections (e.g. Staff - Inbound tapping the
+  // cross-dock/dispatch tile) is sent back to the mobile home instead of the page.
+  const token = await getToken({ req, secret: AUTH_SECRET });
+  if (token) {
+    const role = token.role as string;
+    if (role && role !== 'Viewer' && !isManagementRole(role)) {
+      const section = sectionForPath(pathname);
+      if (!canAccessSection(role, section)) {
+        return NextResponse.redirect(new URL('/mobile', req.url));
+      }
+    }
   }
 
   return (pageAuth as any)(req, event);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { 
   PackagePlus, 
   Boxes, 
@@ -25,6 +25,7 @@ import {
   X,
   ShieldCheck,
   UserCheck,
+  LogOut,
   RotateCcw,
   Mic,
   ArrowLeftRight,
@@ -34,6 +35,7 @@ import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
 import { getApiUrl } from '@/lib/config';
+import { canAccessSection, sectionForPath } from '@/lib/rbac';
 
 interface ProductLookup {
   id?: string;
@@ -226,11 +228,13 @@ export default function MobileHubPage() {
 
   // Re-order based on role
   const isSectionStaff = userRole.startsWith('Staff - ');
+  // เปิดเมนูได้จริงตามสิทธิ์ section (ตรงกับที่ proxy บังคับ) — กันโชว์ tile ที่กดแล้วเด้งกลับ
+  const canOpen = (href: string) => !isSectionStaff || canAccessSection(userRole, sectionForPath(href));
   const myWorkflows = isSectionStaff
-    ? allWorkflows.filter(w => w.section === userRole || w.section === 'all')
+    ? allWorkflows.filter(w => (w.section === userRole || w.section === 'all') && canOpen(w.href))
     : allWorkflows;
   const otherWorkflows = isSectionStaff
-    ? allWorkflows.filter(w => w.section !== userRole && w.section !== 'all')
+    ? allWorkflows.filter(w => w.section !== userRole && w.section !== 'all' && canOpen(w.href))
     : [];
 
   const secondaryWorkflows = [
@@ -379,9 +383,19 @@ export default function MobileHubPage() {
               <p className="text-[11px] text-slate-500">บทบาท: <strong className="text-blue-600">{userRole}</strong></p>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            {isSectionStaff ? userRole.replace('Staff - ', 'แผนก: ') : 'ทุกแผนก (All Sections)'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              {isSectionStaff ? userRole.replace('Staff - ', 'แผนก: ') : 'ทุกแผนก (All Sections)'}
+            </span>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              title="ออกจากระบบ"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 border border-red-200 active:scale-95 transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>ออกจากระบบ</span>
+            </button>
+          </div>
         </div>
 
         {/* Core Operations Cards */}
@@ -465,7 +479,7 @@ export default function MobileHubPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-2.5">
-            {secondaryWorkflows.map(action => {
+            {secondaryWorkflows.filter(a => canOpen(a.href)).map(action => {
               const ActionIcon = action.icon;
               return (
                 <Link

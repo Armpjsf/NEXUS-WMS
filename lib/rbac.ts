@@ -26,10 +26,11 @@ export function isManagementOnlyPath(pathname: string): boolean {
 export function sectionForPath(pathname: string): string | null {
   const p = pathname.replace(/^\/mobile/, '') || '/';
   if (p === '/' || p === '/mobile' || p === '/dashboard' || p === '/home') return 'home';
-  if (p.startsWith('/receiving') || p.startsWith('/ops/receiving') || p.startsWith('/ops/inbound')) return 'inbound';
+  if (p.startsWith('/receiving') || p.startsWith('/putaway') || p.startsWith('/ops/receiving') || p.startsWith('/ops/inbound')) return 'inbound';
   if (p.startsWith('/picking') || p.startsWith('/ops/wave-picking')) return 'picking';
   if (p.startsWith('/ops/orders') || p.startsWith('/orders')) return 'orders';
-  if (p.startsWith('/ops/dispatch') || p.startsWith('/jobs')) return 'dispatch';
+  // cross-dock (มือถือ /mobile/dispatch → /dispatch) + งานคนขับ /jobs = กลุ่มจัดส่ง
+  if (p.startsWith('/dispatch') || p.startsWith('/ops/dispatch') || p.startsWith('/jobs')) return 'dispatch';
   if (p.startsWith('/cycle-count') || p.startsWith('/ops/cycle-count')) return 'cycle-count';
   if (p.startsWith('/inventory') || p.startsWith('/stock-card')) return 'inventory';
   if (p.startsWith('/analytics') || p.startsWith('/hq')) return 'analytics';

@@ -203,6 +203,23 @@ export async function verifyUser(username: string, password: string): Promise<Us
   }
 }
 
+// Fetch a single user's current role/permissions by id. Used by the auth
+// jwt callback to re-sync the session token with the DB, so an admin changing
+// a user's role/branches takes effect on the user's next request instead of
+// staying stale until they re-login.
+export async function getUserById(userId: string): Promise<User | null> {
+  try {
+    const { data, error } = await getServiceSupabase()
+      .from('app_users').select('*').eq('id', userId).maybeSingle();
+    if (error) { console.error('Get User By Id Error:', error.message); return null; }
+    if (!data) return null;
+    return mapUser(data);
+  } catch (e) {
+    console.error('Get User By Id Error:', e);
+    return null;
+  }
+}
+
 export async function addUser(user: any) {
   const orgId = await getCurrentOrgId();
   const limitErr = await checkPlanLimit(orgId, 'users', 'app_users');
