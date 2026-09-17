@@ -5,7 +5,8 @@ import { ProductModal } from '@/components/ProductModal';
 import { ProductImportModal } from '@/components/ProductImportModal';
 import { LotBreakdownModal } from '@/components/LotBreakdownModal';
 import { LocationSwapModal } from '@/components/LocationSwapModal';
-import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, ArrowLeftRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera, Layers, FileSpreadsheet } from 'lucide-react';
+import { UomModal } from '@/components/UomModal';
+import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, ArrowLeftRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera, Layers, FileSpreadsheet, Boxes } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -42,6 +43,7 @@ function InventoryContent() {
   const [showCamScan, setShowCamScan] = useState(false);
   const [selectedProductForLots, setSelectedProductForLots] = useState<any>(null);
   const [selectedProductForSwap, setSelectedProductForSwap] = useState<any>(null);
+  const [selectedProductForUom, setSelectedProductForUom] = useState<any>(null);
   const [showGlobalLotsModal, setShowGlobalLotsModal] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -598,6 +600,19 @@ function InventoryContent() {
                                         <span>สลับพิกัด</span>
                                     </button>
                                     <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setSelectedProductForUom(product);
+                                        }}
+                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-indigo-300 hover:text-white rounded border border-indigo-400/30 font-mono text-[10px] transition-colors"
+                                        title="ตั้งค่าหน่วยบรรจุ (ชิ้น/ลัง/พาเลท)"
+                                    >
+                                        <Boxes className="w-3 h-3" />
+                                        <span>หน่วย</span>
+                                    </button>
+                                    <button
                                         onClick={(e) => openEditModal(product, e)}
                                         className="h-7 w-7 flex items-center justify-center bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] rounded border border-[#30353d] transition-colors"
                                         title="แก้ไข"
@@ -760,6 +775,14 @@ function InventoryContent() {
             sourceProduct={selectedProductForSwap}
             allProducts={products}
             onSwapSuccess={fetchData}
+        />
+
+        {/* Pack Hierarchy (UOM) Modal */}
+        <UomModal
+            isOpen={!!selectedProductForUom}
+            onClose={() => setSelectedProductForUom(null)}
+            product={selectedProductForUom}
+            onRefresh={fetchData}
         />
     </div>
   );

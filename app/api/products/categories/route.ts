@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,15 +9,9 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const orgId = await getCurrentOrgId();
-    const { data, error } = await supabase
-      .from('products')
-      .select('category')
-      .eq('org_id', orgId);
-
-    if (error) {
-      console.error('Product Category Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    // B2: read all SKUs (paged) so no category is missed past 1000 products.
+    const data = await fetchAllRows((f, t) => supabase
+      .from('products').select('category').eq('org_id', orgId).range(f, t));
 
     const categories = Array.from(
       new Set((data || []).map((r: any) => (r.category || 'General').trim()).filter(Boolean))

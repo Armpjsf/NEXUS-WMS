@@ -29,6 +29,19 @@ const withPWA = require('next-pwa')({
   clientsClaim: true,
 });
 
+// B3 — Security headers applied to every response (skipped for the static
+// mobile export, where `headers()` isn't supported). No CSP here on purpose:
+// the PWA + inline styles make a strict CSP high-risk to add blindly.
+const SECURITY_HEADERS = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-DNS-Prefetch-Control', value: 'on' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  // the app uses the camera scanner, voice picking and geolocation — allow self, deny the rest
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(self), payment=()' },
+];
+
 const nextConfig: any = {
   output: isMobileBuild ? 'export' : undefined,
   images: {
@@ -37,6 +50,11 @@ const nextConfig: any = {
   turbopack: {
     root: process.cwd(),
   },
+  ...(isMobileBuild ? {} : {
+    async headers() {
+      return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    },
+  }),
 };
 
 export default withPWA(nextConfig);

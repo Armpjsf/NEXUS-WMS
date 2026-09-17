@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binConsume } from '@/lib/stockLocations';
 import { toBaseQty } from '@/lib/uom';
+import { captureError } from '@/lib/observability';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, count: items.length });
   } catch (error: any) {
-    console.error('API Outbound Error:', error);
+    await captureError(error, { where: 'POST /api/outbound' });
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

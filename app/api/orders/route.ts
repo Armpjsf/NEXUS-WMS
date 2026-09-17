@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { listOrders, getOrder, createOrder, updateOrder } from '@/lib/data/orders';
+import { captureError } from '@/lib/observability';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,11 +33,11 @@ export async function POST(request: Request) {
     }
     // @ts-ignore
     const session = await getServerSession(authOptions);
-    const order = await createOrder({ ...body, createdBy: session?.user?.name || session?.user?.email || 'System' });
+    const order = await createOrder({ ...body, createdBy: (session?.user as any)?.name || session?.user?.email || 'System' });
     if (!order) return NextResponse.json({ error: 'สร้างออเดอร์ไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, order });
   } catch (error: any) {
-    console.error('API orders POST error:', error);
+    await captureError(error, { where: 'POST /api/orders' });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -50,7 +51,7 @@ export async function PATCH(request: Request) {
     if (!order) return NextResponse.json({ error: 'อัปเดตออเดอร์ไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, order });
   } catch (error: any) {
-    console.error('API orders PATCH error:', error);
+    await captureError(error, { where: 'PATCH /api/orders' });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

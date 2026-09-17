@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,13 +9,9 @@ export async function GET(request: Request) {
     try {
         const orgId = await getCurrentOrgId();
 
-        // 1. ดึงข้อมูลสินค้าจาก Supabase
-        const { data: products } = await supabase
-            .from('products')
-            .select('*')
-            .eq('org_id', orgId);
-
-        const prods = products || [];
+        // 1. ดึงข้อมูลสินค้าจาก Supabase (B2: paged — นับ KPI ครบแม้ >1000 SKU)
+        const prods = await fetchAllRows((f, t) => supabase
+            .from('products').select('*').eq('org_id', orgId).range(f, t));
 
         // 2. ดึงประวัติรายการเคลื่อนไหว (Transactions)
         const { data: transactions } = await supabase

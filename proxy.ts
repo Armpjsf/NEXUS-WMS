@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { MANAGEMENT_ROLES, isManagementOnlyPath, isManagementRole, canAccessSection, sectionForPath } from "./lib/rbac"
+import { rateLimit, clientIp } from "./lib/rateLimit"
 
 // Must match the secret used in authOptions (same fallback) so getToken can
 // decode the session cookie even when NEXTAUTH_SECRET is unset — otherwise
@@ -72,10 +73,20 @@ export default async function proxy(req: NextRequest, event: any) {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith('/api/')) {
+    // B3: brute-force guard on the credentials login — 10 attempts / minute / IP.
+    if (pathname.startsWith('/api/auth/callback/credentials') && req.method === 'POST') {
+      const r = rateLimit(`login:${clientIp(req)}`, 10, 60_000);
+      if (!r.ok) {
+        return NextResponse.json(
+          { error: 'พยายามเข้าสู่ระบบบ่อยเกินไป กรุณาลองใหม่ภายหลัง' },
+          { status: 429, headers: { 'retry-after': String(Math.ceil(r.retryAfterMs / 1000)) } },
+        );
+      }
+    }
     // Public: NextAuth, cron (own secret), self-service onboarding (signup), and ERP endpoints.
     // /api/wcs/callback is an external robotics webhook — it authenticates with
     // its own WCS_WEBHOOK_SECRET (no session), so it must bypass the session gate.
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public') || pathname.startsWith('/api/erp') || pathname.startsWith('/api/wcs/callback')) {
+    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public') || pathname.startsWith('/api/erp') || pathname.startsWith('/api/wcs/callback') || pathname === '/api/health') {
       return NextResponse.next();
     }
     // Let CORS preflights through; the actual request still gets checked.
@@ -85,6 +96,12 @@ export default async function proxy(req: NextRequest, event: any) {
     const token = await getToken({ req, secret: AUTH_SECRET });
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // B3: management-only API surface (admin data-quality/rules/users) — a valid
+    // session is not enough; the role must be management. Closes the gap where
+    // any signed-in staff could call admin APIs directly.
+    if (pathname.startsWith('/api/admin/') && !isManagementRole(token.role as string)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     return NextResponse.next();
   }

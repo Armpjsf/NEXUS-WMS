@@ -5,6 +5,7 @@
 import { supabase } from '@/lib/supabase';
 import { mapProductRows, type UIProduct } from '@/lib/data/products';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export type Product = UIProduct;
 
@@ -56,11 +57,9 @@ export async function getProducts(
   allowedOwners?: string[],
 ): Promise<Product[]> {
   const orgId = await getCurrentOrgId();
-  const { data, error } = await supabase.from('products').select('*').eq('org_id', orgId);
-  if (error) {
-    console.error('[data/wms] getProducts error:', error);
-    return [];
-  }
+  // B2: page past the 1000-row cap so warehouses with >1000 SKUs aren't truncated.
+  const data = await fetchAllRows((f, t) =>
+    supabase.from('products').select('*').eq('org_id', orgId).range(f, t));
   let products = mapProductRows(data);
   if (allowedOwners && allowedOwners.length > 0) {
     const allow = new Set(allowedOwners.map((o) => o.toLowerCase().trim()));
@@ -76,17 +75,11 @@ export async function getTransactions(
   allowedOwners?: string[],
 ): Promise<Transaction[]> {
   const orgId = await getCurrentOrgId();
-  const { data, error } = await supabase
-    .from('stock_transactions')
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('type', type)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error('[data/wms] getTransactions error:', error);
-    return [];
-  }
+  // B2: page past the 1000-row cap so history-wide aggregates aren't truncated.
+  const data = await fetchAllRows((f, t) =>
+    supabase.from('stock_transactions').select('*')
+      .eq('org_id', orgId).eq('type', type)
+      .order('created_at', { ascending: true }).range(f, t));
 
   let rows = (data || []).map((r: any): Transaction => ({
     date: r.created_at,

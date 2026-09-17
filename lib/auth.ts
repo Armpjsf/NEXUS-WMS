@@ -36,11 +36,20 @@ export const authOptions: NextAuthOptions = {
 
         // 2) Bootstrap fallback accounts (so you can never lock yourself out
         //    before any app_users rows exist).
-        if ((u === "admin" || u === "admin@wms360.pro") && (p === "admin1234" || p === "admin" || p === "123456")) {
-          return { id: "1", name: "Warehouse Admin", email: "admin@wms360.pro", role: "Admin", allowedBranches: ["*"], allowedOwners: ["*"] } as any;
-        }
-        if ((u === "staff" || u === "user") && (p === "123456" || p === "staff" || p === "user")) {
-          return { id: "2", name: "Warehouse Staff", email: "staff@wms360.pro", role: "Staff", allowedBranches: ["*"], allowedOwners: ["*"] } as any;
+        // B3: these are well-known default credentials — a security hole if left
+        //     live in production. Enabled outside production, or in production
+        //     ONLY when ENABLE_BOOTSTRAP_ADMIN=true. Once a real admin exists in
+        //     app_users, leave the flag unset so these creds are rejected.
+        const bootstrapAllowed =
+          process.env.NODE_ENV !== 'production' || process.env.ENABLE_BOOTSTRAP_ADMIN === 'true';
+        if (bootstrapAllowed) {
+          if ((u === "admin" || u === "admin@wms360.pro") && (p === "admin1234" || p === "admin" || p === "123456")) {
+            console.warn('[auth] bootstrap admin login used — create a real app_users admin and unset ENABLE_BOOTSTRAP_ADMIN');
+            return { id: "1", name: "Warehouse Admin", email: "admin@wms360.pro", role: "Admin", allowedBranches: ["*"], allowedOwners: ["*"] } as any;
+          }
+          if ((u === "staff" || u === "user") && (p === "123456" || p === "staff" || p === "user")) {
+            return { id: "2", name: "Warehouse Staff", email: "staff@wms360.pro", role: "Staff", allowedBranches: ["*"], allowedOwners: ["*"] } as any;
+          }
         }
 
         return null;
