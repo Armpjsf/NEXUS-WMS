@@ -73,7 +73,9 @@ export default async function proxy(req: NextRequest, event: any) {
 
   if (pathname.startsWith('/api/')) {
     // Public: NextAuth, cron (own secret), self-service onboarding (signup), and ERP endpoints.
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public') || pathname.startsWith('/api/erp')) {
+    // /api/wcs/callback is an external robotics webhook — it authenticates with
+    // its own WCS_WEBHOOK_SECRET (no session), so it must bypass the session gate.
+    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public') || pathname.startsWith('/api/erp') || pathname.startsWith('/api/wcs/callback')) {
       return NextResponse.next();
     }
     // Let CORS preflights through; the actual request still gets checked.

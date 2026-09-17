@@ -1,15 +1,21 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getFleetDevices, 
-  getMissionQueue, 
-  dispatchWcsMission, 
-  simulateFleetMovement 
+import {
+  getFleetDevices,
+  getMissionQueue,
+  dispatchWcsMission,
+  simulateFleetMovement
 } from '@/lib/wcsEngine';
+import { getCurrentOrgId } from '@/lib/orgContext';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const fleet = getFleetDevices();
-    const missions = getMissionQueue();
+    const orgId = await getCurrentOrgId();
+    const [fleet, missions] = await Promise.all([
+      getFleetDevices(orgId),
+      getMissionQueue(orgId),
+    ]);
 
     const activeMissions = missions.filter(m => m.status === 'DISPATCHED' || m.status === 'IN_TRANSIT');
     const completedToday = missions.filter(m => m.status === 'COMPLETED').length;
@@ -34,16 +40,18 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const orgId = await getCurrentOrgId();
     const body = await req.json();
 
     // 1. Simulation step trigger
     if (body.action === 'SIMULATE_STEP') {
-      const simResult = simulateFleetMovement();
+      const simResult = await simulateFleetMovement(orgId);
+      const [fleet, missions] = await Promise.all([getFleetDevices(orgId), getMissionQueue(orgId)]);
       return NextResponse.json({
         success: true,
         simulation: simResult,
-        fleet: getFleetDevices(),
-        missions: getMissionQueue()
+        fleet,
+        missions,
       });
     }
 
@@ -57,7 +65,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const mission = dispatchWcsMission({
+    const mission = await dispatchWcsMission(orgId, {
       taskType,
       sourceBin,
       targetBin,

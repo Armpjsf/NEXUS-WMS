@@ -5,8 +5,23 @@ import { updateWcsMissionFromWebhook } from '@/lib/wcsEngine';
  * Open Webhook Endpoint for Warehouse Control Systems (WCS) & Robotics Fleet Managers
  * (Compatible with Hikrobot RCS, Geek+ RMS, Hai Robotics ESS, Dematic & Conveyor PLCs)
  */
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
+    // External robot fleet managers have no session — authenticate with a shared
+    // secret instead. When WCS_WEBHOOK_SECRET is set it is enforced; if unset
+    // (local/dev), the endpoint stays open but warns.
+    const secret = process.env.WCS_WEBHOOK_SECRET;
+    if (secret) {
+      const provided = req.headers.get('x-wcs-secret') || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+      if (provided !== secret) {
+        return NextResponse.json({ success: false, error: 'Unauthorized WCS callback' }, { status: 401 });
+      }
+    } else {
+      console.warn('[wcs/callback] WCS_WEBHOOK_SECRET not set — endpoint is unauthenticated');
+    }
+
     const body = await req.json();
     const { missionCode, robotCode, status, batteryLevel, currentLocation, errorMessage } = body;
 
@@ -24,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = updateWcsMissionFromWebhook({
+    const result = await updateWcsMissionFromWebhook({
       missionCode,
       robotCode,
       status,
