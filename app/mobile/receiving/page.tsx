@@ -35,8 +35,11 @@ interface Line {
   expectedQty: number;
   receivedQty?: number;
   putawayBin?: string;
+  uom?: string;
   done?: boolean;
 }
+
+interface UomOpt { code: string; name?: string; factor: number; barcode?: string; isBase?: boolean }
 
 interface Receipt {
   id: string;
@@ -351,6 +354,27 @@ function MobileReceiveModal({
   );
   const [submitting, setSubmitting] = useState(false);
   const [itemScannerOpen, setItemScannerOpen] = useState(false);
+  const [uomMap, setUomMap] = useState<Record<string, UomOpt[]>>({});
+
+  // A-UI #2: load defined pack units per SKU so ยอดรับ can be entered in ลัง/พาเลท
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const skus = Array.from(new Set(receipt.items.map(i => i.sku)));
+      const entries = await Promise.all(skus.map(async (s) => {
+        try {
+          const d = await (await fetch(`/api/products/uoms?sku=${encodeURIComponent(s)}`, { cache: 'no-store' })).json();
+          return [s, Array.isArray(d.uoms) ? d.uoms : []] as const;
+        } catch { return [s, []] as const; }
+      }));
+      if (!cancelled) setUomMap(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+  }, [receipt.id]);
+
+  const updateUom = (idx: number, uom: string) => {
+    setLines(prev => { const c = [...prev]; c[idx] = { ...c[idx], uom }; return c; });
+  };
 
   const updateQty = (idx: number, delta: number) => {
     setLines(prev => {
@@ -372,6 +396,19 @@ function MobileReceiveModal({
   // Barcode scanned inside modal: find matching line and increment received qty +1
   const handleItemScan = (barcode: string) => {
     const q = barcode.trim().toLowerCase();
+
+    // A-UI #4: a carton/pack barcode selects that unit and adds +1 of it
+    for (let i = 0; i < lines.length; i++) {
+      const hit = (uomMap[lines[i].sku] || []).find(u => u.barcode && u.barcode.toLowerCase() === q);
+      if (hit) {
+        playScannerAudio('success'); triggerHaptic('success');
+        updateUom(i, hit.code);
+        updateQty(i, 1);
+        toast.success(`+1 ${hit.name || hit.code} (${lines[i].name})`);
+        return;
+      }
+    }
+
     const idx = lines.findIndex(l => l.sku.toLowerCase() === q || l.name.toLowerCase().includes(q));
 
     if (idx >= 0) {
@@ -404,6 +441,7 @@ function MobileReceiveModal({
           sku: l.sku,
           receivedQty: Number(l.receivedQty || 0),
           putawayBin: l.putawayBin || 'A-01-01',
+          ...(l.uom ? { uom: l.uom } : {}),
         })),
       };
 
@@ -512,6 +550,30 @@ function MobileReceiveModal({
                   </button>
                 </div>
               </div>
+
+              {/* A-UI #2: Unit selector (base + defined pack units) */}
+              {(uomMap[l.sku]?.length || 0) > 1 && (
+                <div className="flex items-center justify-between gap-2 mt-1.5">
+                  <span className="text-xs font-semibold text-slate-600">หน่วยที่รับ:</span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={l.uom || (uomMap[l.sku]?.find(u => u.isBase)?.code || '')}
+                      onChange={e => updateUom(idx, e.target.value)}
+                      className="h-9 bg-white border border-slate-200 rounded-lg px-2 text-xs font-bold text-slate-700 focus:outline-none"
+                    >
+                      {uomMap[l.sku]?.map(u => (
+                        <option key={u.code} value={u.code}>{u.name || u.code}{!u.isBase ? ` (×${u.factor})` : ''}</option>
+                      ))}
+                    </select>
+                    {(() => {
+                      const sel = uomMap[l.sku]?.find(u => u.code === (l.uom || uomMap[l.sku]?.find(x => x.isBase)?.code));
+                      const base = uomMap[l.sku]?.find(u => u.isBase);
+                      if (sel && !sel.isBase) return <span className="text-[11px] text-emerald-600 font-mono">= {(Number(l.receivedQty || 0) * sel.factor)} {base?.name || 'ชิ้น'}</span>;
+                      return null;
+                    })()}
+                  </div>
+                </div>
+              )}
 
               {/* Putaway Bin Coordinates with Multi-Bin Quick Selection */}
               <div className="pt-2 border-t border-slate-100 space-y-1.5">

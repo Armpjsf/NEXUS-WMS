@@ -5,6 +5,7 @@
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binAdd } from '@/lib/stockLocations';
+import { toBaseQty } from '@/lib/uom';
 
 export type ReceiptStatus = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 
@@ -14,6 +15,7 @@ export interface ReceiptLine {
   expectedQty: number;
   receivedQty?: number;
   putawayBin?: string;
+  uom?: string;      // A4/A-UI: unit the receivedQty is counted in (blank = base)
   done?: boolean;
 }
 
@@ -111,7 +113,8 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
   const orgId = await getCurrentOrgId();
 
   for (const line of lines) {
-    const recv = Number(line.receivedQty) || 0;
+    // A-UI #2: receivedQty may be entered in cartons/pallets — convert to base.
+    const recv = await toBaseQty(orgId, line.sku, Number(line.receivedQty) || 0, line.uom);
     if (recv <= 0) continue;
 
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();

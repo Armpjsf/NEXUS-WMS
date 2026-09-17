@@ -15,7 +15,8 @@ import CameraScannerModal from '@/components/CameraScannerModal';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
-interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; done?: boolean; }
+interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; uom?: string; done?: boolean; }
+interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
 interface Receipt {
   id: string; receiptNo: string; poNumber: string; supplier: string; status: Status;
   items: Line[]; createdAt: string;
@@ -401,9 +402,25 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
   const [lines, setLines] = useState<Line[]>(receipt.items.map(l => ({ ...l, receivedQty: l.receivedQty || l.expectedQty, putawayBin: l.putawayBin || '' })));
   const [saving, setSaving] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const [uomMap, setUomMap] = useState<Record<string, UomOpt[]>>({});
+
+  // A-UI #2 (desktop): load defined pack units per SKU for the unit dropdown
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const skus = Array.from(new Set(receipt.items.map(i => i.sku)));
+      const entries = await Promise.all(skus.map(async (s) => {
+        try { const d = await (await fetch(`/api/products/uoms?sku=${encodeURIComponent(s)}`, { cache: 'no-store' })).json(); return [s, Array.isArray(d.uoms) ? d.uoms : []] as const; }
+        catch { return [s, []] as const; }
+      }));
+      if (!cancelled) setUomMap(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+  }, [receipt.id]);
 
   const setRecv = (sku: string, q: number) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, receivedQty: Math.max(0, q) } : l));
   const setBin = (sku: string, bin: string) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, putawayBin: bin } : l));
+  const setUom = (sku: string, uom: string) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, uom } : l));
 
   // Shared scan handler for both PDA Hardware scanner and Mobile Camera
   const handleItemScanned = (scanned: string) => {
@@ -481,8 +498,22 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div>
                   <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">รับจริง</label>
-                  <input type="number" min={0} value={l.receivedQty} onChange={e => setRecv(l.sku, parseInt(e.target.value) || 0)}
-                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-bold text-[#dee2ec] outline-none focus:border-emerald-500" />
+                  <div className="flex gap-1.5">
+                    <input type="number" min={0} value={l.receivedQty} onChange={e => setRecv(l.sku, parseInt(e.target.value) || 0)}
+                      className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-bold text-[#dee2ec] outline-none focus:border-emerald-500" />
+                    {(uomMap[l.sku]?.length || 0) > 1 && (
+                      <select value={l.uom || (uomMap[l.sku]?.find(u => u.isBase)?.code || '')} onChange={e => setUom(l.sku, e.target.value)}
+                        className="bg-[#171c23] border border-[#30353d] rounded-xl px-2 py-2 text-xs font-bold text-[#dee2ec] outline-none focus:border-emerald-500 shrink-0">
+                        {uomMap[l.sku]?.map(u => <option key={u.code} value={u.code}>{u.name || u.code}{!u.isBase ? ` (×${u.factor})` : ''}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  {(() => {
+                    const sel = uomMap[l.sku]?.find(u => u.code === (l.uom || uomMap[l.sku]?.find(x => x.isBase)?.code));
+                    const base = uomMap[l.sku]?.find(u => u.isBase);
+                    if (sel && !sel.isBase) return <div className="text-[11px] text-emerald-400 font-mono mt-1">= {(Number(l.receivedQty || 0) * sel.factor)} {base?.name || 'ชิ้น'}</div>;
+                    return null;
+                  })()}
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">จัดเก็บที่ Bin</label>

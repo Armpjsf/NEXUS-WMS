@@ -711,6 +711,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [customers, setCustomers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
+  const [availMap, setAvailMap] = useState<Record<string, number>>({});
   const [selectedCustId, setSelectedCustId] = useState('');
   const [customer, setCustomer] = useState('');
   const [phone, setPhone] = useState('');
@@ -760,6 +761,9 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const addLine = (p: any) => {
     if (lines.some(l => l.sku === p.id)) { toast('มีในรายการแล้ว'); return; }
     setLines([...lines, { sku: p.id, name: p.name, qty: 1, location: p.location, price: p.price }]);
+    // A-UI #3: fetch ATP so the form can flag backorders before submit
+    fetch(`/api/stock/available?sku=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
+      .then(r => r.json()).then(d => setAvailMap(m => ({ ...m, [p.id]: Number(d.available ?? d.onHand ?? 0) }))).catch(() => {});
   };
   const setQty = (sku: string, qty: number) => setLines(lines.map(l => l.sku === sku ? { ...l, qty: Math.max(1, qty) } : l));
   const removeLine = (sku: string) => setLines(lines.filter(l => l.sku !== sku));
@@ -833,6 +837,12 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'สร้างไม่สำเร็จ');
       toast.success(`สร้าง ${json.order.orderNo} แล้ว`);
+      // A-UI #3: warn if any line couldn't be fully reserved (backorder)
+      const bo = json.order?.backorders as { sku: string; backorder: number }[] | undefined;
+      if (bo && bo.length > 0) {
+        toast(`⚠️ ของไม่พอ ${bo.length} รายการ (backorder): ${bo.map(b => `${b.sku}×${b.backorder}`).join(', ')}`,
+          { duration: 7000, icon: '📦', style: { background: '#7c2d12', color: '#fff' } });
+      }
       onDone();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
@@ -1103,9 +1113,16 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
               <div key={l.sku} className="flex items-center gap-3 bg-[#1b2027] rounded-xl px-4 py-2.5">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-[#dee2ec] truncate">{l.name}</div>
-                  <div className="text-xs text-[#8a92a6]">{l.location || '-'} · ฿{(l.price || 0).toLocaleString()}</div>
+                  <div className="text-xs text-[#8a92a6]">
+                    {l.location || '-'} · ฿{(l.price || 0).toLocaleString()}
+                    {availMap[l.sku] !== undefined && (
+                      l.qty > availMap[l.sku]
+                        ? <span className="ml-2 text-rose-400 font-bold">ใช้ได้ {availMap[l.sku]} · ขาด {l.qty - availMap[l.sku]} (backorder)</span>
+                        : <span className="ml-2 text-emerald-400">ใช้ได้ {availMap[l.sku]}</span>
+                    )}
+                  </div>
                 </div>
-                <input type="number" min={1} value={l.qty} onChange={e => setQty(l.sku, parseInt(e.target.value) || 1)} className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-1.5 text-center font-bold outline-none focus:border-cyan-500" />
+                <input type="number" min={1} value={l.qty} onChange={e => setQty(l.sku, parseInt(e.target.value) || 1)} className={`w-20 bg-[#171c23] border rounded-lg px-3 py-1.5 text-center font-bold outline-none focus:border-cyan-500 ${availMap[l.sku] !== undefined && l.qty > availMap[l.sku] ? 'border-rose-500/60 text-rose-300' : 'border-[#30353d]'}`} />
                 <button onClick={() => removeLine(l.sku)} className="p-1.5 text-[#8a92a6] hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
