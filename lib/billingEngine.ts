@@ -42,36 +42,7 @@ export interface BillingPeriodCalculation {
 }
 
 // In-memory fallback clients for demonstration & immediate testing
-export const initial3PlClients: ThirdPartyClient[] = [
-  {
-    id: 'cli-001',
-    clientCode: 'CLI-SUNCITY',
-    clientName: 'บริษัท ซันซิตี้ โซล่าร์เซลล์ จำกัด',
-    contactPerson: 'คุณอรรถพล เจริญสุข',
-    email: 'contact@suncity-solar.co.th',
-    phone: '081-888-9999',
-    storageRatePerCbmDay: 18.50,
-    storageRatePerPalletDay: 28.00,
-    pickFeeBase: 15.00,
-    pickFeePerItem: 4.00,
-    packMaterialFee: 12.00,
-    status: 'ACTIVE'
-  },
-  {
-    id: 'cli-002',
-    clientCode: 'CLI-PHARMA-CARE',
-    clientName: 'ฟาร์มาแคร์ เฮลท์แอนด์บิวตี้ (ประเทศไทย)',
-    contactPerson: 'ภญ. นภาพร แสงมณี',
-    email: 'supply@pharmacare.co.th',
-    phone: '089-777-1122',
-    storageRatePerCbmDay: 25.00, // ห้องควบคุมอุณหภูมิ
-    storageRatePerPalletDay: 40.00,
-    pickFeeBase: 20.00,
-    pickFeePerItem: 5.00,
-    packMaterialFee: 15.00,
-    status: 'ACTIVE'
-  }
-];
+export const initial3PlClients: ThirdPartyClient[] = [];
 
 export function calculateClientBilling(
   client: ThirdPartyClient,

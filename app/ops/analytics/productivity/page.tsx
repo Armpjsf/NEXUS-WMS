@@ -158,9 +158,14 @@ export default function ProductivityDashboardPage() {
               <span className="text-3xl font-black text-[#dee2ec] font-mono">{data?.summary?.averagePph ?? 0}</span>
               <span className="text-xs text-[#8a92a6]">ชิ้น / ชม.</span>
             </div>
-            <div className="mt-2 text-xs text-[#57ec7f] font-bold flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              สูงกว่าเป้าหมาย {data?.summary?.targetPph ?? 75} PPH
+            <div className="mt-2 text-xs font-bold flex items-center gap-1">
+              {(data?.summary?.averagePph || 0) >= (data?.summary?.targetPph || 75) && (data?.summary?.averagePph || 0) > 0 ? (
+                <span className="text-[#57ec7f] flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> บรรลุเป้าหมาย ({data?.summary?.targetPph ?? 75} PPH)</span>
+              ) : (data?.summary?.averagePph || 0) > 0 ? (
+                <span className="text-[#facc15] flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> ต่ำกว่าเป้าหมาย ({data?.summary?.targetPph ?? 75} PPH)</span>
+              ) : (
+                <span className="text-[#8a92a6] flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> รอเริ่มกะปฏิบัติงาน</span>
+              )}
             </div>
           </div>
 
@@ -192,7 +197,11 @@ export default function ProductivityDashboardPage() {
               <span className="text-xs text-[#8a92a6]">คนในกะปัจจุบัน</span>
             </div>
             <div className="mt-2 text-xs text-[#57ec7f] font-bold flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" /> Active 100%
+              {(data?.summary?.activeStaffCount || 0) > 0 ? (
+                <><CheckCircle className="w-3.5 h-3.5" /> กำลังปฏิบัติงาน</>
+              ) : (
+                <span className="text-[#8a92a6] flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> ยังไม่มีผู้เข้ากะ</span>
+              )}
             </div>
           </div>
 
@@ -204,7 +213,7 @@ export default function ProductivityDashboardPage() {
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-3">
-              <span className="text-3xl font-black text-[#dee2ec] font-mono">{data?.summary?.averageAccuracy ?? 99.1}%</span>
+              <span className="text-3xl font-black text-[#dee2ec] font-mono">{data?.summary?.averageAccuracy ? `${data.summary.averageAccuracy}%` : '0%'}</span>
               <span className="text-xs text-[#8a92a6]">QC Pass</span>
             </div>
             <div className="mt-2 text-xs text-[#4cd7f6] font-bold">
@@ -299,7 +308,14 @@ export default function ProductivityDashboardPage() {
             </div>
 
             <div className="space-y-3">
-              {data?.congestions?.map((c) => (
+              {(!data?.congestions || data.congestions.length === 0) ? (
+                <div className="p-6 text-center text-[#8a92a6] text-xs bg-[#12161d] rounded-xl border border-[#30353d]">
+                  <CheckCircle className="w-8 h-8 text-[#57ec7f] mx-auto mb-2 opacity-80" />
+                  <p className="font-bold text-[#dee2ec]">การสัญจรในทุกโซนคล่องตัวดี</p>
+                  <p>ไม่พบจุดคอขวดหรือความแออัดในพื้นที่จัดเก็บ</p>
+                </div>
+              ) : (
+                data.congestions.map((c) => (
                 <div
                   key={c.zone}
                   className={`p-3.5 rounded-xl border transition ${
@@ -319,7 +335,7 @@ export default function ProductivityDashboardPage() {
                   </div>
                   <div className="text-xs mt-1 font-medium">{c.message}</div>
                 </div>
-              ))}
+              )))}
             </div>
 
             {/* Quick Recommendations */}
@@ -329,7 +345,7 @@ export default function ProductivityDashboardPage() {
                 คำแนะนำอัจฉริยะ (AI Slotting & LMS)
               </div>
               <p className="text-xs text-[#8a92a6] leading-relaxed">
-                โซน A มีความหนาแน่นสูงสุดเนื่องจากมีสินค้า Fast-Moving Class A ควรกระจายตำแหน่งหยิบเพื่อลดความแออัด
+                ระบบคำนวณความหนาแน่นแบบ Real-Time จากจำนวนการหยิบและพนักงานในแต่ละโซนเพื่อป้องกันการเบียดเสียด
               </p>
             </div>
           </div>

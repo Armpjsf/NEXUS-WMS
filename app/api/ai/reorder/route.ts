@@ -132,6 +132,7 @@ export async function GET() {
                     confidence: Math.min(100, Math.round(confidence)),
                     reason,
                     suggestedQty: suggest,
+                    sparkline: dailyUsage.slice(-7).join(','),
                     trendInfo: {
                         slope: trend.slope,
                         growth: trend.growthRate,

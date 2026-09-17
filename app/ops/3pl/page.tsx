@@ -17,7 +17,8 @@ import {
   DollarSign,
   TrendingUp,
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
@@ -37,18 +38,18 @@ export default function ThreePlBillingPage() {
 
   // Billing Params Form State
   const [billingDays, setBillingDays] = useState(30);
-  const [occupiedCbm, setOccupiedCbm] = useState(45.5);
-  const [ordersCount, setOrdersCount] = useState(320);
-  const [itemsCount, setItemsCount] = useState(980);
+  const [occupiedCbm, setOccupiedCbm] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [itemsCount, setItemsCount] = useState(0);
 
   // New Client Form State
   const [newClientName, setNewClientName] = useState('');
   const [newContactPerson, setNewContactPerson] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newStorageRate, setNewStorageRate] = useState(18.0);
-  const [newPickBase, setNewPickBase] = useState(15.0);
-  const [newPickItem, setNewPickItem] = useState(4.0);
+  const [newStorageRate, setNewStorageRate] = useState(0);
+  const [newPickBase, setNewPickBase] = useState(0);
+  const [newPickItem, setNewPickItem] = useState(0);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -204,6 +205,12 @@ export default function ThreePlBillingPage() {
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-[#8a92a6] text-xs">กำลังโหลด...</div>
+              ) : filteredClients.length === 0 ? (
+                <div className="p-8 text-center text-[#8a92a6] text-xs border border-[#30353d] rounded-xl bg-[#12161d]">
+                  <Users className="w-8 h-8 text-[#8a92a6] mx-auto mb-2 opacity-50" />
+                  <p className="font-bold text-[#dee2ec]">ยังไม่มีรายชื่อผู้ว่าจ้าง 3PL</p>
+                  <p>กดปุ่ม "+ เพิ่มผู้ว่าจ้างใหม่" เพื่อบันทึกสัญญาจัดเก็บและอัตราค่าบริการ</p>
+                </div>
               ) : filteredClients.map((c) => (
                 <div
                   key={c.id}

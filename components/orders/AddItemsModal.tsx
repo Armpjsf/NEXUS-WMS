@@ -23,6 +23,20 @@ interface Props {
   onDone: () => void;
 }
 
+// QR ของระบบ encode เป็น JSON — แปลงเป็น code (จับคู่) + label (ชื่ออ่านง่าย) กัน JSON ดิบเป็นชื่อสินค้า
+function normalizeScan(raw: string): { code: string; label: string } {
+  const t = (raw || '').trim();
+  if (t.startsWith('{') && t.endsWith('}')) {
+    try {
+      const o = JSON.parse(t);
+      const label = o.name || o.productName || o.sku || o.code || o.loc || t;
+      const code = o.sku || o.code || o.barcode || o.name || o.loc || t;
+      return { code: String(code), label: String(label) };
+    } catch { /* not JSON */ }
+  }
+  return { code: t, label: t };
+}
+
 export default function AddItemsModal({ order, onClose, onDone }: Props) {
   const [products, setProducts] = useState<Prod[]>([]);
   const [lines, setLines] = useState<Line[]>([]);
@@ -68,12 +82,13 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   };
 
   const addCustom = (raw: string) => {
-    const t = raw.trim();
+    const { code, label } = normalizeScan(raw);
+    const t = (label || code).trim();
     if (!t) return;
     setLines(prev => {
       const i = prev.findIndex(l => l.custom && l.name.toLowerCase() === t.toLowerCase());
       if (i >= 0) { const next = [...prev]; next[i] = { ...next[i], qty: next[i].qty + 1 }; return next; }
-      return [...prev, { sku: t, name: t, qty: 1, price: 0, location: '', drop: targetDrop, custom: true }];
+      return [...prev, { sku: code || t, name: t, qty: 1, price: 0, location: '', drop: targetDrop, custom: true }];
     });
     setQuery('');
   };
@@ -81,14 +96,15 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, name } : l));
 
   const handleScan = (raw: string) => {
-    const q = raw.trim().toLowerCase();
+    const { code, label } = normalizeScan(raw);
+    const q = code.trim().toLowerCase();
     if (!q) return;
     if (crossDock) { addCustom(raw); return; }
     const hit = products.find(p => p.id?.toLowerCase() === q || p.barcode?.toLowerCase() === q)
       || products.find(p => (p.barcode && p.barcode.toLowerCase().includes(q)) || p.id?.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q))
       || products.find(p => (p.id && q.includes(p.id.toLowerCase())) || (p.barcode && q.includes(p.barcode.toLowerCase())));
     if (hit) { addLine(hit); setQuery(''); }
-    else { setQuery(raw.trim()); toast.error(`ไม่พบ "${raw}" ในคลัง — ถ้าเป็นของลูกค้า (cross-dock) กด "เพิ่มเป็นของนอกคลัง"`); }
+    else { setQuery(label || code); toast.error(`ไม่พบ "${label || code}" ในคลัง — ถ้าเป็นของลูกค้า (cross-dock) กด "เพิ่มเป็นของนอกคลัง"`); }
   };
 
   const searchResults = query.trim()

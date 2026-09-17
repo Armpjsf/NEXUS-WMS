@@ -313,7 +313,7 @@ function CreateTransferModal({
   const [toBranch, setToBranch] = useState('branch-urt');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<TransferLine[]>([
-    { sku: 'SKU-001', name: 'กล่องกระดาษลูกฟูก เบอร์ 0', qty: 50, unit: 'ใบ' },
+    { sku: '', name: '', qty: 1, unit: 'ชิ้น' },
   ]);
   const [submitting, setSubmitting] = useState(false);
 

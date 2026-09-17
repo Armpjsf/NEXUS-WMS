@@ -46,30 +46,47 @@ interface PackingOrder {
 }
 
 export default function PackingQAPage() {
-  const [orders, setOrders] = useState<PackingOrder[]>([
-    {
-      orderNo: 'SO-2026-88190',
-      customerName: 'Siam Solar Energy Co., Ltd.',
-      channel: 'B2B Wholesale',
-      carrier: 'FLASH_EXPRESS',
-      status: 'PICKED',
-      items: [
-        { sku: 'SKU-SOLAR-5K', name: 'Heavy Duty Solar Inverter 5kW', qty: 2, verifiedQty: 0, isVerified: false, unit: 'BOX', weightKg: 12.0 },
-        { sku: 'SKU-ELEC-006', name: 'สายไฟ VCT 2x2.5 SQ.MM. (100 เมตร)', qty: 1, verifiedQty: 0, isVerified: false, unit: 'roll', weightKg: 4.5 }
-      ]
-    },
-    {
-      orderNo: 'SO-2026-88191',
-      customerName: 'คุณกิตติศักดิ์ เจริญยนต์',
-      channel: 'Shopee',
-      carrier: 'KERRY_EXPRESS',
-      status: 'PICKED',
-      items: [
-        { sku: 'SKU-MED-001', name: 'พาราเซตามอล 500mg (100 เม็ด)', qty: 3, verifiedQty: 0, isVerified: false, unit: 'กล่อง', weightKg: 0.2 },
-        { sku: 'SKU-BEV-002', name: 'นมสดพาสเจอร์ไรส์ 100% (2 ลิตร)', qty: 2, verifiedQty: 0, isVerified: false, unit: 'ขวด', weightKg: 2.1 }
-      ]
+  const [orders, setOrders] = useState<PackingOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  useEffect(() => {
+    async function loadPackingOrders() {
+      try {
+        setLoadingOrders(true);
+        const res = await fetch('/api/orders?limit=100');
+        if (res.ok) {
+          const json = await res.json();
+          const allOrders = json.orders || [];
+          const packable = allOrders.filter((o: any) => o.status === 'PICKED' || o.status === 'PACKING');
+          const formatted: PackingOrder[] = packable.map((o: any) => ({
+            orderNo: o.orderNo || o.id,
+            customerName: o.customerName || 'ลูกค้าทั่วไป',
+            channel: o.channel || 'Direct',
+            carrier: o.carrier || 'STANDARD',
+            status: o.status || 'PICKED',
+            items: (o.items || []).map((it: any) => ({
+              sku: it.sku,
+              name: it.name || it.sku,
+              qty: Number(it.qty || 1),
+              verifiedQty: Number(it.packed || 0),
+              isVerified: Number(it.packed || 0) >= Number(it.qty || 1),
+              unit: it.unit || 'ชิ้น',
+              weightKg: Number(it.weightKg || 1.0)
+            }))
+          }));
+          setOrders(formatted);
+          if (formatted.length > 0) {
+            setSelectedOrder(formatted[0]);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load packing orders:', e);
+      } finally {
+        setLoadingOrders(false);
+      }
     }
-  ]);
+    loadPackingOrders();
+  }, []);
 
   const [selectedOrder, setSelectedOrder] = useState<PackingOrder | null>(null);
   const [manualBarcode, setManualBarcode] = useState('');

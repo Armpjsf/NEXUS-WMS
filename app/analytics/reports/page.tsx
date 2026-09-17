@@ -92,13 +92,11 @@ export default function ReportsPage() {
         router.push('/ops/damage');
         return;
     }
-
-    setLoading(true);
-    // Simulate generation for others
-    setTimeout(() => {
-      setLoading(false);
-      alert(`Generated ${report.name} successfully! (Mock Download)`);
-    }, 1500);
+    if (report.id === 'inventory_summary') {
+        router.push('/inventory');
+        return;
+    }
+    router.push('/inventory');
   };
 
   return (
@@ -156,7 +154,7 @@ export default function ReportsPage() {
           ))}
         </div>
 
-        {/* Configuration Panel (Mock) */}
+        {/* Configuration Panel */}
         <div className="bg-[#171c23] rounded-3xl p-8 border border-[#30353d]">
           <h3 className="font-bold text-[#dee2ec] mb-6 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#8a92a6]" />

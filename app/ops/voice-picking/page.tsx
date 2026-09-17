@@ -25,12 +25,53 @@ import {
 } from '@/lib/voiceEngine';
 
 export default function VoicePickingPage() {
-  const [tasks, setTasks] = useState<VoicePickStep[]>(sampleVoicePickTasks);
+  const [tasks, setTasks] = useState<VoicePickStep[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [checkDigitInput, setCheckDigitInput] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [pickStatus, setPickStatus] = useState<'IDLE' | 'CORRECT' | 'WRONG'>('IDLE');
   const [isCompleted, setIsCompleted] = useState(false);
+
+  const fetchPickTasks = async () => {
+    setLoadingTasks(true);
+    try {
+      const res = await fetch('/api/orders?limit=100');
+      if (res.ok) {
+        const json = await res.json();
+        const orders = json.orders || [];
+        const pendingOrders = orders.filter((o: any) => o.status === 'NEW' || o.status === 'PICKING');
+        const steps: VoicePickStep[] = [];
+        let stepCounter = 1;
+
+        for (const order of pendingOrders) {
+          for (const item of (order.items || [])) {
+            const loc = item.location || 'A-01-01';
+            const numPart = loc.replace(/\D/g, '');
+            const checkDigit = numPart.length >= 2 ? numPart.slice(-2) : '12';
+            steps.push({
+              stepIndex: stepCounter++,
+              locationCode: loc,
+              sku: item.sku,
+              productName: item.name || item.sku,
+              targetQuantity: Number(item.qty || 1),
+              unit: item.unit || 'ชิ้น',
+              checkDigit
+            });
+          }
+        }
+        setTasks(steps);
+      }
+    } catch (e) {
+      console.error('Failed to load voice pick tasks:', e);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchPickTasks();
+  }, []);
 
   const currentStep = tasks[currentStepIndex];
 
@@ -118,7 +159,7 @@ export default function VoicePickingPage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={handleRestart}
+                onClick={() => { handleRestart(); fetchPickTasks(); }}
                 className="px-3.5 py-2 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] hover:border-[#facc15] text-[#dee2ec] hover:text-[#facc15] rounded-xl transition flex items-center gap-1.5 text-xs font-semibold"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> รีเซ็ตงาน
@@ -133,7 +174,23 @@ export default function VoicePickingPage() {
           </div>
         </div>
 
-        {!isCompleted && currentStep ? (
+        {loadingTasks ? (
+          <div className="p-12 text-center text-xs text-[#8a92a6] bg-[#171c23]/90 rounded-2xl border border-[#30353d]">
+            กำลังค้นหาคิวงานหยิบสินค้า...
+          </div>
+        ) : tasks.length === 0 ? (
+          <div className="p-12 text-center text-xs text-[#8a92a6] bg-[#171c23]/90 rounded-2xl border border-[#30353d] space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-[#57ec7f] mx-auto" />
+            <h3 className="text-base font-bold text-[#dee2ec]">ไม่มีรายการคำสั่งซื้อค้างรอหยิบในระบบ</h3>
+            <p>เมื่อมีคำสั่งซื้อใหม่เข้ามา ระบบเสียงสังเคราะห์จะแนะนำตำแหน่งหยิบและเลขทวนสอบโดยอัตโนมัติ</p>
+            <button
+              onClick={fetchPickTasks}
+              className="mt-2 px-4 py-2 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] rounded-xl font-bold"
+            >
+              รีเฟรชคิวงาน
+            </button>
+          </div>
+        ) : !isCompleted && currentStep ? (
           <div className="space-y-6">
             {/* Main Giant Pick Card for Warehouse Operators */}
             <div
@@ -283,7 +340,7 @@ export default function VoicePickingPage() {
             </div>
             <div className="flex justify-center gap-3 pt-2">
               <button
-                onClick={handleRestart}
+                onClick={() => { handleRestart(); fetchPickTasks(); }}
                 className="px-5 py-2.5 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] rounded-xl font-bold text-xs transition"
               >
                 หยิบรอบถัดไป

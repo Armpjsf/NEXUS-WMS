@@ -384,30 +384,6 @@ export default function MobileHubPage() {
           </span>
         </div>
 
-        {/* Instant Scanner Hero Banner */}
-        <div 
-          onClick={() => setCameraOpen(true)}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-white border border-blue-200 p-4 shadow-xl active:scale-[0.99] transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-blue-600 text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>PDA & กล้องสแกนด่วน</span>
-              </div>
-              <h2 className="text-lg font-black text-slate-900 group-hover:text-blue-700 transition-colors">
-                แตะเพื่อสแกนบาร์โค้ด
-              </h2>
-              <p className="text-xs text-slate-500">
-                หรือกดไกปืน Laser Gun ยิงสินค้า/พิกัดได้ทันที
-              </p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-600 shadow-inner group-hover:scale-110 transition-transform">
-              <Scan className="w-7 h-7 animate-pulse" />
-            </div>
-          </div>
-        </div>
-
         {/* Core Operations Cards */}
         <div>
           <div className="flex items-center justify-between mb-2.5 px-1">

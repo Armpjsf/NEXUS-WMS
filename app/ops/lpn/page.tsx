@@ -37,10 +37,10 @@ export default function LpnManagementPage() {
   // New LPN State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newLpnType, setNewLpnType] = useState<'PALLET' | 'MASTER_CARTON' | 'TOTE'>('PALLET');
-  const [newLocationCode, setNewLocationCode] = useState('RECEIVING-DOCK');
-  const [newSku, setNewSku] = useState('SKU-SOLAR-5K');
-  const [newLot, setNewLot] = useState('LOT-2026-09A');
-  const [newQty, setNewQty] = useState(24);
+  const [newLocationCode, setNewLocationCode] = useState('');
+  const [newSku, setNewSku] = useState('');
+  const [newLot, setNewLot] = useState('');
+  const [newQty, setNewQty] = useState(1);
   const [newNotes, setNewNotes] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 

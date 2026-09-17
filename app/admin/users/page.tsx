@@ -56,26 +56,31 @@ export default function UserManagerPage() {
       let updated;
       
       if (branchId === '*') {
-          updated = ['*'];
+          // สลับเปิด/ปิด "ทุกสาขา" — ปิดแล้วเคลียร์เป็นว่างเพื่อให้เลือกสาขาเฉพาะได้
+          updated = current.includes('*') ? [] : ['*'];
       } else {
-          // If current is *, clear it first? Or effectively toggling off * means explicit selection
           let clean = current.includes('*') ? [] : [...current];
           if (clean.includes(branchId)) {
               clean = clean.filter(id => id !== branchId);
           } else {
               clean.push(branchId);
           }
-          updated = clean.length > 0 ? clean : ['*']; // Revert to * if empty? Or allow empty (no access)? Let's default to * if empty strictly.
+          updated = clean; // อนุญาตว่างระหว่างเลือก (coerce เป็น ['*'] ตอนบันทึกถ้ายังว่าง)
       }
       setNewUser({ ...newUser, allowedBranches: updated });
   };
 
   const handleAddUser = async () => {
-      if(!newUser.username || (!isEditing && !newUser.password)) return; 
-      
+      if(!newUser.username || (!isEditing && !newUser.password)) return;
+
+      // ถ้าไม่ได้เลือกสาขาเลย = ให้ทุกสาขา (กันบัญชีถูกล็อกไม่เห็นสาขาไหนเลย)
+      const safeUser = {
+        ...newUser,
+        allowedBranches: (newUser.allowedBranches && newUser.allowedBranches.length > 0) ? newUser.allowedBranches : ['*'],
+      };
       const payload = isEditing
-        ? { action: 'update', id: newUser.id, data: newUser }
-        : { action: 'add', data: newUser };
+        ? { action: 'update', id: safeUser.id, data: safeUser }
+        : { action: 'add', data: safeUser };
 
       await fetch('/api/admin/users', {
           method: 'POST', // Using POST for both based on existing pattern, usually PUT is better but keeping consistent
@@ -183,7 +188,7 @@ export default function UserManagerPage() {
          </button>
       </motion.div>
 
-      <div className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 backdrop-blur-xl">
+      <div className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-visible shadow-xl shadow-slate-900/5 backdrop-blur-xl">
         <table className="w-full text-left text-[#d1c6ab]">
           <thead className="text-white uppercase font-black text-[10px] tracking-[0.1em] sticky top-0 z-20">
             <tr className="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-md">
@@ -313,13 +318,16 @@ export default function UserManagerPage() {
                           <option value="Admin">💻 Admin — ผู้ดูแลคลังประจำสาขา จัดการระบบและทีมงาน</option>
                           <option value="Manager">👔 Manager — หัวหน้าคลัง จัดการสต็อก ออเดอร์ รายงาน</option>
                         </optgroup>
-                        <optgroup label="📱 พนักงานคลังแยกตามแผนก (Floor Section)">
-                          <option value="Staff - Inbound">📥 Staff - Inbound (ฝ่ายรับสินค้า &amp; จัดเก็บ Putaway)</option>
-                          <option value="Staff - Picker">🛒 Staff - Picker (ฝ่ายหยิบสินค้า Wave Picking)</option>
-                          <option value="Staff - QC &amp; Pack">🔍 Staff - QC &amp; Pack (ฝ่ายตรวจ QC &amp; แพ็กกล่อง)</option>
-                          <option value="Staff - Dispatch">🚚 Staff - Dispatch (ฝ่ายจัดส่ง &amp; คนขับรถ POD)</option>
-                          <option value="Staff - Inventory">📋 Staff - Inventory (ฝ่ายตรวจนับสต็อก Cycle Count)</option>
-                          <option value="Staff">📱 Staff (พนักงานคลังทั่วไป — ใช้งานมือถือได้ทุกส่วน)</option>
+                        <optgroup label="📦 พนักงานคลังแบบกลุ่มงาน (Work Group)">
+                          <option value="Staff">📱 Staff — เห็นทุกเมนู (พนักงานคลังทั่วไป)</option>
+                          <option value="Staff - Inbound">📥 Staff — ฝั่งรับ (รับเข้า &amp; จัดเก็บ Putaway)</option>
+                          <option value="Staff - Outbound">📦 Staff — ฝั่งจ่าย (หยิบ + QC/แพ็ก + จัดส่ง)</option>
+                          <option value="Staff - Inventory">📋 Staff — งานในคลัง (ตรวจนับ/เช็คสต็อก)</option>
+                        </optgroup>
+                        <optgroup label="📱 พนักงานแยกย่อยตามแผนก (Fine-grained)">
+                          <option value="Staff - Picker">🛒 Staff - Picker (หยิบสินค้าอย่างเดียว)</option>
+                          <option value="Staff - QC &amp; Pack">🔍 Staff - QC &amp; Pack (ตรวจ QC &amp; แพ็กอย่างเดียว)</option>
+                          <option value="Staff - Dispatch">🚚 Staff - Dispatch (ส่งมอบขนส่ง/POD อย่างเดียว)</option>
                         </optgroup>
                         <optgroup label="👁️ การตรวจสอบ (Audit)">
                           <option value="Viewer">👁️ Viewer — ดูข้อมูลและรายงานอย่างเดียว (Read-only)</option>

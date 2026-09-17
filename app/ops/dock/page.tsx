@@ -36,7 +36,7 @@ export default function DockAppointmentsPage() {
   const [driverPhone, setDriverPhone] = useState('');
   const [startTime, setStartTime] = useState(new Date().toISOString().slice(0, 16));
   const [durationMinutes, setDurationMinutes] = useState(60);
-  const [palletsCount, setPalletsCount] = useState(12);
+  const [palletsCount, setPalletsCount] = useState(1);
   const [notes, setNotes] = useState('');
 
   const fetchAppointments = async () => {
@@ -220,7 +220,17 @@ export default function DockAppointmentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#262c36]">
-                {appointments.map((apt) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-[#8a92a6]">กำลังโหลดข้อมูลคิวเทียบท่า...</td>
+                  </tr>
+                ) : appointments.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-[#8a92a6]">
+                      ยังไม่มีคิวจองเทียบท่าในระบบ กด "+ จองคิวเทียบท่า (Book Slot)" เพื่อสร้างรายการ
+                    </td>
+                  </tr>
+                ) : appointments.map((apt) => (
                   <tr key={apt.id} className="hover:bg-white/5 transition">
                     <td className="py-3 px-4 font-mono font-bold text-[#dee2ec]">{apt.appointmentNumber}</td>
                     <td className="py-3 px-4">

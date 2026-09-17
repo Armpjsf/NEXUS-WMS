@@ -25,32 +25,4 @@ export function synthesizeErrorSpeech(): string {
   return `รหัสทวนสอบไม่ถูกต้อง กรุณาตรวจสอบพิกัดอีกครั้ง`;
 }
 
-export const sampleVoicePickTasks: VoicePickStep[] = [
-  {
-    stepIndex: 1,
-    locationCode: 'A-01-02-01',
-    sku: 'SKU-SOLAR-5K',
-    productName: 'อินเวอร์เตอร์ 5 กิโลวัตต์',
-    targetQuantity: 2,
-    unit: 'เครื่อง',
-    checkDigit: '42'
-  },
-  {
-    stepIndex: 2,
-    locationCode: 'A-02-01-03',
-    sku: 'SKU-ELEC-006',
-    productName: 'สายไฟ VCT 100 เมตร',
-    targetQuantity: 4,
-    unit: 'ม้วน',
-    checkDigit: '78'
-  },
-  {
-    stepIndex: 3,
-    locationCode: 'B-01-03-02',
-    sku: 'SKU-BEV-002',
-    productName: 'นมสดพาสเจอร์ไรส์ 2 ลิตร',
-    targetQuantity: 6,
-    unit: 'ขวด',
-    checkDigit: '15'
-  }
-];
+export const sampleVoicePickTasks: VoicePickStep[] = [];

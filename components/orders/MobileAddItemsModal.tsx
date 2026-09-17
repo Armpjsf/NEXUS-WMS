@@ -23,6 +23,21 @@ interface Props {
   onDone: () => void;
 }
 
+// QR ของระบบ encode เป็น JSON เช่น {"loc":"A-01","name":"...","stock":N}
+// แปลงค่าที่สแกน/พิมพ์ให้เป็น code (ใช้จับคู่) + label (ชื่อที่อ่านง่าย) กัน JSON ดิบหลุดเป็นชื่อสินค้า
+function normalizeScan(raw: string): { code: string; label: string } {
+  const t = (raw || '').trim();
+  if (t.startsWith('{') && t.endsWith('}')) {
+    try {
+      const o = JSON.parse(t);
+      const label = o.name || o.productName || o.sku || o.code || o.loc || t;
+      const code = o.sku || o.code || o.barcode || o.name || o.loc || t;
+      return { code: String(code), label: String(label) };
+    } catch { /* ไม่ใช่ JSON ที่ parse ได้ */ }
+  }
+  return { code: t, label: t };
+}
+
 // เวอร์ชันมือถือ (ธีมสว่าง, ปุ่มใหญ่, สแกนก่อน) — ใช้ /api/orders/add-items เดียวกับเดสก์ท็อป
 export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
   const [products, setProducts] = useState<Prod[]>([]);
@@ -65,18 +80,20 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
 
   // เพิ่มของนอกคลัง (cross-dock) — ไม่ต้องมีใน catalog, ไม่ตัดสต็อก
   const addCustom = (raw: string) => {
-    const t = raw.trim();
+    const { code, label } = normalizeScan(raw);
+    const t = (label || code).trim();
     if (!t) return;
     setLines(prev => {
       const i = prev.findIndex(l => l.custom && l.name.toLowerCase() === t.toLowerCase());
       if (i >= 0) { const next = [...prev]; next[i] = { ...next[i], qty: next[i].qty + 1 }; return next; }
-      return [...prev, { sku: t, name: t, qty: 1, price: 0, location: '', drop: targetDrop, custom: true }];
+      return [...prev, { sku: code || t, name: t, qty: 1, price: 0, location: '', drop: targetDrop, custom: true }];
     });
     setQuery('');
   };
 
   const matchAndAdd = (raw: string) => {
-    const q = raw.trim().toLowerCase();
+    const { code, label } = normalizeScan(raw);
+    const q = code.trim().toLowerCase();
     if (!q) return;
     if (crossDock) { addCustom(raw); return; } // โหมดนอกคลัง = เพิ่มตามที่พิมพ์/สแกนเลย
     // จับคู่: SKU/บาร์โค้ดตรงตัว → บาร์โค้ด/SKU/ชื่อมีคำนี้ → SKU/บาร์โค้ดเป็นส่วนหนึ่งของโค้ดที่ยิง (เผื่อมี prefix)
@@ -85,9 +102,9 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
       || products.find(p => (p.id && q.includes(p.id.toLowerCase())) || (p.barcode && q.includes(p.barcode.toLowerCase())));
     if (hit) { addLine(hit); setQuery(''); }
     else {
-      // ไม่เจอ: คงคำไว้ในช่อง + เตือน (มีปุ่ม "เพิ่มเป็นของนอกคลัง" ให้กดได้)
-      setQuery(raw.trim());
-      toast.error(`ไม่พบ "${raw}" ในคลัง — ถ้าเป็นของลูกค้า (cross-dock) กด "เพิ่มเป็นของนอกคลัง"`);
+      // ไม่เจอ: คงคำ (ที่อ่านง่าย) ไว้ในช่อง + เตือน (มีปุ่ม "เพิ่มเป็นของนอกคลัง" ให้กดได้)
+      setQuery(label || code);
+      toast.error(`ไม่พบ "${label || code}" ในคลัง — ถ้าเป็นของลูกค้า (cross-dock) กด "เพิ่มเป็นของนอกคลัง"`);
     }
   };
 

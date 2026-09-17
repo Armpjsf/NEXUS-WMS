@@ -32,11 +32,8 @@ export default function KittingPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newKitSku, setNewKitSku] = useState('');
   const [newKitName, setNewKitName] = useState('');
-  const [newLaborCost, setNewLaborCost] = useState(150);
-  const [componentsList, setComponentsList] = useState<BomComponent[]>([
-    { componentSku: 'SKU-SOLAR-5K', componentName: 'Inverter 5kW', quantity: 1, unit: 'เครื่อง' },
-    { componentSku: 'SKU-ELEC-006', componentName: 'สายไฟ VCT 100M', quantity: 2, unit: 'ม้วน' }
-  ]);
+  const [newLaborCost, setNewLaborCost] = useState(0);
+  const [componentsList, setComponentsList] = useState<BomComponent[]>([]);
 
   const fetchBoms = async () => {
     setLoading(true);
@@ -177,6 +174,12 @@ export default function KittingPage() {
             <div className="space-y-2 max-h-[550px] overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-[#8a92a6] text-xs">กำลังโหลด...</div>
+              ) : filteredBoms.length === 0 ? (
+                <div className="p-8 text-center text-[#8a92a6] text-xs border border-[#30353d] rounded-xl bg-[#12161d]">
+                  <Layers className="w-8 h-8 text-[#8a92a6] mx-auto mb-2 opacity-50" />
+                  <p className="font-bold text-[#dee2ec]">ยังไม่มีสูตรสินค้าชุด (BOM)</p>
+                  <p>กดปุ่ม "+ กำหนดสูตร BOM ใหม่" เพื่อสร้างโครงสร้างสินค้าจัดเซ็ต</p>
+                </div>
               ) : filteredBoms.map((b) => (
                 <div
                   key={b.id}

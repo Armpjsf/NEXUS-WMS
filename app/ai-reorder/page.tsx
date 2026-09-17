@@ -31,10 +31,7 @@ import { getApiUrl } from '@/lib/config';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { speakThai } from '@/lib/voiceAssistant';
 
-// Mock Sparkline Data Generator
-const generateSparkline = () => {
-    return Array.from({ length: 7 }, () => Math.floor(Math.random() * 40) + 10).join(','); 
-};
+// Sparkline history is computed from real transaction movements
 
 interface SuggestionsItem {
     id: string;
@@ -81,12 +78,7 @@ export default function AIReorderPage() {
       .then(res => res.json())
       .then(data => {
           if (Array.isArray(data)) {
-              // Enrich with mock sparkline data for UI demo if not present
-              const enriched = data.map(item => ({
-                  ...item,
-                  sparkline: generateSparkline()
-              }));
-              setSuggestions(enriched);
+              setSuggestions(data);
           }
           setLoading(false);
       })
@@ -118,7 +110,7 @@ export default function AIReorderPage() {
       setTimeout(() => {
           setAnalyzing(false);
           fetchData(); 
-      }, 2000); // Fake analysis time
+      }, 800);
   };
 
   // Cart Functions

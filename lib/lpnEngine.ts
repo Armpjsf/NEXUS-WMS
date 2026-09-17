@@ -30,41 +30,7 @@ export interface LPN {
 }
 
 // Fallback in-memory store if database table is not yet migrated
-const memoryLpns: Map<string, LPN> = new Map([
-  [
-    'LPN-2026-PL01',
-    {
-      lpnNumber: 'LPN-2026-PL01',
-      lpnType: 'PALLET',
-      locationCode: 'A-01-01',
-      status: 'ACTIVE',
-      totalWeight: 420.5,
-      maxWeight: 1000,
-      notes: 'พาเลทอินเวอร์เตอร์โซล่าร์เซลล์และอุปกรณ์ช่าง',
-      items: [
-        { sku: 'SKU-SOLAR-5K', productName: 'Heavy Duty Solar Inverter 5kW', lotNumber: 'LOT-2026-09A', quantity: 18, unit: 'BOX' },
-        { sku: 'SKU-ELEC-006', productName: 'สายไฟ VCT 2x2.5 SQ.MM. (100 เมตร)', lotNumber: 'LOT-2026-VCT', quantity: 12, unit: 'roll' }
-      ],
-      createdAt: new Date().toISOString()
-    }
-  ],
-  [
-    'LPN-2026-PL02',
-    {
-      lpnNumber: 'LPN-2026-PL02',
-      lpnType: 'PALLET',
-      locationCode: 'B-02-01',
-      status: 'ACTIVE',
-      totalWeight: 280,
-      maxWeight: 1000,
-      notes: 'พาเลทอาหารสดควบคุมอุณหภูมิ',
-      items: [
-        { sku: 'SKU-BEV-002', productName: 'นมสดพาสเจอร์ไรส์ 100% (2 ลิตร)', lotNumber: 'LOT-2026-MILK', quantity: 60, unit: 'bottle' }
-      ],
-      createdAt: new Date().toISOString()
-    }
-  ]
-]);
+const memoryLpns: Map<string, LPN> = new Map();
 
 export function generateLpnNumber(type: 'PALLET' | 'MASTER_CARTON' | 'TOTE' | 'CAGE' = 'PALLET'): string {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');

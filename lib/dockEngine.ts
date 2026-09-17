@@ -19,38 +19,7 @@ export interface DockAppointment {
   notes?: string;
 }
 
-export const initialDockAppointments: DockAppointment[] = [
-  {
-    id: 'dock-001',
-    appointmentNumber: 'APT-2026-0901',
-    bayName: 'BAY-01 (Inbound)',
-    appointmentType: 'INBOUND',
-    supplierOrCarrier: 'บจก. สยามโลจิสติกส์ ขนส่ง',
-    vehiclePlate: '70-1234 กทม.',
-    driverName: 'นายสมศักดิ์ ขยันยิ่ง',
-    driverPhone: '081-111-2233',
-    scheduledStart: new Date(Date.now() - 30 * 60000).toISOString(),
-    scheduledEnd: new Date(Date.now() + 60 * 60000).toISOString(),
-    palletsCount: 14,
-    status: 'AT_BAY',
-    notes: 'ส่งมอบอินเวอร์เตอร์และสายไฟ เข้าตู้ A'
-  },
-  {
-    id: 'dock-002',
-    appointmentNumber: 'APT-2026-0902',
-    bayName: 'BAY-02 (Outbound)',
-    appointmentType: 'OUTBOUND',
-    supplierOrCarrier: 'Flash Express (เข้ารับพัสดุรอบบ่าย)',
-    vehiclePlate: '3ฒณ-8821 กทม.',
-    driverName: 'นายวีระพล รวดเร็ว',
-    driverPhone: '089-999-4455',
-    scheduledStart: new Date(Date.now() + 90 * 60000).toISOString(),
-    scheduledEnd: new Date(Date.now() + 150 * 60000).toISOString(),
-    palletsCount: 22,
-    status: 'BOOKED',
-    notes: 'รับออเดอร์ E-Commerce Shopee/Lazada'
-  }
-];
+export const initialDockAppointments: DockAppointment[] = [];
 
 export function checkBayConflict(
   existingAppointments: DockAppointment[],

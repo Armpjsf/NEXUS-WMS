@@ -67,6 +67,15 @@ interface Carrier {
   isDefault: boolean;
 }
 
+// กันชื่อสินค้าที่เป็น JSON ดิบ (จาก QR เก่า) หลุดมาแสดง — ดึงชื่อจริงออกมา
+function cleanItemName(name?: string): string {
+  const t = (name || '').trim();
+  if (t.startsWith('{') && t.endsWith('}')) {
+    try { const o = JSON.parse(t); return String(o.name || o.productName || o.sku || o.loc || t); } catch { /* noop */ }
+  }
+  return t;
+}
+
 export default function MobileOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
@@ -338,7 +347,7 @@ export default function MobileOrdersPage() {
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                 {order.items.map((it, idx) => (
                   <div key={idx} className="flex items-center justify-between text-slate-600">
-                    <span className="truncate max-w-[200px]">• {it.name}</span>
+                    <span className="truncate max-w-[200px]">• {cleanItemName(it.name)}</span>
                     <span className="font-mono text-slate-500">x{it.qty}</span>
                   </div>
                 ))}
@@ -408,8 +417,11 @@ export default function MobileOrdersPage() {
                 </div>
               )}
 
-              {/* เพิ่มสินค้าเข้าออเดอร์ (ลูกค้าเพิ่มของหลังแพ็ก/จ่ายงานให้รถ) */}
-              {(order.status === 'PACKED' || order.status === 'SHIPPED') && (
+              {/* เพิ่มสินค้าเข้าออเดอร์ (ลูกค้าเพิ่มของหลังแพ็ก/จ่ายงานให้รถ) —
+                  ปิดเมื่อคนขับส่งเสร็จ (TMS = Completed) แม้ WMS ยังไม่ซิงก์เป็น DELIVERED */}
+              {(order.status === 'PACKED' || order.status === 'SHIPPED')
+                && (order as any).tmsStatus !== 'Completed'
+                && (order as any).tmsStatus !== 'Delivered' && (
                 <button
                   onClick={() => setAddItemsOrder({
                     id: order.id,
@@ -668,7 +680,7 @@ function MobileQcModal({
                     {isDone ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
                   </div>
                   <div>
-                    <h4 className="font-bold text-xs leading-snug">{it.name}</h4>
+                    <h4 className="font-bold text-xs leading-snug">{cleanItemName(it.name)}</h4>
                     <span className="text-[10px] font-mono text-slate-500 block mt-0.5">SKU: {it.sku}</span>
                   </div>
                 </div>

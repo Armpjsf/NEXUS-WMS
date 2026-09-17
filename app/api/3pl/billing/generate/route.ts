@@ -27,9 +27,9 @@ export async function POST(req: Request) {
       periodStart: body.periodStart || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
       periodEnd: body.periodEnd || new Date().toISOString().slice(0, 10),
       daysCount: body.daysCount || 30,
-      avgOccupiedCbm: body.avgOccupiedCbm || 42.0,
-      ordersCount: body.ordersCount || 280,
-      itemsCount: body.itemsCount || 850
+      avgOccupiedCbm: body.avgOccupiedCbm || 0,
+      ordersCount: body.ordersCount || 0,
+      itemsCount: body.itemsCount || 0
     });
 
     const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;

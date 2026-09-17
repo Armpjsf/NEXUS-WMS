@@ -32,6 +32,12 @@ interface Line { sku: string; name: string; qty: number; }
 interface Order {
   id: string; orderNo: string; customerName: string; phone: string; shipAddress: string;
   status: string; items: Line[]; totalQty: number; carrier: string; trackingNo: string;
+  tmsJobId?: string;
+}
+
+// งานที่ยิงเข้า TMS/รถบริษัท = คนขับส่ง → POD ทำที่แอปคนขับ (TMS) ไม่ใช่งานเช็คเกอร์
+function isDriverDelivered(o: Order): boolean {
+  return Boolean(o.tmsJobId || (o.trackingNo && o.trackingNo.startsWith('JOB-')));
 }
 
 // Driver delivery view: SHIPPED outbound orders awaiting proof of delivery.
@@ -99,6 +105,7 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
   const [sigUrl, setSigUrl] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [busy, setBusy] = useState<'' | 'sig' | 'photo'>('');
+  const driverJob = isDriverDelivered(order); // คนขับส่ง (TMS) → เช็คเกอร์ไม่ต้อง POD ที่นี่
 
   const saveSignature = async (dataUrl: string) => {
     setBusy('sig');
@@ -131,7 +138,7 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-black text-slate-900">ยืนยันส่งถึง</h2>
+          <h2 className="text-lg font-black text-slate-900">{driverJob ? 'งานส่งโดยคนขับ' : 'มอบของให้ลูกค้า (รับที่คลัง)'}</h2>
           <button onClick={onClose} className="p-2 text-slate-400"><X className="w-5 h-5" /></button>
         </div>
         <div className="bg-slate-50 rounded-2xl p-4">
@@ -142,25 +149,39 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
             {order.items.map(l => <div key={l.sku} className="flex justify-between text-sm"><span className="text-slate-600 truncate">{l.name}</span><span className="font-bold text-slate-800">×{l.qty}</span></div>)}
           </div>
         </div>
-        <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="ผู้รับ / หมายเหตุการส่ง (เช่น ฝากไว้หน้าบ้าน)" rows={2}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium outline-none focus:border-cyan-500 resize-none" />
 
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setSigOpen(true)} disabled={busy === 'sig'}
-            className={`rounded-2xl border-2 border-dashed p-3 flex flex-col items-center justify-center gap-1 transition-colors ${sigUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50'}`}>
-            {sigUrl ? <img src={sigUrl} alt="ลายเซ็น" className="h-12 object-contain" /> : <PenLine className="w-6 h-6 text-slate-400" />}
-            <span className="text-xs font-bold text-slate-600">{busy === 'sig' ? 'กำลังบันทึก...' : sigUrl ? 'ลายเซ็น ✓' : 'เซ็นรับ'}</span>
-          </button>
-          <label className={`rounded-2xl border-2 border-dashed p-3 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${photoUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50'}`}>
-            {photoUrl ? <img src={photoUrl} alt="รูปส่ง" className="h-12 object-contain rounded" /> : <Camera className="w-6 h-6 text-slate-400" />}
-            <span className="text-xs font-bold text-slate-600">{busy === 'photo' ? 'กำลังอัปโหลด...' : photoUrl ? 'รูปหลักฐาน ✓' : 'ถ่ายรูป'}</span>
-            <input type="file" accept="image/*" capture="environment" onChange={capturePhoto} className="hidden" />
-          </label>
-        </div>
+        {driverJob ? (
+          <>
+            {/* งานส่งโดยคนขับ (TMS) — เช็คเกอร์ไม่ต้องเซ็น/ถ่าย POD ทำที่แอปคนขับแล้วซิงก์กลับ */}
+            <div className="rounded-2xl bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800 space-y-2">
+              <p className="font-bold flex items-center gap-2"><Truck className="w-5 h-5" /> งานนี้ส่งโดยคนขับ (Cross-dock / รถบริษัท)</p>
+              <p>หลักฐานส่งถึง (ลายเซ็นผู้รับปลายทาง + รูป) ให้ <b>คนขับปิดที่แอปคนขับ (TMS)</b> เมื่อส่งถึงแต่ละดรอป แล้วสถานะจะซิงก์กลับ WMS อัตโนมัติ — เช็คเกอร์ไม่ต้องเซ็นที่นี่</p>
+            </div>
+            <button onClick={onClose} className="w-full py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-bold active:scale-95">ปิด</button>
+          </>
+        ) : (
+          <>
+            <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="ชื่อผู้มารับ / หมายเหตุ" rows={2}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium outline-none focus:border-cyan-500 resize-none" />
 
-        <button onClick={deliver} disabled={saving} className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
-          <PackageCheck className="w-6 h-6" /> {saving ? 'กำลังบันทึก...' : 'ยืนยันส่งสำเร็จ'}
-        </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setSigOpen(true)} disabled={busy === 'sig'}
+                className={`rounded-2xl border-2 border-dashed p-3 flex flex-col items-center justify-center gap-1 transition-colors ${sigUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50'}`}>
+                {sigUrl ? <img src={sigUrl} alt="ลายเซ็น" className="h-12 object-contain" /> : <PenLine className="w-6 h-6 text-slate-400" />}
+                <span className="text-xs font-bold text-slate-600">{busy === 'sig' ? 'กำลังบันทึก...' : sigUrl ? 'ลายเซ็น ✓' : 'ลูกค้าเซ็นรับ'}</span>
+              </button>
+              <label className={`rounded-2xl border-2 border-dashed p-3 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${photoUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50'}`}>
+                {photoUrl ? <img src={photoUrl} alt="รูปมอบของ" className="h-12 object-contain rounded" /> : <Camera className="w-6 h-6 text-slate-400" />}
+                <span className="text-xs font-bold text-slate-600">{busy === 'photo' ? 'กำลังอัปโหลด...' : photoUrl ? 'รูปหลักฐาน ✓' : 'ถ่ายรูปหลักฐาน'}</span>
+                <input type="file" accept="image/*" capture="environment" onChange={capturePhoto} className="hidden" />
+              </label>
+            </div>
+
+            <button onClick={deliver} disabled={saving} className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+              <PackageCheck className="w-6 h-6" /> {saving ? 'กำลังบันทึก...' : 'ยืนยันมอบของสำเร็จ'}
+            </button>
+          </>
+        )}
       </div>
       <SignatureModal isOpen={sigOpen} onClose={() => setSigOpen(false)} onSave={saveSignature} docNum={order.orderNo} />
     </div>

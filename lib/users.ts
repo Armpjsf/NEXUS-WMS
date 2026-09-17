@@ -14,6 +14,7 @@ export type UserRole =
   | 'Staff - QC & Pack'
   | 'Staff - Dispatch'
   | 'Staff - Inventory'
+  | 'Staff - Outbound'
   | 'Staff'
   | 'User'
   | 'Viewer';
@@ -82,6 +83,14 @@ export const ROLE_DEFINITIONS: Record<string, RoleMeta> = {
     title: '📋 ฝ่ายตรวจนับสต็อก (Inventory)',
     description: 'ตรวจนับ Cycle Count ค้นหาและตรวจสอบยอดสต็อกในเชลฟ์',
     allowedSections: ['cycle-count', 'inventory', 'home'],
+  },
+  // กลุ่มรวม "ฝั่งจ่าย" — ครอบคลุมงานขาออกทั้งสาย (หยิบ → QC/แพ็ก → จัดส่ง)
+  'Staff - Outbound': {
+    role: 'Staff - Outbound',
+    category: 'section',
+    title: '📦 ฝั่งจ่าย (Outbound รวม)',
+    description: 'งานขาออกทั้งสาย: หยิบ (Picking), ตรวจ QC & แพ็ก, และจัดส่ง/ขนส่ง',
+    allowedSections: ['picking', 'orders', 'qc', 'pack', 'dispatch', 'jobs', 'inventory', 'home'],
   },
   'Staff': {
     role: 'Staff',
