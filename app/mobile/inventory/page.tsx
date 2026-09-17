@@ -20,6 +20,7 @@ interface Product {
 }
 
 interface BinRow { binCode: string; quantity: number; lotNo?: string }
+interface UomRow { code: string; name?: string; factor: number; isBase?: boolean }
 
 export default function MobileInventoryPage() {
   const { t } = useLanguage();
@@ -30,19 +31,25 @@ export default function MobileInventoryPage() {
   const [selected, setSelected] = useState<Product | null>(null);
   const [bins, setBins] = useState<BinRow[] | null>(null);
   const [binsLoading, setBinsLoading] = useState(false);
+  const [uoms, setUoms] = useState<UomRow[] | null>(null);
 
-  // Load per-bin breakdown whenever a product detail opens.
+  // Load per-bin breakdown + pack hierarchy (UOM) whenever a product detail opens.
   useEffect(() => {
     const sku = selected?.id;
-    if (!sku) { setBins(null); return; }
+    if (!sku) { setBins(null); setUoms(null); return; }
     let cancelled = false;
     setBinsLoading(true);
     setBins(null);
+    setUoms(null);
     fetch(getApiUrl(`/api/stock/bins?sku=${encodeURIComponent(sku)}`), { cache: 'no-store' })
       .then(r => r.json())
       .then(d => { if (!cancelled) setBins(Array.isArray(d.bins) ? d.bins : []); })
       .catch(() => { if (!cancelled) setBins([]); })
       .finally(() => { if (!cancelled) setBinsLoading(false); });
+    fetch(getApiUrl(`/api/products/uoms?sku=${encodeURIComponent(sku)}`), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setUoms(Array.isArray(d.uoms) ? d.uoms : []); })
+      .catch(() => { if (!cancelled) setUoms([]); });
     return () => { cancelled = true; };
   }, [selected?.id]);
   const [scanning, setScanning] = useState(false);
@@ -234,6 +241,22 @@ export default function MobileInventoryPage() {
                 <div className="text-2xl font-black text-orange-700">{selected.location || '-'}</div>
               </div>
             </div>
+
+            {/* Pack hierarchy (UOM) */}
+            {uoms && uoms.length > 1 && (
+              <div className="mt-4">
+                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-2">
+                  <Boxes className="w-3 h-3" /> หน่วยบรรจุ (Pack Hierarchy)
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {uoms.map((u, i) => (
+                    <span key={u.code + i} className={`text-xs rounded-lg px-2.5 py-1.5 border ${u.isBase ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
+                      <b>{u.name || u.code}</b>{!u.isBase && <span className="text-[11px] opacity-80"> = {u.factor} {uoms[0]?.name || 'ชิ้น'}</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Per-bin breakdown (multi-location stock) */}
             <div className="mt-4">

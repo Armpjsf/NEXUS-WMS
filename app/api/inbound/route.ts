@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binAdd } from '@/lib/stockLocations';
+import { toBaseQty } from '@/lib/uom';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +25,9 @@ export async function POST(request: Request) {
     const transactionInserts: any[] = [];
 
     for (const item of items) {
-      const qtyNum = Number(item.qty) || 0;
       const sku = item.sku;
+      // A4: entry can be in any unit (e.g. 2 CARTON) — convert to base units.
+      const qtyNum = await toBaseQty(orgId, sku, Number(item.qty) || 0, item.uom);
 
       // 1. Fetch current product
       const { data: prodData } = await supabase

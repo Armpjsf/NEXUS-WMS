@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binConsume } from '@/lib/stockLocations';
+import { toBaseQty } from '@/lib/uom';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,17 +27,20 @@ export async function POST(request: Request) {
     // before mutating anything, so a partial commit can't happen).
     const stockCache: Record<string, any> = {};
     const shortages: string[] = [];
+    const baseQtyBySku: Record<string, number> = {};
     for (const item of items) {
-      const qtyNum = Number(item.qty) || 0;
       const sku = item.sku;
+      // A4: convert the requested qty (any unit) to base units for validation.
+      const qtyNum = await toBaseQty(orgId, sku, Number(item.qty) || 0, item.uom);
+      baseQtyBySku[sku] = (baseQtyBySku[sku] || 0) + qtyNum;
       const { data: prodData } = await supabase
         .from('products').select('*').eq('org_id', orgId).eq('sku', sku).maybeSingle();
       stockCache[sku] = prodData;
       const avail = Number(prodData?.stock || 0);
       if (!prodData) {
         shortages.push(`${sku}: ไม่พบสินค้าในคลัง`);
-      } else if (qtyNum > avail) {
-        shortages.push(`${prodData.name || sku}: ต้องการ ${qtyNum} แต่คงเหลือ ${avail}`);
+      } else if (baseQtyBySku[sku] > avail) {
+        shortages.push(`${prodData.name || sku}: ต้องการ ${baseQtyBySku[sku]} แต่คงเหลือ ${avail}`);
       }
     }
     if (shortages.length > 0) {
@@ -49,8 +53,9 @@ export async function POST(request: Request) {
     const transactionInserts: any[] = [];
 
     for (const item of items) {
-      const qtyNum = Number(item.qty) || 0;
       const sku = item.sku;
+      // A4: base-unit qty (converted from item.uom in the validation pass)
+      const qtyNum = await toBaseQty(orgId, sku, Number(item.qty) || 0, item.uom);
 
       // Reuse the product fetched during validation
       const prodData = stockCache[sku];

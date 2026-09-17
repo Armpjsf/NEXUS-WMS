@@ -5,6 +5,8 @@ import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier, appendTmsJobItems } from '@/lib/tms';
 import { binConsume } from '@/lib/stockLocations';
+import { reserveForOrder, consumeOrderReservations, releaseOrderReservations } from '@/lib/reservations';
+import { toBaseQty } from '@/lib/uom';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -290,14 +292,22 @@ export async function createOrder(input: {
 }): Promise<OutboundOrder | null> {
   const targetStatus = input.status || 'NEW';
   const isPrePicked = targetStatus === 'PICKED';
-  const items = (input.items || []).map((l) => ({
-    sku: l.sku, name: l.name, qty: Number(l.qty) || 0, drop: l.drop || 1,
-    picked: isPrePicked ? (Number(l.qty) || 0) : 0, packed: 0, location: l.location || '', price: Number(l.price) || 0,
+  const orderNo = await nextOrderNo();
+  const orgId = await getCurrentOrgId();
+
+  // A4: a line may be entered in an alternate unit (e.g. 2 CARTON). Convert to
+  // BASE units so reservation, picking and shipping all run on base-unit stock.
+  // The original entry (uom + uomQty) is kept on the line for display.
+  const items = await Promise.all((input.items || []).map(async (l: any) => {
+    const baseQty = l.uom ? await toBaseQty(orgId, l.sku, Number(l.qty) || 0, l.uom) : (Number(l.qty) || 0);
+    return {
+      sku: l.sku, name: l.name, qty: baseQty, drop: l.drop || 1,
+      picked: isPrePicked ? baseQty : 0, packed: 0, location: l.location || '', price: Number(l.price) || 0,
+      ...(l.uom ? { uom: l.uom, uomQty: Number(l.qty) || 0 } : {}),
+    };
   }));
   const totalQty = items.reduce((s, l) => s + l.qty, 0);
   const totalAmount = items.reduce((s, l) => s + l.qty * (l.price || 0), 0);
-  const orderNo = await nextOrderNo();
-  const orgId = await getCurrentOrgId();
 
   const targetBranch = (input.branchCode || 'URT').trim();
   const vType = (input.vehicleType || '4-Wheel').trim();
@@ -361,7 +371,22 @@ export async function createOrder(input: {
     console.error('[orders] create error:', error);
     return null;
   }
-  return mapOrder(data);
+
+  const order = mapOrder(data);
+  // A1: reserve stock so two orders can't sell the same units. Off-catalog /
+  // cross-dock lines carry no warehouse stock and are skipped inside. Only
+  // reserve while the order hasn't already shipped/been pre-picked-out.
+  if (order && targetStatus !== 'SHIPPED') {
+    try {
+      const r = await reserveForOrder(orgId, order.id, orderNo, items.map(l => ({ sku: l.sku, qty: l.qty })));
+      if (r.hasBackorder) {
+        (order as any).backorders = r.lines.filter(l => l.backorder > 0);
+      }
+    } catch (e) {
+      console.warn('[orders] reservation failed (non-fatal):', e);
+    }
+  }
+  return order;
 }
 
 // Deduct stock + log OUT transactions for every line (called on SHIPPED).
@@ -448,6 +473,13 @@ export async function updateOrder(
   const orgId = await getCurrentOrgId();
   if (movingToShipped) {
     await commitStockOut(current, orgId);
+    // A1: reservations are now fulfilled — free them so they stop counting
+    // against available (the stock itself was just deducted).
+    await consumeOrderReservations(orgId, id).catch(() => {});
+  }
+  // A1: cancelling an order returns its reserved stock to available.
+  if (patch.status === 'CANCELLED' && current.status !== 'CANCELLED') {
+    await releaseOrderReservations(orgId, id).catch(() => {});
   }
 
   let { data, error } = await getServiceSupabase()

@@ -38,6 +38,25 @@ function norm(bin?: string | null): string {
   return b || UNASSIGNED;
 }
 
+// A3: call an atomic Postgres function; return null (→ JS fallback) only when
+// the function is absent (SQL not applied yet). Real errors still fall back but
+// are logged, so a missing migration degrades gracefully instead of breaking.
+async function rpcOrNull(fn: string, args: Record<string, any>): Promise<any | null> {
+  try {
+    const { data, error } = await getServiceSupabase().rpc(fn, args);
+    if (error) {
+      const code = (error as any).code;
+      const msg = (error as any).message || '';
+      if (code === '42883' || /does not exist|could not find/i.test(msg)) return null; // undefined_function
+      console.warn(`[stock] rpc ${fn} error, using JS fallback:`, msg);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
 /** Ensure a SKU has at least one bin row; seed from products if none exist. */
 async function ensureSeeded(admin: Admin, orgId: string, sku: string): Promise<void> {
   const { data: rows } = await admin
@@ -75,6 +94,11 @@ async function reconcile(admin: Admin, orgId: string, sku: string): Promise<numb
 export async function binAdd(
   orgId: string, sku: string, binCode: string, qty: number, opts?: { lotNo?: string }
 ): Promise<number> {
+  const atomic = await rpcOrNull('wms_bin_add', {
+    p_org: orgId, p_sku: sku, p_bin: norm(binCode), p_qty: Number(qty) || 0, p_lot: opts?.lotNo ?? null,
+  });
+  if (atomic != null) return Number(atomic);
+
   const admin = getServiceSupabase();
   await ensureSeeded(admin, orgId, sku);
   const bin = norm(binCode);
@@ -101,20 +125,59 @@ export async function binAdd(
 export async function binConsume(
   orgId: string, sku: string, qty: number, opts?: { preferBin?: string }
 ): Promise<ConsumeResult> {
+  const atomic = await rpcOrNull('wms_bin_consume', {
+    p_org: orgId, p_sku: sku, p_qty: Number(qty) || 0, p_prefer: opts?.preferBin ? norm(opts.preferBin) : null,
+  });
+  if (atomic != null) {
+    return {
+      taken: Array.isArray(atomic.taken) ? atomic.taken : [],
+      shortfall: Number(atomic.shortfall || 0),
+      total: Number(atomic.total || 0),
+    };
+  }
+
   const admin = getServiceSupabase();
   await ensureSeeded(admin, orgId, sku);
   let need = Math.max(0, Number(qty) || 0);
   const taken: { binCode: string; quantity: number }[] = [];
 
   const { data: rows } = await admin
-    .from(TABLE).select('id, bin_code, quantity').eq('org_id', orgId).eq('sku', sku);
+    .from(TABLE).select('id, bin_code, quantity, lot_no, created_at').eq('org_id', orgId).eq('sku', sku);
   const bins = (rows || []).filter((b: any) => Number(b.quantity || 0) > 0);
   const prefer = opts?.preferBin ? norm(opts.preferBin) : null;
+
+  // A2 — FEFO: consume the lot expiring soonest first. Look up each bin's lot
+  // expiry from product_lots; bins with no lot/expiry fall back to FIFO (oldest
+  // stock_locations row first). A picked `preferBin` still wins so a physical
+  // pick from a scanned bin is honoured over the automatic FEFO order.
+  const lotNos = Array.from(new Set(bins.map((b: any) => b.lot_no).filter(Boolean)));
+  const expMap = new Map<string, { exp: number | null; expired: boolean }>();
+  if (lotNos.length > 0) {
+    try {
+      const { data: lots } = await admin
+        .from('product_lots').select('lot_number, exp_date')
+        .eq('org_id', orgId).eq('sku', sku).in('lot_number', lotNos);
+      for (const l of lots || []) {
+        const exp = l.exp_date ? new Date(l.exp_date).getTime() : null;
+        expMap.set(l.lot_number, { exp, expired: exp != null && exp <= Date.now() });
+      }
+    } catch { /* product_lots optional — fall back to FIFO */ }
+  }
+  const meta = (b: any) => (b.lot_no && expMap.get(b.lot_no)) || { exp: null, expired: false };
+
   bins.sort((a: any, b: any) => {
     if (prefer) {
       if (a.bin_code === prefer && b.bin_code !== prefer) return -1;
       if (b.bin_code === prefer && a.bin_code !== prefer) return 1;
     }
+    const ma = meta(a), mb = meta(b);
+    if (ma.expired !== mb.expired) return ma.expired ? 1 : -1;           // avoid expired unless forced
+    if (ma.exp != null && mb.exp != null && ma.exp !== mb.exp) return ma.exp - mb.exp; // earliest expiry first
+    if (ma.exp != null && mb.exp == null) return -1;                     // dated lots before undated
+    if (ma.exp == null && mb.exp != null) return 1;
+    const ca = new Date(a.created_at || 0).getTime();                    // FIFO tiebreak
+    const cb = new Date(b.created_at || 0).getTime();
+    if (ca !== cb) return ca - cb;
     return Number(b.quantity || 0) - Number(a.quantity || 0);
   });
 
@@ -138,6 +201,11 @@ export async function binConsume(
 export async function binMove(
   orgId: string, sku: string, fromBin: string, toBin: string, qty: number
 ): Promise<{ moved: number; total: number }> {
+  const atomic = await rpcOrNull('wms_bin_move', {
+    p_org: orgId, p_sku: sku, p_from: norm(fromBin), p_to: norm(toBin), p_qty: Math.max(0, Number(qty) || 0),
+  });
+  if (atomic != null) return { moved: Number(atomic.moved || 0), total: Number(atomic.total || 0) };
+
   const admin = getServiceSupabase();
   await ensureSeeded(admin, orgId, sku);
   const from = norm(fromBin);
