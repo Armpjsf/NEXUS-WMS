@@ -90,8 +90,8 @@ export function buildWarehouseMap(
 ): { zones: WarehouseZone[]; unassignedProducts: any[]; stats: WarehouseMapStats } {
   // 1. Perform ABC Analysis using real system slotting engine
   const abcInsights = performABCAnalysis(products, transactions);
-  const abcMap = new Map<string, (typeof abcInsights)[0]>();
-  abcInsights.forEach(item => {
+  const abcMap = new Map<string, typeof abcInsights.all[0]>();
+  abcInsights.all.forEach(item => {
     abcMap.set(item.productId || item.productName, item);
   });
 

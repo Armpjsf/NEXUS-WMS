@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ClipboardCheck,
   ClipboardList,
+  Cpu,
   DatabaseZap,
   FileBarChart,
   FileText,
@@ -193,6 +194,7 @@ export default function Sidebar() {
       accent: 'bg-emerald-500',
       items: [
         { label: 'คิวงานอัจฉริยะ (Smart Tasks)', href: '/ops/tasks', icon: Boxes, tone: 'amber' },
+        { label: 'หุ่นยนต์ & WCS Gateway', href: '/ops/wcs', icon: Cpu, tone: 'cyan', adminOnly: true },
         { label: 'สั่งหยิบด้วยเสียง (Voice Picking)', href: '/ops/voice-picking', icon: Mic, tone: 'amber' },
         { label: 'รับเข้า & จัดเก็บ (GRN)', href: '/ops/receiving', icon: ArrowDownToLine, tone: 'emerald' },
         { label: 'จัดคิวเทียบท่า (Dock Scheduling)', href: '/ops/dock', icon: Truck, tone: 'blue' },

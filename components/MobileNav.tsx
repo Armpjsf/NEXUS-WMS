@@ -47,7 +47,7 @@ export default function MobileNav() {
       case 'Staff - Dispatch':
         return [
           { href: '/mobile', label: 'หน้าหลัก', icon: Home },
-          { href: '/mobile/orders', label: 'ส่งมอบขนส่ง', icon: Truck },
+          { href: '/mobile/orders?tab=dispatch', label: 'ส่งมอบขนส่ง', icon: Truck },
           { href: '/mobile/jobs', label: 'คนขับ POD', icon: Navigation },
           { href: '/mobile/inventory', label: 'ค้นหาสต็อก', icon: Box },
         ];
@@ -80,7 +80,8 @@ export default function MobileNav() {
         <div className="flex justify-around items-center h-16">
           {navItems.map(item => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const itemPath = item.href.split('?')[0];
+            const isActive = pathname === item.href || pathname === itemPath;
 
             return (
               <Link

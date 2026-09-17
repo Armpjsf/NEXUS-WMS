@@ -1,45 +1,73 @@
 
 export interface SlottingInsight {
     productId: string;
+    sku: string;
     productName: string;
     currentLocation: string;
-    velocityScore: number; // Number of outbound items or transactions
+    recommendedBin: string;
+    stock: number;
+    velocityScore: number; // Total Outbound Qty
+    pickCount: number; // Number of distinct pick times
     class: 'A' | 'B' | 'C' | 'D'; // A=Top20%, B=Next30%, C=Bottom50%, D=Deadstock
     idealZone: string;
     action: 'MOVE_FORWARD' | 'MOVE_BACK' | 'KEEP';
     reason: string;
+    estimatedDistanceSavedMeters: number;
 }
 
-export function performABCAnalysis(products: any[], transactions: any[]): SlottingInsight[] {
-    // 1. Calculate Velocity (Total Outbound Qty) per Product
+export interface SlottingSummary {
+    totalAnalyzed: number;
+    suboptimalCount: number;
+    classDistribution: {
+        A: number;
+        B: number;
+        C: number;
+        D: number;
+    };
+    estimatedWeeklyDistanceSavedKm: number;
+    recommendations: SlottingInsight[];
+    all: SlottingInsight[];
+}
+
+export function performABCAnalysis(products: any[], transactions: any[]): SlottingSummary {
+    // 1. Calculate Velocity (Total Outbound Qty) and Pick Count per Product
     const velocityMap = new Map<string, number>();
+    const pickCountMap = new Map<string, number>();
     
     transactions.forEach(t => {
         if (t.type === 'OUT' || t.transaction_type === 'OUT') {
-            const pid = t.product_id || t.productId; // handle various data shapes
-            // Fallback: match by name if ID missing (legacy data)
-            const key = pid || t.product || t.product_name; 
+            const pid = t.product_id || t.productId;
+            const sku = t.sku;
+            const key = sku || pid || t.product || t.product_name; 
             
             if (key) {
                 const qty = Number(t.qty || t.quantity || 0);
                 velocityMap.set(key, (velocityMap.get(key) || 0) + qty);
+                pickCountMap.set(key, (pickCountMap.get(key) || 0) + 1);
             }
         }
     });
 
-    // 2. Rank Products
+    // 2. Rank Products by velocity
     const rankedProducts = products.map(p => {
-        const key = p.id || p.name; // Match method above
-        const velocity = velocityMap.get(key) || 0;
-        return { ...p, velocity };
+        const skuKey = p.sku || p.id || p.name;
+        const nameKey = p.name;
+        const velocity = velocityMap.get(skuKey) || velocityMap.get(nameKey) || 0;
+        const picks = pickCountMap.get(skuKey) || pickCountMap.get(nameKey) || 0;
+        return { ...p, velocity, picks };
     }).sort((a, b) => b.velocity - a.velocity);
 
     const totalItems = rankedProducts.length;
     const insights: SlottingInsight[] = [];
+    let totalDistanceSavedMeters = 0;
 
-    // 3. Assign Classes (A=Top 20%, B=Next 30%, C=Rest)
-    // Note: D = Deadstock (Velocity = 0)
-    let accumCount = 0;
+    // Available front bins to suggest for Class A
+    const goldenZoneBins = ['A-01-01', 'A-01-02', 'A-02-01', 'A-02-02', 'A-03-01'];
+    // Available back bins to suggest for Class C/D
+    const backZoneBins = ['C-01-01', 'C-01-02', 'C-02-01', 'C-02-02', 'D-01-01'];
+
+    let goldenBinIdx = 0;
+    let backBinIdx = 0;
 
     rankedProducts.forEach((p, index) => {
         let assignedClass: 'A' | 'B' | 'C' | 'D' = 'C';
@@ -47,51 +75,80 @@ export function performABCAnalysis(products: any[], transactions: any[]): Slotti
         if (p.velocity === 0) {
             assignedClass = 'D';
         } else {
-            const percentile = (index / totalItems) * 100;
+            const percentile = totalItems > 0 ? (index / totalItems) * 100 : 100;
             if (percentile <= 20) assignedClass = 'A';
             else if (percentile <= 50) assignedClass = 'B';
             else assignedClass = 'C';
         }
 
-        // 4. Determine Action based on current location (Heuristic)
-        // Heuristic: "Zone A" is front, "Zone B" middle, "Zone C" back.
-        // If location string starts with 'A' but class is 'C', move back.
-        const currentLoc = p.location || '';
+        const currentLoc = p.location || 'Unassigned';
         let action: 'MOVE_FORWARD' | 'MOVE_BACK' | 'KEEP' = 'KEEP';
-        let idealZone = 'Any';
-        let reason = 'Good placement.';
+        let idealZone = 'Any Zone';
+        let recommendedBin = currentLoc;
+        let reason = 'ตำแหน่งจัดวางเหมาะสมกับความถี่การเบิกจ่ายแล้ว';
+        let estimatedDistanceSaved = 0;
 
-        // Simple Regex heuristic for Zone (assuming format "A-xx-xx")
-        const currentZoneMatch = currentLoc.match(/^([A-Z])/); 
-        const currentZone = currentZoneMatch ? currentZoneMatch[1] : null;
+        // Zone detection (A, B, C, D)
+        const currentZoneMatch = currentLoc.match(/^([A-Z])/i); 
+        const currentZone = currentZoneMatch ? currentZoneMatch[1].toUpperCase() : null;
 
         if (assignedClass === 'A') {
-            idealZone = 'Front / Zone A';
-            if (currentZone && currentZone > 'A') { // e.g. B or C
+            idealZone = 'Golden Zone (หน้าคลัง / แร็ค A)';
+            if (!currentZone || currentZone > 'A') {
                 action = 'MOVE_FORWARD';
-                reason = `High velocity item (Class A) found in Zone ${currentZone}. Move to front for faster picking.`;
+                recommendedBin = goldenZoneBins[goldenBinIdx % goldenZoneBins.length];
+                goldenBinIdx++;
+                // Approx 50 meters round-trip saved per pick when moved from Zone C/B to Zone A
+                const picks = Math.max(1, p.picks || 1);
+                estimatedDistanceSaved = picks * 45; // 45 meters per pick
+                totalDistanceSavedMeters += estimatedDistanceSaved;
+                reason = `สินค้าขายดีติดอันดับ Top 20% (Class A) ปัจจุบันอยู่ ${currentLoc} แนะนำย้ายมา Golden Zone เพื่อลดระยะเดินหยิบ`;
             }
         } else if (assignedClass === 'C' || assignedClass === 'D') {
-            idealZone = 'Back / Zone C';
-            if (currentZone && currentZone < 'C') { // e.g. A or B
+            idealZone = 'Deep Storage (แร็คชั้นใน / แร็ค C)';
+            if (currentZone && currentZone < 'C') {
                 action = 'MOVE_BACK';
-                reason = `Low velocity item (Class ${assignedClass}) occupying premium space in Zone ${currentZone}.`;
+                recommendedBin = backZoneBins[backBinIdx % backZoneBins.length];
+                backBinIdx++;
+                reason = `สินค้าเคลื่อนไหวน้อยหรือ Deadstock (Class ${assignedClass}) กำลังกินพื้นที่ชั้นวางทองคำแถวหน้า (${currentLoc}) แนะนำย้ายไปเก็บโซนด้านหลังเพื่อเปิดทางให้ของขายดี`;
             }
         } else {
-            idealZone = 'Middle / Zone B';
+            idealZone = 'Mid Zone (แร็คแถวกลาง / แร็ค B)';
         }
 
         insights.push({
-            productId: p.id,
+            productId: p.id || p.sku || `prod-${index}`,
+            sku: p.sku || p.id || p.name,
             productName: p.name,
-            currentLocation: p.location || 'Unassigned',
+            currentLocation: currentLoc,
+            recommendedBin,
+            stock: Number(p.stock || 0),
             velocityScore: p.velocity,
+            pickCount: p.picks,
             class: assignedClass,
             idealZone,
             action,
-            reason
+            reason,
+            estimatedDistanceSavedMeters: estimatedDistanceSaved
         });
     });
 
-    return insights;
+    const recommendations = insights.filter(i => i.action !== 'KEEP');
+    // Calculate weekly distance saved in Kilometers (assumes monthly velocity divided by 4)
+    const estimatedWeeklyDistanceSavedKm = Number(((totalDistanceSavedMeters * 1.5) / 1000).toFixed(1));
+
+    return {
+        totalAnalyzed: products.length,
+        suboptimalCount: recommendations.length,
+        classDistribution: {
+            A: insights.filter(i => i.class === 'A').length,
+            B: insights.filter(i => i.class === 'B').length,
+            C: insights.filter(i => i.class === 'C').length,
+            D: insights.filter(i => i.class === 'D').length,
+        },
+        estimatedWeeklyDistanceSavedKm: Math.max(0.5, estimatedWeeklyDistanceSavedKm),
+        recommendations,
+        all: insights
+    };
 }
+

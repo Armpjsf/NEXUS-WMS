@@ -114,6 +114,19 @@ export default function MobileOrdersPage() {
     loadData();
   }, [loadData]);
 
+  // Read tab parameter from URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam) {
+        const upper = tabParam.toUpperCase();
+        if (upper === 'DISPATCH' || upper === 'QC' || upper === 'PACK' || upper === 'SHIPPED') {
+          setActiveTab(upper as any);
+        }
+      }
+    }
+  }, []);
+
   const isQcPassed = (o: Order) => Boolean(o.notes?.includes('[QC:PASSED]'));
 
   // Main barcode scan on list: Find matching order by OrderNo or TrackingNo
