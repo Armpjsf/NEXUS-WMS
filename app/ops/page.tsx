@@ -1,6 +1,6 @@
 'use client';
 
-import { PackagePlus, PackageMinus, RefreshCw, Boxes, Truck, ShoppingCart } from 'lucide-react';
+import { PackagePlus, PackageMinus, RefreshCw, Boxes, Truck, ShoppingCart, Activity } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OpsPage() {
@@ -97,6 +97,17 @@ export default function OpsPage() {
                <div>
                    <h3 className="text-lg font-bold text-white">5. Cycle Count (ตรวจนับสต็อกตามรอบ)</h3>
                    <p className="text-[#8a92a6] text-sm">ตรวจนับสินค้าจริงตาม Zone/Shelf เทียบยอดกับระบบ เพื่อตรวจจับผลต่าง (Variance) และสินค้าสูญหาย</p>
+               </div>
+           </Link>
+
+           {/* Control Tower */}
+           <Link href="/ops/control-tower" className="col-span-1 md:col-span-2 group relative overflow-hidden bg-gradient-to-r from-[#171c23] to-slate-900/50 border border-[#facc15]/20 rounded-3xl p-6 flex items-center gap-6 hover:border-[#facc15]/40 transition-all">
+               <div className="p-3 bg-[#facc15]/10 rounded-xl">
+                   <Activity className="w-6 h-6 text-[#facc15]" />
+               </div>
+               <div>
+                   <h3 className="text-lg font-bold text-white">Control Tower (ภาพรวมคลังเรียลไทม์)</h3>
+                   <p className="text-[#8a92a6] text-sm">แดชบอร์ดผู้จัดการ: สต็อกต่ำ, ล็อตใกล้หมดอายุ/เรียกคืน, ออเดอร์กำลังทำ, หุ่นยนต์ และความเคลื่อนไหวล่าสุด รวมในหน้าเดียว</p>
                </div>
            </Link>
 
