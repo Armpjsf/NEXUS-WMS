@@ -1,42 +1,76 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { ThirdPartyClient } from '@/lib/billingEngine';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { getServiceSupabase } from '@/lib/supabase';
 
-// Start empty — real 3PL clients are added via POST (no demo seed data).
-let memoryClients: ThirdPartyClient[] = [];
+export const dynamic = 'force-dynamic';
+
+function mapClient(r: any) {
+  return {
+    id: r.id, clientCode: r.client_code, clientName: r.client_name,
+    contactPerson: r.contact_person || '', email: r.email || '', phone: r.phone || '',
+    storageRatePerCbmDay: Number(r.storage_rate_per_cbm_day || 0),
+    storageRatePerPalletDay: Number(r.storage_rate_per_pallet_day || 0),
+    pickFeeBase: Number(r.pick_fee_base || 0), pickFeePerItem: Number(r.pick_fee_per_item || 0),
+    packMaterialFee: Number(r.pack_material_fee || 0), status: r.status || 'ACTIVE',
+  };
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const orgId = await getCurrentOrgId();
+    const { data } = await getServiceSupabase()
+      .from('third_party_clients').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
+    return NextResponse.json({ success: true, clients: (data || []).map(mapClient) });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message, clients: [] }, { status: 200 });
   }
-  return NextResponse.json({ success: true, clients: memoryClients });
 }
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
-    const body = await req.json();
-    const newClient: ThirdPartyClient = {
-      id: `cli-${Date.now()}`,
-      clientCode: body.clientCode || `CLI-${Math.floor(1000 + Math.random() * 9000)}`,
-      clientName: body.clientName,
-      contactPerson: body.contactPerson || '',
-      email: body.email || '',
-      phone: body.phone || '',
-      storageRatePerCbmDay: Number(body.storageRatePerCbmDay) || 15,
-      storageRatePerPalletDay: Number(body.storageRatePerPalletDay) || 25,
-      pickFeeBase: Number(body.pickFeeBase) || 12,
-      pickFeePerItem: Number(body.pickFeePerItem) || 3.5,
-      packMaterialFee: Number(body.packMaterialFee) || 10,
-      status: 'ACTIVE'
+    const orgId = await getCurrentOrgId();
+    const b = await req.json();
+    if (!b.clientName) return NextResponse.json({ error: 'ระบุชื่อลูกค้าฝากคลัง' }, { status: 400 });
+    const admin = getServiceSupabase();
+    const row = {
+      org_id: orgId,
+      client_code: b.clientCode || `CLI-${Math.floor(1000 + Math.random() * 9000)}`,
+      client_name: String(b.clientName).trim(),
+      contact_person: b.contactPerson || '', email: b.email || '', phone: b.phone || '',
+      storage_rate_per_cbm_day: Number(b.storageRatePerCbmDay) || 15,
+      storage_rate_per_pallet_day: Number(b.storageRatePerPalletDay) || 25,
+      pick_fee_base: Number(b.pickFeeBase) || 12,
+      pick_fee_per_item: Number(b.pickFeePerItem) || 3.5,
+      pack_material_fee: Number(b.packMaterialFee) || 10,
+      status: b.status || 'ACTIVE',
     };
-    memoryClients.push(newClient);
-    return NextResponse.json({ success: true, client: newClient });
+    if (b.id) {
+      await admin.from('third_party_clients').update(row).eq('org_id', orgId).eq('id', b.id);
+      return NextResponse.json({ success: true });
+    }
+    const { data, error } = await admin.from('third_party_clients').insert(row).select().single();
+    if (error) throw error;
+    return NextResponse.json({ success: true, client: mapClient(data) });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const orgId = await getCurrentOrgId();
+    const id = new URL(req.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'ระบุ id' }, { status: 400 });
+    await getServiceSupabase().from('third_party_clients').delete().eq('org_id', orgId).eq('id', id);
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

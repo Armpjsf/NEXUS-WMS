@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { initial3PlClients, calculateClientBilling } from '@/lib/billingEngine';
+import { calculateClientBilling } from '@/lib/billingEngine';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { getServiceSupabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -9,9 +11,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    const orgId = await getCurrentOrgId();
     const body = await req.json();
     const clientId = body.clientId;
-    const client = initial3PlClients.find(c => c.id === clientId) || {
+    // pull the real 3PL client from DB; fall back to the rates in the request
+    const { data: row } = clientId
+      ? await getServiceSupabase().from('third_party_clients').select('*').eq('org_id', orgId).eq('id', clientId).maybeSingle()
+      : { data: null };
+    const client = row ? {
+      id: row.id, clientCode: row.client_code, clientName: row.client_name,
+      storageRatePerCbmDay: Number(row.storage_rate_per_cbm_day || 15),
+      storageRatePerPalletDay: Number(row.storage_rate_per_pallet_day || 25),
+      pickFeeBase: Number(row.pick_fee_base || 12), pickFeePerItem: Number(row.pick_fee_per_item || 3.5),
+      packMaterialFee: Number(row.pack_material_fee || 10), status: 'ACTIVE' as const,
+    } : {
       id: clientId || 'cli-custom',
       clientCode: 'CLI-CUSTOM',
       clientName: body.clientName || 'ผู้ว่าจ้างทั่วไป',
