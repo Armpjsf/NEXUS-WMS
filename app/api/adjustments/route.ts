@@ -5,44 +5,6 @@ import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 
 export const dynamic = 'force-dynamic';
 
-// In-memory fallback
-const memoryAdjustments: any[] = [
-  {
-    id: 'ADJ-2026-001',
-    requestNo: 'ADJ-2026-001',
-    sku: 'SKU-BEV-002',
-    productName: 'นมสดพาสเจอร์ไรส์ 100% (2 ลิตร)',
-    locationCode: 'B-02-01',
-    systemQty: 80,
-    countedQty: 76,
-    diffQty: -4,
-    unit: 'ขวด',
-    reasonCode: 'EXPIRED',
-    reasonLabel: 'หมดอายุ / เสียสภาพ',
-    notes: 'พบสินค้ากล่องบวมระหว่างตรวจนับรอบเช้า',
-    requestedBy: 'นายสมศักดิ์ (หัวหน้าทีมหยิบ)',
-    status: 'PENDING_APPROVAL',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'ADJ-2026-002',
-    requestNo: 'ADJ-2026-002',
-    sku: 'SKU-MED-001',
-    productName: 'พาราเซตามอล 500mg (100 เม็ด)',
-    locationCode: 'A-01-02',
-    systemQty: 150,
-    countedQty: 152,
-    diffQty: +2,
-    unit: 'กล่อง',
-    reasonCode: 'COUNT_MISMATCH',
-    reasonLabel: 'ตรวจนับเกินจากยอดบันทึก',
-    notes: 'พบเกินจากการจัดของค้างในถาดหยิบ',
-    requestedBy: 'วิชัย (Operator)',
-    status: 'PENDING_APPROVAL',
-    createdAt: new Date().toISOString()
-  }
-];
-
 export async function GET() {
   try {
     const orgId = await getCurrentOrgId();
@@ -51,15 +13,12 @@ export async function GET() {
       .select('*')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
-
-    if (!error && data && data.length > 0) {
-      return NextResponse.json({ success: true, data });
-    }
-  } catch (err) {
-    console.warn('Adjustments query fallback:', err);
+    if (error) throw error;
+    return NextResponse.json({ success: true, data: data || [] });
+  } catch (err: any) {
+    console.warn('Adjustments query error:', err?.message);
+    return NextResponse.json({ success: true, data: [] });
   }
-
-  return NextResponse.json({ success: true, data: memoryAdjustments });
 }
 
 export async function POST(request: Request) {
@@ -105,8 +64,6 @@ export async function POST(request: Request) {
     } catch (e) {
       console.warn('Adjustment DB insert fallback:', e);
     }
-
-    memoryAdjustments.unshift(newReq);
 
     await recordEnterpriseAudit({
       orgId,

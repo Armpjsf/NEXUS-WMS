@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { initial3PlClients, ThirdPartyClient } from '@/lib/billingEngine';
+import { ThirdPartyClient } from '@/lib/billingEngine';
 
-let memoryClients = [...initial3PlClients];
+// Start empty — real 3PL clients are added via POST (no demo seed data).
+let memoryClients: ThirdPartyClient[] = [];
 
 export async function GET() {
   const session = await getServerSession(authOptions);

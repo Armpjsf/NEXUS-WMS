@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { initialColdChainSensors, evaluateSensorReading, SensorTelemetry } from '@/lib/iot/sensorEngine';
+import { evaluateSensorReading, SensorTelemetry } from '@/lib/iot/sensorEngine';
 import { dispatchNotification } from '@/lib/notifications/notificationGateway';
 
-let memorySensors: SensorTelemetry[] = [...initialColdChainSensors];
+// Start empty — real sensor readings arrive via POST (no demo seed data).
+let memorySensors: SensorTelemetry[] = [];
 
 export async function GET() {
   const session = await getServerSession(authOptions);

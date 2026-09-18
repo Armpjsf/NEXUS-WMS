@@ -38,6 +38,7 @@ interface ParsedProduct {
   barcode: string;
   lot_no?: string;
   expiry_date?: string;
+  image_url?: string;
   isValid: boolean;
   errorReason?: string;
 }
@@ -65,7 +66,8 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
         'พิกัดจัดเก็บ (Location)': 'A-01-02',
         'บาร์โค้ด (Barcode)': '8850123450011',
         'หมายเลข Lot (Lot No)': 'LOT-2026-MED1',
-        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2028-12-31'
+        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2028-12-31',
+        'ลิงก์รูปสินค้า (Image URL)': 'https://example.com/para500.jpg'
       },
       {
         'รหัสสินค้า (SKU) *': 'SKU-BEV-002',
@@ -79,7 +81,8 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
         'พิกัดจัดเก็บ (Location)': 'B-02-01',
         'บาร์โค้ด (Barcode)': '8850123450028',
         'หมายเลข Lot (Lot No)': 'LOT-2026-MILK',
-        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2026-10-15'
+        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2026-10-15',
+        'ลิงก์รูปสินค้า (Image URL)': 'https://example.com/milk2l.jpg'
       },
       {
         'รหัสสินค้า (SKU) *': 'SKU-IND-003',
@@ -93,7 +96,8 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
         'พิกัดจัดเก็บ (Location)': 'D-03-02',
         'บาร์โค้ด (Barcode)': '8850123450042',
         'หมายเลข Lot (Lot No)': 'LOT-2026-OIL',
-        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2029-06-30'
+        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2029-06-30',
+        'ลิงก์รูปสินค้า (Image URL)': 'https://example.com/oil10w40.jpg'
       }
     ];
 
@@ -103,7 +107,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
       ws['!cols'] = [
         { wch: 18 }, { wch: 35 }, { wch: 20 }, { wch: 18 },
         { wch: 24 }, { wch: 16 }, { wch: 14 }, { wch: 14 },
-        { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 26 }
+        { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 26 }, { wch: 40 }
       ];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
@@ -168,7 +172,8 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
           const location = String(extract(row, 'พิกัดจัดเก็บ (Location)', 'พิกัด', 'Location', 'location', 'Bin') || 'Unassigned').trim();
           const barcode = String(extract(row, 'บาร์โค้ด (Barcode)', 'บาร์โค้ด', 'Barcode', 'barcode') || '').trim();
           const lot_no = String(extract(row, 'หมายเลข Lot (Lot No)', 'หมายเลข Lot', 'Lot', 'lot', 'Lot No', 'lot_no', 'Batch') || '').trim();
-          
+          const image_url = String(extract(row, 'ลิงก์รูปสินค้า (Image URL)', 'ลิงก์รูป', 'รูปภาพ', 'Image URL', 'image_url', 'image', 'imageUrl', 'photo') || '').trim();
+
           let expiry_date = extract(row, 'วันหมดอายุ (Expiry: YYYY-MM-DD)', 'วันหมดอายุ', 'Expiry', 'expiry', 'exp_date', 'expiry_date');
           if (expiry_date instanceof Date) {
             expiry_date = expiry_date.toISOString().split('T')[0];
@@ -192,6 +197,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
             barcode,
             lot_no: lot_no || undefined,
             expiry_date: expiry_date || undefined,
+            image_url: image_url || undefined,
             isValid,
             errorReason
           };
