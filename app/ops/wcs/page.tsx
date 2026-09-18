@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import toast from 'react-hot-toast';
 
 interface RobotFleetDevice {
   id: string;
@@ -66,6 +67,9 @@ export default function WcsRoboticsPage() {
   const [simulating, setSimulating] = useState(false);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showApiDocs, setShowApiDocs] = useState(false);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [newDevice, setNewDevice] = useState({ code: '', name: '', type: 'AGV_PALLET_LIFT', currentLocation: '' });
+  const [savingDevice, setSavingDevice] = useState(false);
 
   // Form state for dispatch
   const [formTaskType, setFormTaskType] = useState<WcsMission['taskType']>('BIN_TO_PERSON');
@@ -118,6 +122,27 @@ export default function WcsRoboticsPage() {
     } finally {
       setSimulating(false);
     }
+  };
+
+  const addDevice = async () => {
+    if (!newDevice.code.trim() || !newDevice.name.trim()) { toast.error('ระบุรหัสและชื่อหุ่นยนต์'); return; }
+    setSavingDevice(true);
+    try {
+      const res = await fetch('/api/wcs/devices', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newDevice),
+      });
+      const data = await res.json();
+      if (data.success === false) throw new Error(data.error);
+      toast.success(`ลงทะเบียน ${newDevice.code} แล้ว`);
+      setNewDevice({ code: '', name: '', type: 'AGV_PALLET_LIFT', currentLocation: '' });
+      setShowDeviceModal(false); fetchWcsData();
+    } catch (e: any) { toast.error(e.message); } finally { setSavingDevice(false); }
+  };
+
+  const deleteDevice = async (code: string) => {
+    if (!confirm(`ลบหุ่นยนต์ ${code}?`)) return;
+    await fetch(`/api/wcs/devices?code=${encodeURIComponent(code)}`, { method: 'DELETE' });
+    fetchWcsData();
   };
 
   const handleDispatchSubmit = async (e: React.FormEvent) => {
@@ -202,6 +227,14 @@ export default function WcsRoboticsPage() {
               >
                 {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 จำลองความคืบหน้า (Simulate Step)
+              </button>
+
+              <button
+                onClick={() => setShowDeviceModal(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] border border-[#3c424d] text-xs font-semibold transition-all"
+              >
+                <Plus className="w-4 h-4 text-[#57ec7f]" />
+                ลงทะเบียนหุ่นยนต์
               </button>
 
               <button
@@ -343,8 +376,10 @@ export default function WcsRoboticsPage() {
             {fleet.map((robot) => (
               <div
                 key={robot.id}
-                className="bg-[#171c23] rounded-2xl border border-[#30353d] p-5 shadow-lg flex flex-col justify-between hover:border-cyan-500/40 transition-all"
+                className="group bg-[#171c23] rounded-2xl border border-[#30353d] p-5 shadow-lg flex flex-col justify-between hover:border-cyan-500/40 transition-all relative"
               >
+                <button onClick={() => deleteDevice(robot.code)} title="ลบหุ่นยนต์"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-[#8a92a6] hover:text-rose-400 text-xs z-10">✕</button>
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div>
@@ -613,6 +648,49 @@ export default function WcsRoboticsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Register Device Modal */}
+        {showDeviceModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowDeviceModal(false)}>
+            <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl p-6 text-xs text-[#dee2ec] space-y-3" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#57ec7f] via-[#4cd7f6] to-[#facc15]" />
+              <h3 className="text-base font-black">ลงทะเบียนหุ่นยนต์ (Register Robot)</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[#8a92a6] font-bold mb-1">รหัส (Code) *</label>
+                  <input value={newDevice.code} onChange={(e) => setNewDevice(d => ({ ...d, code: e.target.value }))} placeholder="เช่น AGV-05"
+                    className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] font-mono focus:border-[#57ec7f] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[#8a92a6] font-bold mb-1">พิกัดเริ่มต้น</label>
+                  <input value={newDevice.currentLocation} onChange={(e) => setNewDevice(d => ({ ...d, currentLocation: e.target.value }))} placeholder="DOCK-01"
+                    className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] font-mono focus:border-[#57ec7f] focus:outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[#8a92a6] font-bold mb-1">ชื่อ (Name) *</label>
+                <input value={newDevice.name} onChange={(e) => setNewDevice(d => ({ ...d, name: e.target.value }))} placeholder="เช่น Hikrobot Pallet Lifter #5"
+                  className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#57ec7f] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-[#8a92a6] font-bold mb-1">ประเภท</label>
+                <select value={newDevice.type} onChange={(e) => setNewDevice(d => ({ ...d, type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec]">
+                  <option value="AGV_PALLET_LIFT">AGV ยกพาเลท (Pallet Lift)</option>
+                  <option value="AMR_TOTE_RUNNER">AMR ส่งลัง (Tote Runner)</option>
+                  <option value="ASRS_SHUTTLE">ASRS Shuttle (แร็คแคบ)</option>
+                  <option value="CONVEYOR_SORTER">สายพานคัดแยก (Conveyor Sorter)</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#30353d]">
+                <button onClick={() => setShowDeviceModal(false)} className="px-4 py-2 bg-[#252a32] text-[#8a92a6] hover:text-white rounded-xl">ยกเลิก</button>
+                <button onClick={addDevice} disabled={savingDevice} className="px-5 py-2 bg-[#57ec7f] hover:bg-[#4bd66f] text-[#0a2012] rounded-xl font-black shadow flex items-center gap-1.5 disabled:opacity-50">
+                  {savingDevice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} ลงทะเบียน
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -27,6 +27,12 @@ export default function DockAppointmentsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
 
+  // Dock bays (DB-driven — add as many as needed)
+  const [bays, setBays] = useState<any[]>([]);
+  const [showBayModal, setShowBayModal] = useState(false);
+  const [newBayName, setNewBayName] = useState('');
+  const [newBayType, setNewBayType] = useState<'INBOUND' | 'OUTBOUND'>('INBOUND');
+
   // Form State
   const [bayName, setBayName] = useState('BAY-01 (Inbound)');
   const [appointmentType, setAppointmentType] = useState<'INBOUND' | 'OUTBOUND'>('INBOUND');
@@ -54,8 +60,39 @@ export default function DockAppointmentsPage() {
     }
   };
 
+  const fetchBays = async () => {
+    try {
+      const res = await fetch('/api/dock/bays');
+      const data = await res.json();
+      const list = data.bays || [];
+      setBays(list);
+      if (list.length > 0 && !list.some((b: any) => b.name === bayName)) setBayName(list[0].name);
+    } catch (e) { console.error(e); }
+  };
+
+  const addBay = async () => {
+    if (!newBayName.trim()) { toast.error('ระบุชื่อช่องเทียบท่า'); return; }
+    try {
+      const res = await fetch('/api/dock/bays', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newBayName.trim(), bayType: newBayType }),
+      });
+      const data = await res.json();
+      if (data.success === false) throw new Error(data.error);
+      toast.success(`เพิ่มช่อง ${newBayName.trim()} แล้ว`);
+      setNewBayName(''); setShowBayModal(false); fetchBays();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const deleteBay = async (id: string, name: string) => {
+    if (!confirm(`ลบช่องเทียบท่า ${name}?`)) return;
+    await fetch(`/api/dock/bays?id=${id}`, { method: 'DELETE' });
+    fetchBays();
+  };
+
   useEffect(() => {
     fetchAppointments();
+    fetchBays();
   }, []);
 
   const handleCreateAppointment = async (e: React.FormEvent) => {
@@ -162,32 +199,43 @@ export default function DockAppointmentsPage() {
           </div>
         </div>
 
-        {/* Bay Status Quick Matrix */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-xl backdrop-blur-md space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-[#dee2ec]">BAY-01 (Inbound Dock)</span>
-              <span className="px-2 py-0.5 rounded bg-[#facc15]/20 text-[#facc15] border border-[#facc15]/30 text-[10px] font-bold">มีรถเทียบอยู่</span>
-            </div>
-            <p className="text-xs text-[#8a92a6]">รถบรรทุก 10 ล้อ (70-1234 กทม.) กำลังลงสินค้า 14 พาเลท</p>
-          </div>
-
-          <div className="p-4 bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-xl backdrop-blur-md space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-[#dee2ec]">BAY-02 (Outbound Dock)</span>
-              <span className="px-2 py-0.5 rounded bg-[#4cd7f6]/20 text-[#4cd7f6] border border-[#4cd7f6]/30 text-[10px] font-bold">จองไว้ 14:00</span>
-            </div>
-            <p className="text-xs text-[#8a92a6]">Flash Express เข้ารับพัสดุรอบบ่าย (22 พาเลท)</p>
-          </div>
-
-          <div className="p-4 bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-xl backdrop-blur-md space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-[#dee2ec]">BAY-03 (Express Parcel)</span>
-              <span className="px-2 py-0.5 rounded bg-[#57ec7f]/20 text-[#57ec7f] border border-[#57ec7f]/30 text-[10px] font-bold">ว่างพร้อมใช้งาน</span>
-            </div>
-            <p className="text-xs text-[#8a92a6]">พร้อมสำหรับรถส่งด่วนหรือรถรับสินค้าเร่งด่วน</p>
-          </div>
+        {/* Bay Status Quick Matrix (DB-driven — เพิ่มได้ไม่จำกัด) */}
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-xs text-[#8a92a6] uppercase tracking-wider">ช่องเทียบท่า ({bays.length})</h2>
+          <button onClick={() => setShowBayModal(true)} className="px-3 py-1.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-lg border border-[#30353d] text-[11px] font-bold flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> เพิ่มช่องเทียบท่า
+          </button>
         </div>
+        {bays.length === 0 ? (
+          <div className="p-6 bg-[#171c23]/90 rounded-xl border border-dashed border-[#30353d] text-center text-[#8a92a6] text-xs">
+            ยังไม่มีช่องเทียบท่า — กด "เพิ่มช่องเทียบท่า" เพื่อกำหนดช่องตามหน้างานจริง (เพิ่มกี่ช่องก็ได้)
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {bays.map((bay) => {
+              const badge = bay.status === 'ACTIVE'
+                ? { t: 'มีรถเทียบอยู่', c: 'bg-[#facc15]/20 text-[#facc15] border-[#facc15]/30' }
+                : bay.status === 'WAITING'
+                ? { t: 'มีคิวจอง', c: 'bg-[#4cd7f6]/20 text-[#4cd7f6] border-[#4cd7f6]/30' }
+                : { t: 'ว่างพร้อมใช้งาน', c: 'bg-[#57ec7f]/20 text-[#57ec7f] border-[#57ec7f]/30' };
+              return (
+                <div key={bay.id} className="group p-4 bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-xl backdrop-blur-md space-y-2 relative">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-[#dee2ec]">{bay.name} <span className="text-[10px] text-[#8a92a6]">({bay.bayType})</span></span>
+                    <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${badge.c}`}>{badge.t}</span>
+                  </div>
+                  <p className="text-xs text-[#8a92a6]">
+                    {bay.status === 'ACTIVE' && bay.vehicle
+                      ? `${bay.vehicle} · ${bay.palletsDone}/${bay.palletsTotal} พาเลท${bay.eta ? ` · ${bay.eta}` : ''}`
+                      : 'พร้อมรับรถเข้าเทียบ'}
+                  </p>
+                  <button onClick={() => deleteBay(bay.id, bay.name)} title="ลบช่อง"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-[#8a92a6] hover:text-rose-400 text-[10px]">✕</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Table Schedule */}
         <div className="bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl overflow-hidden">
@@ -290,9 +338,11 @@ export default function DockAppointmentsPage() {
                       onChange={(e) => setBayName(e.target.value)}
                       className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec]"
                     >
-                      <option value="BAY-01 (Inbound)">BAY-01 (Inbound)</option>
-                      <option value="BAY-02 (Outbound)">BAY-02 (Outbound)</option>
-                      <option value="BAY-03 (Express)">BAY-03 (Express)</option>
+                      {bays.length === 0 ? (
+                        <option value="">— ยังไม่มีช่อง เพิ่มก่อน —</option>
+                      ) : bays.map((b) => (
+                        <option key={b.id} value={b.name}>{b.name} ({b.bayType})</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -381,6 +431,33 @@ export default function DockAppointmentsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Bay Modal */}
+        {showBayModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowBayModal(false)}>
+            <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl p-6 text-xs font-mono text-[#dee2ec] space-y-3" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
+              <h3 className="text-base font-black">เพิ่มช่องเทียบท่า (Dock Bay)</h3>
+              <div>
+                <label className="block text-[#8a92a6] font-bold mb-1">ชื่อช่อง *</label>
+                <input value={newBayName} onChange={(e) => setNewBayName(e.target.value)} placeholder="เช่น BAY-04 (Cold Chain)"
+                  className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-[#8a92a6] font-bold mb-1">ประเภท</label>
+                <select value={newBayType} onChange={(e) => setNewBayType(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec]">
+                  <option value="INBOUND">ขาเข้า (Inbound)</option>
+                  <option value="OUTBOUND">ขาออก (Outbound)</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#30353d]">
+                <button onClick={() => setShowBayModal(false)} className="px-4 py-2 bg-[#252a32] text-[#8a92a6] hover:text-white rounded-xl">ยกเลิก</button>
+                <button onClick={addBay} className="px-5 py-2 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-xl font-black shadow flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> เพิ่มช่อง</button>
+              </div>
             </div>
           </div>
         )}
