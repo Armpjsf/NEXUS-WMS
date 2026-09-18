@@ -395,8 +395,9 @@ async function commitStockOut(order: OutboundOrder, orgId: string) {
   for (const line of order.items) {
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
     if (prod) {
-      // deduct across bins (prefers the picked line.location); products.stock reconciled inside
-      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location });
+      // deduct across bins (prefers the picked line.location); products.stock reconciled inside.
+      // C1: tag the lot movement with the order + customer for traceability.
+      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location, docRef: order.orderNo, party: order.customerName });
     }
     await admin.from('stock_transactions').insert({
       org_id: orgId,
@@ -599,7 +600,7 @@ export async function addItemsToOrder(
       // ของนอกคลัง (cross-dock / custom ที่ไม่มีใน products) = ไม่แตะสต็อก ไม่ลง OUT
       // ของขึ้นรถแบบเช็คผ่าน ไม่ได้เบิกจากคลัง จึงไม่สร้างรายการเคลื่อนไหวหลอกๆ
       if (!prod) continue;
-      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location });
+      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location, docRef: order.orderNo, party: order.customerName });
       await admin.from('stock_transactions').insert({
         org_id: orgId, type: 'OUT', sku: line.sku,
         product_name: line.name || prod.name || line.sku, qty: line.qty,

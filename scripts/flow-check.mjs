@@ -202,6 +202,25 @@ S('LPN pallet move (stock follows)', async () => {
   await cleanup(s);
 });
 
+S('Lot traceability & recall', async () => {
+  const s = sku('LOT');
+  await mkProduct(s);
+  await req('POST', '/api/inbound', { sku: s, qty: 20, location: 'E2E-LOTA', batch: 'LOT-X' });
+  await req('POST', '/api/lots', { sku: s, lotNumber: 'LOT-X', expDate: new Date(Date.now() + 60 * 864e5).toISOString().slice(0, 10), receivedQty: 20 });
+  // ship 8 to a customer via an order
+  const ord = await req('POST', '/api/orders', { customerName: 'ACME Foods', items: [{ sku: s, name: `E2E ${s}`, qty: 8, price: 5 }] });
+  const oid = ord.json?.order?.id || ord.json?.id;
+  if (!oid) { skip('Lot trace', 'order create failed'); await cleanup(s); return; }
+  await req('PATCH', '/api/orders', { id: oid, status: 'SHIPPED' });
+  const tr = await req('GET', `/api/lots/trace?sku=${encodeURIComponent(s)}&lot=LOT-X`);
+  ok(tr.json?.totals?.shipped === 8, 'trace: shipped 8 ของล็อต LOT-X', `got ${tr.json?.totals?.shipped}`);
+  const rec = (tr.json?.recipients || []).find(r => (r.party || '').includes('ACME'));
+  ok(!!rec, 'trace: เจอผู้รับ ACME Foods', JSON.stringify(tr.json?.recipients || []).slice(0, 100));
+  const rc = await req('POST', '/api/lots/recall', { sku: s, lot: 'LOT-X' });
+  ok(rc.json?.success && (rc.json?.affected || []).length >= 1, 'recall: กระทบผู้รับ ≥ 1', JSON.stringify(rc.json).slice(0, 100));
+  await cleanup(s);
+});
+
 // ===================== RUNNER =====================
 async function main() {
   console.log(`\n\x1b[1mNEXUS WMS · E2E Flow Integrity Suite\x1b[0m`);

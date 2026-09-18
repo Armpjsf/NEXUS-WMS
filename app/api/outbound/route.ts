@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
       // 2. Update Product Stock — deduct across bins; products.stock reconciled inside
       if (prodData) {
-        await binConsume(orgId, sku, qtyNum, { preferBin: item.location || prodData?.location });
+        await binConsume(orgId, sku, qtyNum, { preferBin: item.location || prodData?.location, docRef: item.docRef, party: item.customer || body.customer });
       }
 
       // 3. Prepare Transaction Record

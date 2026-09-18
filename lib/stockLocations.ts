@@ -26,9 +26,26 @@ export interface BinStock {
 }
 
 export interface ConsumeResult {
-  taken: { binCode: string; quantity: number }[];
+  taken: { binCode: string; quantity: number; lotNo?: string }[];
   shortfall: number; // qty that could not be satisfied from any bin
   total: number;     // resulting total stock after consume
+}
+
+// C1: append a lot-traceability row for each lotted movement (non-lot skipped).
+async function logLotMoves(
+  orgId: string, sku: string, direction: 'IN' | 'OUT' | 'MOVE',
+  taken: { binCode: string; quantity: number; lotNo?: string }[],
+  opts?: { docRef?: string; party?: string },
+): Promise<void> {
+  const rows = taken
+    .filter(t => t.lotNo && Number(t.quantity) > 0)
+    .map(t => ({
+      org_id: orgId, sku, lot_number: t.lotNo, qty: Number(t.quantity), direction,
+      doc_ref: opts?.docRef || null, party: opts?.party || null, location: t.binCode,
+    }));
+  if (rows.length === 0) return;
+  try { await getServiceSupabase().from('lot_movements').insert(rows); }
+  catch (e) { /* lot_movements optional until migrated */ }
 }
 
 type Admin = ReturnType<typeof getServiceSupabase>;
@@ -92,8 +109,12 @@ async function reconcile(admin: Admin, orgId: string, sku: string): Promise<numb
 
 /** Increment (or create) a bin's quantity, then reconcile the SKU total. */
 export async function binAdd(
-  orgId: string, sku: string, binCode: string, qty: number, opts?: { lotNo?: string }
+  orgId: string, sku: string, binCode: string, qty: number, opts?: { lotNo?: string; docRef?: string; party?: string }
 ): Promise<number> {
+  // C1: record an IN lot movement (lotted receipts only)
+  if (opts?.lotNo && (Number(qty) || 0) > 0) {
+    await logLotMoves(orgId, sku, 'IN', [{ binCode: norm(binCode), quantity: Number(qty) || 0, lotNo: opts.lotNo }], opts);
+  }
   const atomic = await rpcOrNull('wms_bin_add', {
     p_org: orgId, p_sku: sku, p_bin: norm(binCode), p_qty: Number(qty) || 0, p_lot: opts?.lotNo ?? null,
   });
@@ -123,23 +144,21 @@ export async function binAdd(
  * and reports any shortfall — matching the old Math.max(0, ...) behaviour.
  */
 export async function binConsume(
-  orgId: string, sku: string, qty: number, opts?: { preferBin?: string }
+  orgId: string, sku: string, qty: number, opts?: { preferBin?: string; docRef?: string; party?: string }
 ): Promise<ConsumeResult> {
   const atomic = await rpcOrNull('wms_bin_consume', {
     p_org: orgId, p_sku: sku, p_qty: Number(qty) || 0, p_prefer: opts?.preferBin ? norm(opts.preferBin) : null,
   });
   if (atomic != null) {
-    return {
-      taken: Array.isArray(atomic.taken) ? atomic.taken : [],
-      shortfall: Number(atomic.shortfall || 0),
-      total: Number(atomic.total || 0),
-    };
+    const takenA = Array.isArray(atomic.taken) ? atomic.taken : [];
+    await logLotMoves(orgId, sku, 'OUT', takenA, opts); // C1 traceability
+    return { taken: takenA, shortfall: Number(atomic.shortfall || 0), total: Number(atomic.total || 0) };
   }
 
   const admin = getServiceSupabase();
   await ensureSeeded(admin, orgId, sku);
   let need = Math.max(0, Number(qty) || 0);
-  const taken: { binCode: string; quantity: number }[] = [];
+  const taken: { binCode: string; quantity: number; lotNo?: string }[] = [];
 
   const { data: rows } = await admin
     .from(TABLE).select('id, bin_code, quantity, lot_no, created_at').eq('org_id', orgId).eq('sku', sku);
@@ -189,11 +208,12 @@ export async function binConsume(
     await admin.from(TABLE)
       .update({ quantity: avail - use, updated_at: new Date().toISOString() })
       .eq('id', b.id);
-    taken.push({ binCode: b.bin_code, quantity: use });
+    taken.push({ binCode: b.bin_code, quantity: use, lotNo: b.lot_no || undefined });
     need -= use;
   }
 
   const total = await reconcile(admin, orgId, sku);
+  await logLotMoves(orgId, sku, 'OUT', taken, opts); // C1 traceability
   return { taken, shortfall: need, total };
 }
 
