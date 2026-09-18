@@ -36,6 +36,7 @@ interface ParsedProduct {
   unit: string;
   location: string;
   barcode: string;
+  status: string;
   lot_no?: string;
   expiry_date?: string;
   image_url?: string;
@@ -64,6 +65,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
         'ต้นทุน (Cost)': 85,
         'หน่วยนับ (Unit)': 'กล่อง',
         'พิกัดจัดเก็บ (Location)': 'A-01-02',
+        'สถานะ (Status)': 'Active',
         'บาร์โค้ด (Barcode)': '8850123450011',
         'หมายเลข Lot (Lot No)': 'LOT-2026-MED1',
         'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2028-12-31',
@@ -79,6 +81,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
         'ต้นทุน (Cost)': 65,
         'หน่วยนับ (Unit)': 'ขวด',
         'พิกัดจัดเก็บ (Location)': 'B-02-01',
+        'สถานะ (Status)': 'Active',
         'บาร์โค้ด (Barcode)': '8850123450028',
         'หมายเลข Lot (Lot No)': 'LOT-2026-MILK',
         'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2026-10-15',
@@ -94,10 +97,43 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
         'ต้นทุน (Cost)': 600,
         'หน่วยนับ (Unit)': 'แกลลอน',
         'พิกัดจัดเก็บ (Location)': 'D-03-02',
+        'สถานะ (Status)': 'Active',
         'บาร์โค้ด (Barcode)': '8850123450042',
         'หมายเลข Lot (Lot No)': 'LOT-2026-OIL',
         'วันหมดอายุ (Expiry: YYYY-MM-DD)': '2029-06-30',
         'ลิงก์รูปสินค้า (Image URL)': 'https://example.com/oil10w40.jpg'
+      },
+      {
+        'รหัสสินค้า (SKU) *': 'SKU-OLD-004',
+        'ชื่อสินค้า (Name) *': 'กรองอากาศรุ่นเก่า (ขายหมดแล้ว/ยกเลิกจำหน่าย)',
+        'หมวดหมู่ (Category)': 'อะไหล่และอุปกรณ์',
+        'จำนวนสต็อก (Stock)': 0,
+        'จุดเตือนสต็อกต่ำ (Min Stock)': 0,
+        'ราคาขาย (Price)': 450,
+        'ต้นทุน (Cost)': 300,
+        'หน่วยนับ (Unit)': 'ชิ้น',
+        'พิกัดจัดเก็บ (Location)': 'UNASSIGNED',
+        'สถานะ (Status)': 'Inactive',
+        'บาร์โค้ด (Barcode)': '8850123450099',
+        'หมายเลข Lot (Lot No)': '',
+        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '',
+        'ลิงก์รูปสินค้า (Image URL)': ''
+      },
+      {
+        'รหัสสินค้า (SKU) *': 'SKU-RTV-005',
+        'ชื่อสินค้า (Name) *': 'หลอดไฟ LED ชำรุด (รอส่งคืนโรงงานผลิต/คลังแม่)',
+        'หมวดหมู่ (Category)': 'อุปกรณ์ไฟฟ้า',
+        'จำนวนสต็อก (Stock)': 20,
+        'จุดเตือนสต็อกต่ำ (Min Stock)': 0,
+        'ราคาขาย (Price)': 199,
+        'ต้นทุน (Cost)': 120,
+        'หน่วยนับ (Unit)': 'กล่อง',
+        'พิกัดจัดเก็บ (Location)': 'RTN-STAGE-01',
+        'สถานะ (Status)': 'Active',
+        'บาร์โค้ด (Barcode)': '8850123450088',
+        'หมายเลข Lot (Lot No)': 'LOT-RTV-01',
+        'วันหมดอายุ (Expiry: YYYY-MM-DD)': '',
+        'ลิงก์รูปสินค้า (Image URL)': ''
       }
     ];
 
@@ -105,9 +141,9 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
       const ws = XLSX.utils.json_to_sheet(templateRows);
       // set column widths
       ws['!cols'] = [
-        { wch: 18 }, { wch: 35 }, { wch: 20 }, { wch: 18 },
+        { wch: 18 }, { wch: 42 }, { wch: 22 }, { wch: 18 },
         { wch: 24 }, { wch: 16 }, { wch: 14 }, { wch: 14 },
-        { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 26 }, { wch: 40 }
+        { wch: 20 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 26 }, { wch: 35 }
       ];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
@@ -181,6 +217,10 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
             expiry_date = String(expiry_date || '').trim();
           }
 
+          const rawStatus = String(extract(row, 'สถานะ (Status)', 'สถานะ', 'Status', 'status', 'Master Status') || 'Active').trim();
+          const isInactive = ['inactive', 'ยกเลิก', 'discontinued', 'ระงับ', 'หมด'].includes(rawStatus.toLowerCase());
+          const status = isInactive ? 'Inactive' : 'Active';
+
           const isValid = Boolean(sku || name);
           const errorReason = !isValid ? 'ต้องระบุรหัสสินค้า (SKU) หรือชื่อสินค้า' : undefined;
 
@@ -195,6 +235,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
             unit,
             location,
             barcode,
+            status,
             lot_no: lot_no || undefined,
             expiry_date: expiry_date || undefined,
             image_url: image_url || undefined,
@@ -393,6 +434,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
                         <th className="py-2 px-3 text-right">จำนวน</th>
                         <th className="py-2 px-3 text-right">ราคา</th>
                         <th className="py-2 px-3">พิกัดจัดเก็บ</th>
+                        <th className="py-2 px-3">สถานะ</th>
                         <th className="py-2 px-3">Lot No</th>
                         <th className="py-2 px-3">วันหมดอายุ</th>
                       </tr>
@@ -407,6 +449,16 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
                           <td className="py-2 px-3 text-right font-bold text-[#57ec7f]">{row.stock.toLocaleString()}</td>
                           <td className="py-2 px-3 text-right">฿{row.price.toLocaleString()}</td>
                           <td className="py-2 px-3 text-[#4cd7f6]">{row.location}</td>
+                          <td className="py-2 px-3">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded text-[10px] font-bold",
+                              row.status === 'Active' 
+                                ? "bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30" 
+                                : "bg-[#8a92a6]/20 text-[#8a92a6] border border-[#8a92a6]/30"
+                            )}>
+                              {row.status}
+                            </span>
+                          </td>
                           <td className="py-2 px-3">{row.lot_no || '-'}</td>
                           <td className="py-2 px-3">{row.expiry_date || '-'}</td>
                         </tr>

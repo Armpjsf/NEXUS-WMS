@@ -21,6 +21,10 @@ export async function POST(request: Request) {
       const rawName = (item.name || item['ชื่อสินค้า'] || rawSku).toString().trim();
       const sku = rawSku || rawName;
 
+      const rawStatus = (item.status ?? item['สถานะ'] ?? item['สถานะ (Status)'] ?? 'Active').toString().trim();
+      const isInactive = ['inactive', 'ยกเลิก', 'discontinued', 'ระงับ', 'หมด'].includes(rawStatus.toLowerCase());
+      const status = isInactive ? 'Inactive' : (rawStatus || 'Active');
+
       return {
         org_id: orgId,
         sku: sku,
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
         lot_no: item.lot_no ?? item.lotNo ?? item['หมายเลข Lot'] ?? item['Lot'] ?? null,
         expiry_date: item.expiry_date ?? item.expiryDate ?? item['วันหมดอายุ'] ?? null,
         movement_status: item.movement_status || 'Normal Moving',
-        status: item.status || 'Active',
+        status: status,
         updated_at: new Date().toISOString()
       };
     }).filter(p => p.sku && p.name);
