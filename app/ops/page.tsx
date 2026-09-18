@@ -1,6 +1,6 @@
 'use client';
 
-import { PackagePlus, PackageMinus, RefreshCw, Boxes, Truck, ShoppingCart, Activity } from 'lucide-react';
+import { PackagePlus, PackageMinus, RefreshCw, Boxes, Truck, ShoppingCart, Activity, Users, ClipboardList, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OpsPage() {
@@ -109,6 +109,20 @@ export default function OpsPage() {
                    <h3 className="text-lg font-bold text-white">Control Tower (ภาพรวมคลังเรียลไทม์)</h3>
                    <p className="text-[#8a92a6] text-sm">แดชบอร์ดผู้จัดการ: สต็อกต่ำ, ล็อตใกล้หมดอายุ/เรียกคืน, ออเดอร์กำลังทำ, หุ่นยนต์ และความเคลื่อนไหวล่าสุด รวมในหน้าเดียว</p>
                </div>
+           </Link>
+
+           {/* Enterprise tools row */}
+           <Link href="/ops/lms" className="group bg-slate-900/50 border border-slate-800 rounded-3xl p-6 flex items-center gap-4 hover:bg-slate-800/80 transition-all">
+               <div className="p-3 bg-purple-500/10 rounded-xl"><Users className="w-6 h-6 text-purple-400" /></div>
+               <div><h3 className="text-base font-bold text-white">Labor Management</h3><p className="text-[#8a92a6] text-xs">ประสิทธิภาพพนักงานรายคน/กะ</p></div>
+           </Link>
+           <Link href="/ops/asn" className="group bg-slate-900/50 border border-slate-800 rounded-3xl p-6 flex items-center gap-4 hover:bg-slate-800/80 transition-all">
+               <div className="p-3 bg-emerald-500/10 rounded-xl"><ClipboardList className="w-6 h-6 text-emerald-400" /></div>
+               <div><h3 className="text-base font-bold text-white">ASN แจ้งของเข้า</h3><p className="text-[#8a92a6] text-xs">รับแจ้งล่วงหน้า → แปลงเป็นใบรับ</p></div>
+           </Link>
+           <Link href="/ops/carrier-rates" className="group bg-slate-900/50 border border-slate-800 rounded-3xl p-6 flex items-center gap-4 hover:bg-slate-800/80 transition-all">
+               <div className="p-3 bg-cyan-500/10 rounded-xl"><DollarSign className="w-6 h-6 text-cyan-400" /></div>
+               <div><h3 className="text-base font-bold text-white">เทียบราคาขนส่ง</h3><p className="text-[#8a92a6] text-xs">หาขนส่งถูกสุดตามน้ำหนัก/โซน</p></div>
            </Link>
 
        </div>

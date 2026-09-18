@@ -221,6 +221,42 @@ S('Lot traceability & recall', async () => {
   await cleanup(s);
 });
 
+S('LMS operator productivity', async () => {
+  const s = sku('LMS');
+  await mkProduct(s);
+  await req('POST', '/api/inbound', { sku: s, qty: 10, location: 'E2E-A' });
+  await req('POST', '/api/outbound', { items: [{ sku: s, qty: 3 }] });
+  const d = await req('GET', '/api/lms/productivity?days=1');
+  ok(d.json?.success && Array.isArray(d.json?.operators), 'LMS คืนรายชื่อผู้ปฏิบัติงาน', JSON.stringify(d.json).slice(0, 80));
+  ok((d.json?.team?.totalLines || 0) >= 2, 'team totalLines ≥ 2 (มี IN+OUT ที่เพิ่งทำ)', `got ${d.json?.team?.totalLines}`);
+  await cleanup(s);
+});
+
+S('ASN → receipt', async () => {
+  const s = sku('ASN');
+  const create = await req('POST', '/api/asn', { supplier: 'E2E Supplier', poNumber: 'PO-E2E', items: [{ sku: s, name: `E2E ${s}`, qty: 15 }] });
+  if (create.json?.success === false) return skip('ASN', 'ตาราง asn ยังไม่มี? ' + JSON.stringify(create.json).slice(0, 60));
+  ok(!!create.json?.id, 'สร้าง ASN', JSON.stringify(create.json).slice(0, 80));
+  const rc = await req('POST', '/api/asn/receive', { asnId: create.json.id });
+  ok(rc.json?.success && rc.json?.receiptId, 'แปลง ASN → ใบรับสำเร็จ', JSON.stringify(rc.json).slice(0, 80));
+  const list = await req('GET', '/api/asn');
+  const found = (list.json?.asns || []).find(a => a.id === create.json.id);
+  ok(found?.status === 'RECEIVED', 'สถานะ ASN = RECEIVED', `got ${found?.status}`);
+});
+
+S('Carrier rate-shopping', async () => {
+  const r1 = await req('POST', '/api/carriers/rates', { carrier: 'E2E-Kerry', zone: 'ALL', minWeight: 0, maxWeight: 100, price: 80, etaDays: 2 });
+  if (r1.json?.success === false) return skip('Carrier', 'ตาราง carrier_rates ยังไม่มี? ' + JSON.stringify(r1.json).slice(0, 60));
+  await req('POST', '/api/carriers/rates', { carrier: 'E2E-Flash', zone: 'ALL', minWeight: 0, maxWeight: 100, price: 55, etaDays: 3 });
+  const shop = await req('GET', '/api/carriers/rate-shop?weight=5&zone=ALL');
+  const cheapest = shop.json?.cheapest;
+  ok(cheapest?.carrier === 'E2E-Flash' && cheapest?.price === 55, 'เลือกขนส่งถูกสุด = Flash ฿55', JSON.stringify(cheapest));
+  // cleanup rates
+  for (const rr of (await req('GET', '/api/carriers/rates')).json?.rates || []) {
+    if (String(rr.carrier).startsWith('E2E-')) await req('DELETE', `/api/carriers/rates?id=${rr.id}`);
+  }
+});
+
 // ===================== RUNNER =====================
 async function main() {
   console.log(`\n\x1b[1mNEXUS WMS · E2E Flow Integrity Suite\x1b[0m`);
