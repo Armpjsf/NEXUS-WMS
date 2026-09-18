@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, RefreshCw, Boxes, PackageX, AlertTriangle, Truck, Bot,
-  ClipboardList, ShieldAlert, Clock, TrendingUp, TrendingDown, Activity, BatteryLow,
+  ArrowLeft, RefreshCw, PackageX, Bot,
+  ClipboardList, ShieldAlert, Clock, Activity, BatteryLow,
 } from 'lucide-react';
 
 interface CT {
@@ -57,24 +57,28 @@ export default function ControlTowerPage() {
 
         {data && (
           <>
-            {/* KPI row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Kpi icon={Boxes} tone="cyan" label="SKU ทั้งหมด" value={inv!.skus.toLocaleString()} sub={`${inv!.totalUnits.toLocaleString()} หน่วยรวม`} />
-              <Kpi icon={AlertTriangle} tone={inv!.lowStock > 0 ? 'amber' : 'green'} label="สต็อกต่ำ" value={inv!.lowStock} sub={`หมดสต็อก ${inv!.outOfStock}`} />
-              <Kpi icon={ClipboardList} tone="blue" label="ออเดอร์กำลังทำ" value={ord!.new + ord!.fulfilling} sub={`ใหม่ ${ord!.new} · กำลังจัด ${ord!.fulfilling}`} />
-              <Kpi icon={Truck} tone="green" label="ส่งวันนี้" value={ord!.shippedToday} sub={`จอง ${ord!.reservationsActive} รายการ`} />
-            </div>
+            <p className="text-[11px] text-[#8a92a6] -mt-2">ศูนย์เฝ้าระวัง — สิ่งที่ต้อง <b className="text-[#d1c6ab]">ลงมือจัดการ</b> ตอนนี้ (ตัวเลขภาพรวม/การเงินดูที่หน้า <Link href="/dashboard" className="text-[#4cd7f6] underline">ภาพรวมระบบ</Link>)</p>
 
-            {/* alerts row */}
+            {/* action / exception signals */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Kpi icon={ShieldAlert} tone={lots!.recalled > 0 ? 'rose' : 'green'} label="ล็อตเรียกคืน" value={lots!.recalled} sub={lots!.recalled > 0 ? 'ต้องติดตาม' : 'ปกติ'} />
-              <Kpi icon={Clock} tone={lots!.expiringSoon.length > 0 ? 'amber' : 'green'} label="ล็อตใกล้หมดอายุ" value={lots!.expiringSoon.length} sub="ภายใน 30 วัน" />
+              <Kpi icon={ShieldAlert} tone={lots!.recalled > 0 ? 'rose' : 'green'} label="ล็อตเรียกคืน" value={lots!.recalled} sub={lots!.recalled > 0 ? 'ต้องติดตามลูกค้า' : 'ไม่มี'} />
+              <Kpi icon={Clock} tone={lots!.expiringSoon.length > 0 ? 'amber' : 'green'} label="ล็อตใกล้หมดอายุ" value={lots!.expiringSoon.length} sub="ภายใน 30 วัน — เร่งระบาย" />
               <Kpi icon={Bot} tone={rob!.error > 0 ? 'rose' : 'cyan'} label="หุ่นยนต์พร้อม" value={`${rob!.idle + rob!.active}/${rob!.total}`} sub={`งานวิ่ง ${rob!.activeMissions}${rob!.error ? ` · ERROR ${rob!.error}` : ''}`} />
               <Kpi icon={BatteryLow} tone={rob!.lowBattery > 0 ? 'amber' : 'green'} label="แบตหุ่นยนต์ต่ำ" value={rob!.lowBattery} sub={`ชาร์จอยู่ ${rob!.charging}`} />
             </div>
 
+            {/* live order pipeline */}
+            <Panel title="คิวงานออเดอร์ (Live Pipeline)" icon={ClipboardList}>
+              <div className="grid grid-cols-4 gap-3 text-center">
+                <Pipe label="ใหม่ (รอจัด)" value={ord!.new} tone="blue" />
+                <Pipe label="กำลังจัด/แพ็ก" value={ord!.fulfilling} tone="amber" />
+                <Pipe label="ส่งวันนี้" value={ord!.shippedToday} tone="green" />
+                <Pipe label="จองสต็อก (ATP)" value={ord!.reservationsActive} tone="cyan" />
+              </div>
+            </Panel>
+
             <div className="grid md:grid-cols-2 gap-5">
-              {/* low stock */}
+              {/* low stock — actionable list (dashboard only shows the count) */}
               <Panel title="สต็อกต่ำ / ต้องเติม" icon={PackageX}>
                 {inv!.topLow.length === 0 ? <Empty text="ไม่มีสินค้าสต็อกต่ำ" /> : (
                   <ul className="divide-y divide-[#30353d]">
@@ -102,30 +106,6 @@ export default function ControlTowerPage() {
                 )}
               </Panel>
             </div>
-
-            {/* recent movements */}
-            <Panel title="ความเคลื่อนไหวสต็อกล่าสุด" icon={Activity}>
-              {data.recentMovements.length === 0 ? <Empty text="ยังไม่มีความเคลื่อนไหว" /> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {data.recentMovements.map((m: any, i: number) => (
-                        <tr key={i} className="border-t border-[#30353d]">
-                          <td className="py-2 pr-3 w-16">
-                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded ${m.type === 'IN' ? 'bg-[#57ec7f]/10 text-[#57ec7f]' : m.type === 'OUT' ? 'bg-[#facc15]/10 text-[#facc15]' : 'bg-[#4cd7f6]/10 text-[#4cd7f6]'}`}>
-                              {m.type === 'IN' ? <TrendingUp className="w-3 h-3" /> : m.type === 'OUT' ? <TrendingDown className="w-3 h-3" /> : <Activity className="w-3 h-3" />}{m.type}
-                            </span>
-                          </td>
-                          <td className="py-2 pr-3 min-w-0"><div className="truncate max-w-[200px]">{m.name}</div><div className="text-[11px] text-[#8a92a6] font-mono">{m.location || '-'}</div></td>
-                          <td className="py-2 pr-3 text-right font-mono font-bold">{m.qty}</td>
-                          <td className="py-2 text-right text-[11px] text-[#8a92a6] whitespace-nowrap">{new Date(m.at).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Panel>
           </>
         )}
       </main>
@@ -147,6 +127,16 @@ function Kpi({ icon: Icon, tone, label, value, sub }: { icon: any; tone: string;
       <div className="text-2xl font-black font-mono leading-none">{value}</div>
       <div className="text-xs text-[#dee2ec] font-semibold mt-1.5">{label}</div>
       {sub && <div className="text-[11px] text-[#8a92a6] mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function Pipe({ label, value, tone }: { label: string; value: number; tone: string }) {
+  const c: Record<string, string> = { blue: 'text-blue-300', amber: 'text-amber-300', green: 'text-[#57ec7f]', cyan: 'text-[#4cd7f6]' };
+  return (
+    <div className="bg-[#1b2027] border border-[#30353d] rounded-xl py-3">
+      <div className={`text-2xl font-black font-mono ${c[tone] || ''}`}>{value}</div>
+      <div className="text-[11px] text-[#8a92a6] mt-1">{label}</div>
     </div>
   );
 }

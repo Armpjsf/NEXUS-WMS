@@ -23,13 +23,14 @@ export async function GET() {
       return count || 0;
     };
 
+    // Control Tower is exception/action-focused — the generic KPIs & recent
+    // movements live on /dashboard, so we don't re-query them here.
     const [
       products,
       lotsExpiring, recalledCount,
       ordersNew, ordersFulfilling, ordersShippedToday,
       reservationsActive,
       wcsDevices, wcsActiveMissions,
-      recentMoves,
     ] = await Promise.all([
       fetchAllRows((f, t) => admin.from('products').select('sku, name, stock, min_stock, unit').eq('org_id', orgId).range(f, t)),
       admin.from('product_lots').select('sku, lot_number, exp_date, current_qty').eq('org_id', orgId)
@@ -42,8 +43,6 @@ export async function GET() {
       count('stock_reservations', q => q.eq('status', 'ACTIVE')),
       admin.from('wcs_devices').select('code, status, battery_level').eq('org_id', orgId),
       count('wcs_missions', q => q.in('status', ['DISPATCHED', 'IN_TRANSIT'])),
-      admin.from('stock_transactions').select('type, sku, product_name, qty, location, created_at, user_name')
-        .eq('org_id', orgId).order('created_at', { ascending: false }).limit(10),
     ]);
 
     const prods = products || [];
@@ -83,10 +82,6 @@ export async function GET() {
         })),
       },
       robotics: wcs,
-      recentMovements: (recentMoves.data || []).map((m: any) => ({
-        type: m.type, sku: m.sku, name: m.product_name || m.sku, qty: Number(m.qty || 0),
-        location: m.location, at: m.created_at, by: m.user_name,
-      })),
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
