@@ -199,37 +199,36 @@ function PrintLabelsContent() {
 }
 
 function Label({ sku, name, price, code, size, showPrice, showQR, stock, location }: any) {
-    // Size configurations
+    // Size configurations. Title font is kept small enough that a 2-line name
+    // + code/QR + footer always fit inside the fixed print height (a long name
+    // was clipping/overlapping the barcode on Standard).
     const sizeConfig = {
-        small: { w: '200px', h: '120px', text: 'text-xs', title: 'text-sm', p: 'p-2' },
-        standard: { w: '300px', h: '180px', text: 'text-sm', title: 'text-lg', p: 'p-4' },
-        large: { w: '400px', h: '250px', text: 'text-base', title: 'text-xl', p: 'p-6' },
+        small:    { w: '200px', h: '120px', text: 'text-[10px]', title: 'text-[11px]', price: 'text-sm',  p: 'p-2',   bc: { w: 1.2, h: 26, fs: 10 }, qr: 54 },
+        standard: { w: '300px', h: '180px', text: 'text-xs',     title: 'text-sm',     price: 'text-lg',  p: 'p-3',   bc: { w: 1.7, h: 40, fs: 11 }, qr: 74 },
+        large:    { w: '400px', h: '250px', text: 'text-sm',     title: 'text-xl',     price: 'text-xl',  p: 'p-5',   bc: { w: 2,   h: 54, fs: 12 }, qr: 96 },
     };
-    
+
     const s = sizeConfig[size as keyof typeof sizeConfig];
 
     return (
-        <div 
-             className={`bg-white border-2 border-black rounded-lg ${s.p} flex flex-col justify-between items-center text-center relative break-inside-avoid mx-auto mb-4 print:mb-0 print:mx-0`}
-             style={{ 
-                 width: s.w, 
-                 height: s.h,
-             }}
+        <div
+             className={`bg-white border-2 border-black rounded-lg ${s.p} flex flex-col items-center text-center relative break-inside-avoid mx-auto mb-4 print:mb-0 print:mx-0 overflow-hidden`}
+             style={{ width: s.w, height: s.h }}
         >
-            <div className={`font-bold text-black leading-tight line-clamp-2 ${s.title} mb-1 w-full`}>
+            <div className={`shrink-0 font-bold text-black leading-tight line-clamp-2 ${s.title} w-full`}>
                 {name}
             </div>
 
-            <div className="flex-1 flex items-center justify-center w-full py-1">
+            <div className="flex-1 min-h-0 flex items-center justify-center w-full">
                 {showQR ? (
-                    <QRCodeSVG value={JSON.stringify({loc: location || '-', name, stock: Number(stock)})} size={size === 'small' ? 60 : 80} level={"H"} />
+                    <QRCodeSVG value={JSON.stringify({loc: location || '-', name, stock: Number(stock)})} size={s.qr} level={"H"} />
                 ) : (
                     <div className="w-full flex justify-center overflow-hidden">
-                        <Barcode 
-                            value={code} 
-                            width={size === 'small' ? 1.5 : 2} 
-                            height={size === 'small' ? 30 : 50} 
-                            fontSize={12}
+                        <Barcode
+                            value={code}
+                            width={s.bc.w}
+                            height={s.bc.h}
+                            fontSize={s.bc.fs}
                             displayValue={true}
                             margin={0}
                         />
@@ -237,10 +236,10 @@ function Label({ sku, name, price, code, size, showPrice, showQR, stock, locatio
                 )}
             </div>
 
-            <div className="w-full flex justify-between items-end mt-1 border-t-2 border-black pt-1">
-                <span className={`font-mono font-bold text-black ${s.text}`}>{code !== sku ? `${code}` : sku}</span>
+            <div className="shrink-0 w-full flex justify-between items-end gap-2 border-t-2 border-black pt-1">
+                <span className={`font-mono font-bold text-black truncate ${s.text}`}>{code !== sku ? `${code}` : sku}</span>
                 {showPrice && (
-                    <span className={`font-black text-black ${s.title}`}>฿{Number(price).toLocaleString()}</span>
+                    <span className={`font-black text-black shrink-0 ${s.price}`}>฿{Number(price).toLocaleString()}</span>
                 )}
             </div>
         </div>
