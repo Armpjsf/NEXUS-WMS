@@ -19,7 +19,8 @@ import DualSignatureModal, { DeliveryDestination, QCSignatures } from '@/compone
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
-interface Line { sku: string; name: string; qty: number; picked?: number; packed?: number; location?: string; price?: number; }
+interface Line { sku: string; name: string; qty: number; picked?: number; packed?: number; location?: string; price?: number; uom?: string; }
+interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
 interface Order {
   id: string; orderNo: string; channel: string; customerName: string; status: Status;
   priority: string; items: Line[]; totalQty: number; totalAmount: number;
@@ -712,6 +713,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [search, setSearch] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
   const [availMap, setAvailMap] = useState<Record<string, number>>({});
+  const [uomMap, setUomMap] = useState<Record<string, UomOpt[]>>({});
   const [selectedCustId, setSelectedCustId] = useState('');
   const [customer, setCustomer] = useState('');
   const [phone, setPhone] = useState('');
@@ -764,8 +766,12 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
     // A-UI #3: fetch ATP so the form can flag backorders before submit
     fetch(`/api/stock/available?sku=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
       .then(r => r.json()).then(d => setAvailMap(m => ({ ...m, [p.id]: Number(d.available ?? d.onHand ?? 0) }))).catch(() => {});
+    // A-UI: fetch pack units so the order can be placed in ลัง/พาเลท
+    fetch(`/api/products/uoms?sku=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
+      .then(r => r.json()).then(d => setUomMap(m => ({ ...m, [p.id]: Array.isArray(d.uoms) ? d.uoms : [] }))).catch(() => {});
   };
   const setQty = (sku: string, qty: number) => setLines(lines.map(l => l.sku === sku ? { ...l, qty: Math.max(1, qty) } : l));
+  const setUom = (sku: string, uom: string) => setLines(lines.map(l => l.sku === sku ? { ...l, uom } : l));
   const removeLine = (sku: string) => setLines(lines.filter(l => l.sku !== sku));
 
   const addCustomItem = () => {
@@ -1109,23 +1115,37 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
           <div className="space-y-2">
             {lines.length === 0 ? (
               <div className="text-center text-[#8a92a6] py-8 border-2 border-dashed border-[#30353d] rounded-xl">ยังไม่มีสินค้าในออเดอร์</div>
-            ) : lines.map(l => (
-              <div key={l.sku} className="flex items-center gap-3 bg-[#1b2027] rounded-xl px-4 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-[#dee2ec] truncate">{l.name}</div>
-                  <div className="text-xs text-[#8a92a6]">
-                    {l.location || '-'} · ฿{(l.price || 0).toLocaleString()}
-                    {availMap[l.sku] !== undefined && (
-                      l.qty > availMap[l.sku]
-                        ? <span className="ml-2 text-rose-400 font-bold">ใช้ได้ {availMap[l.sku]} · ขาด {l.qty - availMap[l.sku]} (backorder)</span>
-                        : <span className="ml-2 text-emerald-400">ใช้ได้ {availMap[l.sku]}</span>
+            ) : lines.map(l => {
+                const opts = uomMap[l.sku] || [];
+                const sel = opts.find(u => u.code === (l.uom || opts.find(x => x.isBase)?.code));
+                const factor = sel && !sel.isBase ? sel.factor : 1;
+                const base = opts.find(u => u.isBase);
+                const baseQty = l.qty * factor;
+                const avail = availMap[l.sku];
+                const short = avail !== undefined && baseQty > avail;
+                return (
+                  <div key={l.sku} className="flex items-center gap-3 bg-[#1b2027] rounded-xl px-4 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[#dee2ec] truncate">{l.name}</div>
+                      <div className="text-xs text-[#8a92a6]">
+                        {l.location || '-'} · ฿{(l.price || 0).toLocaleString()}
+                        {factor > 1 && <span className="ml-2 text-indigo-300">= {baseQty} {base?.name || 'ชิ้น'}</span>}
+                        {avail !== undefined && (short
+                          ? <span className="ml-2 text-rose-400 font-bold">ใช้ได้ {avail} · ขาด {baseQty - avail} (backorder)</span>
+                          : <span className="ml-2 text-emerald-400">ใช้ได้ {avail}</span>)}
+                      </div>
+                    </div>
+                    <input type="number" min={1} value={l.qty} onChange={e => setQty(l.sku, parseInt(e.target.value) || 1)} className={`w-16 bg-[#171c23] border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:border-cyan-500 ${short ? 'border-rose-500/60 text-rose-300' : 'border-[#30353d]'}`} />
+                    {opts.length > 1 && (
+                      <select value={l.uom || base?.code || ''} onChange={e => setUom(l.sku, e.target.value)}
+                        className="bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1.5 text-xs font-bold text-[#dee2ec] outline-none focus:border-cyan-500">
+                        {opts.map(u => <option key={u.code} value={u.code}>{u.name || u.code}{!u.isBase ? ` (×${u.factor})` : ''}</option>)}
+                      </select>
                     )}
+                    <button onClick={() => removeLine(l.sku)} className="p-1.5 text-[#8a92a6] hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
                   </div>
-                </div>
-                <input type="number" min={1} value={l.qty} onChange={e => setQty(l.sku, parseInt(e.target.value) || 1)} className={`w-20 bg-[#171c23] border rounded-lg px-3 py-1.5 text-center font-bold outline-none focus:border-cyan-500 ${availMap[l.sku] !== undefined && l.qty > availMap[l.sku] ? 'border-rose-500/60 text-rose-300' : 'border-[#30353d]'}`} />
-                <button onClick={() => removeLine(l.sku)} className="p-1.5 text-[#8a92a6] hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            ))}
+                );
+            })}
           </div>
         </div>
         <div className="p-6 border-t border-[#30353d] flex items-center justify-between sticky bottom-0 bg-[#171c23]">

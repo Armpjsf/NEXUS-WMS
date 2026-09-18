@@ -19,14 +19,16 @@ export async function POST(request: Request) {
     const isApprove = action === 'APPROVE';
     const newStatus = isApprove ? 'APPROVED' : 'REJECTED';
 
-    // Load the request so an approval can actually apply the counted qty to the bin.
-    const { data: reqRow } = await supabase
+    // Load the request so an approval can actually apply the counted qty to the
+    // bin. Use the service client — RLS on stock_adjustment_requests otherwise
+    // hides the row from the anon client and the adjustment silently no-ops.
+    const { data: reqRow } = await getServiceSupabase()
       .from('stock_adjustment_requests')
       .select('sku, product_name, location_code, system_qty, counted_qty')
       .eq('org_id', orgId).eq('request_no', requestId).maybeSingle();
 
     try {
-      await supabase
+      await getServiceSupabase()
         .from('stock_adjustment_requests')
         .update({
           status: newStatus,
