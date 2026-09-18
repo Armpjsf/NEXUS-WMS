@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ProductModal } from '@/components/ProductModal';
 import { ProductImportModal } from '@/components/ProductImportModal';
+import { HistoryImportModal } from '@/components/HistoryImportModal';
 import { LotBreakdownModal } from '@/components/LotBreakdownModal';
 import { LocationSwapModal } from '@/components/LocationSwapModal';
 import { UomModal } from '@/components/UomModal';
@@ -48,6 +49,7 @@ function InventoryContent() {
   const [selectedProductForTrace, setSelectedProductForTrace] = useState<any>(null);
   const [showGlobalLotsModal, setShowGlobalLotsModal] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isHistoryImportOpen, setIsHistoryImportOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
   const seedDemoProducts = async () => {
@@ -291,13 +293,22 @@ function InventoryContent() {
                   {t('add_product')}
               </button>
 
-              <button 
+              <button
                   onClick={() => setIsImportModalOpen(true)}
                   className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#57ec7f] hover:border-[#57ec7f]/50 px-4 py-2.5 rounded-lg font-mono text-xs font-bold transition-all shadow-sm"
                   title="นำเข้ารายการสินค้าจากไฟล์ Excel หรือ CSV"
               >
                   <FileSpreadsheet className="w-4 h-4 text-[#57ec7f]" />
                   <span>นำเข้า Excel / CSV</span>
+              </button>
+
+              <button
+                  onClick={() => setIsHistoryImportOpen(true)}
+                  className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-amber-300 hover:border-amber-400/50 px-4 py-2.5 rounded-lg font-mono text-xs font-bold transition-all shadow-sm"
+                  title="นำเข้าประวัติรับ/จ่าย/ชำรุด (ย้ายระบบ)"
+              >
+                  <History className="w-4 h-4 text-amber-300" />
+                  <span>นำเข้าประวัติ</span>
               </button>
 
               <button 
@@ -805,6 +816,13 @@ function InventoryContent() {
             isOpen={!!selectedProductForTrace}
             onClose={() => setSelectedProductForTrace(null)}
             product={selectedProductForTrace}
+        />
+
+        {/* Stock History Import (migration) */}
+        <HistoryImportModal
+            isOpen={isHistoryImportOpen}
+            onClose={() => setIsHistoryImportOpen(false)}
+            onSuccess={fetchData}
         />
     </div>
   );

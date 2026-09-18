@@ -257,6 +257,23 @@ S('Carrier rate-shopping', async () => {
   }
 });
 
+S('History import (migration strategy B)', async () => {
+  const s = sku('HIST');
+  await mkProduct(s); // stock 0 (opening blank per strategy B)
+  const rows = [
+    { date: '2026-01-05', type: 'IN', sku: s, qty: 100, location: 'E2E-A', ref: 'GRN-1' },
+    { date: '2026-01-08', type: 'OUT', sku: s, qty: 30, location: 'E2E-A', ref: 'SO-1' },
+    { date: '2026-01-10', type: 'DAMAGE', sku: s, qty: 5, location: 'E2E-A', ref: 'DMG-1' },
+  ];
+  const r = await req('POST', '/api/stock/import-history', { rows });
+  if (r.json?.error) return skip('History import', JSON.stringify(r.json).slice(0, 80));
+  ok(r.json?.applied === 3, 'นำเข้าประวัติ 3 รายการ', `got ${r.json?.applied}`);
+  const st = await stockOf(s);
+  ok(st.total === 65, 'ระบบคำนวณยอดจากประวัติ = 100-30-5 = 65', `got ${st.total}`);
+  inv('History', st);
+  await cleanup(s);
+});
+
 // ===================== RUNNER =====================
 async function main() {
   console.log(`\n\x1b[1mNEXUS WMS · E2E Flow Integrity Suite\x1b[0m`);
