@@ -5,6 +5,7 @@ import { binAdd, binConsume, binSet } from '@/lib/stockLocations';
 import { toBaseQty } from '@/lib/uom';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // large history loads take time (per-row stock apply)
 
 // C — Bulk historical-movement import (migration strategy B: the system builds
 // current stock by replaying every movement chronologically).
@@ -56,8 +57,12 @@ export async function POST(request: Request) {
 
     const errors: string[] = [];
     const byType: Record<string, number> = { IN: 0, OUT: 0, DAMAGE: 0, ADJUST: 0 };
-    const txns: any[] = [];
+    let txns: any[] = [];
     let applied = 0;
+
+    // Flush the ledger as we go (every 200 rows) so an interruption/timeout can't
+    // leave stock applied with an empty ledger — the two stay in step.
+    const flush = async () => { if (txns.length) { await admin.from('stock_transactions').insert(txns); txns = []; } };
 
     for (const r of parsed) {
       if (!r.sku) { errors.push(`แถว ${r.idx + 1}: ไม่มี SKU`); continue; }
@@ -79,12 +84,9 @@ export async function POST(request: Request) {
         notes: r.note || null, created_at: when,
       });
       byType[r.type]++; applied++;
+      if (txns.length >= 200) await flush();
     }
-
-    // write the ledger in chunks, preserving historical dates
-    for (let i = 0; i < txns.length; i += 500) {
-      await admin.from('stock_transactions').insert(txns.slice(i, i + 500));
-    }
+    await flush();
 
     return NextResponse.json({
       success: true, total: rows.length, applied, byType,

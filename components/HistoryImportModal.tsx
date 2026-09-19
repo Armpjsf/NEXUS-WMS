@@ -83,8 +83,9 @@ export function HistoryImportModal({ isOpen, onClose, onSuccess }: Props) {
         </div>
 
         <div className="p-5 space-y-4">
-          <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2 text-[11px] text-amber-200">
-            ⚠️ กลยุทธ์ B: <b>นำเข้า Product Master ก่อน โดยเว้นช่อง Stock ให้ว่าง/0</b> — แล้วประวัตินี้จะบวก-ลบเป็นยอดคงเหลือจริง (ถ้าตั้งยอดไว้แล้วจะนับซ้ำ)
+          <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2 text-[11px] text-amber-200 space-y-1">
+            <div>⚠️ กลยุทธ์ B: <b>นำเข้า Product Master ก่อน โดยเว้นช่อง Stock ให้ว่าง/0</b> — แล้วประวัตินี้จะบวก-ลบเป็นยอดคงเหลือจริง (ถ้าตั้งยอดไว้แล้วจะนับซ้ำ)</div>
+            <div>📦 ไฟล์ใหญ่มาก (หลายพันแถว) แนะนำ<b>แบ่งเป็นก้อนละ ~500 แถว</b> และอย่านำเข้าไฟล์เดิมซ้ำ (ระบบไม่กันซ้ำอัตโนมัติ)</div>
           </div>
 
           <div className="flex gap-2">
