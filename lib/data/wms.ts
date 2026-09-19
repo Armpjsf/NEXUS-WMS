@@ -70,7 +70,7 @@ export async function getProducts(
 
 // IN / OUT transactions in legacy shape, oldest-first (matches sheet order).
 export async function getTransactions(
-  type: 'IN' | 'OUT',
+  type: 'IN' | 'OUT' | 'DAMAGE' | 'ADJUST',
   _branchId?: string,
   allowedOwners?: string[],
 ): Promise<Transaction[]> {
@@ -83,7 +83,7 @@ export async function getTransactions(
 
   let rows = (data || []).map((r: any): Transaction => ({
     date: r.created_at,
-    type,
+    type: type as any,
     sku: r.sku,
     product: r.product_name || r.sku,
     qty: Number(r.qty ?? 0),

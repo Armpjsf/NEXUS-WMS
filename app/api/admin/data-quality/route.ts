@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getProductsUncached, getTransactionsUncached, getDamageRecords } from '@/lib/data/wms';
+import { getProductsUncached, getTransactionsUncached, getTransactions } from '@/lib/data/wms';
 import { requireManagement } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,11 @@ export async function GET() {
     const products = await getProductsUncached();
     const inbound = await getTransactionsUncached('IN');
     const outbound = await getTransactionsUncached('OUT');
-    const damage = await getDamageRecords();
+    // Damage that actually moved stock lives in the ledger (stock_transactions
+    // type=DAMAGE) — that's what products.stock was reduced by. The damage_records
+    // table is a separate report log that does NOT deduct stock, so sourcing from
+    // it here produced phantom mismatches for migrated damage.
+    const damage = await getTransactions('DAMAGE');
     
     // Create a Set of valid SKUs for fast lookup
     const validSkus = new Set(products.map(p => p.name.trim()));
@@ -85,9 +89,9 @@ export async function GET() {
 
     // Subtract Damage
     damage.forEach(d => {
-        const key = d.product_name.trim().toLowerCase();
+        const key = (d.product || d.sku || '').trim().toLowerCase();
         if (stockFlow.has(key)) {
-            stockFlow.set(key, (stockFlow.get(key) || 0) - d.quantity);
+            stockFlow.set(key, (stockFlow.get(key) || 0) - d.qty);
         }
     });
 
