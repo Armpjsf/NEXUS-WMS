@@ -16,7 +16,8 @@ export async function GET(request: Request) {
       return NextResponse.json(order);
     }
     const status = searchParams.get('status') || undefined;
-    const limit = parseInt(searchParams.get('limit') || '200', 10);
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined; // no param = all
     const orders = await listOrders({ status, limit });
     return NextResponse.json({ orders });
   } catch (error: any) {

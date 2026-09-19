@@ -7,6 +7,7 @@ import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier, appendTmsJob
 import { binConsume } from '@/lib/stockLocations';
 import { reserveForOrder, consumeOrderReservations, releaseOrderReservations } from '@/lib/reservations';
 import { toBaseQty } from '@/lib/uom';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -245,14 +246,16 @@ async function nextOrderNo(): Promise<string> {
 
 export async function listOrders(opts: { status?: string; limit?: number } = {}): Promise<OutboundOrder[]> {
   const orgId = await getCurrentOrgId();
-  let q = supabase.from('outbound_orders').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(opts.limit || 200);
-  if (opts.status) q = q.eq('status', opts.status);
-  const { data, error } = await q;
-  if (error) {
-    console.error('[orders] list error:', error);
-    return [];
-  }
-  return (data || []).map(mapOrder);
+  // Page past Supabase's 1000-row cap so the whole history (incl. migrated
+  // DELIVERED orders) is returned. A caller can still cap with opts.limit.
+  const rows = await fetchAllRows((from, to) => {
+    let q = supabase.from('outbound_orders').select('*').eq('org_id', orgId)
+      .order('created_at', { ascending: false }).range(from, to);
+    if (opts.status) q = q.eq('status', opts.status);
+    return q;
+  });
+  const capped = opts.limit ? rows.slice(0, opts.limit) : rows;
+  return capped.map(mapOrder);
 }
 
 export const getOrders = listOrders;

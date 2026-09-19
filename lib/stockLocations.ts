@@ -94,13 +94,16 @@ async function reconcile(admin: Admin, orgId: string, sku: string): Promise<numb
     .from(TABLE).select('bin_code, quantity').eq('org_id', orgId).eq('sku', sku);
   const bins = rows || [];
   const total = bins.reduce((s: number, b: any) => s + Number(b.quantity || 0), 0);
-  const primary = bins
-    .filter((b: any) => Number(b.quantity || 0) > 0)
-    .sort((a: any, b: any) => Number(b.quantity || 0) - Number(a.quantity || 0))[0];
+  // Fullest BIN = sum over its lot rows (a bin may now hold several lots).
+  const byBin = new Map<string, number>();
+  for (const b of bins) byBin.set(b.bin_code, (byBin.get(b.bin_code) || 0) + Number(b.quantity || 0));
+  const primary = [...byBin.entries()]
+    .filter(([, q]) => q > 0)
+    .sort((a, b) => b[1] - a[1])[0];
   await admin.from('products')
     .update({
       stock: total,
-      location: primary?.bin_code || 'Unassigned',
+      location: primary?.[0] || 'Unassigned',
       updated_at: new Date().toISOString(),
     })
     .eq('org_id', orgId).eq('sku', sku);
@@ -125,15 +128,16 @@ export async function binAdd(
   const bin = norm(binCode);
   const add = Number(qty) || 0;
 
+  const lot = opts?.lotNo || '';
   const { data: existing } = await admin
-    .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin).maybeSingle();
+    .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin).eq('lot_no', lot).maybeSingle();
   if (existing) {
     await admin.from(TABLE)
-      .update({ quantity: Number(existing.quantity || 0) + add, lot_no: opts?.lotNo ?? undefined, updated_at: new Date().toISOString() })
+      .update({ quantity: Number(existing.quantity || 0) + add, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
   } else {
     await admin.from(TABLE)
-      .insert({ org_id: orgId, sku, bin_code: bin, quantity: add, lot_no: opts?.lotNo || null });
+      .insert({ org_id: orgId, sku, bin_code: bin, quantity: add, lot_no: lot });
   }
   return reconcile(admin, orgId, sku);
 }
@@ -236,27 +240,35 @@ export async function binMove(
     return { moved: 0, total };
   }
 
-  const { data: src } = await admin
-    .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', from).maybeSingle();
-  const avail = Number(src?.quantity || 0);
-  const move = Math.min(avail, want);
-  if (move > 0 && src) {
+  // Move up to `want` from the source bin across its lots (FIFO by created_at),
+  // preserving each lot on the destination bin (a bin can hold many lots now).
+  const { data: srcRows } = await admin
+    .from(TABLE).select('id, quantity, lot_no, created_at')
+    .eq('org_id', orgId).eq('sku', sku).eq('bin_code', from)
+    .order('created_at', { ascending: true });
+  let need = want;
+  let moved = 0;
+  for (const s of srcRows || []) {
+    if (need <= 0) break;
+    const avail = Number(s.quantity || 0);
+    const use = Math.min(avail, need);
+    if (use <= 0) continue;
     await admin.from(TABLE)
-      .update({ quantity: avail - move, updated_at: new Date().toISOString() })
-      .eq('id', src.id);
+      .update({ quantity: avail - use, updated_at: new Date().toISOString() }).eq('id', s.id);
+    const lot = s.lot_no || '';
     const { data: dst } = await admin
-      .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', to).maybeSingle();
+      .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', to).eq('lot_no', lot).maybeSingle();
     if (dst) {
       await admin.from(TABLE)
-        .update({ quantity: Number(dst.quantity || 0) + move, updated_at: new Date().toISOString() })
-        .eq('id', dst.id);
+        .update({ quantity: Number(dst.quantity || 0) + use, updated_at: new Date().toISOString() }).eq('id', dst.id);
     } else {
       await admin.from(TABLE)
-        .insert({ org_id: orgId, sku, bin_code: to, quantity: move });
+        .insert({ org_id: orgId, sku, bin_code: to, quantity: use, lot_no: lot });
     }
+    moved += use; need -= use;
   }
   const total = await reconcile(admin, orgId, sku);
-  return { moved: move, total };
+  return { moved, total };
 }
 
 /** Move an entire bin's contents of a SKU to another bin (used by LPN move). */
@@ -278,15 +290,11 @@ export async function binSet(
   await ensureSeeded(admin, orgId, sku);
   const bin = norm(binCode);
   const val = Math.max(0, Number(countedQty) || 0);
-  const { data: existing } = await admin
-    .from(TABLE).select('id').eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin).maybeSingle();
-  if (existing) {
-    await admin.from(TABLE)
-      .update({ quantity: val, updated_at: new Date().toISOString() }).eq('id', existing.id);
-  } else {
-    await admin.from(TABLE)
-      .insert({ org_id: orgId, sku, bin_code: bin, quantity: val });
-  }
+  // A physical count is per bin, not per lot. Collapse any lot rows in this bin
+  // into a single unlotted row holding the counted quantity.
+  await admin.from(TABLE).delete().eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin);
+  await admin.from(TABLE)
+    .insert({ org_id: orgId, sku, bin_code: bin, quantity: val, lot_no: '' });
   return reconcile(admin, orgId, sku);
 }
 
