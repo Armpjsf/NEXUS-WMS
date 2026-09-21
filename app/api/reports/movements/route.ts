@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,10 +25,10 @@ export async function GET(request: Request) {
     let rows: any[] = [];
 
     if (type === 'IN' || type === 'OUT') {
-      const { data } = await supabase
+      const data = await fetchAllRows((f, t) => supabase
         .from('stock_transactions').select('*')
         .eq('org_id', orgId).eq('type', type)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }).range(f, t));
       rows = (data || []).filter(r => inRange(r.created_at)).map(r => ({
         date: r.created_at, type, docRef: r.doc_ref || '-',
         product: r.product_name || r.sku || '', sku: r.sku || '',

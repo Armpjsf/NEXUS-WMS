@@ -9,11 +9,11 @@ export const dynamic = 'force-dynamic';
 // Freight is read from a structured field when present, else parsed from the
 // migration note ("ค่าขนส่ง=1600"), so historical shipments still total up.
 function parseFreight(o: any): number {
-  const amt = Number(o.total_amount || 0);
-  if (amt > 0 && o.channel !== 'MIGRATION') return amt; // new orders may store goods value; keep freight from note for migrated
+  const fc = Number(o.freight_cost || 0);
+  if (fc > 0) return fc; // structured column wins once backfilled
   const m = String(o.notes || '').match(/ค่าขนส่ง\s*=?\s*([\d,]+(?:\.\d+)?)/);
   if (m) return Number(m[1].replace(/,/g, '')) || 0;
-  return amt;
+  return o.channel === 'MIGRATION' ? 0 : Number(o.total_amount || 0);
 }
 
 function province(o: any): string {
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     const orders = await fetchAllRows((f, t) => supabase
       .from('outbound_orders')
-      .select('order_no, ship_address, destinations_json, total_qty, total_amount, notes, channel, status, created_at, customer_name')
+      .select('*') // includes freight_cost once the column exists; tolerant before the migration
       .eq('org_id', orgId).range(f, t));
 
     const rows = orders.filter(o => {

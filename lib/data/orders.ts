@@ -67,6 +67,7 @@ export interface OutboundOrder {
   items: OrderLine[];
   totalQty: number;
   totalAmount: number;
+  freightCost: number;
   carrier: string;
   trackingNo: string;
   boxCount: number;
@@ -205,6 +206,7 @@ function mapOrder(r: any): OutboundOrder {
     items,
     totalQty: Number(r.total_qty ?? 0),
     totalAmount: Number(r.total_amount ?? 0),
+    freightCost: Number(r.freight_cost ?? 0),
     carrier: r.carrier || '',
     trackingNo: r.tracking_no || '',
     boxCount: Number(r.box_count ?? 0),
@@ -368,6 +370,7 @@ export async function createOrder(input: {
     items_json: items,
     total_qty: totalQty,
     total_amount: totalAmount,
+    freight_cost: Number((input as any).freightCost) || 0,
     created_by: input.createdBy || 'System',
     notes: initialNotes,
     branch_code: targetBranch,
@@ -386,6 +389,7 @@ export async function createOrder(input: {
     delete fallbackPayload.branch_code;
     delete fallbackPayload.vehicle_plate;
     delete fallbackPayload.driver_name;
+    delete fallbackPayload.freight_cost;
     fallbackPayload.notes = fallbackNotes;
 
     const retryRes = await supabase.from('outbound_orders').insert(fallbackPayload).select().single();

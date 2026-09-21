@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
 
-interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; }
+interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; lotNo?: string; expDate?: string; }
 interface Receipt {
   receiptNo: string; poNumber: string; supplier: string; status: string;
   items: Line[]; createdAt: string; completedAt: string | null;
@@ -41,6 +41,7 @@ function ReceiptDoc() {
               <th className="py-2 pr-2 font-semibold w-8">#</th>
               <th className="py-2 px-2 font-semibold">รหัส</th>
               <th className="py-2 px-2 font-semibold">รายการ</th>
+              <th className="py-2 px-2 font-semibold">Lot</th>
               <th className="py-2 px-2 font-semibold text-right">คาด</th>
               <th className="py-2 px-2 font-semibold text-right">รับจริง</th>
               <th className="py-2 pl-2 font-semibold">เก็บที่</th>
@@ -52,6 +53,9 @@ function ReceiptDoc() {
                 <td className="py-2.5 pr-2 text-slate-400">{i + 1}</td>
                 <td className="py-2.5 px-2 font-mono text-xs">{l.sku}</td>
                 <td className="py-2.5 px-2 font-medium">{l.name}</td>
+                <td className="py-2.5 px-2 font-mono text-[11px] text-slate-500">
+                  {l.lotNo || '-'}{l.expDate ? ` · EXP ${new Date(l.expDate).toLocaleDateString('th-TH')}` : ''}
+                </td>
                 <td className="py-2.5 px-2 text-right tabular-nums text-slate-400">{l.expectedQty}</td>
                 <td className="py-2.5 px-2 text-right font-bold tabular-nums">{(l.receivedQty ?? 0).toLocaleString()}</td>
                 <td className="py-2.5 pl-2 font-mono text-xs">{l.putawayBin || '-'}</td>
@@ -60,7 +64,7 @@ function ReceiptDoc() {
           </tbody>
           <tfoot>
             <tr className="font-black">
-              <td colSpan={4} className="py-3 px-2 text-right">รวมรับจริง</td>
+              <td colSpan={5} className="py-3 px-2 text-right">รวมรับจริง</td>
               <td className="py-3 px-2 text-right tabular-nums">{totalRecv.toLocaleString()}</td>
               <td />
             </tr>

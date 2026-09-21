@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,17 +28,13 @@ export async function GET(request: Request) {
       if (p.name) locMap.set(String(p.name).toLowerCase().trim(), p.location);
     });
 
-    const { data: rows, error } = await supabase
+    // Page past the 1000-row cap so the full history shows (OUT already >1000).
+    const rows = await fetchAllRows((f, t) => supabase
       .from('stock_transactions')
       .select('*')
       .eq('org_id', orgId)
       .eq('type', type)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Supabase logs/transaction Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+      .order('created_at', { ascending: false }).range(f, t));
 
     const enrichedLogs = (rows || []).map((r: any) => {
       const productName = r.product_name || r.sku || '';

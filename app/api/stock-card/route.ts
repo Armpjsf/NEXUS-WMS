@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,16 +21,23 @@ export async function GET(request: Request) {
     const normalized = sku.trim().toLowerCase();
 
     const orgId = await getCurrentOrgId();
-    const { data: rows, error } = await supabase
-      .from('stock_transactions')
-      .select('*')
-      .eq('org_id', orgId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Supabase stock-card Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    // Fetch only this SKU's ledger, paging past Supabase's 1000-row cap.
+    // (Previously a bare `.select()` capped at the 1000 OLDEST rows, so a SKU's
+    // recent/current-month movements silently dropped off the card.)
+    const [bySku, byName] = await Promise.all([
+      fetchAllRows((f, t) => supabase.from('stock_transactions').select('*')
+        .eq('org_id', orgId).ilike('sku', sku.trim())
+        .order('created_at', { ascending: true }).range(f, t)),
+      fetchAllRows((f, t) => supabase.from('stock_transactions').select('*')
+        .eq('org_id', orgId).ilike('product_name', sku.trim())
+        .order('created_at', { ascending: true }).range(f, t)),
+    ]);
+    const seen = new Set<string>();
+    const rows = [...bySku, ...byName].filter((r: any) => {
+      if (r.id && seen.has(r.id)) return false;
+      if (r.id) seen.add(r.id);
+      return true;
+    });
 
     // Match by SKU or product name (legacy sheets keyed on name).
     const productMovs = (rows || [])

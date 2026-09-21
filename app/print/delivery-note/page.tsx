@@ -7,7 +7,7 @@ import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
 interface Line { sku: string; name: string; qty: number; price?: number; lotNos?: string[]; }
 interface Order {
   orderNo: string; refNo?: string; branchCode?: string; customerName: string; phone: string; shipAddress: string; status: string;
-  items: Line[]; totalQty: number; totalAmount: number; carrier: string; trackingNo: string;
+  items: Line[]; totalQty: number; totalAmount: number; freightCost?: number; carrier: string; trackingNo: string;
   driverName?: string; vehiclePlate?: string;
   createdAt: string; podNote: string; podSignature: string;
 }
@@ -43,6 +43,7 @@ function DeliveryNote() {
         ...(order.driverName ? [{ label: 'คนขับ', value: order.driverName }] : []),
         ...(order.vehiclePlate ? [{ label: 'ทะเบียนรถ', value: <span className="font-mono">{order.vehiclePlate}</span> }] : []),
         ...(order.trackingNo ? [{ label: 'Tracking', value: <span className="font-mono">{order.trackingNo}</span> }] : []),
+        ...(order.freightCost && order.freightCost > 0 ? [{ label: 'ค่าขนส่ง', value: `฿${order.freightCost.toLocaleString()}` }] : []),
       ]}
     >
       {/* Recipient */}

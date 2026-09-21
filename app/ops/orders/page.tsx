@@ -23,7 +23,7 @@ interface Line { sku: string; name: string; qty: number; picked?: number; packed
 interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
 interface Order {
   id: string; orderNo: string; channel: string; customerName: string; status: Status;
-  priority: string; items: Line[]; totalQty: number; totalAmount: number;
+  priority: string; items: Line[]; totalQty: number; totalAmount: number; freightCost?: number; refNo?: string;
   carrier: string; trackingNo: string; createdAt: string; shipAddress: string; phone: string;
   vehicleType?: string;
   podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
@@ -313,6 +313,8 @@ export default function OrdersPage() {
                       </div>
                       <div className="text-sm text-[#8a92a6] mt-1 truncate">
                         <span className="font-semibold text-[#d1c6ab]">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น · ฿{o.totalAmount.toLocaleString()}
+                        {o.freightCost ? <span className="text-amber-700"> · ค่าส่ง ฿{o.freightCost.toLocaleString()}</span> : null}
+                        {o.shipAddress ? <span className="text-[#8a92a6]"> · 📍{o.shipAddress}</span> : null}
                         {o.trackingNo && (
                           <span className="text-cyan-700 font-medium ml-2 inline-flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded text-xs ring-1 ring-cyan-500/30">
                             <Truck className="w-3 h-3 text-cyan-600" />
