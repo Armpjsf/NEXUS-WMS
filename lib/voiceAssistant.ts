@@ -41,6 +41,14 @@ export function primeVoice() {
 
 export function isVoicePrimed() { return _primed; }
 
+/** Diagnose TTS readiness so the UI can tell the user what to fix. */
+export function getVoiceDiagnostic(): { supported: boolean; total: number; hasThai: boolean } {
+  if (!isVoiceSupported()) return { supported: false, total: 0, hasThai: false };
+  refreshVoices();
+  const hasThai = _voices.some(v => (v.lang || '').toLowerCase().startsWith('th') || /thai/i.test(v.name));
+  return { supported: true, total: _voices.length, hasThai };
+}
+
 function pickThaiVoice(): SpeechSynthesisVoice | undefined {
   if (_voices.length === 0) refreshVoices();
   return _voices.find(v => v.lang === 'th-TH')
