@@ -338,8 +338,8 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div className="text-sm text-[#8a92a6] mt-1 truncate">
-                        <span className="font-semibold text-[#d1c6ab]">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น · ฿{o.totalAmount.toLocaleString()}
-                        {o.freightCost ? <span className="text-amber-700"> · ค่าส่ง ฿{o.freightCost.toLocaleString()}</span> : null}
+                        <span className="font-semibold text-[#d1c6ab]">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น
+                        {o.freightCost ? <span className="text-amber-700"> · ค่าขนส่ง ฿{o.freightCost.toLocaleString()}</span> : null}
                         {o.shipAddress ? <span className="text-[#8a92a6]"> · 📍{o.shipAddress}</span> : null}
                         {o.trackingNo && (
                           <span className="text-cyan-700 font-medium ml-2 inline-flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded text-xs ring-1 ring-cyan-500/30">
