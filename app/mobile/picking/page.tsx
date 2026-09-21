@@ -441,7 +441,8 @@ export default function MobilePickingPage() {
                 <button
                   onClick={startWaveFromOrders}
                   disabled={loading}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 transition-all"
+                  style={{ backgroundImage: 'linear-gradient(to right, #2563eb, #4f46e5)' }}
+                  className="w-full py-4 rounded-2xl active:scale-[0.98] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 transition-all disabled:opacity-60"
                 >
                   <Play className="w-5 h-5 fill-current" />
                   <span>เริ่มคำสั่งหยิบรวม ({Math.min(5, pendingOrders.length)} ออเดอร์)</span>
