@@ -459,6 +459,7 @@ export async function updateOrder(
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
     destinations: DeliveryDestination[]; qcSignatures: QCSignatures;
     freightCost: number; deliveryMode: 'DELIVERY' | 'SELF_PICKUP';
+    customerName: string; phone: string; shipAddress: string; refNo: string;
   }>,
 ): Promise<OutboundOrder | null> {
   const current = await getOrder(id);
@@ -481,6 +482,10 @@ export async function updateOrder(
   if (patch.priority !== undefined) row.priority = patch.priority;
   if (patch.freightCost !== undefined) row.freight_cost = Number(patch.freightCost) || 0;
   if (patch.deliveryMode !== undefined) row.delivery_mode = patch.deliveryMode === 'SELF_PICKUP' ? 'SELF_PICKUP' : 'DELIVERY';
+  if (patch.customerName !== undefined) row.customer_name = patch.customerName;
+  if (patch.phone !== undefined) row.phone = patch.phone;
+  if (patch.shipAddress !== undefined) row.ship_address = patch.shipAddress;
+  if (patch.refNo !== undefined) row.ref_no = patch.refNo;
 
   // Handle destinations and qcSignatures serialized cleanly inside notes
   let currentNotes = patch.notes !== undefined ? patch.notes : (current.notes || '');

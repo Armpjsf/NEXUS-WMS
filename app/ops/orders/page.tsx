@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   Package, Plus, X, Truck, ClipboardCheck, CheckCircle2,
   ArrowRight, Search, Trash2, MapPin, ArrowLeft, FileText,
   Printer, ExternalLink, UserCheck, Camera, Zap, RefreshCw,
-  ShieldCheck, Eye, Download, PackagePlus
+  ShieldCheck, Eye, Download, PackagePlus, Pencil
 } from 'lucide-react';
 import AddItemsModal, { AddItemsOrder } from '@/components/orders/AddItemsModal';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -66,6 +67,9 @@ export default function OrdersPage() {
   const [dispatchOrder, setDispatchOrder] = useState<Order | null>(null);
   const [viewPodOrder, setViewPodOrder] = useState<Order | null>(null);
   const [qcOrder, setQcOrder] = useState<Order | null>(null);
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const { data: session } = useSession();
+  const isManagement = ['Super Admin', 'Admin', 'Manager'].includes((session?.user as any)?.role || '');
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // PDA Scanner for Order lookup
@@ -392,6 +396,17 @@ export default function OrdersPage() {
                         </>
                       )}
 
+                      {/* แก้ไขออเดอร์ (แอดมินขึ้นไป) — แก้ ค่าขนส่ง/โหมด/ลูกค้า/ที่อยู่/PO กรณีกรอกผิด */}
+                      {isManagement && (
+                        <button
+                          onClick={() => setEditOrder(o)}
+                          title="แก้ไขข้อมูลออเดอร์ (ค่าขนส่ง / โหมดจัดส่ง / ลูกค้า / ที่อยู่ / PO) — เฉพาะแอดมิน"
+                          className="p-2 rounded-xl text-[#8a92a6] hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+
                       {/* เพิ่มสินค้าเข้าออเดอร์ (ลูกค้าเพิ่มของหลังแพ็ก/ส่งงาน) */}
                       {(o.status === 'PACKED' || o.status === 'SHIPPED') && (
                         <button
@@ -539,6 +554,7 @@ export default function OrdersPage() {
       {/* Create Order Modal */}
       <AnimatePresence>
         {showCreate && <CreateOrderModal carriers={carriers} onClose={() => setShowCreate(false)} onDone={() => { setShowCreate(false); load(); }} />}
+        {editOrder && <EditOrderModal order={editOrder} carriers={carriers} onClose={() => setEditOrder(null)} onDone={() => { setEditOrder(null); load(); }} />}
       </AnimatePresence>
 
       {/* Camera Scanner for Order Search */}
@@ -1353,3 +1369,108 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
   );
 }
 
+
+// Management-only order editor — fix a mis-entered order's shipping details
+// (freight, delivery mode, carrier, customer, address, PO). Guarded server-side.
+function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; carriers: Carrier[]; onClose: () => void; onDone: () => void }) {
+  const [deliveryMode, setDeliveryMode] = useState<'DELIVERY' | 'SELF_PICKUP'>(order.deliveryMode || 'DELIVERY');
+  const [freightCost, setFreightCost] = useState(String(order.freightCost || ''));
+  const [carrier, setCarrier] = useState(order.carrier || '');
+  const [customerName, setCustomerName] = useState(order.customerName || '');
+  const [phone, setPhone] = useState(order.phone || '');
+  const [shipAddress, setShipAddress] = useState(order.shipAddress || '');
+  const [refNo, setRefNo] = useState(order.refNo || '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          deliveryMode,
+          freightCost: Number(freightCost) || 0,
+          carrier: deliveryMode === 'SELF_PICKUP' ? 'ลูกค้ารับเอง' : carrier,
+          customerName, phone, shipAddress, refNo,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error === 'Forbidden' ? 'เฉพาะแอดมินขึ้นไปเท่านั้น' : (json.error || 'บันทึกไม่สำเร็จ'));
+      toast.success('แก้ไขออเดอร์แล้ว');
+      onDone();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-lg bg-[#171c23] border border-[#30353d] rounded-2xl shadow-2xl max-h-[88vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#30353d] sticky top-0 bg-[#171c23]">
+          <div>
+            <h3 className="font-bold text-[#dee2ec] text-sm">แก้ไขออเดอร์ {order.orderNo}</h3>
+            <p className="text-[11px] text-[#8a92a6]">แก้ไขข้อมูลจัดส่ง/ลูกค้า กรณีกรอกผิด (เฉพาะแอดมิน)</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-[#8a92a6] hover:text-[#dee2ec]"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <div className="flex gap-2">
+            {([{ key: 'DELIVERY', label: '🚚 ส่งขนส่ง' }, { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' }] as const).map(m => (
+              <button key={m.key} type="button" onClick={() => setDeliveryMode(m.key)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${deliveryMode === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#1b2027] text-[#8a92a6]'}`}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs text-[#8a92a6] space-y-1">
+              <span>ค่าขนส่ง (บาท)</span>
+              <input type="number" value={freightCost} onChange={e => setFreightCost(e.target.value)} placeholder="0"
+                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-bold outline-none focus:border-cyan-500" />
+            </label>
+            <label className="text-xs text-[#8a92a6] space-y-1">
+              <span>ขนส่ง</span>
+              <select value={carrier} onChange={e => setCarrier(e.target.value)} disabled={deliveryMode === 'SELF_PICKUP'}
+                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] text-sm outline-none focus:border-cyan-500 disabled:opacity-40">
+                {deliveryMode === 'SELF_PICKUP' ? <option>— ลูกค้ารับเอง —</option> : <>
+                  <option value="">— เลือก —</option>
+                  {carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
+                </>}
+              </select>
+            </label>
+          </div>
+
+          <label className="text-xs text-[#8a92a6] space-y-1 block">
+            <span>ชื่อลูกค้า</span>
+            <input value={customerName} onChange={e => setCustomerName(e.target.value)}
+              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-medium outline-none focus:border-cyan-500" />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs text-[#8a92a6] space-y-1">
+              <span>เบอร์โทร</span>
+              <input value={phone} onChange={e => setPhone(e.target.value)}
+                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
+            </label>
+            <label className="text-xs text-[#8a92a6] space-y-1">
+              <span>อ้างอิง/PO</span>
+              <input value={refNo} onChange={e => setRefNo(e.target.value)}
+                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-mono outline-none focus:border-cyan-500" />
+            </label>
+          </div>
+          <label className="text-xs text-[#8a92a6] space-y-1 block">
+            <span>ที่อยู่ / ปลายทาง</span>
+            <input value={shipAddress} onChange={e => setShipAddress(e.target.value)}
+              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
+          </label>
+
+          <button onClick={save} disabled={saving}
+            className="w-full mt-2 py-2.5 rounded-xl bg-cyan-500 text-[#062028] font-bold flex items-center justify-center gap-1.5 disabled:opacity-50">
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} บันทึกการแก้ไข
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

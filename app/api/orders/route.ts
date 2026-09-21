@@ -48,6 +48,14 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { id, ...patch } = body;
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    // Editing an order's master details (customer/address/carrier/freight/mode)
+    // is a management-only correction; status/POD/item flow stays open to staff.
+    const EDIT_FIELDS = ['customerName', 'phone', 'shipAddress', 'refNo', 'freightCost', 'deliveryMode'];
+    if (EDIT_FIELDS.some(f => f in patch)) {
+      const { requireManagement } = await import('@/lib/apiAuth');
+      const guard = await requireManagement();
+      if (guard.error) return guard.error;
+    }
     const order = await updateOrder(id, patch);
     if (!order) return NextResponse.json({ error: 'อัปเดตออเดอร์ไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, order });
