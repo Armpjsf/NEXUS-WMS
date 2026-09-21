@@ -44,6 +44,7 @@ import {
   ThermometerSnowflake,
   Truck,
   Users,
+  MapPin,
 } from 'lucide-react';
 import { useLanguage } from './providers/LanguageProvider';
 import { cn } from '@/lib/utils';
@@ -219,6 +220,7 @@ export default function Sidebar() {
       items: [
         { label: 'คลังรับฝาก 3PL & Billing', href: '/ops/3pl', icon: Building2, tone: 'cyan', adminOnly: true },
         { label: 'ออเดอร์ขาออก', href: '/ops/orders', icon: PackageCheck, tone: 'cyan' },
+        { label: 'สรุปงานส่งรายจังหวัด', href: '/analytics/outbound-summary', icon: MapPin, tone: 'cyan' },
         { label: 'ลูกค้า (Customers)', href: '/admin/customers', icon: Users, tone: 'blue' },
         { label: 'คืนสินค้า (RMA)', href: '/ops/returns', icon: History, tone: 'rose' },
         { label: 'เทียบราคาขนส่ง (Rate Shopping)', href: '/ops/carrier-rates', icon: Truck, tone: 'cyan' },

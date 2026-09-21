@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
 
-interface Line { sku: string; name: string; qty: number; location?: string; }
+interface Line { sku: string; name: string; qty: number; location?: string; lotNos?: string[]; }
 interface Order {
-  orderNo: string; customerName: string; status: string; priority: string;
+  orderNo: string; refNo?: string; branchCode?: string; customerName: string; status: string; priority: string;
   items: Line[]; totalQty: number; createdAt: string;
 }
 
@@ -33,6 +33,8 @@ function PickingSlipDoc() {
       meta={[
         { label: 'วันที่', value: date },
         { label: 'ลูกค้า', value: order.customerName || '-' },
+        ...(order.refNo ? [{ label: 'อ้างอิง/PO', value: <span className="font-mono">{order.refNo}</span> }] : []),
+        ...(order.branchCode ? [{ label: 'สาขา', value: order.branchCode }] : []),
         ...(order.priority === 'URGENT' ? [{ label: 'ความสำคัญ', value: 'ด่วน' }] : []),
       ]}>
       <div className="overflow-x-auto">
@@ -42,6 +44,7 @@ function PickingSlipDoc() {
               <th className="py-2 pr-2 font-semibold">ตำแหน่ง</th>
               <th className="py-2 px-2 font-semibold">รหัส</th>
               <th className="py-2 px-2 font-semibold">รายการ</th>
+              <th className="py-2 px-2 font-semibold">Lot</th>
               <th className="py-2 px-2 font-semibold text-right">หยิบ</th>
               <th className="py-2 pl-2 font-semibold text-center w-16">✓</th>
             </tr>
@@ -52,13 +55,14 @@ function PickingSlipDoc() {
                 <td className="py-3 pr-2 font-mono font-bold">{l.location || '-'}</td>
                 <td className="py-3 px-2 font-mono text-xs">{l.sku}</td>
                 <td className="py-3 px-2 font-medium">{l.name}</td>
+                <td className="py-3 px-2 font-mono text-[11px] text-slate-500">{l.lotNos && l.lotNos.length ? l.lotNos.join(', ') : '-'}</td>
                 <td className="py-3 px-2 text-right font-black tabular-nums text-lg">{l.qty.toLocaleString()}</td>
                 <td className="py-3 pl-2 text-center"><span className="inline-block w-5 h-5 border-2 border-slate-300 rounded" /></td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="font-black"><td colSpan={3} className="py-3 px-2 text-right">รวมหยิบ</td><td className="py-3 px-2 text-right tabular-nums">{order.totalQty.toLocaleString()} ชิ้น</td><td /></tr>
+            <tr className="font-black"><td colSpan={4} className="py-3 px-2 text-right">รวมหยิบ</td><td className="py-3 px-2 text-right tabular-nums">{order.totalQty.toLocaleString()} ชิ้น</td><td /></tr>
           </tfoot>
         </table>
       </div>

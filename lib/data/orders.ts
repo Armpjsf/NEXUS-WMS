@@ -23,6 +23,7 @@ export interface OrderLine {
   location?: string;
   price?: number;
   drop?: number; // which delivery drop this item belongs to (1-based, multi-drop)
+  lotNos?: string[]; // lots this line was picked from (traceability, from lot_movements)
 }
 
 export interface DeliveryDestination {
@@ -264,7 +265,29 @@ export async function getOrder(id: string): Promise<OutboundOrder | null> {
   const orgId = await getCurrentOrgId();
   const { data, error } = await supabase.from('outbound_orders').select('*').eq('id', id).eq('org_id', orgId).maybeSingle();
   if (error || !data) return null;
-  return mapOrder(data);
+  const order = mapOrder(data);
+  return attachLotNos(orgId, order);
+}
+
+// Attach the lot numbers each line was picked from (for delivery-note / receipt
+// traceability). Looks up lot_movements by the order's doc references; orders
+// picked before lots existed simply come back without lots.
+async function attachLotNos(orgId: string, order: OutboundOrder): Promise<OutboundOrder> {
+  try {
+    const refs = Array.from(new Set([order.orderNo, order.refNo].filter(Boolean)));
+    if (refs.length === 0 || order.items.length === 0) return order;
+    const { data: moves } = await getServiceSupabase()
+      .from('lot_movements').select('sku, lot_number')
+      .eq('org_id', orgId).eq('direction', 'OUT').in('doc_ref', refs);
+    if (!moves || moves.length === 0) return order;
+    const bySku = new Map<string, Set<string>>();
+    for (const m of moves) {
+      if (!bySku.has(m.sku)) bySku.set(m.sku, new Set());
+      if (m.lot_number) bySku.get(m.sku)!.add(m.lot_number);
+    }
+    order.items = order.items.map(l => bySku.has(l.sku) ? { ...l, lotNos: [...bySku.get(l.sku)!] } : l);
+  } catch { /* lot_movements optional */ }
+  return order;
 }
 
 // Fetch an order by its (unguessable) UUID with no org/session scoping, for

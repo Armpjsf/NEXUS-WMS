@@ -4,10 +4,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
 
-interface Line { sku: string; name: string; qty: number; price?: number; }
+interface Line { sku: string; name: string; qty: number; price?: number; lotNos?: string[]; }
 interface Order {
-  orderNo: string; customerName: string; phone: string; shipAddress: string; status: string;
+  orderNo: string; refNo?: string; branchCode?: string; customerName: string; phone: string; shipAddress: string; status: string;
   items: Line[]; totalQty: number; totalAmount: number; carrier: string; trackingNo: string;
+  driverName?: string; vehiclePlate?: string;
   createdAt: string; podNote: string; podSignature: string;
 }
 
@@ -36,7 +37,11 @@ function DeliveryNote() {
       printLabel="พิมพ์ใบส่ง"
       meta={[
         { label: 'วันที่', value: date },
+        ...(order.refNo ? [{ label: 'อ้างอิง/PO', value: <span className="font-mono">{order.refNo}</span> }] : []),
+        ...(order.branchCode ? [{ label: 'สาขาต้นทาง', value: order.branchCode }] : []),
         ...(order.carrier ? [{ label: 'ขนส่ง', value: order.carrier }] : []),
+        ...(order.driverName ? [{ label: 'คนขับ', value: order.driverName }] : []),
+        ...(order.vehiclePlate ? [{ label: 'ทะเบียนรถ', value: <span className="font-mono">{order.vehiclePlate}</span> }] : []),
         ...(order.trackingNo ? [{ label: 'Tracking', value: <span className="font-mono">{order.trackingNo}</span> }] : []),
       ]}
     >
@@ -56,6 +61,7 @@ function DeliveryNote() {
               <th className="py-2 pr-2 font-semibold w-8">#</th>
               <th className="py-2 px-2 font-semibold">รหัส</th>
               <th className="py-2 px-2 font-semibold">รายการ</th>
+              <th className="py-2 px-2 font-semibold">Lot</th>
               <th className="py-2 pl-2 font-semibold text-right">จำนวน</th>
             </tr>
           </thead>
@@ -65,13 +71,14 @@ function DeliveryNote() {
                 <td className="py-2.5 pr-2 text-slate-400">{i + 1}</td>
                 <td className="py-2.5 px-2 font-mono text-xs">{l.sku}</td>
                 <td className="py-2.5 px-2 font-medium">{l.name}</td>
+                <td className="py-2.5 px-2 font-mono text-[11px] text-slate-500">{l.lotNos && l.lotNos.length ? l.lotNos.join(', ') : '-'}</td>
                 <td className="py-2.5 pl-2 text-right font-bold tabular-nums">{l.qty.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="font-black">
-              <td colSpan={3} className="py-3 px-2 text-right">รวมจำนวน</td>
+              <td colSpan={4} className="py-3 px-2 text-right">รวมจำนวน</td>
               <td className="py-3 pl-2 text-right tabular-nums">{order.totalQty.toLocaleString()} ชิ้น</td>
             </tr>
           </tfoot>

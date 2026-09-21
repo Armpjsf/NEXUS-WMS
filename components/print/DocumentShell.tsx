@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from 'react';
 import { Printer, Loader2 } from 'lucide-react';
+import Barcode from 'react-barcode';
 
 interface Org { name: string; brandingLogo: string; brandingColor: string; }
 
@@ -61,6 +62,11 @@ export function DocumentShell({ docType, docTypeEn, docNo, meta = [], children, 
               <div className="text-2xl font-black tracking-tight leading-none">{docType}</div>
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-0.5">{docTypeEn}</div>
               <div className="mt-2 inline-block rounded-lg px-3 py-1 font-mono font-bold text-sm text-white" style={{ background: accent }}>{docNo}</div>
+              {docNo && (
+                <div className="mt-2 flex justify-end">
+                  <Barcode value={String(docNo)} format="CODE128" height={34} width={1.3} fontSize={10} margin={0} displayValue={false} />
+                </div>
+              )}
             </div>
           </div>
 
