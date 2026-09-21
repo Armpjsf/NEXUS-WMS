@@ -10,6 +10,44 @@ export function isVoiceSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
+// Voices load asynchronously on most engines (getVoices() is empty on first
+// call), so cache them and refresh when the browser fires `voiceschanged`.
+let _voices: SpeechSynthesisVoice[] = [];
+let _primed = false;
+function refreshVoices() {
+  try { _voices = window.speechSynthesis.getVoices() || []; } catch { /* ignore */ }
+}
+if (isVoiceSupported()) {
+  refreshVoices();
+  try { window.speechSynthesis.addEventListener('voiceschanged', refreshVoices); } catch { /* ignore */ }
+}
+
+/**
+ * Unlock TTS on a user gesture. Mobile browsers (iOS Safari, Android Chrome,
+ * the Capacitor WebView) block speechSynthesis until the first speak() happens
+ * inside a real tap — so call this from an onClick/onPointerDown handler once.
+ * After priming, later async speaks (auto-narration) are allowed.
+ */
+export function primeVoice() {
+  if (_primed || !isVoiceSupported()) return;
+  try {
+    refreshVoices();
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0; u.lang = 'th-TH';
+    window.speechSynthesis.speak(u);
+    _primed = true;
+  } catch { /* ignore */ }
+}
+
+export function isVoicePrimed() { return _primed; }
+
+function pickThaiVoice(): SpeechSynthesisVoice | undefined {
+  if (_voices.length === 0) refreshVoices();
+  return _voices.find(v => v.lang === 'th-TH')
+    || _voices.find(v => v.lang && v.lang.toLowerCase().startsWith('th'))
+    || _voices.find(v => /thai/i.test(v.name));
+}
+
 /**
  * Speak Thai text using native browser/Android text-to-speech engine
  */
@@ -19,30 +57,28 @@ export function speakThai(
 ) {
   if (!isVoiceSupported()) return;
 
-  try {
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'th-TH';
-    utterance.rate = options.rate || 1.05; // Slightly faster for operational speed
-    utterance.pitch = options.pitch || 1.0;
-
-    // Find Thai voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const thaiVoice = voices.find(v => v.lang === 'th-TH' || v.lang.includes('th'));
-    if (thaiVoice) {
-      utterance.voice = thaiVoice;
+  const doSpeak = () => {
+    try {
+      window.speechSynthesis.cancel(); // stop any ongoing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'th-TH';
+      utterance.rate = options.rate || 1.05;
+      utterance.pitch = options.pitch || 1.0;
+      const thaiVoice = pickThaiVoice();
+      if (thaiVoice) utterance.voice = thaiVoice; // else default engine handles Thai text
+      if (options.onEnd) utterance.onend = options.onEnd;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech synthesis error:', e);
     }
+  };
 
-    if (options.onEnd) {
-      utterance.onend = options.onEnd;
-    }
-
-    window.speechSynthesis.speak(utterance);
-  } catch (e) {
-    console.warn('Speech synthesis error:', e);
+  // If voices haven't loaded yet, wait one tick for `voiceschanged` then speak.
+  if (_voices.length === 0) {
+    refreshVoices();
+    if (_voices.length === 0) { setTimeout(doSpeak, 250); return; }
   }
+  doSpeak();
 }
 
 /**

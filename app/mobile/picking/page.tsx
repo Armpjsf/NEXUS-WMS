@@ -35,12 +35,13 @@ import {
   PickingWave, 
   parseLocation 
 } from '@/lib/picking';
-import { 
-  speakPickInstruction, 
-  speakThai, 
-  triggerHaptic, 
-  speakScanSuccess, 
-  speakScanMismatch 
+import {
+  speakPickInstruction,
+  speakThai,
+  triggerHaptic,
+  speakScanSuccess,
+  speakScanMismatch,
+  primeVoice
 } from '@/lib/voiceAssistant';
 import { getApiUrl } from '@/lib/config';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
@@ -86,11 +87,20 @@ export default function MobilePickingPage() {
     loadData();
   }, [loadData]);
 
+  // Unlock mobile TTS on the very first tap anywhere (autoplay policy blocks
+  // speech that isn't kicked off by a user gesture).
+  useEffect(() => {
+    const unlock = () => primeVoice();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
+
   // Real pending orders awaiting pick
   const pendingOrders = orders.filter(o => o.status === 'NEW' || o.status === 'PICKING');
 
   // Start Wave Picking from Real Orders
   const startWaveFromOrders = useCallback(async () => {
+    primeVoice(); // unlock TTS within this tap gesture
     if (pendingOrders.length === 0) {
       toast.error('ไม่มีออเดอร์ค้างหยิบในระบบ');
       return;
@@ -355,13 +365,17 @@ export default function MobilePickingPage() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              onClick={() => {
+                const next = !voiceEnabled;
+                setVoiceEnabled(next);
+                if (next) { primeVoice(); speakThai('เปิดเสียงนำทางแล้วค่ะ'); } // test within the tap
+              }}
               className={`p-2 rounded-xl border transition-all ${
-                voiceEnabled 
-                  ? 'bg-[#facc15]/10 text-[#facc15] border-[#facc15]/30' 
+                voiceEnabled
+                  ? 'bg-[#facc15]/10 text-[#facc15] border-[#facc15]/30'
                   : 'bg-[#252a32] text-[#8a92a6] border-[#30353d]'
               }`}
-              title={voiceEnabled ? 'เปิดเสียงภาษาไทยอยู่' : 'ปิดเสียง'}
+              title={voiceEnabled ? 'เปิดเสียงภาษาไทยอยู่ (แตะเพื่อทดสอบ)' : 'ปิดเสียง'}
             >
               {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
