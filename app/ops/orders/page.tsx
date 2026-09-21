@@ -23,7 +23,7 @@ interface Line { sku: string; name: string; qty: number; picked?: number; packed
 interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
 interface Order {
   id: string; orderNo: string; channel: string; customerName: string; status: Status;
-  priority: string; items: Line[]; totalQty: number; totalAmount: number; freightCost?: number; refNo?: string;
+  priority: string; items: Line[]; totalQty: number; totalAmount: number; freightCost?: number; refNo?: string; deliveryMode?: 'DELIVERY' | 'SELF_PICKUP';
   carrier: string; trackingNo: string; createdAt: string; shipAddress: string; phone: string;
   vehicleType?: string;
   podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
@@ -59,6 +59,7 @@ export default function OrdersPage() {
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'ALL' | Status>('ALL');
+  const [deliveryFilter, setDeliveryFilter] = useState<'ALL' | 'DELIVERY' | 'SELF_PICKUP'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchCam, setShowSearchCam] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -154,8 +155,16 @@ export default function OrdersPage() {
     if (res.ok) { toast.success('ยกเลิกแล้ว'); load(); } else toast.error('ยกเลิกไม่สำเร็จ');
   };
 
-  const counts = FLOW.reduce((acc, s) => { acc[s] = orders.filter(o => o.status === s).length; return acc; }, {} as Record<string, number>);
-  const tabFiltered = tab === 'ALL' ? orders.filter(o => o.status !== 'CANCELLED') : orders.filter(o => o.status === tab);
+  // Delivery-mode filter (ส่งขนส่ง vs ลูกค้ารับเอง)
+  const modeScoped = deliveryFilter === 'ALL' ? orders : orders.filter(o => (o.deliveryMode || 'DELIVERY') === deliveryFilter);
+  const modeCounts = {
+    ALL: orders.length,
+    DELIVERY: orders.filter(o => (o.deliveryMode || 'DELIVERY') === 'DELIVERY').length,
+    SELF_PICKUP: orders.filter(o => o.deliveryMode === 'SELF_PICKUP').length,
+  };
+
+  const counts = FLOW.reduce((acc, s) => { acc[s] = modeScoped.filter(o => o.status === s).length; return acc; }, {} as Record<string, number>);
+  const tabFiltered = tab === 'ALL' ? modeScoped.filter(o => o.status !== 'CANCELLED') : modeScoped.filter(o => o.status === tab);
   const filtered = searchQuery.trim()
     ? tabFiltered.filter(o =>
         o.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -228,6 +237,20 @@ export default function OrdersPage() {
               <Plus className="w-5 h-5" /> สร้างออเดอร์
             </button>
           </div>
+        </div>
+
+        {/* Delivery mode filter: ส่งขนส่ง vs ลูกค้ารับเอง */}
+        <div className="flex gap-2 flex-wrap">
+          {([
+            { key: 'ALL', label: 'ทั้งหมด', icon: '📦' },
+            { key: 'DELIVERY', label: 'ส่งขนส่ง', icon: '🚚' },
+            { key: 'SELF_PICKUP', label: 'ลูกค้ารับเอง', icon: '🏭' },
+          ] as const).map(m => (
+            <button key={m.key} onClick={() => setDeliveryFilter(m.key)}
+              className={`px-3.5 py-1.5 rounded-xl text-sm font-bold border transition-all ${deliveryFilter === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#171c23]/70 text-[#8a92a6] hover:bg-[#171c23]'}`}>
+              {m.icon} {m.label} <span className="ml-1 opacity-70">({modeCounts[m.key]})</span>
+            </button>
+          ))}
         </div>
 
         {/* Pipeline counts */}
@@ -310,6 +333,9 @@ export default function OrdersPage() {
                         {o.channel !== 'MANUAL' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#252a32] text-[#8a92a6]">{o.channel}</span>}
                         {o.priority === 'URGENT' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600">ด่วน</span>}
                         {o.branchCode && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 ring-1 ring-indigo-500/30">สาขา: {o.branchCode}</span>}
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${o.deliveryMode === 'SELF_PICKUP' ? 'bg-orange-500/10 text-orange-600 ring-orange-500/30' : 'bg-cyan-500/10 text-cyan-700 ring-cyan-500/30'}`}>
+                          {o.deliveryMode === 'SELF_PICKUP' ? '🏭 รับเอง' : '🚚 ส่งขนส่ง'}
+                        </span>
                       </div>
                       <div className="text-sm text-[#8a92a6] mt-1 truncate">
                         <span className="font-semibold text-[#d1c6ab]">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น · ฿{o.totalAmount.toLocaleString()}
@@ -720,6 +746,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [customer, setCustomer] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [deliveryMode, setDeliveryMode] = useState<'DELIVERY' | 'SELF_PICKUP'>('DELIVERY');
   const [carrier, setCarrier] = useState(carriers.find(c => c.isDefault)?.name || 'Flash Express');
   const [vehicleType, setVehicleType] = useState('4-Wheel');
   const [prePicked, setPrePicked] = useState(false);
@@ -834,8 +861,9 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
           customerName: customer,
           phone,
           shipAddress: finalAddress,
-          carrier,
-          vehicleType: isCompanyFleet ? vehicleType : undefined,
+          deliveryMode,
+          carrier: deliveryMode === 'SELF_PICKUP' ? 'ลูกค้ารับเอง' : carrier,
+          vehicleType: deliveryMode === 'DELIVERY' && isCompanyFleet ? vehicleType : undefined,
           items: lines,
           branchCode,
           status: prePicked ? 'PICKED' : 'NEW',
@@ -887,18 +915,34 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="เบอร์โทรศัพท์" className="bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
           </div>
 
+          {/* Delivery mode: ส่งขนส่ง vs ลูกค้ารับเอง */}
+          <div className="flex gap-2">
+            {([
+              { key: 'DELIVERY', label: '🚚 ส่งขนส่ง' },
+              { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' },
+            ] as const).map(m => (
+              <button key={m.key} type="button" onClick={() => setDeliveryMode(m.key)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${deliveryMode === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#1b2027] text-[#8a92a6]'}`}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <input value={address} onChange={e => setAddress(e.target.value)} placeholder="ที่อยู่จัดส่งสินค้า..." className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
+              <input value={address} onChange={e => setAddress(e.target.value)} placeholder={deliveryMode === 'SELF_PICKUP' ? 'หมายเหตุการรับ (ไม่บังคับ)...' : 'ที่อยู่จัดส่งสินค้า...'} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
             </div>
             <div>
               <select
                 value={carrier}
                 onChange={e => setCarrier(e.target.value)}
-                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm"
+                disabled={deliveryMode === 'SELF_PICKUP'}
+                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm disabled:opacity-40"
               >
-                {carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
+                {deliveryMode === 'SELF_PICKUP'
+                  ? <option>— ลูกค้ารับเอง —</option>
+                  : <>{carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                     <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option></>}
               </select>
             </div>
           </div>

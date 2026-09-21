@@ -68,6 +68,7 @@ export interface OutboundOrder {
   totalQty: number;
   totalAmount: number;
   freightCost: number;
+  deliveryMode: 'DELIVERY' | 'SELF_PICKUP';
   carrier: string;
   trackingNo: string;
   boxCount: number;
@@ -207,6 +208,7 @@ function mapOrder(r: any): OutboundOrder {
     totalQty: Number(r.total_qty ?? 0),
     totalAmount: Number(r.total_amount ?? 0),
     freightCost: Number(r.freight_cost ?? 0),
+    deliveryMode: r.delivery_mode === 'SELF_PICKUP' ? 'SELF_PICKUP' : 'DELIVERY',
     carrier: r.carrier || '',
     trackingNo: r.tracking_no || '',
     boxCount: Number(r.box_count ?? 0),
@@ -371,6 +373,7 @@ export async function createOrder(input: {
     total_qty: totalQty,
     total_amount: totalAmount,
     freight_cost: Number((input as any).freightCost) || 0,
+    delivery_mode: (input as any).deliveryMode === 'SELF_PICKUP' ? 'SELF_PICKUP' : 'DELIVERY',
     created_by: input.createdBy || 'System',
     notes: initialNotes,
     branch_code: targetBranch,
@@ -390,6 +393,7 @@ export async function createOrder(input: {
     delete fallbackPayload.vehicle_plate;
     delete fallbackPayload.driver_name;
     delete fallbackPayload.freight_cost;
+    delete fallbackPayload.delivery_mode;
     fallbackPayload.notes = fallbackNotes;
 
     const retryRes = await supabase.from('outbound_orders').insert(fallbackPayload).select().single();
@@ -454,6 +458,7 @@ export async function updateOrder(
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
     destinations: DeliveryDestination[]; qcSignatures: QCSignatures;
+    freightCost: number; deliveryMode: 'DELIVERY' | 'SELF_PICKUP';
   }>,
 ): Promise<OutboundOrder | null> {
   const current = await getOrder(id);
@@ -474,6 +479,8 @@ export async function updateOrder(
   if (patch.podPhoto !== undefined) row.pod_photo = patch.podPhoto;
   if (patch.podNote !== undefined) row.pod_note = patch.podNote;
   if (patch.priority !== undefined) row.priority = patch.priority;
+  if (patch.freightCost !== undefined) row.freight_cost = Number(patch.freightCost) || 0;
+  if (patch.deliveryMode !== undefined) row.delivery_mode = patch.deliveryMode === 'SELF_PICKUP' ? 'SELF_PICKUP' : 'DELIVERY';
 
   // Handle destinations and qcSignatures serialized cleanly inside notes
   let currentNotes = patch.notes !== undefined ? patch.notes : (current.notes || '');
