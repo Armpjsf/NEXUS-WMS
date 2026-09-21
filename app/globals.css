@@ -216,15 +216,19 @@ textarea {
   --nx-accent-text: #1b1600;
 }
 
-/* Gradients ที่เป็น brand-accent -> ไล่โทน Tactical Amber */
+/* Gradients ที่เป็น brand-accent -> ไล่โทน Tactical Amber.
+   NOTE: --tw-gradient-from/via/to are registered @property with syntax "<color>",
+   so the value must be a bare color. Appending a position (e.g. `<color> 0%`)
+   makes the whole value invalid and the slot falls back to transparent, which
+   left every blue/indigo gradient button invisible. Keep these color-only. */
 [class*="from-blue-"], [class*="from-indigo-"] {
-  --tw-gradient-from: var(--nx-accent) var(--tw-gradient-from-position, 0%) !important;
+  --tw-gradient-from: var(--nx-accent) !important;
 }
 [class*="via-blue-"], [class*="via-indigo-"] {
-  --tw-gradient-via: var(--nx-accent-2) var(--tw-gradient-via-position, 50%) !important;
+  --tw-gradient-via: var(--nx-accent-2) !important;
 }
 [class*="to-blue-"], [class*="to-indigo-"] {
-  --tw-gradient-to: var(--nx-accent-2) var(--tw-gradient-to-position, 100%) !important;
+  --tw-gradient-to: var(--nx-accent-2) !important;
 }
 
 /* Primary buttons -> High-visibility yellow with dark text */
