@@ -44,6 +44,7 @@ import {
   primeVoice,
   getVoiceDiagnostic
 } from '@/lib/voiceAssistant';
+import { extractScannedSku } from '@/lib/scan';
 import { getApiUrl } from '@/lib/config';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
@@ -323,10 +324,14 @@ export default function MobilePickingPage() {
   const handleBarcodeScan = (scannedCode: string) => {
     if (!currentTarget) return;
 
-    const clean = scannedCode.trim().toLowerCase();
+    const clean = extractScannedSku(scannedCode).toLowerCase(); // QR labels encode {name:SKU}
+    // A bin-label QR also carries its location — accept that as a location match.
+    let locFromQr = '';
+    const rawTrim = scannedCode.trim();
+    if (rawTrim.startsWith('{')) { try { locFromQr = String(JSON.parse(rawTrim)?.loc || '').trim().toLowerCase(); } catch { /* ignore */ } }
     const isSkuMatch = currentTarget.sku.toLowerCase() === clean;
     const isBarcodeMatch = currentTarget.barcode?.toLowerCase() === clean;
-    const isLocMatch = currentTarget.location.toLowerCase() === clean;
+    const isLocMatch = currentTarget.location.toLowerCase() === clean || (!!locFromQr && currentTarget.location.toLowerCase() === locFromQr);
 
     if (isSkuMatch || isBarcodeMatch || isLocMatch) {
       setCameraOpen(false);

@@ -28,6 +28,7 @@ import CameraScannerModal from '@/components/CameraScannerModal';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
 import { triggerHaptic } from '@/lib/voiceAssistant';
 import { getApiUrl } from '@/lib/config';
+import { extractScannedSku } from '@/lib/scan';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
@@ -538,7 +539,7 @@ function MobileQcModal({
   const [quickInput, setQuickInput] = useState('');
 
   const handleScanItem = (barcode: string) => {
-    const q = barcode.trim().toLowerCase();
+    const q = extractScannedSku(barcode).toLowerCase(); // QR labels encode {name:SKU}
     const idx = items.findIndex(it => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q));
 
     if (idx >= 0) {
@@ -554,7 +555,7 @@ function MobileQcModal({
     } else {
       playScannerAudio('error');
       triggerHaptic('error');
-      toast.error(`❌ บาร์โค้ด "${barcode}" ไม่ตรงกับรายการในออเดอร์นี้!`);
+      toast.error(`❌ "${extractScannedSku(barcode)}" ไม่ตรงกับรายการในออเดอร์นี้!`);
     }
   };
 
