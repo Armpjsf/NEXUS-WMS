@@ -63,7 +63,9 @@ function DeliveryNote() {
               <th className="py-2 px-2 font-semibold">รหัส</th>
               <th className="py-2 px-2 font-semibold">รายการ</th>
               <th className="py-2 px-2 font-semibold">Lot</th>
-              <th className="py-2 pl-2 font-semibold text-right">จำนวน</th>
+              <th className="py-2 px-2 font-semibold text-right">จำนวน</th>
+              <th className="py-2 px-2 font-semibold text-right">ราคา/หน่วย</th>
+              <th className="py-2 pl-2 font-semibold text-right">มูลค่า</th>
             </tr>
           </thead>
           <tbody>
@@ -73,15 +75,25 @@ function DeliveryNote() {
                 <td className="py-2.5 px-2 font-mono text-xs">{l.sku}</td>
                 <td className="py-2.5 px-2 font-medium">{l.name}</td>
                 <td className="py-2.5 px-2 font-mono text-[11px] text-slate-500">{l.lotNos && l.lotNos.length ? l.lotNos.join(', ') : '-'}</td>
-                <td className="py-2.5 pl-2 text-right font-bold tabular-nums">{l.qty.toLocaleString()}</td>
+                <td className="py-2.5 px-2 text-right font-bold tabular-nums">{l.qty.toLocaleString()}</td>
+                <td className="py-2.5 px-2 text-right tabular-nums text-slate-500">{l.price ? l.price.toLocaleString() : '-'}</td>
+                <td className="py-2.5 pl-2 text-right font-bold tabular-nums">{l.price ? (l.qty * l.price).toLocaleString() : '-'}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="font-black">
-              <td colSpan={4} className="py-3 px-2 text-right">รวมจำนวน</td>
-              <td className="py-3 pl-2 text-right tabular-nums">{order.totalQty.toLocaleString()} ชิ้น</td>
+            <tr className="font-black border-t-2 border-slate-200">
+              <td colSpan={4} className="py-3 px-2 text-right">รวม</td>
+              <td className="py-3 px-2 text-right tabular-nums">{order.totalQty.toLocaleString()} ชิ้น</td>
+              <td />
+              <td className="py-3 pl-2 text-right tabular-nums">฿{(order.totalAmount || 0).toLocaleString()}</td>
             </tr>
+            {order.freightCost && order.freightCost > 0 ? (
+              <tr className="text-slate-500">
+                <td colSpan={6} className="py-1.5 px-2 text-right">ค่าขนส่ง</td>
+                <td className="py-1.5 pl-2 text-right tabular-nums">฿{order.freightCost.toLocaleString()}</td>
+              </tr>
+            ) : null}
           </tfoot>
         </table>
       </div>
