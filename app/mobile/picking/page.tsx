@@ -60,16 +60,21 @@ export default function MobilePickingPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [prodRes, ordRes] = await Promise.all([
+      // Fetch orders awaiting pick BY STATUS (not by recency window) so pending
+      // picks always surface — migrated orders with odd dates once pushed new
+      // orders out of a limit=100 list and the pick queue looked empty.
+      const [prodRes, newRes, pickRes] = await Promise.all([
         fetch(getApiUrl('/api/products'), { cache: 'no-store' }),
-        fetch(getApiUrl('/api/orders?limit=100'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/orders?status=NEW&limit=300'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/orders?status=PICKING&limit=300'), { cache: 'no-store' }),
       ]);
-      const [prodJson, ordJson] = await Promise.all([
+      const [prodJson, newJson, pickJson] = await Promise.all([
         prodRes.json().catch(() => []),
-        ordRes.json().catch(() => ({ orders: [] })),
+        newRes.json().catch(() => ({ orders: [] })),
+        pickRes.json().catch(() => ({ orders: [] })),
       ]);
       if (Array.isArray(prodJson)) setProducts(prodJson);
-      if (ordJson?.orders && Array.isArray(ordJson.orders)) setOrders(ordJson.orders);
+      setOrders([...(newJson?.orders || []), ...(pickJson?.orders || [])]);
     } catch {
       toast.error('โหลดข้อมูลไม่สำเร็จ');
     } finally {

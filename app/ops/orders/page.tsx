@@ -829,7 +829,9 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       toast.error('รหัส SKU นี้มีอยู่ในรายการแล้ว');
       return;
     }
-    setLines([...lines, { sku, name: customName.trim(), qty: Math.max(1, customQty), price: 0 }]);
+    // Reuse catalog price/location when the SKU is a real product.
+    const match = products.find(p => String(p.id).trim().toLowerCase() === sku.toLowerCase());
+    setLines([...lines, { sku, name: customName.trim(), qty: Math.max(1, customQty), price: match?.price || 0, location: match?.location }]);
     setCustomSku('');
     setCustomName('');
     setCustomQty(1);
@@ -1140,7 +1142,13 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                   type="text"
                   placeholder="รหัส SKU (เว้นว่างเพื่อสร้างอัตโนมัติ)"
                   value={customSku}
-                  onChange={e => setCustomSku(e.target.value)}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setCustomSku(v);
+                    // Auto-fill name from the catalog when the SKU matches a product.
+                    const match = products.find(p => String(p.id).trim().toLowerCase() === v.trim().toLowerCase());
+                    if (match) setCustomName(match.name || '');
+                  }}
                   className="bg-[#171c23] border border-teal-500/30 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500"
                 />
                 <input
