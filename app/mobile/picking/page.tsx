@@ -376,11 +376,15 @@ export default function MobilePickingPage() {
                 setVoiceEnabled(next);
                 if (next) {
                   primeVoice();
-                  const d = getVoiceDiagnostic(); // tell the user what to fix instead of silence
-                  if (!d.supported) toast.error('อุปกรณ์นี้ไม่รองรับเสียงพูด');
-                  else if (d.total === 0) toast.error('ยังไม่มีข้อมูลเสียงในเครื่อง — ติดตั้งเสียงไทยใน Google TTS');
-                  else if (!d.hasThai) toast('ไม่มีเสียงไทย ใช้เสียงเริ่มต้นแทน — ติดตั้งเสียงไทยใน Google TTS เพื่อเสียงที่ถูกต้อง', { icon: '🔈' });
+                  const d = getVoiceDiagnostic();
+                  if (!d.supported) {
+                    toast.error('อุปกรณ์นี้ไม่รองรับระบบเสียง');
+                  } else {
+                    toast.success('เปิดเสียงนำทางแล้ว');
+                  }
                   speakThai('เปิดเสียงนำทางแล้วค่ะ'); // test within the tap
+                } else {
+                  toast('ปิดเสียงนำทาง', { icon: '🔇' });
                 }
               }}
               className={`p-2 rounded-xl border transition-all ${

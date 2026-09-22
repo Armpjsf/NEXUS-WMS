@@ -1,52 +1,82 @@
 /**
- * Web Speech Synthesis & Mobile Haptic Feedback (WMS 360 PRO)
+ * Web Speech Synthesis, Cloud Audio TTS Fallback & Mobile Haptic Feedback (WMS 360 PRO)
  * 100% Zero-cost & offline compatible for Android APK (Capacitor), PWA, and Web.
  */
 
+import { getApiUrl } from '@/lib/config';
+
 /**
- * Check if Web Speech API is supported
+ * Check if voice output is supported (either native Web Speech or HTML5 Audio fallback)
  */
 export function isVoiceSupported(): boolean {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window;
+  if (typeof window === 'undefined') return false;
+  return ('speechSynthesis' in window) || (typeof Audio !== 'undefined');
 }
 
-// Voices load asynchronously on most engines (getVoices() is empty on first
-// call), so cache them and refresh when the browser fires `voiceschanged`.
 let _voices: SpeechSynthesisVoice[] = [];
 let _primed = false;
+let _activeAudio: HTMLAudioElement | null = null;
+
 function refreshVoices() {
-  try { _voices = window.speechSynthesis.getVoices() || []; } catch { /* ignore */ }
+  try {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      _voices = window.speechSynthesis.getVoices() || [];
+    }
+  } catch { /* ignore */ }
 }
-if (isVoiceSupported()) {
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   refreshVoices();
-  try { window.speechSynthesis.addEventListener('voiceschanged', refreshVoices); } catch { /* ignore */ }
+  try {
+    window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+  } catch { /* ignore */ }
 }
 
 /**
  * Unlock TTS on a user gesture. Mobile browsers (iOS Safari, Android Chrome,
- * the Capacitor WebView) block speechSynthesis until the first speak() happens
- * inside a real tap — so call this from an onClick/onPointerDown handler once.
- * After priming, later async speaks (auto-narration) are allowed.
+ * the Capacitor WebView) block speechSynthesis / Audio until the first user interaction.
  */
 export function primeVoice() {
-  if (_primed || !isVoiceSupported()) return;
-  try {
-    refreshVoices();
-    const u = new SpeechSynthesisUtterance(' ');
-    u.volume = 0; u.lang = 'th-TH';
-    window.speechSynthesis.speak(u);
-    _primed = true;
-  } catch { /* ignore */ }
+  if (typeof window === 'undefined') return;
+  
+  if ('speechSynthesis' in window) {
+    try {
+      refreshVoices();
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      u.lang = 'th-TH';
+      window.speechSynthesis.speak(u);
+    } catch { /* ignore */ }
+  }
+
+  if (typeof Audio !== 'undefined') {
+    try {
+      // 1-sample silent wav to prime audio playback on mobile browsers
+      const a = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+      a.volume = 0;
+      a.play().catch(() => {});
+    } catch { /* ignore */ }
+  }
+
+  _primed = true;
 }
 
-export function isVoicePrimed() { return _primed; }
+export function isVoicePrimed() {
+  return _primed;
+}
 
-/** Diagnose TTS readiness so the UI can tell the user what to fix. */
-export function getVoiceDiagnostic(): { supported: boolean; total: number; hasThai: boolean } {
-  if (!isVoiceSupported()) return { supported: false, total: 0, hasThai: false };
-  refreshVoices();
-  const hasThai = _voices.some(v => (v.lang || '').toLowerCase().startsWith('th') || /thai/i.test(v.name));
-  return { supported: true, total: _voices.length, hasThai };
+/** Diagnose TTS readiness so the UI can inform the user */
+export function getVoiceDiagnostic(): { supported: boolean; total: number; hasThai: boolean; engine: 'native' | 'cloud' } {
+  if (!isVoiceSupported()) return { supported: false, total: 0, hasThai: false, engine: 'cloud' };
+
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    refreshVoices();
+    const hasThai = _voices.some(v => (v.lang || '').toLowerCase().startsWith('th') || /thai/i.test(v.name));
+    return { supported: true, total: _voices.length, hasThai, engine: 'native' };
+  }
+
+  // Audio fallback via /api/tts is supported everywhere
+  return { supported: true, total: 1, hasThai: true, engine: 'cloud' };
 }
 
 function pickThaiVoice(): SpeechSynthesisVoice | undefined {
@@ -57,49 +87,111 @@ function pickThaiVoice(): SpeechSynthesisVoice | undefined {
 }
 
 /**
- * Speak Thai text using native browser/Android text-to-speech engine
+ * Stop any current speech or audio playback
+ */
+export function stopVoice() {
+  if (typeof window !== 'undefined') {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch { /* ignore */ }
+    }
+    if (_activeAudio) {
+      try {
+        _activeAudio.pause();
+        _activeAudio.currentTime = 0;
+        _activeAudio = null;
+      } catch { /* ignore */ }
+    }
+  }
+}
+
+/**
+ * High-quality Cloud Audio Fallback (/api/tts)
+ * Works on all Android WebViews, In-App Browsers, and older devices without Web Speech API
+ */
+export function playAudioFallback(text: string, onEnd?: () => void) {
+  if (typeof window === 'undefined' || typeof Audio === 'undefined') return;
+  try {
+    stopVoice();
+    const audioUrl = getApiUrl(`/api/tts?text=${encodeURIComponent(text.trim().slice(0, 200))}`);
+    const audio = new Audio(audioUrl);
+    _activeAudio = audio;
+
+    if (onEnd) {
+      audio.onended = () => {
+        if (_activeAudio === audio) _activeAudio = null;
+        onEnd();
+      };
+    }
+
+    audio.onerror = (e) => {
+      console.warn('Audio TTS fallback error:', e);
+      if (_activeAudio === audio) _activeAudio = null;
+    };
+
+    const p = audio.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(err => console.warn('Audio play prevented by browser:', err));
+    }
+  } catch (e) {
+    console.warn('Failed to play audio fallback:', e);
+  }
+}
+
+/**
+ * Speak Thai text using native browser/Android speech synthesis,
+ * with automatic fallback to high-quality cloud audio TTS.
  */
 export function speakThai(
   text: string,
   options: { rate?: number; pitch?: number; onEnd?: () => void } = {}
 ) {
-  if (!isVoiceSupported()) return;
+  if (!isVoiceSupported() || !text?.trim()) return;
 
-  const doSpeak = () => {
+  const hasNative = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  if (hasNative) {
     try {
-      window.speechSynthesis.cancel(); // stop any ongoing speech
+      stopVoice();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'th-TH';
       utterance.rate = options.rate || 1.05;
       utterance.pitch = options.pitch || 1.0;
+
       const thaiVoice = pickThaiVoice();
-      if (thaiVoice) utterance.voice = thaiVoice; // else default engine handles Thai text
+      if (thaiVoice) utterance.voice = thaiVoice;
+
+      let hasStarted = false;
+      utterance.onstart = () => {
+        hasStarted = true;
+      };
+
       if (options.onEnd) utterance.onend = options.onEnd;
+
+      utterance.onerror = (e) => {
+        console.warn('Native speech error, falling back to audio TTS:', e);
+        playAudioFallback(text, options.onEnd);
+      };
+
       window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.warn('Speech synthesis error:', e);
-    }
-  };
 
-  // If voices haven't loaded yet, wait one tick for `voiceschanged` then speak.
-  if (_voices.length === 0) {
-    refreshVoices();
-    if (_voices.length === 0) { setTimeout(doSpeak, 250); return; }
-  }
-  doSpeak();
-}
+      // Watchdog: on WebViews where speechSynthesis exists but does not speak,
+      // fallback to audio if speech did not start within 350ms
+      setTimeout(() => {
+        if (!hasStarted && typeof window !== 'undefined' && !window.speechSynthesis.speaking) {
+          playAudioFallback(text, options.onEnd);
+        }
+      }, 350);
 
-/**
- * Stop any current speech
- */
-export function stopVoice() {
-  if (isVoiceSupported()) {
-    try {
-      window.speechSynthesis.cancel();
+      return;
     } catch (e) {
-      // ignore
+      console.warn('Native speech synthesis exception, falling back to audio TTS:', e);
     }
   }
+
+  // Fallback for devices without native speechSynthesis
+  playAudioFallback(text, options.onEnd);
 }
 
 /**
@@ -113,7 +205,6 @@ export function speakPickInstruction(item: {
   location: string;
   unit?: string;
 }) {
-  // Format location letters for clear Thai pronunciation (e.g. A-01-02 -> เอ ศูนย์หนึ่ง ศูนย์สอง)
   const locSpoken = item.location
     .replace(/A/g, 'เอ ')
     .replace(/B/g, 'บี ')
@@ -187,4 +278,3 @@ export function triggerHaptic(type: 'success' | 'warning' | 'error' = 'success')
 export const vibrateSuccess = () => triggerHaptic('success');
 export const vibrateWarning = () => triggerHaptic('warning');
 export const vibrateError = () => triggerHaptic('error');
-

@@ -8,6 +8,7 @@ import MobileNav from '@/components/MobileNav';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { getApiUrl } from '@/lib/config';
 import { VoicePickStep, synthesizePickSpeech, synthesizeConfirmSuccess, synthesizeErrorSpeech } from '@/lib/voiceEngine';
+import { speakThai, primeVoice } from '@/lib/voiceAssistant';
 
 interface Task {
   id: string; task_type: string; sku?: string; product_name?: string;
@@ -53,11 +54,8 @@ export default function MobileVoicePickingPage() {
   useEffect(() => { load(); }, [load]);
 
   const speak = useCallback((text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'th-TH'; u.rate = 1.0;
-    window.speechSynthesis.speak(u);
+    primeVoice();
+    speakThai(text);
   }, []);
 
   const current = steps[idx];
