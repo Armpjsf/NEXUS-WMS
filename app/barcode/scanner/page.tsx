@@ -321,7 +321,7 @@ export default function BarcodeScannerPage() {
 
                   <div className="mt-4 flex gap-2 font-mono">
                     <Link
-                      href={`/inventory/stock-card?search=${encodeURIComponent(scanResult.product.name)}`}
+                      href={`/inventory/stock-card?search=${encodeURIComponent(scanResult.product.name)}&sku=${encodeURIComponent(scanResult.product.id || '')}`}
                       className="flex-1 py-2.5 bg-[#facc15] hover:bg-[#ffe083] text-[#1b1600] font-bold rounded-xl text-center text-xs transition-colors shadow-md"
                     >
                       ดู Stock Card

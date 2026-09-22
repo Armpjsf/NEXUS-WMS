@@ -11,40 +11,45 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const sku = searchParams.get('sku');
+    const name = searchParams.get('name');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    if (!sku) {
-      return NextResponse.json({ error: 'SKU is required' }, { status: 400 });
+    if (!sku && !name) {
+      return NextResponse.json({ error: 'SKU or name is required' }, { status: 400 });
     }
 
-    const normalized = sku.trim().toLowerCase();
-
     const orgId = await getCurrentOrgId();
-    // Fetch only this SKU's ledger, paging past Supabase's 1000-row cap.
-    // (Previously a bare `.select()` capped at the 1000 OLDEST rows, so a SKU's
-    // recent/current-month movements silently dropped off the card.)
-    const [bySku, byName] = await Promise.all([
-      fetchAllRows((f, t) => supabase.from('stock_transactions').select('*')
-        .eq('org_id', orgId).ilike('sku', sku.trim())
-        .order('created_at', { ascending: true }).range(f, t)),
-      fetchAllRows((f, t) => supabase.from('stock_transactions').select('*')
-        .eq('org_id', orgId).ilike('product_name', sku.trim())
-        .order('created_at', { ascending: true }).range(f, t)),
-    ]);
+    const queryTerms = Array.from(new Set([sku, name].filter(Boolean).map(x => x!.trim()))).filter(Boolean);
+
+    const queryPromises = [];
+    for (const term of queryTerms) {
+      queryPromises.push(
+        fetchAllRows((f, t) => supabase.from('stock_transactions').select('*')
+          .eq('org_id', orgId).ilike('sku', term)
+          .order('created_at', { ascending: true }).range(f, t)),
+        fetchAllRows((f, t) => supabase.from('stock_transactions').select('*')
+          .eq('org_id', orgId).ilike('product_name', term)
+          .order('created_at', { ascending: true }).range(f, t))
+      );
+    }
+
+    const queryResults = await Promise.all(queryPromises);
     const seen = new Set<string>();
-    const rows = [...bySku, ...byName].filter((r: any) => {
+    const rows = queryResults.flat().filter((r: any) => {
       if (r.id && seen.has(r.id)) return false;
       if (r.id) seen.add(r.id);
       return true;
     });
+
+    const normalizedTerms = queryTerms.map(t => t.toLowerCase());
 
     // Match by SKU or product name (legacy sheets keyed on name).
     const productMovs = (rows || [])
       .filter((r: any) => {
         const s = String(r.sku ?? '').trim().toLowerCase();
         const n = String(r.product_name ?? '').trim().toLowerCase();
-        return s === normalized || n === normalized;
+        return normalizedTerms.some(term => s === term || n === term);
       })
       .map((r: any) => {
         const qty = Number(r.qty ?? 0);

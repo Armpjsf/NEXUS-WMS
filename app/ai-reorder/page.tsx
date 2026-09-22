@@ -57,6 +57,7 @@ interface CartItem extends SuggestionsItem {
 export default function AIReorderPage() {
   const { t } = useLanguage();
   const [suggestions, setSuggestions] = useState<SuggestionsItem[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState<'ALL' | 'CRITICAL' | 'WARNING'>('ALL');
@@ -79,6 +80,8 @@ export default function AIReorderPage() {
       .then(data => {
           if (Array.isArray(data)) {
               setSuggestions(data);
+          } else if (data?.suggestions && Array.isArray(data.suggestions)) {
+              setSuggestions(data.suggestions);
           }
           setLoading(false);
       })
@@ -86,6 +89,16 @@ export default function AIReorderPage() {
           console.error(err);
           setLoading(false);
       });
+
+    // Load total monitored products count
+    fetch(getApiUrl('/api/products'))
+      .then(res => res.json())
+      .then(data => {
+          if (Array.isArray(data)) {
+              setTotalProducts(data.length);
+          }
+      })
+      .catch(() => {});
 
     // Load suppliers
     fetch('/api/suppliers')
@@ -243,7 +256,7 @@ export default function AIReorderPage() {
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-              <KPICard label={t('ai_total_items')} value={suggestions.length} icon={Package} color="indigo" subtext={t('ai_monitored')} />
+              <KPICard label={t('ai_total_items')} value={totalProducts || suggestions.length} icon={Package} color="indigo" subtext={t('ai_monitored')} />
               <KPICard label={t('ai_critical_stock')} value={suggestions.filter(s => s.confidence >= 90).length} icon={AlertTriangle} color="rose" subtext={t('ai_action_needed')} />
               <KPICard label={t('ai_high_velocity')} value={suggestions.filter(s => (s.trendInfo?.growth || 0) > 10).length} icon={TrendingUp} color="emerald" subtext={t('ai_trending_up')} />
               <KPICard label={t('ai_po_value')} value={`฿${suggestions.reduce((a,b) => a + (b.suggestedQty * b.price), 0).toLocaleString()}`} icon={DollarSign} color="emerald" subtext={t('ai_estimated_cost')} />
@@ -260,6 +273,20 @@ export default function AIReorderPage() {
           {loading ? (
               <div className="space-y-4">
                   {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)}
+              </div>
+          ) : filtered.length === 0 ? (
+              <div className="bg-[#171c23] border border-[#30353d] rounded-[2rem] p-12 text-center shadow-xl mb-12">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#dee2ec] mb-2">สต็อกอยู่ในเกณฑ์ปกติ</h3>
+                  <p className="text-[#8a92a6] max-w-md mx-auto text-sm">
+                      {activeTab === 'CRITICAL' 
+                          ? 'ไม่พบสินค้าที่มีสต็อกในระดับวิกฤต'
+                          : activeTab === 'WARNING'
+                          ? 'ไม่พบสินค้าที่มีสัญญาณเตือนสต็อกต่ำ'
+                          : 'สินค้าทุกรายการมีปริมาณสต็อกเพียงพอต่อความต้องการ ยังไม่ต้องสั่งซื้อเพิ่มในขณะนี้'}
+                  </p>
               </div>
           ) : (
               <div className="grid grid-cols-1 gap-4 pb-20">
@@ -373,15 +400,27 @@ export default function AIReorderPage() {
                                       </div>
                                   </div>
 
-                                  {/* Right Side: Graph? (Hidden on mobile) */}
+                                  {/* Right Side: Graph (Hidden on mobile) */}
                                   <div className="hidden lg:block w-48 bg-[#1b2027] rounded-xl p-4 self-stretch flex flex-col justify-between">
                                       <div>
-                                          <p className="text-[10px] font-bold text-[#8a92a6] uppercase mb-2">30-Day Trend</p>
-                                          {/* Mock Chart Area */}
+                                          <p className="text-[10px] font-bold text-[#8a92a6] uppercase mb-2">7-Day Usage</p>
+                                          {/* Proportional Chart Area */}
                                           <div className="h-20 flex items-end gap-1">
-                                              {item.sparkline?.split(',').map((h, i) => (
-                                                  <div key={i} style={{ height: `${h}%` }} className="flex-1 bg-indigo-200 rounded-t-sm" />
-                                              ))}
+                                              {(() => {
+                                                  const values = item.sparkline?.split(',').map(Number) || [];
+                                                  const maxVal = Math.max(1, ...values);
+                                                  return values.map((val, i) => {
+                                                      const heightPercent = val > 0 ? Math.min(100, Math.max(12, (val / maxVal) * 100)) : 4;
+                                                      return (
+                                                          <div 
+                                                              key={i} 
+                                                              style={{ height: `${heightPercent}%` }} 
+                                                              className={`flex-1 rounded-t-sm transition-all ${val > 0 ? 'bg-indigo-400 hover:bg-indigo-300' : 'bg-[#30353d]'}`}
+                                                              title={`Day ${i + 1}: ${val} units`} 
+                                                          />
+                                                      );
+                                                  });
+                                              })()}
                                           </div>
                                       </div>
                                   </div>

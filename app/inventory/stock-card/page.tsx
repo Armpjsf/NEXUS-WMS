@@ -25,9 +25,9 @@ function StockCardContent() {
   const [showLabelDesigner, setShowLabelDesigner] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   
-  // Date Range (Default: Current Month)
+  // Date Range (Default: Start of Current Year to Today)
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const firstDay = new Date(today.getFullYear(), 0, 1);
   const [startDate, setStartDate] = useState(firstDay.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
 
@@ -44,25 +44,58 @@ function StockCardContent() {
 
   // Handle Search Param Auto-Select
   const searchParams = useSearchParams();
-  const searchSku = searchParams.get('search');
+  const searchParam = searchParams.get('search')?.trim() || '';
+  const skuParam = searchParams.get('sku')?.trim() || '';
+  const idParam = searchParams.get('id')?.trim() || '';
+  const nameParam = searchParams.get('name')?.trim() || '';
 
   useEffect(() => {
-    if (searchSku && products.length > 0 && !selectedProduct) {
-        // Try to match by Name or ID
-        const found = products.find(p => p.name === searchSku || p.id === searchSku);
-        if (found) {
-            setSelectedProduct(found);
-            // Optional: Auto-fetch immediately
-        }
-    }
-  }, [searchSku, products]);
+    if (products.length > 0 && !selectedProduct) {
+      const candidates = [idParam, skuParam, nameParam, searchParam].filter(Boolean);
+      if (candidates.length === 0) return;
 
-  // Auto-Fetch when product is selected (Debounced or Effect)
+      // 1. Direct match by ID / SKU
+      let found = products.find(p => 
+        (idParam && String(p.id).toLowerCase() === idParam.toLowerCase()) ||
+        (skuParam && String(p.id).toLowerCase() === skuParam.toLowerCase())
+      );
+
+      // 2. Exact match by name
+      if (!found && nameParam) {
+        found = products.find(p => String(p.name).trim().toLowerCase() === nameParam.toLowerCase());
+      }
+
+      // 3. Exact match against search query
+      if (!found && searchParam) {
+        found = products.find(p => 
+          String(p.name).trim().toLowerCase() === searchParam.toLowerCase() ||
+          String(p.id).trim().toLowerCase() === searchParam.toLowerCase() ||
+          (p.sku && String(p.sku).trim().toLowerCase() === searchParam.toLowerCase())
+        );
+      }
+
+      // 4. Substring fallback match
+      if (!found) {
+        const primarySearch = (searchParam || nameParam || skuParam || idParam).toLowerCase();
+        found = products.find(p => 
+          String(p.name || '').toLowerCase().includes(primarySearch) ||
+          String(p.id || '').toLowerCase().includes(primarySearch) ||
+          (p.sku && String(p.sku).toLowerCase().includes(primarySearch))
+        );
+      }
+
+      if (found) {
+        setSelectedProduct(found);
+      }
+    }
+  }, [searchParam, skuParam, idParam, nameParam, products, selectedProduct]);
+
+  // Auto-Fetch when product is selected or date range changes
   useEffect(() => {
     if (selectedProduct) {
         fetchStockCard();
     }
-  }, [selectedProduct]); // Trigger when selection changes
+  }, [selectedProduct, startDate, endDate]);
 
   // Fetch Stock Card Data
   const fetchStockCard = async () => {
@@ -71,11 +104,18 @@ function StockCardContent() {
     setLoading(true);
     setMovements([]); // Clear previous
     try {
-        // Fix: Use 'startDate' and 'endDate' to match API route
-        const res = await fetch(getApiUrl(`/api/stock-card?sku=${encodeURIComponent(selectedProduct.name)}&startDate=${startDate}&endDate=${endDate}`));
+        const querySku = selectedProduct.id || selectedProduct.sku || '';
+        const queryName = selectedProduct.name || '';
+        const params = new URLSearchParams({
+            sku: querySku,
+            name: queryName,
+            startDate,
+            endDate
+        });
+        const res = await fetch(getApiUrl(`/api/stock-card?${params.toString()}`));
         const result = await res.json();
         
-        // Fix: API returns array directly, or error object
+        // API returns array directly, or error object
         if (Array.isArray(result)) {
             setMovements(result);
         } else {

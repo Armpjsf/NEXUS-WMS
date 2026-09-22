@@ -516,7 +516,7 @@ function InventoryContent() {
                                     </span>
                                 </div>
 
-                                <Link href={`/stock-card?search=${encodeURIComponent(product.name)}`} className="block">
+                                <Link href={`/inventory/stock-card?search=${encodeURIComponent(product.name)}&sku=${encodeURIComponent(product.id || '')}`} className="block">
                                     <div className="mb-3 h-12">
                                         <h3 className="font-headline font-bold text-sm text-[#dee2ec] line-clamp-2 leading-tight group-hover:text-[#facc15] transition-colors" title={product.name}>
                                             {product.name}
@@ -558,7 +558,7 @@ function InventoryContent() {
                                 </Link>
                             </div>
 
-                            <Link href={`/stock-card?search=${encodeURIComponent(product.name)}`} className="block">
+                            <Link href={`/inventory/stock-card?search=${encodeURIComponent(product.name)}&sku=${encodeURIComponent(product.id || '')}`} className="block">
                                 <div className="space-y-1.5 pt-2 border-t border-[#30353d]/50 font-mono">
                                     <div className="flex justify-between items-baseline">
                                         <span className="text-[10px] font-bold text-[#d1c6ab] uppercase tracking-wider">{t('label_stock')}</span>

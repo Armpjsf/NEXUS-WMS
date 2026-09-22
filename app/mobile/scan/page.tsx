@@ -221,7 +221,7 @@ export default function MobileScanPage() {
                     </div>
 
                     <Link
-                      href={`/stock-card?search=${encodeURIComponent(scanResult.product.name)}`}
+                      href={`/inventory/stock-card?search=${encodeURIComponent(scanResult.product.name)}&sku=${encodeURIComponent(scanResult.product.id || '')}`}
                       className="block w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-center font-bold flex items-center justify-center gap-2"
                     >
                       ดู Stock Card <ArrowRight className="w-4 h-4" />
