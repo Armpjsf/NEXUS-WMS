@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
+import SignatureSlot from '@/components/print/SignatureSlot';
 
 interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; lotNo?: string; expDate?: string; }
 interface Receipt {
@@ -73,8 +74,8 @@ function ReceiptDoc() {
       </div>
 
       <div className="grid grid-cols-2 gap-10 mt-14 text-sm">
-        <div className="text-center"><div className="h-16 border-b border-slate-300" /><div className="mt-2 text-slate-500">ผู้รับเข้า / ตรวจนับ</div></div>
-        <div className="text-center"><div className="h-16 border-b border-slate-300" /><div className="mt-2 text-slate-500">ผู้ส่งมอบ</div></div>
+        <SignatureSlot docType="receipt" docId={rc.receiptNo} role="receiver" label="ผู้รับเข้า / ตรวจนับ" />
+        <SignatureSlot docType="receipt" docId={rc.receiptNo} role="supplier" label="ผู้ส่งมอบ" signerName={rc.supplier} />
       </div>
     </DocumentShell>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
+import SignatureSlot from '@/components/print/SignatureSlot';
 
 interface Line { sku: string; name: string; qty: number; }
 interface Rma {
@@ -69,8 +70,8 @@ function ReturnDoc() {
       </div>
 
       <div className="grid grid-cols-2 gap-10 mt-14 text-sm">
-        <div className="text-center"><div className="h-16 border-b border-slate-300" /><div className="mt-2 text-slate-500">ผู้คืนสินค้า</div></div>
-        <div className="text-center"><div className="h-16 border-b border-slate-300" /><div className="mt-2 text-slate-500">ผู้รับคืน</div></div>
+        <SignatureSlot docType="return" docId={rma.rmaNo} role="returner" label="ผู้คืนสินค้า" signerName={rma.customerName} />
+        <SignatureSlot docType="return" docId={rma.rmaNo} role="receiver" label="ผู้รับคืน" />
       </div>
     </DocumentShell>
   );

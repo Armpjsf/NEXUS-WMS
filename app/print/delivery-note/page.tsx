@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
+import SignatureSlot from '@/components/print/SignatureSlot';
 
 interface Line { sku: string; name: string; qty: number; price?: number; lotNos?: string[]; }
 interface Order {
@@ -92,18 +93,12 @@ function DeliveryNote() {
         </table>
       </div>
 
-      {/* Signatures */}
+      {/* Signatures — sign on the phone (optional) or print to sign on paper */}
       <div className="grid grid-cols-2 gap-10 mt-14 text-sm">
-        <div className="text-center">
-          <div className="h-20 border-b border-slate-300 flex items-end justify-center pb-1">
-            {order.podSignature && <img src={order.podSignature} alt="ลายเซ็นผู้รับ" className="h-16 object-contain" />}
-          </div>
-          <div className="mt-2 text-slate-500">ผู้รับสินค้า{order.podNote ? ` · ${order.podNote}` : ''}</div>
-        </div>
-        <div className="text-center">
-          <div className="h-20 border-b border-slate-300" />
-          <div className="mt-2 text-slate-500">ผู้ส่งสินค้า</div>
-        </div>
+        <SignatureSlot docType="delivery-note" docId={order.orderNo} role="receiver"
+          label={`ผู้รับสินค้า${order.podNote ? ` · ${order.podNote}` : ''}`}
+          signerName={order.customerName} initialDataUrl={order.podSignature} />
+        <SignatureSlot docType="delivery-note" docId={order.orderNo} role="sender" label="ผู้ส่งสินค้า" />
       </div>
     </DocumentShell>
   );

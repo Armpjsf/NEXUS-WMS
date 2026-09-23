@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DocumentShell, DocLoading } from '@/components/print/DocumentShell';
+import SignatureSlot from '@/components/print/SignatureSlot';
 
 interface Line { sku: string; name: string; qty: number; location?: string; lotNos?: string[]; }
 interface Order {
@@ -68,7 +69,7 @@ function PickingSlipDoc() {
       </div>
 
       <div className="mt-14 text-sm max-w-xs">
-        <div className="h-16 border-b border-slate-300" /><div className="mt-2 text-slate-500 text-center">ผู้หยิบสินค้า</div>
+        <SignatureSlot docType="picking-slip" docId={order.orderNo} role="picker" label="ผู้หยิบสินค้า" />
       </div>
     </DocumentShell>
   );
