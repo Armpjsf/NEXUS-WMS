@@ -402,7 +402,7 @@ export default function MobileOrdersPage() {
                   onClick={() => setDispatchOrder(order)}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all"
                 >
-                  <Truck className="w-4 h-4" /> สแกนเลขพัสดุ &amp; ส่งมอบขนส่ง
+                  <Truck className="w-4 h-4" /> {order.deliveryMode === 'SELF_PICKUP' ? 'ส่งมอบให้ลูกค้า (รับเอง)' : 'สแกนเลขพัสดุ & ส่งมอบขนส่ง'}
                 </button>
               )}
 
