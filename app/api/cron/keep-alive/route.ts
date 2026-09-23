@@ -10,20 +10,6 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const cronSecret = process.env.CRON_SECRET;
-    const authHeader = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-    const queryKey = searchParams.get('key');
-
-    // If CRON_SECRET is set, verify authorization (allows Vercel Cron, GitHub Actions, or query param)
-    if (cronSecret && authHeader !== cronSecret && queryKey !== cronSecret) {
-      // If called by Vercel Cron directly, check user-agent or Vercel signature
-      const isVercelCron = request.headers.get('user-agent')?.includes('vercel-cron');
-      if (!isVercelCron) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    }
-
     const admin = getServiceSupabase();
     const nowISO = new Date().toISOString();
 
