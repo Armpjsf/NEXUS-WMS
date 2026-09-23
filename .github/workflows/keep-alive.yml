@@ -1,0 +1,15 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    - cron: '0 5 */4 * *' # Every 4 days at 05:00 UTC (12:00 PM GMT+7)
+  workflow_dispatch: # Allows manual one-click trigger from GitHub Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Keep-Alive Endpoint
+        run: |
+          echo "Sending keep-alive ping to Nexus WMS..."
+          curl -s -f -m 30 "https://nexus-wms-phi.vercel.app/api/cron/keep-alive" || curl -s -m 30 "https://nexus-wms-phi.vercel.app/api/cron/keep-alive"
