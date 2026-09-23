@@ -58,6 +58,7 @@ interface Order {
   notes?: string;
   boxCount?: number;
   weightKg?: number;
+  deliveryMode?: 'DELIVERY' | 'SELF_PICKUP';
 }
 
 interface Carrier {
@@ -930,6 +931,7 @@ function MobileDispatchModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const isPickup = order.deliveryMode === 'SELF_PICKUP';
   const [carrier, setCarrier] = useState(order.carrier || (carriers[0]?.name || 'Flash Express'));
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
   const [submitting, setSubmitting] = useState(false);
@@ -952,7 +954,8 @@ function MobileDispatchModal({
   });
 
   const handleCommitDispatch = async () => {
-    if (!trackingNo.trim()) {
+    // Self-pickup: the customer collects at the counter — no carrier/tracking.
+    if (!isPickup && !trackingNo.trim()) {
       toast.error('กรุณาระบุหรือสแกนเลขพัสดุ (Tracking No.)');
       return;
     }
@@ -965,13 +968,13 @@ function MobileDispatchModal({
         body: JSON.stringify({
           id: order.id,
           status: 'SHIPPED',
-          carrier,
-          trackingNo: trackingNo.trim(),
+          carrier: isPickup ? 'ลูกค้ารับเอง' : carrier,
+          trackingNo: isPickup ? '' : trackingNo.trim(),
         }),
       });
 
       if (!res.ok) throw new Error('บันทึกส่งมอบไม่สำเร็จ');
-      toast.success(`ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
+      toast.success(isPickup ? `ส่งมอบ ${order.orderNo} ให้ลูกค้ารับเองแล้ว!` : `ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
       onDone();
     } catch (e: any) {
       toast.error(e.message || 'เกิดข้อผิดพลาด');
@@ -986,14 +989,21 @@ function MobileDispatchModal({
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-amber-600" />
-            <h3 className="font-bold text-slate-900 text-base">ส่งมอบขนส่ง: {order.orderNo}</h3>
+            <h3 className="font-bold text-slate-900 text-base">{isPickup ? 'ส่งมอบให้ลูกค้า (รับเอง)' : 'ส่งมอบขนส่ง'}: {order.orderNo}</h3>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900">
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {isPickup && (
+          <div className="rounded-xl bg-orange-50 border border-orange-200 p-3 text-sm text-orange-700 font-semibold flex items-center gap-2">
+            🏭 ลูกค้ารับเอง — ไม่ต้องเลือกขนส่ง/เลขพัสดุ กดยืนยันเมื่อส่งมอบให้ลูกค้าแล้ว
+          </div>
+        )}
+
         {/* Courier Select */}
+        {!isPickup && (<>
         <div>
           <label className="text-xs text-slate-500 block mb-1.5 font-semibold">ผู้ให้บริการขนส่ง (Carrier)</label>
           <select
@@ -1044,6 +1054,7 @@ function MobileDispatchModal({
             • กดปุ่มกล้อง หรือใช้ปืนยิงบาร์โค้ดสแกนเลขจากใบปะหน้า Flash/Kerry ได้ทันที
           </p>
         </div>
+        </>)}
 
         {/* Submit */}
         <button
@@ -1052,7 +1063,7 @@ function MobileDispatchModal({
           className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 active:scale-[0.98] transition-all"
         >
           {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
-          <span>ยืนยันส่งมอบให้ขนส่ง (SHIPPED)</span>
+          <span>{isPickup ? 'ยืนยันลูกค้ารับสินค้าแล้ว' : 'ยืนยันส่งมอบให้ขนส่ง (SHIPPED)'}</span>
         </button>
       </div>
 
