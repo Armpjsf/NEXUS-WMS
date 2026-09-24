@@ -7,6 +7,7 @@ import { getCurrentOrgId } from '@/lib/orgContext';
 import { binAdd } from '@/lib/stockLocations';
 import { toBaseQty } from '@/lib/uom';
 import { poCostMap, applyReceiptCost, insertTxWithCost } from '@/lib/costing';
+import { recordLotReceipt, normalizeDate } from '@/lib/lots';
 import { nextDocNumber } from '@/lib/docNumber';
 
 export type ReceiptStatus = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
@@ -20,6 +21,10 @@ export interface ReceiptLine {
   uom?: string;      // A4/A-UI: unit the receivedQty is counted in (blank = base)
   /** Cost per base unit. Blank = taken from the linked PO line, if any. */
   unitCost?: number;
+  /** Lot / batch received (blank = unlotted). */
+  lotNo?: string;
+  /** Expiry of that lot, YYYY-MM-DD. */
+  expDate?: string;
   done?: boolean;
 }
 
@@ -50,6 +55,8 @@ function mapReceipt(r: any): Receipt {
       receivedQty: Number(l.received_qty ?? l.receivedQty ?? 0),
       putawayBin: l.putaway_bin ?? l.putawayBin ?? '', done: !!l.done,
       ...(l.unit_cost != null ? { unitCost: Number(l.unit_cost) } : {}),
+      ...(l.lot_no ? { lotNo: String(l.lot_no) } : {}),
+      ...(l.exp_date ? { expDate: String(l.exp_date) } : {}),
     })),
     createdBy: r.created_by || '',
     notes: r.notes || '',
@@ -64,6 +71,8 @@ function toRow(items: ReceiptLine[]) {
     sku: l.sku, name: l.name, expected_qty: Number(l.expectedQty) || 0,
     received_qty: Number(l.receivedQty) || 0, putaway_bin: l.putawayBin || '', done: !!l.done,
     ...(Number(l.unitCost) > 0 ? { unit_cost: Number(l.unitCost) } : {}),
+    ...(l.lotNo?.trim() ? { lot_no: l.lotNo.trim() } : {}),
+    ...(normalizeDate(l.expDate) ? { exp_date: normalizeDate(l.expDate) } : {}),
   }));
 }
 
@@ -130,8 +139,15 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
       });
     }
     const stockBefore = Number(prod?.stock || 0);
-    // add to the put-away bin; products.stock (= sum of bins) is reconciled inside
-    await binAdd(orgId, line.sku, binCode, recv);
+    // add to the put-away bin; products.stock (= sum of bins) is reconciled inside.
+    // A lot number puts the qty on that lot in the bin (FEFO/trace) and
+    // increments the lot record — creating it, with its expiry, if new.
+    const lotNo = line.lotNo?.trim() || '';
+    const expDate = normalizeDate(line.expDate);
+    await binAdd(orgId, line.sku, binCode, recv, lotNo ? { lotNo, docRef: receipt.receiptNo, party: receipt.supplier || undefined } : undefined);
+    if (lotNo) {
+      await recordLotReceipt(admin, orgId, { sku: line.sku, lotNumber: lotNo, qty: recv, expDate, note: `รับเข้า ${receipt.receiptNo}` });
+    }
 
     // Cost per BASE unit. A cost typed on the line is per the line's uom
     // (carton/pallet) and is converted; a PO price is already per base unit.
@@ -147,6 +163,8 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
       type: 'IN', sku: line.sku, product_name: line.name || prod?.name || line.sku,
       qty: recv, unit_price: Number(prod?.price || 0), doc_ref: receipt.receiptNo,
       location: line.putawayBin || prod?.location || '', user_name: receipt.createdBy || 'Warehouse',
+      ...(lotNo ? { batch_no: lotNo } : {}),
+      ...(expDate ? { expiry_date: expDate } : {}),
       ...(unitCost > 0 ? { unit_cost: unitCost } : {}),
     });
   }

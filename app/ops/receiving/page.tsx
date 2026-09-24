@@ -27,7 +27,7 @@ import BinQuickSelect from '@/components/stock/BinQuickSelect';
 import { errorMessage } from '@/lib/errors';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
-interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; uom?: string; done?: boolean; }
+interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; uom?: string; lotNo?: string; expDate?: string; done?: boolean; }
 interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
 interface Receipt {
   id: string; receiptNo: string; poNumber: string; supplier: string; status: Status;
@@ -432,6 +432,7 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
 
   const setRecv = (sku: string, q: number) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, receivedQty: Math.max(0, q) } : l));
   const setBin = (sku: string, bin: string) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, putawayBin: bin } : l));
+  const setLot = (sku: string, patch: Partial<Pick<Line, 'lotNo' | 'expDate'>>) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, ...patch } : l));
   const setUom = (sku: string, uom: string) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, uom } : l));
 
   // Shared scan handler for both PDA Hardware scanner and Mobile Camera
@@ -464,6 +465,8 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
   });
 
   const commit = async () => {
+    const missingLot = lines.find(l => l.expDate && !l.lotNo?.trim() && (l.receivedQty || 0) > 0);
+    if (missingLot) { toast.error(`${missingLot.name}: ใส่เลขล็อตคู่กับวันหมดอายุ`); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/receiving', {
@@ -540,6 +543,22 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
                   />
                 </div>
               </div>
+              {/* Lot + expiry (optional): drives FEFO picking and lot trace/recall */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">เลขล็อต (ถ้ามี)</label>
+                  <input value={l.lotNo || ''} onChange={e => setLot(l.sku, { lotNo: e.target.value.toUpperCase() })} placeholder="เช่น LOT-2609A"
+                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-mono text-sm text-[#dee2ec] outline-none focus:border-emerald-500 uppercase" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">วันหมดอายุ</label>
+                  <input type="date" value={l.expDate || ''} onChange={e => setLot(l.sku, { expDate: e.target.value })}
+                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-sm text-[#dee2ec] outline-none focus:border-emerald-500 [color-scheme:dark]" />
+                </div>
+              </div>
+              {l.expDate && !l.lotNo?.trim() && (
+                <div className="text-[11px] text-amber-400">ใส่เลขล็อตด้วย — วันหมดอายุผูกกับล็อต</div>
+              )}
             </div>
           ))}
         </div>

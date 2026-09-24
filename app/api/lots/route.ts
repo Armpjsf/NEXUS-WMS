@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getExpiryRisk } from '@/lib/fefo';
 import { errorMessage } from '@/lib/errors';
+import { normalizeDate } from '@/lib/lots';
 
 export async function GET(request: Request) {
   try {
@@ -52,6 +53,9 @@ export async function GET(request: Request) {
   }
 }
 
+// POST — register a NEW lot record (metadata only: this does not add stock;
+// goods are received through /ops/receiving). An existing lot number is
+// refused — it used to be upserted, overwriting the lot's quantities.
 export async function POST(request: Request) {
   try {
     const orgId = await getCurrentOrgId();
@@ -61,23 +65,32 @@ export async function POST(request: Request) {
     if (!sku || !lotNumber) {
       return NextResponse.json({ error: 'SKU and Lot Number are required' }, { status: 400 });
     }
+    if (expDate && !normalizeDate(expDate)) {
+      return NextResponse.json({ error: 'วันหมดอายุไม่ถูกต้อง (YYYY-MM-DD)' }, { status: 400 });
+    }
+
+    const { data: existing } = await supabase.from('product_lots').select('id')
+      .eq('org_id', orgId).eq('sku', sku).eq('lot_number', lotNumber).maybeSingle();
+    if (existing) {
+      return NextResponse.json({ error: `ล็อต ${lotNumber} มีอยู่แล้ว — ใช้ "แก้วันหมดอายุ" ที่รายการล็อตแทน` }, { status: 409 });
+    }
 
     const { data, error } = await supabase
       .from('product_lots')
-      .upsert({
+      .insert({
         org_id: orgId,
         sku,
         lot_number: lotNumber,
         batch_number: batchNumber || '',
-        mfg_date: mfgDate || null,
-        exp_date: expDate || null,
+        mfg_date: normalizeDate(mfgDate),
+        exp_date: normalizeDate(expDate),
         status: 'ACTIVE',
         received_qty: Number(receivedQty || 0),
         current_qty: Number(receivedQty || 0),
         unit_cost: Number(unitCost || 0),
         notes: notes || '',
         updated_at: new Date().toISOString()
-      }, { onConflict: 'org_id,sku,lot_number' })
+      })
       .select()
       .single();
 
@@ -85,6 +98,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
+  }
+}
+
+// PATCH { sku, lotNumber, expDate, mfgDate? } — change only the dates of an
+// existing lot (quantities untouched). expDate '' clears it.
+export async function PATCH(request: Request) {
+  try {
+    const orgId = await getCurrentOrgId();
+    const { sku, lotNumber, expDate, mfgDate } = await request.json();
+    if (!sku || !lotNumber) return NextResponse.json({ error: 'ระบุ sku และ lotNumber' }, { status: 400 });
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (expDate !== undefined) {
+      const d = normalizeDate(expDate);
+      if (expDate && !d) return NextResponse.json({ error: 'วันหมดอายุไม่ถูกต้อง (YYYY-MM-DD)' }, { status: 400 });
+      patch.exp_date = d;
+    }
+    if (mfgDate !== undefined) {
+      const d = normalizeDate(mfgDate);
+      if (mfgDate && !d) return NextResponse.json({ error: 'วันผลิตไม่ถูกต้อง (YYYY-MM-DD)' }, { status: 400 });
+      patch.mfg_date = d;
+    }
+
+    const { data, error } = await supabase.from('product_lots').update(patch)
+      .eq('org_id', orgId).eq('sku', sku).eq('lot_number', lotNumber).select().maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data) return NextResponse.json({ error: 'ไม่พบล็อต' }, { status: 404 });
     return NextResponse.json({ success: true, data });
   } catch (err) {
     return NextResponse.json({ error: errorMessage(err) }, { status: 500 });

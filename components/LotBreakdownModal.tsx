@@ -28,6 +28,9 @@ interface LotItem {
   };
 }
 
+// Rows built client-side from product fields (no product_lots row) can't be edited.
+const isRealLot = (lot: LotItem) => !!lot.id && !!lot.lotNumber && !/^(primary|fallback|product)-/.test(String(lot.id));
+
 interface LotBreakdownModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -49,6 +52,31 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
   const [newExpiryDate, setNewExpiryDate] = useState('');
   const [newQuantity, setNewQuantity] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  // Inline expiry edit of an existing lot (dates only — quantities untouched).
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editExp, setEditExp] = useState('');
+  const [savingExp, setSavingExp] = useState(false);
+
+  const saveExpiry = async (sku: string, lotNumber: string) => {
+    setSavingExp(true);
+    try {
+      const res = await fetch('/api/lots', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku, lotNumber, expDate: editExp }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'บันทึกวันหมดอายุไม่สำเร็จ');
+      toast.success(editExp ? `ตั้งวันหมดอายุ ${lotNumber} แล้ว` : `ล้างวันหมดอายุ ${lotNumber} แล้ว`);
+      setEditingKey(null);
+      fetchLots();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSavingExp(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -206,6 +234,14 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
   }, [lots, search, filterRisk]);
 
   const getRiskBadge = (risk?: string, days?: number) => {
+    // getExpiryRisk reports a lot with no expiry as HEALTHY / 9999 days.
+    if (days === undefined || days >= 9999) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#252a32] text-[#8a92a6] border border-[#30353d]">
+          ไม่มีวันหมดอายุ
+        </span>
+      );
+    }
     switch (risk) {
       case 'EXPIRED':
         return (
@@ -381,6 +417,9 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                       )}
                     </div>
                   )}
+                  <p className="sm:col-span-full text-[11px] text-amber-400">
+                    ใช้บันทึกข้อมูลล็อต<strong>ใหม่</strong>เท่านั้น — ไม่เพิ่มสต็อก (รับของจริงให้ใช้หน้ารับเข้า GRN ซึ่งกรอกเลขล็อต+วันหมดอายุได้) · ล็อตเดิมให้กด &quot;แก้วันหมดอายุ&quot; ที่รายการ
+                  </p>
                   <div>
                     <label className="block text-[#8a92a6] mb-1">หมายเลข Lot / Batch *</label>
                     <input
@@ -489,10 +528,38 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                                 {lot.productName}
                               </span>
                             )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3 text-[#4cd7f6]" />
-                              วันหมดอายุ: <strong className="text-[#dee2ec]">{expDate}</strong>
-                            </span>
+                            {editingKey === `${lot.sku}|${lotNum}` ? (
+                              <span className="flex items-center gap-1.5">
+                                <Calendar className="h-3 w-3 text-[#4cd7f6]" />
+                                <input
+                                  type="date"
+                                  value={editExp}
+                                  onChange={(e) => setEditExp(e.target.value)}
+                                  className="rounded border border-[#30353d] bg-[#171c23] px-2 py-0.5 text-[#dee2ec] outline-none focus:border-[#facc15] [color-scheme:dark]"
+                                />
+                                <button
+                                  disabled={savingExp}
+                                  onClick={() => saveExpiry(lot.sku, lotNum)}
+                                  className="rounded bg-[#facc15] px-2 py-0.5 font-bold text-[#1b1600] disabled:opacity-50"
+                                >
+                                  {savingExp ? '...' : 'บันทึก'}
+                                </button>
+                                <button onClick={() => setEditingKey(null)} className="px-1 text-[#8a92a6] hover:text-[#dee2ec]">ยกเลิก</button>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-[#4cd7f6]" />
+                                วันหมดอายุ: <strong className={expDate === '-' ? 'text-amber-400' : 'text-[#dee2ec]'}>{expDate === '-' ? 'ยังไม่ได้ตั้ง' : expDate}</strong>
+                                {isRealLot(lot) && (
+                                  <button
+                                    onClick={() => { setEditingKey(`${lot.sku}|${lotNum}`); setEditExp(expDate === '-' ? '' : String(expDate).slice(0, 10)); }}
+                                    className="ml-1 rounded border border-[#30353d] px-1.5 py-px text-[10px] font-bold text-[#4cd7f6] hover:border-[#4cd7f6]"
+                                  >
+                                    แก้วันหมดอายุ
+                                  </button>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

@@ -123,3 +123,16 @@ describe('historical lot trace (FIFO replay)', () => {
     expect(feb.consumed.map(c => [c.docRef, c.qty])).toEqual([['B', 3], ['', 1]]);
   });
 });
+
+import { normalizeDate } from '@/lib/lots';
+
+describe('normalizeDate (lot expiry)', () => {
+  it('accepts real YYYY-MM-DD dates only', () => {
+    expect(normalizeDate('2027-02-28')).toBe('2027-02-28');
+    expect(normalizeDate('2027-02-28T10:00:00Z')).toBe('2027-02-28');
+    expect(normalizeDate('2027-02-30')).toBeNull();
+    expect(normalizeDate('28/02/2027')).toBeNull();
+    expect(normalizeDate('')).toBeNull();
+    expect(normalizeDate(null)).toBeNull();
+  });
+});
