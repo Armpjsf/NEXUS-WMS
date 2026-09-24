@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Undo2, Plus, X, Search, Trash2, ArrowLeft, ArrowRight, PackageCheck, Ban, FileText } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 type Status = 'REQUESTED' | 'APPROVED' | 'RECEIVED' | 'RESTOCKED' | 'SCRAPPED' | 'REJECTED';
 interface Line { sku: string; name: string; qty: number; }
@@ -43,7 +44,7 @@ export default function ReturnsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'ไม่สำเร็จ');
       toast.success('อัปเดตแล้ว', { id: t }); load();
-    } catch (e: any) { toast.error(e.message, { id: t }); }
+    } catch (e) { toast.error(errorMessage(e), { id: t }); }
   };
 
   const actions = (r: Rma) => {
@@ -146,7 +147,7 @@ function CreateReturnModal({ onClose, onDone }: { onClose: () => void; onDone: (
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'สร้างไม่สำเร็จ');
       toast.success(`สร้าง ${json.rma.rmaNo} แล้ว`); onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   return (

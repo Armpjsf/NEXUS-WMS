@@ -5,14 +5,26 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  PackagePlus, Plus, X, Search, Trash2, ArrowLeft, ClipboardCheck,
-  Warehouse, CheckCircle2, FileText, Printer, Building2, MapPin, Zap, Camera
+  PackagePlus,
+  Plus,
+  X,
+  Search,
+  Trash2,
+  ArrowLeft,
+  ClipboardCheck,
+  Warehouse,
+  CheckCircle2,
+  FileText,
+  Printer,
+  Zap,
+  Camera,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { speakScanSuccess, speakScanMismatch, speakPutawayLocation, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
+import { errorMessage } from '@/lib/errors';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; uom?: string; done?: boolean; }
@@ -258,7 +270,7 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
   useEffect(() => {
     Promise.all([
       fetch('/api/products', { cache: 'no-store' }).then(r => r.json()),
-      fetch('/api/po/create?status=DRAFT', { cache: 'no-store' }).then(r => r.json()),
+      fetch('/api/po/create?status=DRAFT,ORDERED', { cache: 'no-store' }).then(r => r.json()),
       fetch('/api/suppliers', { cache: 'no-store' }).then(r => r.json()),
     ]).then(([dProd, dPo, dSupp]) => {
       setProducts(Array.isArray(dProd) ? dProd : []);
@@ -297,7 +309,7 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
       if (!res.ok) throw new Error(json.error || 'สร้างไม่สำเร็จ');
       toast.success(`สร้าง ${json.receipt.receiptNo} แล้ว`);
       onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   const handleScanAdd = (scanned: string) => {
@@ -462,7 +474,7 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
       if (!res.ok) throw new Error(json.error || 'ยืนยันไม่สำเร็จ');
       toast.success('รับเข้าและจัดเก็บเข้าสต็อกเรียบร้อย');
       onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   return (

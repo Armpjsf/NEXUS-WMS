@@ -10,6 +10,12 @@ export interface UIProduct {
   category: string;
   stock: number;
   price: number;
+  /** Unit cost (moving average). undefined = not recorded. */
+  cost?: number;
+  /** Held by open orders (deducted at SHIPPED). Set by GET /api/products. */
+  reserved?: number;
+  /** stock − reserved. */
+  available?: number;
   unit: string;
   image: string;
   status: string;
@@ -50,6 +56,7 @@ export function mapProductRow(row: any): UIProduct {
     category: row.category ?? 'General',
     stock: Number(row.stock ?? 0),
     price: Number(row.price ?? 0),
+    cost: row.cost_price == null ? undefined : Number(row.cost_price),
     unit: row.unit ?? 'pcs',
     image: row.image_url ?? '',
     status: row.status ?? 'ACTIVE',

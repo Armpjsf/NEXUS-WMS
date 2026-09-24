@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { PackageMinus, Search, Plus, Trash2, RefreshCw, Check, X, FileText } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface Product {
   name: string;
@@ -98,8 +99,8 @@ export default function MobileOutboundPage() {
       toast.success('บันทึกการเบิกจ่ายแล้ว');
       setItems([]);
       setDocRef('');
-    } catch (e: any) {
-      toast.error(e?.message || 'เกิดข้อผิดพลาด');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด');
     } finally {
       setSubmitting(false);
     }

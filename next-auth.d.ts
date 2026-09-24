@@ -30,6 +30,8 @@ declare module 'next-auth/jwt' {
     allowedBranches?: string[];
     allowedOwners?: string[];
     roleSyncedAt?: number;
+    /** app_users.org_id — the org the user signs in to (see lib/memberships). */
+    homeOrgId?: string;
     /** Set when the user was deleted/disabled after login — proxy rejects it. */
     revoked?: boolean;
   }

@@ -2,24 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  PackagePlus, 
-  Search, 
-  ArrowLeft, 
-  Warehouse, 
-  CheckCircle2, 
-  FileText, 
-  Printer, 
-  MapPin, 
-  Camera, 
-  RefreshCw, 
-  X, 
-  Plus, 
-  Minus, 
-  Volume2, 
-  Scan,
-  AlertCircle,
-  Truck
+import {
+  PackagePlus,
+  Search,
+  ArrowLeft,
+  Warehouse,
+  CheckCircle2,
+  FileText,
+  Printer,
+  MapPin,
+  Camera,
+  RefreshCw,
+  X,
+  Plus,
+  Minus,
+  Volume2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
@@ -27,6 +24,7 @@ import CameraScannerModal from '@/components/CameraScannerModal';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
 import { speakPutawayLocation, triggerHaptic } from '@/lib/voiceAssistant';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
+import { errorMessage } from '@/lib/errors';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 interface Line {
@@ -456,8 +454,8 @@ function MobileReceiveModal({
 
       toast.success('บันทึกรับเข้าสต็อกเรียบร้อย!');
       onDone();
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาด');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด');
     } finally {
       setSubmitting(false);
     }

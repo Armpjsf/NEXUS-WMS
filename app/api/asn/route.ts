@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
 import { nextDocNumber } from '@/lib/docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +30,8 @@ export async function GET() {
       items: (byAsn.get(h.id) || []).map((l: any) => ({ sku: l.sku, name: l.name, expectedQty: Number(l.expected_qty || 0) })),
     }));
     return NextResponse.json({ success: true, asns });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     })));
 
     return NextResponse.json({ success: true, asnNo, id: head.id });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

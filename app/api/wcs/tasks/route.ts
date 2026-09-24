@@ -6,6 +6,7 @@ import {
   simulateFleetMovement
 } from '@/lib/wcsEngine';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +34,8 @@ export async function GET() {
         completedToday
       }
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
       message: `Mission ${mission.missionCode} dispatched successfully`,
       mission
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: errorMessage(error) }, { status: 500 });
   }
 }

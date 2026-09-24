@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getVehicles, createVehicle, updateVehicle, deleteVehicle } from '@/lib/data/fleet';
 import { requireManagement } from '@/lib/apiAuth';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +12,8 @@ export async function GET(request: Request) {
     const activeOnly = new URL(request.url).searchParams.get('active') === '1';
     const vehicles = await getVehicles(activeOnly);
     return NextResponse.json({ vehicles });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
 
@@ -27,8 +28,8 @@ export async function POST(request: Request) {
     const v = await createVehicle(body);
     if (!v) return NextResponse.json({ error: 'เพิ่มรถไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, vehicle: v });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
 
@@ -41,8 +42,8 @@ export async function PUT(request: Request) {
     const v = await updateVehicle(id, patch);
     if (!v) return NextResponse.json({ error: 'อัปเดตไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, vehicle: v });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }
 
@@ -54,7 +55,7 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     const ok = await deleteVehicle(id);
     return NextResponse.json({ success: ok });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
 }

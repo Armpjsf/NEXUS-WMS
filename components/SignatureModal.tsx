@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
-import { X, Check, Trash2, RotateCw } from 'lucide-react';
+import { Check, Trash2, RotateCw } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { appAlert } from '@/components/ui/MobileDialog';
 

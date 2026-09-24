@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, SwitchCamera, Zap, Volume2, VolumeX, CheckCircle2, RefreshCw, Keyboard } from 'lucide-react';
 import { triggerHaptic } from '@/lib/voiceAssistant';
+import { errorMessage } from '@/lib/errors';
 
 interface CameraScannerModalProps {
   isOpen: boolean;
@@ -176,10 +177,10 @@ export default function CameraScannerModal({
         );
 
         if (isMounted) setIsStarting(false);
-      } catch (err: any) {
+      } catch (err) {
         if (!isMounted) return;
         console.error('Camera Scanner Error:', err);
-        const raw = String(err?.message || err || '');
+        const raw = String(errorMessage(err) || err || '');
         if (raw.includes('streaming not supported') || raw.includes('NotAllowedError') || raw.includes('Permission denied')) {
           setError('ไม่สามารถเปิดกล้องได้ (เบราว์เซอร์ปฏิเสธสิทธิ์ หรือไม่มีอุปกรณ์กล้อง)\nสามารถพิมพ์รหัสบาร์โค้ดด้านล่างนี้แทนได้ครับ');
         } else {

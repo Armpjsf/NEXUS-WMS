@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { fetchAllRows } from '@/lib/data/fetchAll';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -209,8 +210,8 @@ export async function GET(request: Request) {
             })),
             topProducts: topSellers.slice(0, 5).map(t => ({ name: t.name, sku: t.sku, stock: nameBySku.has(t.sku) ? Number(prods.find(p => p.sku === t.sku)?.stock || 0) : 0 })),
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('API Dashboard Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: errorMessage(error) || 'Internal Server Error' }, { status: 500 });
     }
 }

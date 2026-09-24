@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, RefreshCw, MapPin, ArrowRight, CheckCircle2, Zap, Boxes, ClipboardList } from 'lucide-react';
+import { ArrowLeft, RefreshCw, MapPin, ArrowRight, CheckCircle2, Zap, ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface Task {
   id: string;
@@ -77,7 +78,7 @@ export default function MobileTasksPage() {
       toast.success('✅ ทำงานเสร็จแล้ว');
       setActive(null);
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(false); }
   };
 
   const replenish = async () => {
@@ -88,7 +89,7 @@ export default function MobileTasksPage() {
       if (!res.ok) throw new Error(d.error || 'ไม่สำเร็จ');
       toast.success('สร้างงานเติมจุดหยิบแล้ว');
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(false); }
   };
 
   const filtered = tasks.filter(t => filter === 'ALL' || t.task_type === filter);

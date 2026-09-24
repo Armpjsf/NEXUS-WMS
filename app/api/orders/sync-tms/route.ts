@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { syncOrderWithTms } from '@/lib/data/orders';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +28,8 @@ export async function POST(request: Request) {
       order: res.order,
       message: res.message || 'ซิงค์ข้อมูลจาก TMS สำเร็จ',
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[API orders/sync-tms error]:', err);
-    return NextResponse.json({ error: err?.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) || 'Internal Server Error' }, { status: 500 });
   }
 }

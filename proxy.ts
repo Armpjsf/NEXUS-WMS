@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { MANAGEMENT_ROLES, isManagementOnlyPath, isManagementRole, canAccessSection, sectionForPath, isManagementOnlyApiWrite } from "./lib/rbac"
-import { rateLimit, clientIp } from "./lib/rateLimit"
+import { rateLimitShared, clientIp } from "./lib/rateLimit"
 
 import { getAuthSecret } from "./lib/authSecret"
 
@@ -84,7 +84,7 @@ export default async function proxy(req: NextRequest, event: any) {
   if (pathname.startsWith('/api/')) {
     // B3: brute-force guard on the credentials login — 10 attempts / minute / IP.
     if (pathname.startsWith('/api/auth/callback/credentials') && req.method === 'POST') {
-      const r = rateLimit(`login:${clientIp(req)}`, 10, 60_000);
+      const r = await rateLimitShared(`login:${clientIp(req)}`, 10, 60_000);
       if (!r.ok) {
         return NextResponse.json(
           { error: 'พยายามเข้าสู่ระบบบ่อยเกินไป กรุณาลองใหม่ภายหลัง' },
@@ -94,7 +94,7 @@ export default async function proxy(req: NextRequest, event: any) {
     }
     // Public self-signup creates an org + admin + seed data — cap it per IP.
     if (pathname.startsWith('/api/onboarding') && req.method === 'POST') {
-      const r = rateLimit(`onboarding:${clientIp(req)}`, 5, 60 * 60_000);
+      const r = await rateLimitShared(`onboarding:${clientIp(req)}`, 5, 60 * 60_000);
       if (!r.ok) {
         return NextResponse.json(
           { error: 'สมัครใช้งานบ่อยเกินไป กรุณาลองใหม่ภายหลัง' },

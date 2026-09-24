@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, X, Package } from 'lucide-react';
 // Remove unused NextImage if we switch to regular img tag for consistency with other parts,
 // OR keep it but use the proxy URL. Let's use regular img tag to avoid 'hostname' config issues 

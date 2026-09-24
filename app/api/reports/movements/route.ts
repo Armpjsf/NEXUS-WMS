@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { fetchAllRows } from '@/lib/data/fetchAll';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,8 +60,8 @@ export async function GET(request: Request) {
 
     const totalQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
     return NextResponse.json({ rows, summary: { count: rows.length, totalQty } });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API movements report error:', error);
-    return NextResponse.json({ error: error.message, rows: [] }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error), rows: [] }, { status: 500 });
   }
 }

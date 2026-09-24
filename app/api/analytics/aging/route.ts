@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getProducts, getTransactions } from '@/lib/data/wms';
 import { calculateFIFOLayers } from '@/lib/fifo';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,8 +143,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json(report);
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Aging API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

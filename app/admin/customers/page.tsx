@@ -5,10 +5,21 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  Users, Plus, Search, Trash2, Edit2, ArrowLeft, RefreshCw,
-  Phone, Mail, MapPin, Truck, Building, FileText, CheckCircle2, X, Power
+  Users,
+  Plus,
+  Search,
+  Trash2,
+  Edit2,
+  ArrowLeft,
+  RefreshCw,
+  Phone,
+  Mail,
+  Truck,
+  X,
+  Power,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 interface Customer {
   id: string;
@@ -106,8 +117,8 @@ export default function AdminCustomersPage() {
       toast.success(isEdit ? 'อัปเดตข้อมูลลูกค้าเรียบร้อย' : 'เพิ่มลูกค้าใหม่เรียบร้อย');
       setShowModal(false);
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการบันทึก');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการบันทึก');
     } finally {
       setSaving(false);
     }
@@ -121,8 +132,8 @@ export default function AdminCustomersPage() {
       if (!res.ok) throw new Error(json.error || 'ลบไม่สำเร็จ');
       toast.success('ลบข้อมูลลูกค้าเรียบร้อย');
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการลบ');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการลบ');
     }
   };
 
@@ -140,8 +151,8 @@ export default function AdminCustomersPage() {
       if (!res.ok) throw new Error(json.error || 'อัปเดตสถานะไม่สำเร็จ');
       toast.success(next === 'INACTIVE' ? 'ปิดใช้งานลูกค้าแล้ว' : 'เปิดใช้งานลูกค้าแล้ว');
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาด');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาด');
     }
   };
 

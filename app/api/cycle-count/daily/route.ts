@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProducts, getTransactionsUncached, getCycleCountLogs, type Product } from "@/lib/data/wms";
+import { getProducts, getTransactionsUncached, getCycleCountLogs } from "@/lib/data/wms";
 
 export const dynamic = "force-dynamic";
 

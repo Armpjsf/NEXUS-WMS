@@ -8,22 +8,14 @@ import {
   Clock,
   Plus,
   Search,
-  Filter,
-  ArrowRight,
-  TrendingDown,
-  TrendingUp,
-  AlertTriangle,
-  UserCheck,
-  FileSpreadsheet,
   RefreshCw,
-  Eye,
-  Building2,
   FileCheck,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 interface AdjustmentItem {
   id: string;
@@ -127,8 +119,8 @@ export default function StockAdjustmentsPage() {
       } else {
         toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
       }
-    } catch (err: any) {
-      toast.error(`ล้มเหลว: ${err.message}`);
+    } catch (err) {
+      toast.error(`ล้มเหลว: ${errorMessage(err)}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -155,8 +147,8 @@ export default function StockAdjustmentsPage() {
       } else {
         toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
       }
-    } catch (err: any) {
-      toast.error(`ล้มเหลว: ${err.message}`);
+    } catch (err) {
+      toast.error(`ล้มเหลว: ${errorMessage(err)}`);
     } finally {
       setIsSubmitting(false);
     }

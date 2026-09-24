@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldAlert, GitBranch, RefreshCw, AlertTriangle, PackageCheck, Undo2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 interface Props {
   isOpen: boolean;
@@ -52,7 +53,7 @@ export function LotTraceModal({ isOpen, onClose, product }: Props) {
       if (d.error) throw new Error(d.error);
       toast.success(d.message || 'สำเร็จ');
       await openTrace(activeLot); await loadLots();
-    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(false); }
   };
 
   const recipients: Recipient[] = trace?.recipients || [];

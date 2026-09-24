@@ -2,6 +2,7 @@
 
 import type { ElementType } from 'react';
 import {
+  ShoppingCart,
   Activity,
   ArrowDownToLine,
   ArrowLeftRight,
@@ -10,34 +11,25 @@ import {
   Bot,
   Box,
   Boxes,
-  Briefcase,
   Building2,
-  ChartNoAxesCombined,
   ChevronLeft,
   ClipboardCheck,
   ClipboardList,
   Cpu,
-  DatabaseZap,
   FileBarChart,
-  FileText,
-  Globe,
   History,
   Home,
   LayoutGrid,
   LogOut,
-  Mail,
   Menu,
   Mic,
   Network,
   PackageCheck,
-  Printer,
-  QrCode,
   ReceiptText,
   ScanLine,
   Settings,
   ShieldAlert,
   ShoppingBag,
-  SlidersHorizontal,
   Sparkles,
   Store,
   Tags,
@@ -56,6 +48,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import BranchSelector from './BranchSelector';
 import { ExperimentalPill } from '@/components/ui/ExperimentalBanner';
+import OrgSwitcher from './OrgSwitcher';
 
 type NavItem = {
   label: string;
@@ -202,6 +195,7 @@ export default function Sidebar() {
         { label: 'หุ่นยนต์ & WCS Gateway', href: '/ops/wcs', icon: Cpu, tone: 'cyan', adminOnly: true, experimental: true },
         { label: 'สั่งหยิบด้วยเสียง (Voice Picking)', href: '/ops/voice-picking', icon: Mic, tone: 'amber' },
         { label: 'ASN แจ้งของเข้าล่วงหน้า (EDI)', href: '/ops/asn', icon: ArrowDownToLine, tone: 'emerald' },
+        { label: 'ใบสั่งซื้อ (PO)', href: '/ops/purchase-orders', icon: ShoppingCart, tone: 'blue' },
         { label: 'รับเข้า & จัดเก็บ (GRN)', href: '/ops/receiving', icon: ArrowDownToLine, tone: 'emerald' },
         { label: 'จัดคิวเทียบท่า (Dock Scheduling)', href: '/ops/dock', icon: Truck, tone: 'blue' },
         { label: 'สถานีตรวจแพ็ค (Packing QA)', href: '/ops/packing', icon: PackageCheck, tone: 'emerald' },
@@ -221,7 +215,7 @@ export default function Sidebar() {
       label: 'การขาย & ออเดอร์',
       accent: 'bg-rose-500',
       items: [
-        { label: 'คลังรับฝาก 3PL & Billing', href: '/ops/3pl', icon: Building2, tone: 'cyan', adminOnly: true },
+        { label: 'คลังรับฝาก 3PL & Billing', href: '/ops/3pl', icon: Building2, tone: 'cyan', adminOnly: true, experimental: true },
         { label: 'ออเดอร์ขาออก', href: '/ops/orders', icon: PackageCheck, tone: 'cyan' },
         { label: 'สรุปงานส่งรายจังหวัด', href: '/analytics/outbound-summary', icon: MapPin, tone: 'cyan' },
         { label: 'ลูกค้า (Customers)', href: '/admin/customers', icon: Users, tone: 'blue' },
@@ -361,6 +355,10 @@ export default function Sidebar() {
 
           {!collapsed && (
             <>
+              {/* Org switcher (only for users in several orgs) */}
+              <div className="mt-2.5 empty:hidden">
+                <OrgSwitcher />
+              </div>
               {/* Branch Selector wrapper */}
               <div className="mt-2.5 bg-surface-panel p-2 rounded border border-edge/80">
                 <BranchSelector />

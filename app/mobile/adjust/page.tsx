@@ -6,12 +6,9 @@ import {
   ArrowLeft,
   Scan,
   CheckCircle2,
-  AlertCircle,
   Plus,
   Minus,
   Save,
-  RotateCcw,
-  Package
 } from 'lucide-react';
 import CameraScannerModal from '@/components/CameraScannerModal';
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTransactions } from '@/lib/data/wms';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,8 +93,8 @@ export async function GET(request: Request) {
         recentTransactions
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Summary API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

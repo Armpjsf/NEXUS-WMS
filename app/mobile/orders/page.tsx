@@ -2,24 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  Package, 
-  Search, 
-  ArrowLeft, 
-  CheckCircle2, 
-  Truck, 
-  Camera, 
-  RefreshCw, 
-  X, 
-  Check, 
-  Scan, 
-  Printer, 
-  ExternalLink,
-  ChevronRight,
+import {
+  Package,
+  Search,
+  ArrowLeft,
+  CheckCircle2,
+  Truck,
+  Camera,
+  RefreshCw,
+  X,
+  Check,
+  Scan,
+  Printer,
   ShieldCheck,
-  AlertCircle,
-  FileText,
-  PackagePlus
+  PackagePlus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MobileAddItemsModal, { MobileAddItemsOrder } from '@/components/orders/MobileAddItemsModal';
@@ -29,6 +25,7 @@ import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
 import { triggerHaptic } from '@/lib/voiceAssistant';
 import { getApiUrl } from '@/lib/config';
 import { extractScannedSku } from '@/lib/scan';
+import { errorMessage } from '@/lib/errors';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
@@ -594,8 +591,8 @@ function MobileQcModal({
       if (!res.ok) throw new Error('บันทึกผล QC ไม่สำเร็จ');
       toast.success(`ออเดอร์ ${order.orderNo} ผ่านการตรวจ QC เรียบร้อย!`);
       onPassQc();
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการบันทึก QC');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการบันทึก QC');
     } finally {
       setSubmitting(false);
     }
@@ -807,8 +804,8 @@ function MobilePackingModal({
       if (!res.ok) throw new Error('บันทึกการแพ็กไม่สำเร็จ');
       toast.success(`แพ็กออเดอร์ ${order.orderNo} สำเร็จ! ย้ายไปสถานีรอส่งมอบ`);
       onDone();
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการบันทึก');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการบันทึก');
     } finally {
       setSubmitting(false);
     }
@@ -976,8 +973,8 @@ function MobileDispatchModal({
       if (!res.ok) throw new Error('บันทึกส่งมอบไม่สำเร็จ');
       toast.success(isPickup ? `ส่งมอบ ${order.orderNo} ให้ลูกค้ารับเองแล้ว!` : `ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
       onDone();
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาด');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด');
     } finally {
       setSubmitting(false);
     }

@@ -9,6 +9,7 @@ import { getApiUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { speakScanSuccess, speakScanMismatch, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
+import { errorMessage } from '@/lib/errors';
 
 interface Product {
   id: string;
@@ -78,9 +79,9 @@ export default function BarcodeScannerPage() {
           // Ignore scan errors (no code found)
         }
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error('Scanner error:', err);
-      setError(err.message || 'ไม่สามารถเปิดกล้องได้');
+      setError(errorMessage(err) || 'ไม่สามารถเปิดกล้องได้');
       setIsScanning(false);
     }
   };

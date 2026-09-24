@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { onboardOrganization } from '@/lib/data/onboarding';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,8 @@ export async function POST(request: Request) {
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
     return NextResponse.json({ success: true, username: result.username });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API onboarding error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

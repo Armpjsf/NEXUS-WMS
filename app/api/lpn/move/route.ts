@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { moveLPN } from '@/lib/lpnEngine';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
       message: `ย้ายพาเลท ${lpnNumber} ไปยัง ${newLocation} สำเร็จ`,
       data: result.lpn
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

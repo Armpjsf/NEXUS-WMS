@@ -8,11 +8,9 @@ import {
   ClipboardCheck,
   Check,
   AlertTriangle,
-  RefreshCw,
   Eye,
   EyeOff,
   Barcode,
-  Sparkles,
   MapPin,
   Printer,
   Camera,
@@ -27,6 +25,7 @@ import { toast } from 'react-hot-toast';
 import { triggerHaptic } from '@/lib/voiceAssistant';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import { errorMessage } from '@/lib/errors';
 
 interface CountItem {
   sku: string;
@@ -182,8 +181,8 @@ export default function CycleCountPage() {
 
       triggerHaptic('success');
       toast.success(`บันทึก Cycle Count ${summary.counted} รายการเรียบร้อย!`);
-    } catch (e: any) {
-      toast.error('Error: ' + e.message);
+    } catch (e) {
+      toast.error('Error: ' + errorMessage(e));
     } finally {
       setSaving(false);
     }

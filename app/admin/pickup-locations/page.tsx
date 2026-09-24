@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Warehouse, Plus, Trash2, Edit2, ArrowLeft, RefreshCw, MapPin, LocateFixed, Power, X } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 type LocationKind = 'PICKUP' | 'DROP' | 'BOTH';
 interface PickupLocation {
@@ -85,7 +86,7 @@ export default function AdminPickupLocationsPage() {
       if (!res.ok) throw new Error(j.error || 'บันทึกไม่สำเร็จ');
       toast.success(isEdit ? 'อัปเดตแล้ว' : 'เพิ่มจุดรับแล้ว');
       setShowModal(false); load();
-    } catch (err: any) { toast.error(err.message || 'เกิดข้อผิดพลาด'); }
+    } catch (err) { toast.error(errorMessage(err) || 'เกิดข้อผิดพลาด'); }
     finally { setSaving(false); }
   };
 
@@ -98,7 +99,7 @@ export default function AdminPickupLocationsPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'ไม่สำเร็จ');
       toast.success(next === 'INACTIVE' ? 'ปิดใช้งานแล้ว' : 'เปิดใช้งานแล้ว'); load();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(errorMessage(err)); }
   };
 
   const remove = async (l: PickupLocation) => {
@@ -107,7 +108,7 @@ export default function AdminPickupLocationsPage() {
       const res = await fetch(`/api/pickup-locations?id=${l.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'ลบไม่สำเร็จ');
       toast.success('ลบแล้ว'); load();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(errorMessage(err)); }
   };
 
   const custName = (id: string | null) => id ? (customers.find(c => c.id === id)?.name || '(ลูกค้าถูกลบ)') : 'จุดกลาง (ทุกลูกค้า)';

@@ -41,6 +41,7 @@ missing, and names the file below that creates it.
 | `20260921b_delivery_mode.sql` | Delivery vs self-pickup |
 | `20260923_document_signatures.sql` | E-signatures on printed documents |
 | `20260924_doc_sequences.sql` | **Atomic document numbers** (`wms_next_doc_seq`), unique indexes on doc numbers, and **per-org unique keys** for SKU / bin / customer / carrier / supplier codes |
+| `20260925_cost_ratelimit_memberships.sql` | Real cost (`products.cost_price`, `stock_transactions.unit_cost`), shared login rate limit (`wms_rate_hit`), multi-org membership (`org_memberships`) |
 
 `20260924_doc_sequences.sql` prints `NOTICE` lines when it skips an index
 because of duplicate existing data — fix those rows and re-run it.

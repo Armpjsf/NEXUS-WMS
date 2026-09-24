@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 import { nextDocNumber } from '@/lib/docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,8 @@ export async function GET() {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ success: true, data: data || [] });
-  } catch (err: any) {
-    console.warn('Adjustments query error:', err?.message);
+  } catch (err) {
+    console.warn('Adjustments query error:', errorMessage(err));
     return NextResponse.json({ success: true, data: [] });
   }
 }
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       message: `ส่งคำขอปรับยอดสต็อกหมายเลข ${requestNo} เข้าสู่ระบบรออนุมัติเรียบร้อยแล้ว`,
       data: newReq
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

@@ -6,10 +6,28 @@ import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  Package, Plus, X, Truck, ClipboardCheck, CheckCircle2,
-  ArrowRight, Search, Trash2, MapPin, ArrowLeft, FileText,
-  Printer, ExternalLink, UserCheck, Camera, Zap, RefreshCw,
-  ShieldCheck, Eye, Download, PackagePlus, Pencil
+  Package,
+  Plus,
+  X,
+  Truck,
+  ClipboardCheck,
+  CheckCircle2,
+  ArrowRight,
+  Search,
+  Trash2,
+  MapPin,
+  ArrowLeft,
+  FileText,
+  Printer,
+  ExternalLink,
+  UserCheck,
+  Camera,
+  Zap,
+  RefreshCw,
+  ShieldCheck,
+  Download,
+  PackagePlus,
+  Pencil,
 } from 'lucide-react';
 import AddItemsModal, { AddItemsOrder } from '@/components/orders/AddItemsModal';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -17,6 +35,7 @@ import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import { exportToExcel } from '@/lib/export/excel';
 import DualSignatureModal, { DeliveryDestination, QCSignatures } from '@/components/orders/DualSignatureModal';
+import { errorMessage } from '@/lib/errors';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
@@ -112,8 +131,8 @@ export default function OrdersPage() {
       if (!res.ok) throw new Error(json.error || 'ซิงค์ไม่สำเร็จ');
       toast.success(json.message || 'ซิงค์ข้อมูลจาก TMS สำเร็จ', { id: t });
       load();
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการซิงค์', { id: t });
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการซิงค์', { id: t });
     } finally {
       setSyncingId(null);
     }
@@ -147,7 +166,7 @@ export default function OrdersPage() {
       if (!res.ok) throw new Error(json.error || 'อัปเดตไม่สำเร็จ');
       toast.success(`→ ${STATUS_TH[next]}`, { id: t });
       load();
-    } catch (e: any) { toast.error(e.message, { id: t }); }
+    } catch (e) { toast.error(errorMessage(e), { id: t }); }
   };
 
   const cancelOrder = async (o: Order) => {
@@ -485,8 +504,8 @@ export default function OrdersPage() {
                                   if (!res.ok) throw new Error('เกิดข้อผิดพลาด');
                                   toast.success('ลูกค้าเตรียมของแล้ว → ส่งต่อไป QC/แพ็ก', { id: t });
                                   load();
-                                } catch (e: any) {
-                                  toast.error(e.message, { id: t });
+                                } catch (e) {
+                                  toast.error(errorMessage(e), { id: t });
                                 }
                               }}
                               title="ลูกค้าเตรียมของไว้แล้ว ข้ามไปสถานี QC & แพ็กทันที"
@@ -615,8 +634,8 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
       if (!res.ok) throw new Error(json.error || 'บันทึกการจัดส่งไม่สำเร็จ');
       toast.success('ออเดอร์ถูกเปลี่ยนสถานะเป็น "จัดส่งแล้ว" และตัดสต็อกเรียบร้อย', { id: t });
       onDone();
-    } catch (err: any) {
-      toast.error(err.message, { id: t });
+    } catch (err) {
+      toast.error(errorMessage(err), { id: t });
     } finally {
       setSubmitting(false);
     }
@@ -898,7 +917,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
           { duration: 7000, icon: '📦', style: { background: '#7c2d12', color: '#fff' } });
       }
       onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
@@ -1407,7 +1426,7 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
       if (!res.ok) throw new Error(json.error === 'Forbidden' ? 'เฉพาะแอดมินขึ้นไปเท่านั้น' : (json.error || 'บันทึกไม่สำเร็จ'));
       toast.success('แก้ไขออเดอร์แล้ว');
       onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   return (

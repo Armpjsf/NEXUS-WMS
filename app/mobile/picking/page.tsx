@@ -2,26 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  Boxes, 
-  ArrowLeft, 
-  CheckCircle2, 
-  Play, 
-  RotateCcw, 
-  MapPin, 
-  Navigation, 
-  Volume2, 
-  VolumeX, 
-  Camera, 
-  RefreshCw, 
-  Scan, 
-  Check, 
-  Sparkles,
+import {
+  Boxes,
+  ArrowLeft,
+  CheckCircle2,
+  Play,
+  RotateCcw,
+  Navigation,
+  Volume2,
+  VolumeX,
+  Camera,
+  RefreshCw,
+  Check,
   ChevronRight,
-  AlertCircle,
   Package,
   PlusCircle,
-  FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
@@ -39,10 +34,9 @@ import {
   speakPickInstruction,
   speakThai,
   triggerHaptic,
-  speakScanSuccess,
   speakScanMismatch,
   primeVoice,
-  getVoiceDiagnostic
+  getVoiceDiagnostic,
 } from '@/lib/voiceAssistant';
 import { extractScannedSku } from '@/lib/scan';
 import { getApiUrl } from '@/lib/config';

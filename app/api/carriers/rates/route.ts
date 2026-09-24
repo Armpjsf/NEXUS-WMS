@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +16,8 @@ export async function GET() {
       price: Number(r.price || 0), etaDays: r.eta_days, active: !!r.active,
     }));
     return NextResponse.json({ success: true, rates });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -35,8 +36,8 @@ export async function POST(request: Request) {
     if (b.id) await admin.from('carrier_rates').update(row).eq('org_id', orgId).eq('id', b.id);
     else await admin.from('carrier_rates').insert(row);
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -47,7 +48,7 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ error: 'ระบุ id' }, { status: 400 });
     await getServiceSupabase().from('carrier_rates').delete().eq('org_id', orgId).eq('id', id);
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +32,8 @@ export async function GET() {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ success: true, boms: (data || []).map(mapBom) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, boms: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), boms: [] }, { status: 200 });
   }
 }
 
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       .single();
     if (error) throw error;
     return NextResponse.json({ success: true, bom: mapBom(data) });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

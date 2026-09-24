@@ -277,9 +277,13 @@ export async function binMoveAll(
 ): Promise<{ moved: number; total: number }> {
   const admin = getServiceSupabase();
   const from = norm(fromBin);
+  await ensureSeeded(admin, orgId, sku);
+  // A bin can hold several lots of one SKU (one row each) — sum them; the old
+  // maybeSingle() errored on mixed-lot bins and moved nothing.
   const { data: src } = await admin
-    .from(TABLE).select('quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', from).maybeSingle();
-  return binMove(orgId, sku, from, toBin, Number(src?.quantity || 0));
+    .from(TABLE).select('quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', from);
+  const qty = (src || []).reduce((s, r: any) => s + Number(r.quantity || 0), 0);
+  return binMove(orgId, sku, from, toBin, qty);
 }
 
 /** Set an exact counted quantity for a specific bin (used by adjustments). */

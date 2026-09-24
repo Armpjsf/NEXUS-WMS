@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 interface SlottingInsight {
   productId: string;
@@ -113,8 +114,8 @@ export default function SlottingPage() {
       } else {
         alert(result.error || 'เกิดข้อผิดพลาดในการดำเนินการ');
       }
-    } catch (err: any) {
-      alert(err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } catch (err) {
+      alert(errorMessage(err) || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getUoms, setUom } from '@/lib/uom';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +12,8 @@ export async function GET(request: Request) {
     const sku = new URL(request.url).searchParams.get('sku');
     if (!sku) return NextResponse.json({ success: false, error: 'ระบุ sku' }, { status: 400 });
     return NextResponse.json({ success: true, sku, uoms: await getUoms(orgId, sku) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, uoms: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), uoms: [] }, { status: 200 });
   }
 }
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     }
     await setUom(orgId, b.sku, { code: b.code, name: b.name, factor: Number(b.factor), barcode: b.barcode });
     return NextResponse.json({ success: true, uoms: await getUoms(orgId, b.sku) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

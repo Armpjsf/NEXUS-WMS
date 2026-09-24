@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
-import { binAdd, binConsume, binSet } from '@/lib/stockLocations';
+import { binAdd, binConsume, binSet, getBins } from '@/lib/stockLocations';
 import { toBaseQty } from '@/lib/uom';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // large history loads take time (per-row stock apply)
@@ -71,17 +72,29 @@ export async function POST(request: Request) {
       const baseQty = await toBaseQty(orgId, r.sku, r.qty, r.uom);
       const when = (r.date && !isNaN(r.date.getTime()) ? r.date : new Date()).toISOString();
 
+      // ADJUST rows are a counted quantity for the bin; the ledger stores the
+      // signed correction (counted − before), same as count approval does.
+      let ledgerQty = baseQty;
+      let note = r.note || null;
       try {
         if (r.type === 'IN') await binAdd(orgId, r.sku, r.location || 'RECEIVING-DOCK', baseQty);
         else if (r.type === 'OUT' || r.type === 'DAMAGE') await binConsume(orgId, r.sku, baseQty, { preferBin: r.location, docRef: r.ref });
-        else if (r.type === 'ADJUST') await binSet(orgId, r.sku, r.location || 'UNASSIGNED', baseQty);
-      } catch (e: any) { errors.push(`แถว ${r.idx + 1}: ${e.message}`); continue; }
+        else if (r.type === 'ADJUST') {
+          const bin = (r.location || '').trim() || 'UNASSIGNED'; // same normalisation as stockLocations
+          const before = (await getBins(orgId, r.sku))
+            .filter(b => b.binCode === bin)
+            .reduce((s, b) => s + Number(b.quantity || 0), 0);
+          await binSet(orgId, r.sku, r.location || 'UNASSIGNED', baseQty);
+          ledgerQty = baseQty - before;
+          note = [note, `นับได้ ${baseQty} (เดิม ${before})`].filter(Boolean).join(' · ');
+        }
+      } catch (e) { errors.push(`แถว ${r.idx + 1}: ${errorMessage(e)}`); continue; }
 
       txns.push({
         org_id: orgId, type: r.type === 'ADJUST' ? 'ADJUST' : r.type, sku: r.sku,
-        product_name: nameMap.get(r.sku) || r.sku, qty: baseQty, unit_price: 0,
+        product_name: nameMap.get(r.sku) || r.sku, qty: ledgerQty, unit_price: 0,
         doc_ref: r.ref || `HIST-${r.type}`, location: r.location || '', user_name: r.by,
-        notes: r.note || null, created_at: when,
+        notes: note, created_at: when,
       });
       byType[r.type]++; applied++;
       if (txns.length >= 200) await flush();
@@ -93,7 +106,7 @@ export async function POST(request: Request) {
       errors: errors.slice(0, 100), errorCount: errors.length,
       message: `นำเข้าประวัติ ${applied}/${rows.length} รายการ — ระบบคำนวณยอดคงเหลือจากประวัติแล้ว`,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

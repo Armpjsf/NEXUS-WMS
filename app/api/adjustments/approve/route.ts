@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase, getServiceSupabase } from '@/lib/supabase';
+import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 import { binSet } from '@/lib/stockLocations';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
         : `ปฏิเสธคำขอปรับยอดสต็อก ${requestId} แล้ว`,
       status: newStatus
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

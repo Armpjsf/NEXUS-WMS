@@ -1,10 +1,12 @@
 /**
- * B3 — Lightweight in-memory rate limiter (dependency-free).
+ * Rate limiting.
  *
- * Best-effort: state lives per serverless instance, so it slows brute-force /
- * abuse without being a distributed guarantee. For a hard global limit, back it
- * with Upstash/Redis later — the call sites stay the same.
+ * rateLimitShared() counts in Postgres (wms_rate_hit, sql/20260925) so every
+ * serverless instance shares one counter — a real limit on login/signup.
+ * rateLimit() is the per-instance in-memory fallback, used when the RPC isn't
+ * available (SQL not run / DB unreachable) so auth never breaks on it.
  */
+import { getServiceSupabase } from './supabase';
 
 interface Bucket { count: number; resetAt: number; }
 const buckets = new Map<string, Bucket>();
@@ -37,4 +39,17 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateRes
 export function clientIp(req: Request): string {
   const xff = req.headers.get('x-forwarded-for') || '';
   return xff.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown';
+}
+
+/** Allow up to `limit` hits per `windowMs` for `key`, shared across instances. */
+export async function rateLimitShared(key: string, limit: number, windowMs: number): Promise<RateResult> {
+  try {
+    const { data, error } = await getServiceSupabase().rpc('wms_rate_hit', { p_key: key, p_window_ms: windowMs });
+    if (error) throw error;
+    const hits = Number(data) || 0;
+    if (hits > limit) return { ok: false, remaining: 0, retryAfterMs: windowMs };
+    return { ok: true, remaining: Math.max(0, limit - hits), retryAfterMs: 0 };
+  } catch {
+    return rateLimit(key, limit, windowMs);
+  }
 }

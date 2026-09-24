@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShieldAlert, AlertTriangle, CheckCircle, Search, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';

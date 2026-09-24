@@ -3,26 +3,38 @@
 import { getApiUrl } from "@/lib/config";
 import { useEffect, useState } from "react";
 import CountUp from 'react-countup';
-import { 
-  BarChart3, 
-  Activity, 
-  Package, 
-  ArrowUpRight, ArrowDownRight, AlertTriangle, TrendingUp, DollarSign, 
-  Calendar, Clock, LayoutDashboard, Presentation, CheckCircle, MapPin
+import {
+  Activity,
+  Package,
+  ArrowUpRight,
+  ArrowDownRight,
+  AlertTriangle,
+  DollarSign,
+  Calendar,
+  Clock,
+  CheckCircle,
+  MapPin,
 } from "lucide-react";
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  PieChart,
+  Pie,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend,
 } from 'recharts';
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
-
-// Lazy-load the heavy chart components so the dashboard shell paints fast
-// instead of blocking on the full chart bundle.
-const chartLoading = () => <div className="h-64 w-full rounded-2xl bg-slate-100 animate-pulse" />;
-const WaterfallChart = dynamic(() => import("@/components/charts/WaterfallChart"), { ssr: false, loading: chartLoading });
-const YearlyComparisonChart = dynamic(() => import("@/components/charts/YearlyComparisonChart"), { ssr: false, loading: chartLoading });
-const AnnualTrendChart = dynamic(() => import("@/components/charts/AnnualTrendChart"), { ssr: false, loading: chartLoading });
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AmbientBackground } from "@/components/ui/AmbientBackground";
@@ -36,6 +48,13 @@ import StockDepletionChart from "@/components/StockDepletionChart";
 import { generateDepletionData } from "@/lib/forecast";
 import StitchTelemetryStrip from "@/components/dashboard/StitchTelemetryStrip";
 import StitchDockMatrix from "@/components/dashboard/StitchDockMatrix";
+
+// Lazy-load the heavy chart components so the dashboard shell paints fast
+// instead of blocking on the full chart bundle.
+const chartLoading = () => <div className="h-64 w-full rounded-2xl bg-slate-100 animate-pulse" />;
+const WaterfallChart = dynamic(() => import("@/components/charts/WaterfallChart"), { ssr: false, loading: chartLoading });
+const YearlyComparisonChart = dynamic(() => import("@/components/charts/YearlyComparisonChart"), { ssr: false, loading: chartLoading });
+const AnnualTrendChart = dynamic(() => import("@/components/charts/AnnualTrendChart"), { ssr: false, loading: chartLoading });
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -74,6 +93,20 @@ export default function Dashboard() {
   // Dashboard Customization
   const { visibleWidgets, toggleWidget, mounted } = useDashboardCustomization();
   const [selectedForecastItem, setSelectedForecastItem] = useState<any>(null);
+  const [forecastHistory, setForecastHistory] = useState<Array<{ date: string; stock: number }>>([]);
+
+  // Real 7-day stock history for the selected SKU (depletion chart).
+  useEffect(() => {
+    const sku = selectedForecastItem?.sku;
+    setForecastHistory([]);
+    if (!sku) return;
+    let cancelled = false;
+    fetch(getApiUrl(`/api/stock/history?sku=${encodeURIComponent(sku)}&days=7`), { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (!cancelled && d?.history) setForecastHistory(d.history); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedForecastItem?.sku]);
 
   // Set default date range on mount (Start from 2024 to include historical data)
   useEffect(() => {
@@ -698,7 +731,7 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-3">
                              <StockDepletionChart 
-                                data={generateDepletionData(selectedForecastItem.stock, selectedForecastItem.burnRate)}
+                                data={generateDepletionData(selectedForecastItem.stock, selectedForecastItem.burnRate, forecastHistory)}
                                 productName={selectedForecastItem.name}
                                 burnRate={selectedForecastItem.burnRate}
                                 daysLeft={selectedForecastItem.daysLeft}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Download, Calendar, Filter, ArrowRight, BarChart, Table, ArrowLeft } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, BarChart, Table, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';

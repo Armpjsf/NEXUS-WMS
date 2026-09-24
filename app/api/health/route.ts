@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,8 @@ export async function GET() {
     // org-scope-ok: connectivity probe, reads no tenant data back
     const { error } = await getServiceSupabase().from('products').select('sku').limit(1);
     if (!error) db = 'ok'; else dbError = error.message;
-  } catch (e: any) {
-    dbError = e?.message;
+  } catch (e) {
+    dbError = errorMessage(e);
   }
 
   const ok = db === 'ok';

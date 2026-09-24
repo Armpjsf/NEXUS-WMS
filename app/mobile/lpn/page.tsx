@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface LPNItem { sku?: string; productName?: string; quantity?: number; }
 interface LPN {
@@ -62,7 +63,7 @@ export default function MobileLpnPage() {
       toast.success(`ย้าย ${active.lpnNumber} → ${newLoc.trim()} แล้ว`);
       setActive(null); setNewLoc('');
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(false); }
   };
 
   const list = lpns.filter(l => !search.trim() ||

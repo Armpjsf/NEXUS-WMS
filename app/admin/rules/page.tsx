@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Plus, Trash2, CheckCircle, XCircle, AlertTriangle, Save, Play } from 'lucide-react';
+import { Bot, Plus, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 

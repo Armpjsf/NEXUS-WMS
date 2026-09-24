@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveErpOrg } from '@/lib/erpAuth';
 import { ErpInboundAsnSchema } from '@/lib/erp/erpConnector';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       message: `ASN ${asn.asnNumber} ingested successfully with ${asn.items.length} items. Assigned to ${asn.dockBay}.`,
       asnNumber: asn.asnNumber
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

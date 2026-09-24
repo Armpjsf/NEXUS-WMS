@@ -8,8 +8,6 @@ import {
   ShieldAlert,
   Camera,
   CheckCircle2,
-  Upload,
-  AlertTriangle
 } from 'lucide-react';
 import CameraScannerModal from '@/components/CameraScannerModal';
 

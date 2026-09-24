@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { fetchAllRows } from '@/lib/data/fetchAll';
+import { txDelta } from '@/lib/ledger';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,15 +54,17 @@ export async function GET(request: Request) {
         return normalizedTerms.some(term => s === term || n === term);
       })
       .map((r: any) => {
-        const qty = Number(r.qty ?? 0);
+        // Signed effect per type (lib/ledger): ADJUST is a signed correction,
+        // RELOCATE only moves bins and doesn't change the total.
+        const delta = txDelta(r.type, r.qty);
         const isIn = r.type === 'IN';
         const isDamage = r.type === 'DAMAGE';
         return {
           date: r.created_at,
-          docRef: isDamage ? `Damage: ${r.notes || ''}` : (r.doc_ref || (isIn ? 'Inbound' : 'Outbound')),
+          docRef: isDamage ? `Damage: ${r.notes || ''}` : (r.doc_ref || (isIn ? 'Inbound' : r.type === 'OUT' ? 'Outbound' : r.type)),
           type: r.type,
-          in: isIn ? qty : 0,
-          out: isIn ? 0 : qty, // OUT and DAMAGE both reduce stock
+          in: delta > 0 ? delta : 0,
+          out: delta < 0 ? -delta : 0,
           balance: 0,
         };
       });
@@ -90,8 +94,8 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(finalMovements);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Stock Card API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

@@ -1,28 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Layers, 
-  Plus, 
-  MoveRight, 
-  Printer, 
-  Search, 
-  RefreshCw, 
-  MapPin, 
-  Scale, 
-  Box, 
-  CheckCircle2, 
+import {
+  Layers,
+  Plus,
+  MoveRight,
+  Printer,
+  Search,
+  RefreshCw,
+  MapPin,
   X,
-  FileSpreadsheet,
-  QrCode,
-  ArrowRight
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
-import { LPN, LPNItem } from '@/lib/lpnEngine';
+import { LPN } from '@/lib/lpnEngine';
+import { errorMessage } from '@/lib/errors';
 
 export default function LpnManagementPage() {
   const [lpns, setLpns] = useState<LPN[]>([]);
@@ -93,8 +87,8 @@ export default function LpnManagementPage() {
       toast.success(`สร้าง LPN ${json.data?.lpnNumber} สำเร็จ`);
       setShowCreateModal(false);
       fetchLpns();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาด');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาด');
     } finally {
       setIsCreating(false);
     }
@@ -119,8 +113,8 @@ export default function LpnManagementPage() {
       setMovingLpn(null);
       setNewLocation('');
       fetchLpns();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาด');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาด');
     } finally {
       setIsMoving(false);
     }

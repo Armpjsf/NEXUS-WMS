@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { listReturns, getReturn, createReturn, updateReturn } from '@/lib/data/returns';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,9 @@ export async function GET(request: Request) {
     const status = searchParams.get('status') || undefined;
     const returns = await listReturns({ status });
     return NextResponse.json({ returns });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API returns GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -33,9 +34,9 @@ export async function POST(request: Request) {
     const rma = await createReturn({ ...body, createdBy: session?.user?.name || session?.user?.email || 'System' });
     if (!rma) return NextResponse.json({ error: 'สร้างใบคืนไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, rma });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API returns POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -47,8 +48,8 @@ export async function PATCH(request: Request) {
     const rma = await updateReturn(id, patch);
     if (!rma) return NextResponse.json({ error: 'อัปเดตไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, rma });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API returns PATCH error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

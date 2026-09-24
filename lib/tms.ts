@@ -10,6 +10,7 @@
 // flow. Failures are logged and swallowed.
 
 import type { OutboundOrder } from './data/orders';
+import { errorMessage } from '@/lib/errors';
 
 export function isTmsEnabled(): boolean {
   return Boolean(process.env.TMS_API_URL && process.env.TMS_API_KEY);
@@ -231,9 +232,9 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
     const trackingUrl = data?.tracking_url || (jobId ? getTmsTrackingUrl(jobId) : undefined);
 
     return { ok: true, jobId, trackingUrl };
-  } catch (e: any) {
-    console.error(`[tms] create job error for ${order.orderNo}:`, e?.message || e);
-    return { ok: false, error: e?.message || 'error' };
+  } catch (e) {
+    console.error(`[tms] create job error for ${order.orderNo}:`, errorMessage(e) || e);
+    return { ok: false, error: errorMessage(e) || 'error' };
   }
 }
 
@@ -267,9 +268,9 @@ export async function appendTmsJobItems(
     }
     const data: any = await res.json().catch(() => ({}));
     return { ok: true, added: Number(data?.items_added ?? items.length) };
-  } catch (e: any) {
-    console.error(`[tms] append items error for ${jobId}:`, e?.message || e);
-    return { ok: false, error: e?.message || 'error' };
+  } catch (e) {
+    console.error(`[tms] append items error for ${jobId}:`, errorMessage(e) || e);
+    return { ok: false, error: errorMessage(e) || 'error' };
   }
 }
 
@@ -327,9 +328,9 @@ export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: stri
         wmsOrderNo: j.wms_order_no,
       },
     };
-  } catch (e: any) {
-    console.error('[tms] fetch status error:', e?.message || e);
-    return { ok: false, error: e?.message || 'error' };
+  } catch (e) {
+    console.error('[tms] fetch status error:', errorMessage(e) || e);
+    return { ok: false, error: errorMessage(e) || 'error' };
   }
 }
 

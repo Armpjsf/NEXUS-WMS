@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect, Fragment, ReactNode } from 'react';
-import { Bot, X, Send, Loader2, Sparkles, ChevronDown, RefreshCw } from 'lucide-react';
+import { useState, useRef, useEffect, Fragment, ReactNode } from 'react';
+import { Bot, X, Send, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   const nodes: ReactNode[] = [];

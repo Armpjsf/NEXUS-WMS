@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveErpOrg } from '@/lib/erpAuth';
 import { ErpOutboundOrderSchema } from '@/lib/erp/erpConnector';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       message: `Order ${order.orderNumber} ingested from ERP. Ready for Wave Allocation.`,
       orderNumber: order.orderNumber
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

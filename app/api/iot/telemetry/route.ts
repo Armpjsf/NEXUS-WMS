@@ -5,6 +5,7 @@ import { evaluateSensorReading } from '@/lib/iot/sensorEngine';
 import { dispatchNotification } from '@/lib/notifications/notificationGateway';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +35,8 @@ export async function GET() {
       };
     });
     return NextResponse.json({ success: true, sensors });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, sensors: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), sensors: [] }, { status: 200 });
   }
 }
 
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, reading });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

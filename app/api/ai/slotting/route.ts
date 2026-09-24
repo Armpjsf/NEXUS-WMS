@@ -6,6 +6,7 @@ import { getCurrentOrgId } from '@/lib/orgContext';
 import { createWarehouseTask } from '@/lib/taskEngine';
 import { binMove, binMoveAll } from '@/lib/stockLocations';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,9 +113,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error executing slotting action:', error);
-    return NextResponse.json({ error: error.message || 'Action failed' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) || 'Action failed' }, { status: 500 });
   }
 }
 

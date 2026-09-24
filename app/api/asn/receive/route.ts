@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
 import { createReceipt } from '@/lib/data/receipts';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
       .eq('id', asnId).eq('org_id', orgId);
 
     return NextResponse.json({ success: true, message: `สร้างใบรับจาก ${head.asn_no} แล้ว`, receiptId: (receipt as any).id });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

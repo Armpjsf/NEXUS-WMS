@@ -5,12 +5,9 @@ import {
   Bot,
   Cpu,
   Boxes,
-  Zap,
   BatteryCharging,
   Battery,
-  BatteryMedium,
   CheckCircle2,
-  AlertTriangle,
   Play,
   RefreshCw,
   Send,
@@ -21,12 +18,12 @@ import {
   X,
   Loader2,
   ArrowLeft,
-  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
+import { errorMessage } from '@/lib/errors';
 
 interface RobotFleetDevice {
   id: string;
@@ -137,7 +134,7 @@ export default function WcsRoboticsPage() {
       toast.success(`ลงทะเบียน ${newDevice.code} แล้ว`);
       setNewDevice({ code: '', name: '', type: 'AGV_PALLET_LIFT', currentLocation: '' });
       setShowDeviceModal(false); fetchWcsData();
-    } catch (e: any) { toast.error(e.message); } finally { setSavingDevice(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSavingDevice(false); }
   };
 
   const deleteDevice = async (code: string) => {
@@ -170,8 +167,8 @@ export default function WcsRoboticsPage() {
       } else {
         alert(result.error || 'ไม่สามารถส่งคำสั่งงานหุ่นยนต์ได้');
       }
-    } catch (err: any) {
-      alert(err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } catch (err) {
+      alert(errorMessage(err) || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSubmitting(false);
     }

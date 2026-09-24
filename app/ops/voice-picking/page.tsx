@@ -3,25 +3,21 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
-  Mic,
   Volume2,
   CheckCircle2,
   ArrowRight,
   RotateCcw,
   MapPin,
-  Sparkles,
   Layers,
-  Radio,
-  Headphones
+  Headphones,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import {
   VoicePickStep,
-  sampleVoicePickTasks,
   synthesizePickSpeech,
   synthesizeConfirmSuccess,
-  synthesizeErrorSpeech
+  synthesizeErrorSpeech,
 } from '@/lib/voiceEngine';
 
 export default function VoicePickingPage() {
@@ -236,6 +232,7 @@ export default function VoicePickingPage() {
                         <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#57ec7f]"></span>
                       </span>
                       <span className="text-xs font-semibold text-[#57ec7f]">Pick-to-Light Bay LED Active</span>
+                      <span className="rounded bg-[#facc15]/15 px-1.5 py-px text-[9px] font-bold text-[#facc15]" title="ยังไม่ได้ต่อไฟชั้นวางจริง">ทดลอง</span>
                     </div>
                     <span className="font-mono text-xs px-2.5 py-0.5 bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30 rounded font-bold">
                       BAY #{currentStep.checkDigit}

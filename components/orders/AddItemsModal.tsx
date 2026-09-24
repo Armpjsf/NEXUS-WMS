@@ -5,6 +5,7 @@ import { X, Plus, Minus, Trash2, ScanLine, PackagePlus, Search, Camera } from 'l
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import { errorMessage } from '@/lib/errors';
 
 // product API (mapProductRow) เก็บ SKU ไว้ใน field `id` ไม่ใช่ `sku`
 interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
@@ -137,8 +138,8 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
       toast.success(`เพิ่ม ${lines.length} รายการเข้าออเดอร์แล้ว${tmsMsg}`);
       onDone();
       onClose();
-    } catch (e: any) {
-      toast.error(e.message || 'เพิ่มของไม่สำเร็จ');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เพิ่มของไม่สำเร็จ');
     } finally {
       setSaving(false);
     }

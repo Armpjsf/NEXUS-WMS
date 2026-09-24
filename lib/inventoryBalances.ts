@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export interface InventoryBalanceRecord {
   id: string;
@@ -131,7 +132,7 @@ export async function allocateStock(
       return { success: false, error: 'ยอดจองถูกแก้ไขพร้อมกัน กรุณาลองใหม่ (concurrent reservation)' };
     }
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err) {
+    return { success: false, error: errorMessage(err) };
   }
 }

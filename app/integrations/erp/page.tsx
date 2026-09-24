@@ -1,26 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  Network, 
-  CheckCircle2, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  RefreshCw, 
-  Printer, 
-  Database, 
-  Key, 
-  ShieldCheck, 
-  Code,
+import {
+  Network,
+  CheckCircle2,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Printer,
+  ShieldCheck,
   Copy,
-  ExternalLink,
   Play,
   Download,
   Info,
-  Barcode
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 export default function ErpIntegrationPage() {
   const [selectedTab, setSelectedTab] = useState<'status' | 'asn' | 'orders' | 'zpl'>('status');
@@ -79,8 +74,8 @@ export default function ErpIntegrationPage() {
       } else {
         toast.error(data.error || 'ส่งข้อมูลไม่สำเร็จ');
       }
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSimulatingAsn(false);
     }
@@ -102,8 +97,8 @@ export default function ErpIntegrationPage() {
       } else {
         toast.error(data.error || 'ส่งข้อมูลไม่สำเร็จ');
       }
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSimulatingOrder(false);
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,8 +63,8 @@ export async function GET(request: Request) {
         'Cache-Control': 'public, max-age=86400, immutable',
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.warn('TTS route error:', error);
-    return NextResponse.json({ error: error.message || 'TTS generation failed' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) || 'TTS generation failed' }, { status: 500 });
   }
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Boxes, Plus, Trash2, RefreshCw, Barcode } from 'lucide-react';
+import { X, Boxes, Plus, RefreshCw, Barcode } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 interface UomRow { code: string; name?: string; factor: number; barcode?: string; isBase?: boolean }
 
@@ -49,7 +50,7 @@ export function UomModal({ isOpen, onClose, product, onRefresh }: Props) {
       setForm({ code: '', name: '', factor: '', barcode: '' });
       setUoms(Array.isArray(d.uoms) ? d.uoms : uoms);
       onRefresh?.();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   const base = uoms.find(u => u.isBase);

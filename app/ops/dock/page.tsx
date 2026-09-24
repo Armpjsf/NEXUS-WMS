@@ -4,22 +4,14 @@ import React, { useState, useEffect } from 'react';
 import {
   Truck,
   Plus,
-  Calendar,
-  Clock,
-  MapPin,
-  CheckCircle2,
-  AlertCircle,
   RefreshCw,
   Search,
-  Filter,
-  ArrowRight,
-  ShieldCheck,
-  UserCheck,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { DockAppointment } from '@/lib/dockEngine';
+import { errorMessage } from '@/lib/errors';
 
 export default function DockAppointmentsPage() {
   const [appointments, setAppointments] = useState<DockAppointment[]>([]);
@@ -81,7 +73,7 @@ export default function DockAppointmentsPage() {
       if (data.success === false) throw new Error(data.error);
       toast.success(`เพิ่มช่อง ${newBayName.trim()} แล้ว`);
       setNewBayName(''); setShowBayModal(false); fetchBays();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(errorMessage(e)); }
   };
 
   const deleteBay = async (id: string, name: string) => {
@@ -122,8 +114,8 @@ export default function DockAppointmentsPage() {
       } else {
         toast.error(data.error);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     }
   };
 
@@ -141,8 +133,8 @@ export default function DockAppointmentsPage() {
       } else {
         toast.error(data.error);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     }
   };
 

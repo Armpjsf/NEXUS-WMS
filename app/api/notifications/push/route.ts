@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { messaging } from '@/lib/firebaseAdmin';
 import { getDeviceTokens } from '@/lib/data/wms';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST(req: Request) {
     // Basic Security: Check for a secret key if needed, or open for now (Google Apps Script usage)
@@ -49,8 +50,8 @@ export async function POST(req: Request) {
              return NextResponse.json({ error: "Firebase not initialized" }, { status: 500 });
         }
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("[PushAPI] Error:", error);
-         return NextResponse.json({ error: error.message }, { status: 500 });
+         return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
     }
 }

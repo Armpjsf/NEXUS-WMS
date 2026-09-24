@@ -1,20 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Award,
   Zap,
-  CheckCircle2,
   Clock,
-  TrendingUp,
   Search,
-  Filter,
-  BarChart2,
-  ChevronUp,
   ShieldCheck,
-  Building2,
-  Printer
+  Printer,
 } from 'lucide-react';
 import { getStaffPerformanceData, StaffMetric, StaffPerformanceSummary } from '@/lib/data/staff-analytics';
 import { cn } from '@/lib/utils';

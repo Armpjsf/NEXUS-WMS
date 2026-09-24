@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { listReceipts, getReceipt, createReceipt, commitReceipt, cancelReceipt } from '@/lib/data/receipts';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,9 @@ export async function GET(request: Request) {
     const status = searchParams.get('status') || undefined;
     const receipts = await listReceipts({ status });
     return NextResponse.json({ receipts });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API receiving GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -33,9 +34,9 @@ export async function POST(request: Request) {
     const receipt = await createReceipt({ ...body, createdBy: session?.user?.name || session?.user?.email || 'System' });
     if (!receipt) return NextResponse.json({ error: 'สร้างใบรับเข้าไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, receipt });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API receiving POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -55,8 +56,8 @@ export async function PATCH(request: Request) {
     const receipt = await commitReceipt(id, lines);
     if (!receipt) return NextResponse.json({ error: 'ยืนยันรับเข้าไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, receipt });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API receiving PATCH error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

@@ -8,6 +8,7 @@
 // If the RPC is missing (SQL not run yet) we fall back to a time-based suffix
 // that is unique in practice, and log a warning — never a random 3-4 digits.
 import { getServiceSupabase } from './supabase';
+import { errorMessage } from '@/lib/errors';
 
 export type DocDateStyle = 'yymmdd' | 'yyyymmdd';
 
@@ -76,8 +77,8 @@ export async function nextDocNumber(prefix: string, opts: DocNumberOptions = {})
     const seq = Number(data);
     if (!Number.isFinite(seq) || seq <= 0) throw new Error(`bad sequence ${data}`);
     return formatDocNumber(prefix, date, seq, opts.pad ?? 3);
-  } catch (e: any) {
-    console.warn(`[docNumber] wms_next_doc_seq unavailable for ${prefix} (run sql/20260924_doc_sequences.sql):`, e?.message || e);
+  } catch (e) {
+    console.warn(`[docNumber] wms_next_doc_seq unavailable for ${prefix} (run sql/20260924_doc_sequences.sql):`, errorMessage(e) || e);
     return `${key}${fallbackSuffix(now)}`;
   }
 }
@@ -99,8 +100,8 @@ export async function nextMasterCode(
     const { data, error } = await getServiceSupabase().rpc('wms_next_doc_seq', { p_key: `${key}@${orgId}`, p_floor: floor });
     if (error) throw error;
     return `${key}${String(Number(data)).padStart(pad, '0')}`;
-  } catch (e: any) {
-    console.warn(`[docNumber] wms_next_doc_seq unavailable for ${prefix}:`, e?.message || e);
+  } catch (e) {
+    console.warn(`[docNumber] wms_next_doc_seq unavailable for ${prefix}:`, errorMessage(e) || e);
     return `${key}${Date.now().toString(36).toUpperCase()}`;
   }
 }

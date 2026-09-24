@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { Printer, X, Download, Copy, RefreshCw } from 'lucide-react';
+import { Printer, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
 import { motion, AnimatePresence } from 'framer-motion';

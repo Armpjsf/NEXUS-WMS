@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
       .select('role, signer_name, data_url, signed_at')
       .eq('org_id', orgId).eq('doc_type', docType).eq('doc_id', docId);
     return NextResponse.json({ signatures: data || [] });
-  } catch (e: any) {
+  } catch (e) {
     // Table may not exist yet (migration pending) — behave as "no signatures".
     return NextResponse.json({ signatures: [] });
   }
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     }, { onConflict: 'org_id,doc_type,doc_id,role' });
     if (error) throw error;
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'บันทึกลายเซ็นไม่สำเร็จ' }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: errorMessage(e) || 'บันทึกลายเซ็นไม่สำเร็จ' }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 import { resetBinsBulk } from '@/lib/stockLocations';
 import { upsertProductsForOrg } from '@/lib/data/productUpsert';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
         stock: Number(item.stock ?? item['จำนวน'] ?? item['จำนวนคงเหลือ'] ?? 0) || 0,
         min_stock: Number(item.min_stock ?? item.minStock ?? item['จุดสั่งซื้อ'] ?? item['จุดเตือนสต็อกต่ำ'] ?? 5) || 5,
         price: Number(item.price ?? item['ราคา'] ?? item['ราคาขาย'] ?? 0) || 0,
+        ...(Number(item.cost_price ?? item.cost ?? item['ราคาทุน'] ?? item['ต้นทุน'] ?? 0) > 0
+          ? { cost_price: Number(item.cost_price ?? item.cost ?? item['ราคาทุน'] ?? item['ต้นทุน']) } : {}),
         unit: (item.unit ?? item['หน่วยนับ'] ?? 'ชิ้น').toString().trim(),
         location: (item.location ?? item['พิกัด'] ?? item['พิกัดจัดเก็บ'] ?? item['พิกัดจัดเก็บ (Location)'] ?? 'Unassigned').toString().trim(),
         image_url: (item.image_url ?? item.image ?? item['ลิงก์รูปสินค้า (Image URL)'] ?? item['ลิงก์รูป'] ?? item['รูปภาพ'] ?? '') ? String(item.image_url ?? item.image ?? item['ลิงก์รูปสินค้า (Image URL)'] ?? item['ลิงก์รูป'] ?? item['รูปภาพ']).trim() : null,
@@ -114,8 +117,8 @@ export async function POST(request: Request) {
       errors: errors.length > 0 ? errors : undefined
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('Import API Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) || 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  TrendingUp, 
-  AlertTriangle, 
-  ShoppingCart, 
+import {
+  Sparkles,
+  TrendingUp,
+  AlertTriangle,
+  ShoppingCart,
   RefreshCw,
-  Activity,
-  BarChart3,
   CheckCircle2,
   DollarSign,
   Package,
@@ -21,7 +19,7 @@ import {
   ArrowLeft,
   Printer,
   Building2,
-  FileText
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -30,6 +28,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { getApiUrl } from '@/lib/config';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { speakThai } from '@/lib/voiceAssistant';
+import { errorMessage } from '@/lib/errors';
 
 // Sparkline history is computed from real transaction movements
 
@@ -185,9 +184,9 @@ export default function AIReorderPage() {
           } else {
               toast.error(json.error || 'ไม่สามารถสร้างใบสั่งซื้อได้');
           }
-      } catch (err: any) {
+      } catch (err) {
           console.error(err);
-          toast.error(err.message || 'เกิดข้อผิดพลาดในการสร้างใบสั่งซื้อ');
+          toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการสร้างใบสั่งซื้อ');
       } finally {
           setSubmitting(false);
       }

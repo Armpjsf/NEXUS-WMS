@@ -3,26 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import {
   Building2,
-  Receipt,
   Plus,
   Search,
   RefreshCw,
   Calculator,
-  FileSpreadsheet,
   Download,
-  Calendar,
-  Layers,
-  Box,
-  CheckCircle2,
-  DollarSign,
-  TrendingUp,
-  ArrowUpRight,
   Sparkles,
-  Users
+  Users,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { ThirdPartyClient, BillingPeriodCalculation } from '@/lib/billingEngine';
+import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
+import { errorMessage } from '@/lib/errors';
 
 export default function ThreePlBillingPage() {
   const [clients, setClients] = useState<ThirdPartyClient[]>([]);
@@ -97,8 +90,8 @@ export default function ThreePlBillingPage() {
       } else {
         toast.error(data.error || 'ล้มเหลว');
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     }
   };
 
@@ -131,8 +124,8 @@ export default function ThreePlBillingPage() {
       } else {
         toast.error(data.error);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     } finally {
       setIsCalculating(false);
     }
@@ -147,6 +140,9 @@ export default function ThreePlBillingPage() {
     <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
       <AmbientBackground />
       <div className="relative z-10 mx-auto max-w-7xl space-y-6">
+        <ExperimentalBanner>
+          ตัวคำนวณค่าบริการเป็นแบบร่าง — ปริมาณพื้นที่/ออเดอร์มาจากที่กรอกเอง ยังไม่ดึงจากการใช้งานจริง และยังไม่บันทึกเป็นใบแจ้งหนี้
+        </ExperimentalBanner>
 
         {/* Header Tactical Banner */}
         <div className="relative mx-auto flex flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between">
@@ -350,7 +346,7 @@ export default function ThreePlBillingPage() {
                         <h3 className="text-lg font-black text-[#dee2ec]">{billingResult.invoiceNumber}</h3>
                       </div>
                       <button
-                        onClick={() => toast.success('ดาวน์โหลดเอกสาร PDF สำเร็จ')}
+                        onClick={() => window.print()}
                         className="px-3 py-1.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-lg text-xs font-bold flex items-center gap-1.5 transition border border-[#30353d]"
                       >
                         <Download className="w-3.5 h-3.5" /> พิมพ์ / ส่งออก PDF

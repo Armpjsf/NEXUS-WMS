@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getInventoryBalances } from '@/lib/inventoryBalances';
+import { errorMessage } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
 
     const balances = await getInventoryBalances(orgId, { sku, locationCode });
     return NextResponse.json({ success: true, data: balances });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

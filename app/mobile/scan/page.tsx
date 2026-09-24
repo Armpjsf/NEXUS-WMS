@@ -107,7 +107,7 @@ export default function MobileScanPage() {
         (decodedText: string) => handleScanSuccess(decodedText),
         () => {}
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error('Scanner error:', err);
       setError('ไม่สามารถเปิดกล้องได้');
       setIsScanning(false);

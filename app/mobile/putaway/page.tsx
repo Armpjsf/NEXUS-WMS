@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -12,14 +12,13 @@ import {
   Search,
   Volume2,
   RefreshCw,
-  Boxes,
-  Tag
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
 import { speakPutawayLocation, triggerHaptic } from '@/lib/voiceAssistant';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
+import { errorMessage } from '@/lib/errors';
 
 export default function MobilePutawayPage() {
   const [step, setStep] = useState<'SCAN_ITEM' | 'CONFIRM_LOCATION' | 'DONE'>('SCAN_ITEM');
@@ -135,9 +134,9 @@ export default function MobilePutawayPage() {
       triggerHaptic('success');
       toast.success(`จัดเก็บ ${selectedProduct.name} เข้า ${targetBin.toUpperCase()} เรียบร้อย!`);
       setStep('DONE');
-    } catch (err: any) {
+    } catch (err) {
       triggerHaptic('error');
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการจัดเก็บ');
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการจัดเก็บ');
     } finally {
       setSubmitting(false);
     }

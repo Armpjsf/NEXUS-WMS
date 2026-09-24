@@ -5,14 +5,14 @@
 
 import { getServiceSupabase } from '@/lib/supabase';
 import { binMoveAll } from '@/lib/stockLocations';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { nextDocNumber } from './docNumber';
 
 // Use the service client for all LPN DB ops — RLS on license_plate_numbers /
 // lpn_items otherwise hides rows from the anon client, so a moved pallet's items
 // come back empty and its stock never follows.
 const supabase = getServiceSupabase();
-import { getCurrentOrgId } from '@/lib/orgContext';
-import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
-import { nextDocNumber } from './docNumber';
 
 export interface LPNItem {
   id?: string;

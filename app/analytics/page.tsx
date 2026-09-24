@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LineChart, TrendingUp, Clock, BarChart3, Sparkles, FileText, PieChart } from 'lucide-react';
+import { TrendingUp, Clock, BarChart3, Sparkles, FileText, PieChart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';

@@ -1,3 +1,4 @@
+import { errorMessage } from '@/lib/errors';
 /**
  * Pluggable Notification Gateway Architecture
  * Supports LINE Notify, LINE Official Account, Webhook, and Mock Staging.
@@ -67,12 +68,12 @@ export async function dispatchNotification(payload: NotificationPayload): Promis
     };
     notificationHistory.unshift(result);
     return result;
-  } catch (err: any) {
+  } catch (err) {
     const failedResult: NotificationResult = {
       success: false,
       channel: 'LINE_NOTIFY',
       status: 'FAILED',
-      logMessage: `Error sending LINE notification: ${err.message}`,
+      logMessage: `Error sending LINE notification: ${errorMessage(err)}`,
       timestamp
     };
     notificationHistory.unshift(failedResult);

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCarriers, getCarrierById, createCarrier, updateCarrier, deleteCarrier } from '@/lib/data/carriers';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +16,9 @@ export async function GET(request: Request) {
 
     const carriers = await getCarriers();
     return NextResponse.json({ carriers });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API carriers GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -31,9 +32,9 @@ export async function POST(request: Request) {
     const carrier = await createCarrier(body);
     if (!carrier) return NextResponse.json({ error: 'เพิ่มผู้ให้บริการขนส่งไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, carrier });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API carriers POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -46,9 +47,9 @@ export async function PUT(request: Request) {
     const carrier = await updateCarrier(id, patch);
     if (!carrier) return NextResponse.json({ error: 'อัปเดตผู้ให้บริการขนส่งไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, carrier });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API carriers PUT error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -61,8 +62,8 @@ export async function DELETE(request: Request) {
     const ok = await deleteCarrier(id);
     if (!ok) return NextResponse.json({ error: 'ลบผู้ให้บริการขนส่งไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API carriers DELETE error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

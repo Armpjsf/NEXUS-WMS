@@ -3,6 +3,7 @@ import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/data/fetchAll';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
         : `ยกเลิกการเรียกคืนล็อต ${lot} แล้ว`,
       affected,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

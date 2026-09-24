@@ -6,6 +6,7 @@ import {
   ArrowLeft, RefreshCw, PackageX, Bot,
   ClipboardList, ShieldAlert, Clock, Activity, BatteryLow,
 } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 interface CT {
   generatedAt: string;
@@ -28,7 +29,7 @@ export default function ControlTowerPage() {
       const d = await res.json();
       if (d.success === false) throw new Error(d.error || 'โหลดข้อมูลไม่สำเร็จ');
       setData(d);
-    } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
+    } catch (e) { setErr(errorMessage(e)); } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
 

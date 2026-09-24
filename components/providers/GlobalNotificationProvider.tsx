@@ -3,7 +3,6 @@
 // components/providers/GlobalNotificationProvider.tsx
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
 
 interface NotificationContextType {
   permission: NotificationPermission;

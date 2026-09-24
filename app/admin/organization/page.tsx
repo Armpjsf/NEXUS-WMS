@@ -5,6 +5,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Building2, ArrowLeft, Upload, Loader2, Save, Palette } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 const PLANS = ['FREE', 'PRO', 'ENTERPRISE'];
 const COLORS = ['#0ea5e9', '#6366f1', '#0d9488', '#e11d48', '#d97706', '#7c3aed', '#059669', '#0f172a'];
@@ -13,6 +14,7 @@ export default function OrganizationPage() {
   const [name, setName] = useState('');
   const [plan, setPlan] = useState('FREE');
   const [canEditPlan, setCanEditPlan] = useState(false);
+  const [planUsage, setPlanUsage] = useState<{ limits: Record<string, number>; usage: Record<string, number> } | null>(null);
   const [color, setColor] = useState('#0ea5e9');
   const [logo, setLogo] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,8 @@ export default function OrganizationPage() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetch('/api/org', { cache: 'no-store' }).then(r => r.json()).then(d => {
+    fetch('/api/org?usage=1', { cache: 'no-store' }).then(r => r.json()).then(d => {
+      if (d.planUsage) setPlanUsage(d.planUsage);
       setName(d.name || ''); setPlan(d.plan || 'FREE'); setCanEditPlan(!!d.canEditPlan);
       setColor(d.brandingColor || '#0ea5e9'); setLogo(d.brandingLogo || '');
     }).catch(() => {}).finally(() => setLoading(false));
@@ -36,7 +39,7 @@ export default function OrganizationPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'อัปโหลดไม่สำเร็จ');
       setLogo(json.url); toast.success('อัปโหลดโลโก้แล้ว');
-    } catch (err: any) { toast.error(err.message); } finally { setUploading(false); e.target.value = ''; }
+    } catch (err) { toast.error(errorMessage(err)); } finally { setUploading(false); e.target.value = ''; }
   };
 
   const save = async () => {
@@ -50,7 +53,7 @@ export default function OrganizationPage() {
       if (!res.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
       toast.success('บันทึกการตั้งค่าองค์กรแล้ว');
       window.dispatchEvent(new Event('org-updated'));
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   if (loading) return <div className="min-h-screen grid place-items-center text-[#8a92a6]"><Loader2 className="w-8 h-8 animate-spin" /></div>;
@@ -106,6 +109,29 @@ export default function OrganizationPage() {
               ))}
             </div>
             {!canEditPlan && <p className="text-xs text-[#8a92a6] mt-2">เปลี่ยนแพ็กเกจได้เฉพาะผู้ดูแลแพลตฟอร์ม — ติดต่อผู้ให้บริการเพื่ออัปเกรด</p>}
+            {planUsage && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {([['products', 'สินค้า (SKU)'], ['users', 'ผู้ใช้'], ['branches', 'สาขา']] as const).map(([key, label]) => {
+                  const used = planUsage.usage[key] || 0;
+                  const limit = planUsage.limits[key];
+                  const unlimited = limit < 0;
+                  const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+                  return (
+                    <div key={key} className="rounded-xl border border-[#30353d] bg-[#1b2027] p-3">
+                      <div className="text-[11px] font-bold text-[#8a92a6]">{label}</div>
+                      <div className="mt-1 text-sm font-bold text-[#dee2ec]">
+                        {used.toLocaleString()} <span className="text-[#8a92a6] font-medium">/ {unlimited ? 'ไม่จำกัด' : limit.toLocaleString()}</span>
+                      </div>
+                      {!unlimited && (
+                        <div className="mt-2 h-1.5 rounded-full bg-[#30353d] overflow-hidden">
+                          <div className={`h-full rounded-full ${pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -114,7 +140,75 @@ export default function OrganizationPage() {
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} บันทึก
           </button>
         </div>
+
+        <OrgMembers />
       </div>
+    </div>
+  );
+}
+
+const MEMBER_ROLES = ['Viewer', 'Staff', 'Staff - Inbound', 'Staff - Picker', 'Staff - QC & Pack', 'Staff - Dispatch', 'Staff - Inventory', 'Staff - Outbound', 'Manager', 'Admin', 'Super Admin'];
+
+// Users from OTHER organizations who can switch into this one (org_memberships).
+function OrgMembers() {
+  const [members, setMembers] = useState<Array<{ userId: string; username: string; role: string; status: string }>>([]);
+  const [migrated, setMigrated] = useState(true);
+  const [username, setUsername] = useState('');
+  const [role, setRole] = useState('Staff');
+  const [busy, setBusy] = useState(false);
+
+  const load = () => fetch('/api/admin/org-members', { cache: 'no-store' })
+    .then(r => r.json()).then(d => { setMembers(d.members || []); setMigrated(d.migrated !== false); }).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const call = async (method: 'POST' | 'DELETE', body: object, ok: string) => {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/admin/org-members', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'ไม่สำเร็จ');
+      toast.success(ok); setUsername(''); load();
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="rounded-2xl border border-[#30353d] bg-[#171c23] p-6 space-y-4">
+      <div>
+        <h2 className="text-lg font-black text-[#dee2ec]">สมาชิกจากองค์กรอื่น</h2>
+        <p className="text-sm text-[#8a92a6]">ให้ผู้ใช้ที่มีบัญชีในองค์กรอื่นเข้ามาทำงานในองค์กรนี้ได้ — เขาสลับองค์กรได้จากแถบเมนูซ้าย</p>
+      </div>
+      {!migrated ? (
+        <p className="text-sm text-amber-400">ต้องรัน sql/20260925_cost_ratelimit_memberships.sql ก่อนใช้งานส่วนนี้</p>
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input value={username} onChange={e => setUsername(e.target.value)} placeholder="ชื่อผู้ใช้ (username)"
+              className="flex-1 bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2 text-sm text-[#dee2ec] outline-none focus:border-slate-500" />
+            <select value={role} onChange={e => setRole(e.target.value)}
+              className="bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2 text-sm text-[#dee2ec] outline-none">
+              {MEMBER_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <button disabled={busy || !username.trim()} onClick={() => call('POST', { username: username.trim(), role }, 'เพิ่มสมาชิกแล้ว')}
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold disabled:opacity-50">เพิ่ม</button>
+          </div>
+          {members.length === 0 ? (
+            <p className="text-sm text-[#8a92a6]">ยังไม่มีสมาชิกจากองค์กรอื่น</p>
+          ) : (
+            <div className="divide-y divide-[#30353d] rounded-xl border border-[#30353d]">
+              {members.map(m => (
+                <div key={m.userId} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-[#dee2ec] truncate">{m.username}</div>
+                    <div className="text-[11px] text-[#8a92a6]">{m.role}{m.status !== 'Active' ? ` · ${m.status}` : ''}</div>
+                  </div>
+                  <button disabled={busy} onClick={() => confirm(`นำ ${m.username} ออกจากองค์กรนี้?`) && call('DELETE', { userId: m.userId }, 'นำออกแล้ว')}
+                    className="text-xs font-bold text-rose-400 hover:text-rose-300 disabled:opacity-50">นำออก</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

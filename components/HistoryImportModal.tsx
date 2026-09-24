@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { X, Upload, Download, History, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 interface Props { isOpen: boolean; onClose: () => void; onSuccess?: () => void }
 interface Row { date: string; type: string; sku: string; qty: number; location?: string; ref?: string; note?: string; uom?: string }
@@ -67,7 +68,7 @@ export function HistoryImportModal({ isOpen, onClose, onSuccess }: Props) {
       setResult(d);
       toast.success(d.message || 'นำเข้าประวัติเรียบร้อย');
       onSuccess?.();
-    } catch (e: any) { toast.error(e.message); } finally { setImporting(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setImporting(false); }
   };
 
   if (!isOpen) return null;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addItemsToOrder } from '@/lib/data/orders';
 import { requireAuth } from '@/lib/apiAuth';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +25,8 @@ export async function POST(request: Request) {
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
     return NextResponse.json({ success: true, order: result.order, tms: result.tms });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API orders/add-items error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

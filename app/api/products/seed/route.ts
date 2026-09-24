@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { requireManagement } from '@/lib/apiAuth';
 import { upsertProductsForOrg } from '@/lib/data/productUpsert';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST() {
   try {
@@ -125,7 +126,7 @@ export async function POST() {
       message: 'สร้างสินค้าตัวอย่างพร้อมข้อมูล Lot และวันหมดอายุ (FEFO) สำเร็จ',
       count: demoProducts.length
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

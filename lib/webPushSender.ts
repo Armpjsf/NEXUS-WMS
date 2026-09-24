@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { getSubscriptions, removeSubscriptions, PushSubscription } from './subscriptionRepository';
+import { getSubscriptions, removeSubscriptions } from './subscriptionRepository';
 
 // Initialize VAPID
 const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;

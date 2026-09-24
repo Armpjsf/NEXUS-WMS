@@ -1,20 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Printer,
   Barcode as BarcodeIcon,
-  QrCode,
   Truck,
-  Box,
   MapPin,
   Sparkles,
-  Copy,
-  RefreshCw,
-  Plus,
-  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import Barcode from 'react-barcode';

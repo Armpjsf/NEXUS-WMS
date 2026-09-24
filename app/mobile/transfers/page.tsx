@@ -6,6 +6,7 @@ import { ArrowLeft, RefreshCw, ArrowLeftRight, ArrowRight, Send, PackageCheck, C
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 type TStatus = 'DRAFT' | 'IN_TRANSIT' | 'COMPLETED' | string;
 interface TItem { sku?: string; name?: string; qty?: number; unit?: string; }
@@ -52,7 +53,7 @@ export default function MobileTransfersPage() {
       if (!res.ok) throw new Error((await res.json()).error || 'ไม่สำเร็จ');
       toast.success(okMsg);
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusyId(null); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusyId(null); }
   };
 
   const list = transfers.filter(t => t.status === tab);

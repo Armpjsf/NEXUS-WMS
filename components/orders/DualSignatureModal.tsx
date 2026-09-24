@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { X, Check, Trash2, Printer, Plus, MapPin, ClipboardCheck, UserCheck, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false }) as any;
 
@@ -254,8 +255,8 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
       if (andPrint) {
         window.open(`/print/qc-handover?id=${order.id}`, '_blank');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการบันทึก', { id: loadToast });
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการบันทึก', { id: loadToast });
     } finally {
       setSaving(false);
     }

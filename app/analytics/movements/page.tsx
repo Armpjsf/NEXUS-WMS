@@ -8,6 +8,7 @@ import {
   FileSpreadsheet, FileText, Search, Loader2, Calendar, Download, Upload,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 type MType = 'IN' | 'OUT' | 'RETURN' | 'DAMAGE';
 
@@ -78,7 +79,7 @@ export default function MovementsReportPage() {
       XLSX.utils.book_append_sheet(wb, ws, active.label);
       XLSX.writeFile(wb, `รายงาน_${active.label}_${new Date().toISOString().slice(0, 10)}.xlsx`);
       toast.success('ดาวน์โหลด Excel แล้ว', { id: t });
-    } catch (e: any) { toast.error('ส่งออกไม่สำเร็จ: ' + e.message, { id: t }); }
+    } catch (e) { toast.error('ส่งออกไม่สำเร็จ: ' + errorMessage(e), { id: t }); }
   };
 
   const downloadTemplate = async () => {
@@ -151,8 +152,8 @@ export default function MovementsReportPage() {
 
       toast.success(`นำเข้าสำเร็จ ${ok} รายการ`, { id: t });
       load();
-    } catch (err: any) {
-      toast.error('นำเข้าไม่สำเร็จ: ' + err.message, { id: t, duration: 6000 });
+    } catch (err) {
+      toast.error('นำเข้าไม่สำเร็จ: ' + errorMessage(err), { id: t, duration: 6000 });
     } finally { setImporting(false); }
   };
 

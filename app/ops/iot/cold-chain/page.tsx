@@ -5,20 +5,17 @@ import {
   ThermometerSnowflake,
   Droplets,
   Battery,
-  AlertTriangle,
   Bell,
   RefreshCw,
   Send,
-  CheckCircle2,
-  ShieldCheck,
-  Flame,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { SensorTelemetry } from '@/lib/iot/sensorEngine';
 import { NotificationResult } from '@/lib/notifications/notificationGateway';
 import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
+import { errorMessage } from '@/lib/errors';
 
 export default function ColdChainIotPage() {
   const [sensors, setSensors] = useState<SensorTelemetry[]>([]);
@@ -71,8 +68,8 @@ export default function ColdChainIotPage() {
         toast.success('จำลองส่งแจ้งเตือนเข้า Notification Queue สำเร็จ!');
         fetchData();
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     } finally {
       setIsSending(false);
     }

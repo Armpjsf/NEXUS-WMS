@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTransactions } from '@/lib/data/wms';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-static';
 
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
         history 
     });
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

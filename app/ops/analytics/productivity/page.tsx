@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Activity,
   Users,
@@ -10,13 +10,11 @@ import {
   CheckCircle,
   AlertTriangle,
   Flame,
-  BarChart2,
   TrendingUp,
   RefreshCw,
   Boxes,
   ShieldCheck,
-  ChevronRight,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 

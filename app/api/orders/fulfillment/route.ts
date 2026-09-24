@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPendingFulfillment } from '@/lib/data/orders';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,8 @@ export async function GET(request: Request) {
       return NextResponse.json(result);
     }
     return NextResponse.json({ pending_tasks: [] });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API fulfillment error:', error);
-    return NextResponse.json({ error: error.message, pending_tasks: [] }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error), pending_tasks: [] }, { status: 500 });
   }
 }

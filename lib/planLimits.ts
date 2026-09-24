@@ -33,12 +33,48 @@ export async function checkPlanLimit(
   const limit = limits[resource];
   if (limit < 0) return null; // unlimited
 
-  const { count } = await getServiceSupabase()
-    .from(table).select('id', { count: 'exact', head: true }).eq('org_id', orgId);
+  const count = await countResource(orgId, resource, table);
 
-  if ((count || 0) >= limit) {
+  if (count >= limit) {
     const labels: Record<string, string> = { products: 'สินค้า (SKU)', users: 'ผู้ใช้', branches: 'สาขา' };
     return `แพ็กเกจปัจจุบันจำกัด ${labels[resource]} ได้ ${limit} รายการ — อัปเกรดแพ็กเกจเพื่อเพิ่ม`;
   }
   return null;
+}
+
+/**
+ * How many of a resource an org uses:
+ *  - users    = home users (app_users) + members added from other orgs
+ *  - branches = active branches only (DELETE soft-deactivates; those used to
+ *               keep counting against the limit)
+ */
+async function countResource(orgId: string, resource: keyof PlanLimits, table: string): Promise<number> {
+  const admin = getServiceSupabase();
+  let q = admin.from(table).select('id', { count: 'exact', head: true }).eq('org_id', orgId);
+  if (resource === 'branches') q = q.neq('status', 'INACTIVE');
+  const { count } = await q;
+  let total = count || 0;
+  if (resource === 'users') {
+    const { count: members, error } = await admin.from('org_memberships')
+      .select('id', { count: 'exact', head: true }).eq('org_id', orgId);
+    if (!error) total += members || 0; // table exists once sql/20260925 has run
+  }
+  return total;
+}
+
+export interface PlanUsage {
+  plan: string;
+  limits: PlanLimits;
+  usage: PlanLimits;
+}
+
+/** Current usage vs limits, for the org settings page. */
+export async function getPlanUsage(orgId: string): Promise<PlanUsage> {
+  const plan = await orgPlan(orgId);
+  const [products, users, branches] = await Promise.all([
+    countResource(orgId, 'products', 'products'),
+    countResource(orgId, 'users', 'app_users'),
+    countResource(orgId, 'branches', 'branches'),
+  ]);
+  return { plan, limits: getPlanLimits(plan), usage: { products, users, branches } };
 }

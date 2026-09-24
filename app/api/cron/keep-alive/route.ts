@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,10 +52,10 @@ export async function GET(request: Request) {
       organization: orgs?.[0]?.name || 'WMS 360',
       message: 'Supabase keep-alive ping executed successfully.',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Keep-Alive] Error:', error);
     return NextResponse.json(
-      { status: 'error', message: error.message || 'Keep-alive ping failed' },
+      { status: 'error', message: errorMessage(error) || 'Keep-alive ping failed' },
       { status: 500 }
     );
   }

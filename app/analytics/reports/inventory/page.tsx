@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Filter, Search, Calendar } from 'lucide-react';
+import { Download, Search, Calendar } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 

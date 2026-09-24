@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { ArrowLeft, RefreshCw, Plus, Truck, Trash2, PackageCheck, X, Calendar } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 interface AsnItem { sku: string; name: string; expectedQty: number }
 interface Asn { id: string; asnNo: string; supplier: string; poNumber: string; eta?: string; status: string; receiptId?: string; items: AsnItem[]; createdAt: string }
@@ -34,7 +35,7 @@ export default function AsnPage() {
       const d = await (await fetch('/api/asn/receive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ asnId: a.id }) })).json();
       if (d.error) throw new Error(d.error);
       toast.success(d.message || 'สร้างใบรับแล้ว'); load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusy(null); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(null); }
   };
 
   return (
@@ -107,7 +108,7 @@ function CreateAsn({ onClose, onDone }: { onClose: () => void; onDone: () => voi
       const d = await (await fetch('/api/asn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ supplier, poNumber, eta: eta || null, items: clean }) })).json();
       if (d.success === false) throw new Error(d.error);
       toast.success(`สร้าง ${d.asnNo} แล้ว`); onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   return (

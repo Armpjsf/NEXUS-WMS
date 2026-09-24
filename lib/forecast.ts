@@ -117,28 +117,23 @@ export function predictStockout(currentStock: number, burnRate: number) {
 
 /**
  * Generates a dataset for the Stock Depletion Chart.
- * Includes past history (simulated or real) and future projection.
+ * `history` = real end-of-day stock (oldest first) from /api/stock/history.
+ * Without it the chart shows only today + the projection — it no longer
+ * invents past days from the burn rate.
  */
-export function generateDepletionData(currentStock: number, burnRate: number, history: number[] = []) {
-    const data = [];
+export function generateDepletionData(
+    currentStock: number,
+    burnRate: number,
+    history: Array<{ date: string; stock: number }> = [],
+) {
+    const data: Array<{ date: string; stock: number; predicted: boolean }> = [];
     const today = new Date();
-    
-    // 1. Historical Data (Last 7 days)
-    // If no history provided, simulate based on burn rate to make the chart look nice
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        
-        const stockVal = currentStock + (burnRate * i); // Reverse engineer past stock
-        if (history.length > 0 && i < history.length) {
-            // Use real history if available (TODO: match indices correctly)
-        }
 
-        data.push({
-            date: d.toISOString().split('T')[0],
-            stock: Math.round(stockVal),
-            predicted: false
-        });
+    // 1. Historical data (real ledger), or just today's point.
+    if (history.length > 0) {
+        for (const h of history) data.push({ date: h.date, stock: h.stock, predicted: false });
+    } else {
+        data.push({ date: today.toISOString().split('T')[0], stock: Math.round(currentStock), predicted: false });
     }
 
     // 2. Future Projection (Until 0)

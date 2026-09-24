@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Layers, AlertTriangle, CheckCircle2, Clock, Plus, RefreshCw, Search, ShieldAlert, Package } from 'lucide-react';
+import { X, Calendar, Layers, Plus, RefreshCw, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 interface LotItem {
   id?: string;
@@ -168,8 +169,8 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
       setShowAddForm(false);
       fetchLots();
       if (onRefresh) onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาด');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาด');
     } finally {
       setSubmitting(false);
     }

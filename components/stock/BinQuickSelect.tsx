@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Boxes, Scan, Plus, Check, ChevronDown, Camera } from 'lucide-react';
+import { MapPin, Plus, Check, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CameraScannerModal from '@/components/CameraScannerModal';
 

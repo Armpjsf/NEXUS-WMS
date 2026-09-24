@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProducts } from '@/lib/data/wms';
 import { listOrders } from '@/lib/data/orders';
 import { AI_TOOL_DECLARATIONS, runAiTool } from '@/lib/aiTools';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,8 +66,8 @@ async function converse(model: string, apiKey: string, contents: any[]): Promise
       let result: any;
       try {
         result = await runAiTool(call.name, call.args || {});
-      } catch (e: any) {
-        result = { error: e?.message || 'tool error' };
+      } catch (e) {
+        result = { error: errorMessage(e) || 'tool error' };
       }
       responseParts.push({ functionResponse: { name: call.name, response: { result } } });
     }
@@ -103,8 +104,8 @@ export async function POST(req: NextRequest) {
       try {
         reply = await converse(model, apiKey, [...baseContents]);
         if (reply) break;
-      } catch (err: any) {
-        console.warn(`[ai/chat] model ${model} failed:`, err?.message);
+      } catch (err) {
+        console.warn(`[ai/chat] model ${model} failed:`, errorMessage(err));
       }
     }
 
@@ -126,8 +127,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ reply });
-  } catch (error: any) {
-    console.error('[ai/chat] error:', error?.message);
-    return NextResponse.json({ error: error?.message || 'Internal error' }, { status: 500 });
+  } catch (error) {
+    console.error('[ai/chat] error:', errorMessage(error));
+    return NextResponse.json({ error: errorMessage(error) || 'Internal error' }, { status: 500 });
   }
 }

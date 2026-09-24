@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,8 +48,8 @@ export async function GET() {
     }));
 
     return NextResponse.json({ staffList });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API staff-performance GET error:', error);
-    return NextResponse.json({ staffList: [], error: error.message }, { status: 200 });
+    return NextResponse.json({ staffList: [], error: errorMessage(error) }, { status: 200 });
   }
 }

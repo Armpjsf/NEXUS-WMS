@@ -6,19 +6,16 @@ import {
   Plus,
   Truck,
   CheckCircle2,
-  Clock,
   Search,
-  Building2,
-  Package,
   Calendar,
   ChevronRight,
-  AlertCircle,
   X,
   RefreshCw,
-  Printer
+  Printer,
 } from 'lucide-react';
 import { StockTransfer, TransferStatus, TransferLine } from '@/lib/data/transfers';
 import { cn } from '@/lib/utils';
+import { errorMessage } from '@/lib/errors';
 
 const BRANCH_NAMES: Record<string, string> = {
   hq: 'สำนักงานใหญ่ (HQ คลังกลาง)',
@@ -363,8 +360,8 @@ function CreateTransferModal({
         const d = await res.json();
         alert(d.error || 'สร้างใบโอนสต็อกไม่สำเร็จ');
       }
-    } catch (err: any) {
-      alert(err?.message || 'Error creating transfer');
+    } catch (err) {
+      alert(errorMessage(err) || 'Error creating transfer');
     } finally {
       setSubmitting(false);
     }

@@ -4,8 +4,11 @@ import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { resetBinsBulk } from '@/lib/stockLocations';
+import { hasColumn } from '@/lib/schemaProbe';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
+
 
 // Map UI (camelCase) product updates -> Supabase (snake_case) columns.
 function mapUpdates(updates: Record<string, any>) {
@@ -15,6 +18,7 @@ function mapUpdates(updates: Record<string, any>) {
   if (updates.category !== undefined) out.category = updates.category;
   if (updates.stock !== undefined) out.stock = Number(updates.stock) || 0;
   if (updates.price !== undefined) out.price = Number(updates.price) || 0;
+  if (updates.cost !== undefined) out.cost_price = Number(updates.cost) > 0 ? Number(updates.cost) : null;
   if (updates.unit !== undefined) out.unit = updates.unit;
   if (updates.location !== undefined) out.location = updates.location;
   if (updates.status !== undefined) out.status = updates.status;
@@ -38,6 +42,9 @@ export async function POST(request: Request) {
 
     const patch = mapUpdates(updates);
     const orgId = await getCurrentOrgId();
+    // cost_price arrives with sql/20260925_cost_ratelimit_memberships.sql;
+    // until then drop it rather than failing the whole edit.
+    if ('cost_price' in patch && !(await hasColumn('products', 'cost_price'))) delete patch.cost_price;
 
     // Match by SKU first, then fall back to name (legacy master keyed on name).
     let { data, error } = await supabase
@@ -91,8 +98,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Product Update Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

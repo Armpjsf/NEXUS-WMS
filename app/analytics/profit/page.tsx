@@ -1,16 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
+import {
+  DollarSign,
+  TrendingUp,
+  Activity,
   PieChart as PieIcon,
   Calendar,
   Download,
-  RefreshCw,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer

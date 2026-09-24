@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Search, Calendar, ArrowRightLeft, ArrowUpCircle, ArrowDownCircle, History, TrendingUp, TrendingDown, Clock, ArrowRight, AlertTriangle, Printer, ArrowLeft } from 'lucide-react';
+import { Search, History, TrendingUp, TrendingDown, Clock, ArrowRight, AlertTriangle, Printer, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import ProductSelector from '@/components/ProductSelector';
 import LabelDesigner from '@/components/label/LabelDesigner';

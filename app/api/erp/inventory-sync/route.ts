@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveErpOrg } from '@/lib/erpAuth';
 import { fetchAllRows } from '@/lib/data/fetchAll';
+import { errorMessage } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     };
 
     return NextResponse.json({ success: true, data: snapshot });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

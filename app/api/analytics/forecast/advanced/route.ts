@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getProducts, getTransactions } from '@/lib/data/wms';
 import { calculateRiskLevel, recommendReorder } from '@/lib/analysis';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export async function GET() {
 
         return NextResponse.json(report);
 
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
     }
 }

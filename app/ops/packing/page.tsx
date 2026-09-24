@@ -1,31 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Package, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Scale, 
-  Barcode, 
-  Printer, 
-  ArrowRight, 
-  RefreshCw, 
-  X, 
-  Truck, 
-  Volume2, 
-  VolumeX, 
+import {
+  Package,
+  CheckCircle2,
+  Scale,
+  Barcode,
+  Printer,
+  RefreshCw,
+  X,
+  Truck,
+  Volume2,
+  VolumeX,
   ShieldCheck,
-  Search,
   BoxSelect,
-  Sparkles
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
+import { errorMessage } from '@/lib/errors';
 
 interface OrderItem {
   sku: string;
@@ -235,8 +232,8 @@ export default function PackingQAPage() {
       // Remove from pending list
       setOrders(orders.filter(o => o.orderNo !== selectedOrder.orderNo));
       setSelectedOrder(null);
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการบันทึก');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการบันทึก');
     } finally {
       setSubmitting(false);
     }

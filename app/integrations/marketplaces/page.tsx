@@ -6,20 +6,12 @@ import {
   ShoppingBag,
   UploadCloud,
   FileSpreadsheet,
-  CheckCircle2,
-  AlertTriangle,
   Boxes,
   Printer,
   Copy,
-  ExternalLink,
   ShieldCheck,
-  RefreshCw,
   Trash2,
-  Sparkles,
   Settings2,
-  Layers,
-  ArrowRight,
-  TrendingUp,
   Download,
   FileDown,
 } from 'lucide-react';
@@ -35,6 +27,7 @@ import {
   MarketplacePlatform,
 } from '@/lib/marketplaceParser';
 import { triggerHaptic } from '@/lib/voiceAssistant';
+import { errorMessage } from '@/lib/errors';
 
 type ActiveTab = 'IMPORT' | 'API_CONFIG' | 'HISTORY';
 
@@ -96,10 +89,10 @@ export default function MarketplaceIntegrationsPage() {
       toast.success(
         `นำเข้าสำเร็จ! พบ ${result.totalOrders} ออเดอร์ (${result.totalItemsCount} รายการ) จาก ${result.platform}`
       );
-    } catch (e: any) {
+    } catch (e) {
       console.error('Error parsing file:', e);
       triggerHaptic('error');
-      toast.error('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + e.message);
+      toast.error('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + errorMessage(e));
     } finally {
       setParsing(false);
     }

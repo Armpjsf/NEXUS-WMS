@@ -56,6 +56,8 @@ describe('management-only API writes', () => {
     expect(isManagementOnlyApiWrite('/api/org', 'PATCH')).toBe(true);
     expect(isManagementOnlyApiWrite('/api/branches', 'DELETE')).toBe(true);
     expect(isManagementOnlyApiWrite('/api/carriers/', 'POST')).toBe(true);
+    expect(isManagementOnlyApiWrite('/api/po/create', 'PATCH')).toBe(true);
+    expect(isManagementOnlyApiWrite('/api/po/create', 'GET')).toBe(false);
     expect(isManagementOnlyApiWrite('/api/org', 'GET')).toBe(false);
     // floor screens still write these
     expect(isManagementOnlyApiWrite('/api/carriers/rates', 'POST')).toBe(false);

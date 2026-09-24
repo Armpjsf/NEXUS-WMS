@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { Truck, MapPin, Phone, PackageCheck, CheckCircle2, RefreshCw, ChevronRight, X, PenLine, Camera, FileText } from 'lucide-react';
+import { Truck, MapPin, Phone, PackageCheck, CheckCircle2, RefreshCw, ChevronRight, X, PenLine, Camera } from 'lucide-react';
 import SignatureModal from '@/components/SignatureModal';
 import MobileNav from '@/components/MobileNav';
+import { errorMessage } from '@/lib/errors';
 
 // Convert a data URL (from the signature pad) into a File for upload.
 function dataUrlToFile(dataUrl: string, name: string): File {
@@ -110,14 +110,14 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
   const saveSignature = async (dataUrl: string) => {
     setBusy('sig');
     try { setSigUrl(await uploadPod(dataUrlToFile(dataUrl, 'sig.jpg'), `sig-${order.orderNo}`)); toast.success('บันทึกลายเซ็นแล้ว'); }
-    catch (e: any) { toast.error(e.message); } finally { setBusy(''); }
+    catch (e) { toast.error(errorMessage(e)); } finally { setBusy(''); }
   };
 
   const capturePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     setBusy('photo');
     try { setPhotoUrl(await uploadPod(file, `photo-${order.orderNo}`)); toast.success('แนบรูปแล้ว'); }
-    catch (err: any) { toast.error(err.message); } finally { setBusy(''); e.target.value = ''; }
+    catch (err) { toast.error(errorMessage(err)); } finally { setBusy(''); e.target.value = ''; }
   };
 
   const deliver = async () => {
@@ -131,7 +131,7 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
       if (!res.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
       toast.success('ยืนยันส่งถึงแล้ว');
       onDone();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   return (

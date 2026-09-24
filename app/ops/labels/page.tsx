@@ -1,17 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Tags,
   Printer,
   Sliders,
   Sparkles,
-  QrCode,
-  Barcode as BarcodeIcon,
-  RefreshCw,
-  Copy,
-  LayoutGrid,
-  CheckCircle2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';

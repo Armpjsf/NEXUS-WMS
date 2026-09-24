@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { getTransactions, type Transaction } from '@/lib/data/wms';
+import { getTransactions } from '@/lib/data/wms';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,9 +86,9 @@ export async function GET(request: Request) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Report API Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
     }
 }
 

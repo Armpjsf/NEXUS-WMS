@@ -6,6 +6,7 @@ import { ArrowLeft, RefreshCw, Truck, Clock, ArrowDownToLine, ArrowUpFromLine, C
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface Apt {
   id: string;
@@ -63,7 +64,7 @@ export default function MobileDockPage() {
       if (!res.ok) throw new Error((await res.json()).error || 'ไม่สำเร็จ');
       toast.success(`อัปเดตเป็น "${STATUS_META[next.to]?.label || next.to}"`);
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusyId(null); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusyId(null); }
   };
 
   const time = (s?: string) => s ? new Date(s).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';

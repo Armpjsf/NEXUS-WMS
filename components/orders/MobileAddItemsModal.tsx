@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import { errorMessage } from '@/lib/errors';
 
 interface Prod { id: string; name: string; price?: number; location?: string; barcode?: string; stock?: number; }
 interface Line { sku: string; name: string; qty: number; price: number; location: string; drop: number; custom?: boolean; }
@@ -144,8 +145,8 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
       toast.success(`เพิ่ม ${lines.length} รายการแล้ว${tmsMsg}`);
       onDone();
       onClose();
-    } catch (e: any) {
-      toast.error(e.message || 'เพิ่มของไม่สำเร็จ');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เพิ่มของไม่สำเร็จ');
     } finally {
       setSaving(false);
     }

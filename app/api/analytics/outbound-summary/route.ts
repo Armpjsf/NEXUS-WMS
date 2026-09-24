@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { fetchAllRows } from '@/lib/data/fetchAll';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,8 +69,8 @@ export async function GET(request: Request) {
       totals: { trips: totTrips, pieces: totPieces, freight: totFreight, provinces: provinces.length },
       provinces,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('outbound-summary error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

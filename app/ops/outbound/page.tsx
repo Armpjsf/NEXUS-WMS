@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Loader2, PackageMinus, Plus, Trash2, Calendar, FileText, Info, FileSpreadsheet, Camera, Zap } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, PackageMinus, Plus, Trash2, Calendar, FileText, Info, FileSpreadsheet, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
-import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/config';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 
@@ -18,6 +17,7 @@ import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
+import { errorMessage } from '@/lib/errors';
 
 export default function OutboundPage() {
   const { t } = useLanguage();
@@ -207,7 +207,7 @@ export default function OutboundPage() {
       toast.success(t('success_outbound'));
       setItems([]);
       setDocRef('');
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       if (confirm("Network Failed. Save locally to sync later?")) {
           await db.pendingTransactions.add({
@@ -221,7 +221,7 @@ export default function OutboundPage() {
           setItems([]);
           setDocRef('');
       } else {
-          alert('Error: ' + error.message);
+          alert('Error: ' + errorMessage(error));
       }
     } finally {
       setSubmitting(false);

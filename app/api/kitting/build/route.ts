@@ -5,6 +5,7 @@ import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 import { binAdd, binConsume } from '@/lib/stockLocations';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
         ? `รวมชุดสินค้า ${bomRow.kit_name} สำเร็จ ${buildQty} ชุด (ตัดสต็อกชิ้นส่วน + เพิ่มสต็อกชุดแล้ว)`
         : `แยกชุดสินค้า ${bomRow.kit_name} ${buildQty} ชุด คืนชิ้นส่วนเข้าสต็อกแล้ว`,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

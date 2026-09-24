@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, CheckCircle } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useLanguage } from './providers/LanguageProvider';
 
 export default function InstallPWA() {

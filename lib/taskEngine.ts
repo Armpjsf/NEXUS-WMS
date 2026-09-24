@@ -5,6 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { nextDocNumber } from './docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export interface WarehouseTask {
   id: string;
@@ -61,8 +62,8 @@ export async function createWarehouseTask(
 
     if (error) return { success: false, error: error.message };
     return { success: true, data };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err) {
+    return { success: false, error: errorMessage(err) };
   }
 }
 

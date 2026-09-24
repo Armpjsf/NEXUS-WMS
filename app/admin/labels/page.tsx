@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
-import { Search, Printer, Settings, Type, Tag, MapPin, Box, ArrowLeft } from 'lucide-react';
+import { Search, Printer, Settings, Tag, MapPin, Box, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 // Remove useReactToPrint as it's incompatible with React 19
 import Barcode from 'react-barcode';

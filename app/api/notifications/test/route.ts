@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { dispatchNotification, notificationHistory } from '@/lib/notifications/notificationGateway';
+import { errorMessage } from '@/lib/errors';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
       message: body.message || 'ระบบแจ้งเตือนพร้อมเชื่อมต่อ LINE OA / Webhook'
     });
     return NextResponse.json({ success: true, result });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

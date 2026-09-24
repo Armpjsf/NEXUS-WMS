@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Printer, Search, Copy, Check, Grid, File } from 'lucide-react';
+import { Printer, Search, Check, Grid } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 import QRCode from 'react-qr-code';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { getApiUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 
 export default function BarcodePrintPage() {
   const [products, setProducts] = useState<any[]>([]);

@@ -5,6 +5,7 @@ import { useLanguage } from '@/components/providers/LanguageProvider';
 import { FileSpreadsheet, Upload, X, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -145,16 +146,16 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
             setErrors(rowErrors);
           }
           setPreviewData(parsedItems);
-        } catch (err: any) {
-          setErrors([`เกิดข้อผิดพลาดในการอ่านไฟล์: ${err.message}`]);
+        } catch (err) {
+          setErrors([`เกิดข้อผิดพลาดในการอ่านไฟล์: ${errorMessage(err)}`]);
         } finally {
           setLoading(false);
         }
       };
 
       reader.readAsBinaryString(file);
-    } catch (err: any) {
-      setErrors([`เกิดข้อผิดพลาดในการเปิดไฟล์: ${err.message}`]);
+    } catch (err) {
+      setErrors([`เกิดข้อผิดพลาดในการเปิดไฟล์: ${errorMessage(err)}`]);
       setLoading(false);
     }
   };

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Building2, ArrowRight, Loader2, CheckCircle2, Warehouse } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 const PLANS = [
   { id: 'FREE', name: 'Free', desc: 'เริ่มต้นใช้งาน' },
@@ -35,7 +36,7 @@ export default function OnboardingPage() {
       setDone(true);
       toast.success('สร้างองค์กรสำเร็จ!');
       setTimeout(() => router.push('/login'), 1800);
-    } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setLoading(false); }
   };
 
   return (

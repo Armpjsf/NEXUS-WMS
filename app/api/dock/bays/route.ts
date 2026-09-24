@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +21,8 @@ export async function GET() {
       .from('dock_bays').select('*').eq('org_id', orgId)
       .order('sort_order', { ascending: true }).order('name', { ascending: true });
     return NextResponse.json({ success: true, bays: (data || []).map(mapBay) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, bays: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), bays: [] }, { status: 200 });
   }
 }
 
@@ -51,8 +52,8 @@ export async function POST(request: Request) {
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, bay: mapBay(data) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -64,7 +65,7 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ error: 'ระบุ id' }, { status: 400 });
     await getServiceSupabase().from('dock_bays').delete().eq('org_id', orgId).eq('id', id);
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getAvailable, getReservedQty } from '@/lib/reservations';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
       available: available ?? onHand, // off-catalog: available = on-hand
       offCatalog: available === null,
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 200 });
   }
 }

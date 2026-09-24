@@ -5,10 +5,19 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  Building2, Plus, Search, Trash2, Edit2, ArrowLeft, RefreshCw,
-  Phone, Mail, MapPin, CheckCircle2, X, FileText
+  Building2,
+  Plus,
+  Search,
+  Trash2,
+  Edit2,
+  ArrowLeft,
+  RefreshCw,
+  Phone,
+  Mail,
+  X,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 interface Supplier {
   id: string;
@@ -98,8 +107,8 @@ export default function AdminSuppliersPage() {
       toast.success(isEdit ? 'อัปเดตผู้จำหน่ายเรียบร้อย' : 'เพิ่มผู้จำหน่ายเรียบร้อย');
       setShowModal(false);
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการบันทึก');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการบันทึก');
     } finally {
       setSaving(false);
     }
@@ -113,8 +122,8 @@ export default function AdminSuppliersPage() {
       if (!res.ok) throw new Error(json.error || 'ลบไม่สำเร็จ');
       toast.success('ลบผู้จำหน่ายเรียบร้อย');
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการลบ');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการลบ');
     }
   };
 

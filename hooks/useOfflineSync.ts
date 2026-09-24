@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { db, PendingTransaction } from '@/lib/db';
+import { db } from '@/lib/db';
 import { toast } from 'react-hot-toast';
 
 export function useOfflineSync() {

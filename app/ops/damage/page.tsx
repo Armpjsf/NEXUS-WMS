@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Plus, CheckCircle, XCircle, Search, Filter, ArrowLeft, Truck, Printer } from 'lucide-react';
+import { AlertTriangle, Plus, CheckCircle, ArrowLeft, Truck, Printer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';

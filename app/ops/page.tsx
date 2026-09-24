@@ -1,6 +1,6 @@
 'use client';
 
-import { PackagePlus, PackageMinus, RefreshCw, Boxes, Truck, ShoppingCart, Activity, Users, ClipboardList, DollarSign } from 'lucide-react';
+import { PackagePlus, PackageMinus, RefreshCw, Boxes, ShoppingCart, Activity, Users, ClipboardList, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OpsPage() {

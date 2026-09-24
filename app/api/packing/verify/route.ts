@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       updatedItem,
       matchIndex
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

@@ -62,14 +62,26 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.uid = user.id;
         token.role = user.role;
         token.orgId = user.orgId || '00000000-0000-0000-0000-000000000001';
+        token.homeOrgId = token.orgId;
         token.allowedBranches = user.allowedBranches;
         token.allowedOwners = user.allowedOwners;
         token.roleSyncedAt = Date.now();
+      } else if (trigger === 'update' && token.uid && session?.switchOrgId) {
+        // Org switch (useSession().update({ switchOrgId })). Only to an org the
+        // user really belongs to; role/branches come from that membership.
+        const { getOrgAccess } = await import('./memberships');
+        const access = await getOrgAccess(token.uid, String(session.switchOrgId)).catch(() => null);
+        if (access) {
+          token.orgId = access.orgId;
+          token.role = access.role;
+          token.allowedBranches = access.allowedBranches;
+          token.roleSyncedAt = Date.now();
+        }
       } else if (token.uid) {
         // Re-sync role/permissions from DB so an admin's change in user
         // settings takes effect without forcing the user to re-login.
@@ -79,7 +91,23 @@ export const authOptions: NextAuthOptions = {
           try {
             const { getUserById } = await import('./users');
             const fresh = await getUserById(token.uid);
-            if (fresh) {
+            const home = fresh?.orgId || token.homeOrgId;
+            if (fresh && token.orgId && token.orgId !== home) {
+              // Working in another org: re-check that membership (it may have
+              // been removed or its role changed); fall back to the home org.
+              const { getOrgAccess } = await import('./memberships');
+              const access = await getOrgAccess(token.uid, token.orgId);
+              if (access) {
+                token.role = access.role;
+                token.allowedBranches = access.allowedBranches;
+              } else {
+                token.orgId = home;
+                token.role = fresh.role;
+                token.allowedBranches = fresh.allowedBranches || ['*'];
+              }
+              token.allowedOwners = fresh.allowedOwners || ['*'];
+              token.revoked = fresh.status !== 'Active';
+            } else if (fresh) {
               token.role = fresh.role;
               token.allowedBranches = fresh.allowedBranches || ['*'];
               token.allowedOwners = fresh.allowedOwners || ['*'];

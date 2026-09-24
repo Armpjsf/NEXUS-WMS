@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { binMoveAll } from '@/lib/stockLocations';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -47,22 +49,12 @@ export async function POST(req: Request) {
       const locA = sourceProduct.location || 'Unassigned';
       const locB = targetProduct.location || 'Unassigned';
 
-      // 2. Perform Swap in Supabase
-      const { error: errA } = await supabase
-        .from('products')
-        .update({ location: locB, updated_at: new Date().toISOString() })
-        .eq('id', sourceProduct.id)
-        .eq('org_id', orgId);
-
-      if (errA) throw errA;
-
-      const { error: errB } = await supabase
-        .from('products')
-        .update({ location: locA, updated_at: new Date().toISOString() })
-        .eq('id', targetProduct.id)
-        .eq('org_id', orgId);
-
-      if (errB) throw errB;
+      // 2. Move the stock itself between the bins (stock_locations). Writing
+      //    products.location directly was undone by the next bin reconcile,
+      //    and the per-bin balances never moved. products.location/stock are
+      //    re-derived from the bins inside binMoveAll.
+      await binMoveAll(orgId, sourceProduct.sku, locA, locB);
+      await binMoveAll(orgId, targetProduct.sku, locB, locA);
 
       // 3. Log stock transactions
       const swapRef = `SWAP-${Date.now()}`;
@@ -131,13 +123,8 @@ export async function POST(req: Request) {
 
       const oldLocation = product.location || 'Unassigned';
 
-      const { error: updateErr } = await supabase
-        .from('products')
-        .update({ location: newLocation.trim(), updated_at: new Date().toISOString() })
-        .eq('id', product.id)
-        .eq('org_id', orgId);
-
-      if (updateErr) throw updateErr;
+      // Move the SKU's stock from its current bin to the new one (see SWAP).
+      await binMoveAll(orgId, product.sku, oldLocation, newLocation.trim());
 
       await supabase.from('stock_transactions').insert({
         org_id: orgId,
@@ -170,8 +157,8 @@ export async function POST(req: Request) {
         product: { id: product.id, name: product.name, sku: product.sku, oldLocation, newLocation: newLocation.trim() }
       });
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Location Swap Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) || 'Internal Server Error' }, { status: 500 });
   }
 }

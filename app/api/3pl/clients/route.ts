@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
 import { nextMasterCode } from '@/lib/docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +27,8 @@ export async function GET() {
     const { data } = await getServiceSupabase()
       .from('third_party_clients').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
     return NextResponse.json({ success: true, clients: (data || []).map(mapClient) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, clients: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), clients: [] }, { status: 200 });
   }
 }
 
@@ -58,8 +59,8 @@ export async function POST(req: Request) {
     const { data, error } = await admin.from('third_party_clients').insert(row).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, client: mapClient(data) });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -72,7 +73,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: 'ระบุ id' }, { status: 400 });
     await getServiceSupabase().from('third_party_clients').delete().eq('org_id', orgId).eq('id', id);
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

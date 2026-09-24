@@ -8,7 +8,7 @@ import { LotBreakdownModal } from '@/components/LotBreakdownModal';
 import { LocationSwapModal } from '@/components/LocationSwapModal';
 import { UomModal } from '@/components/UomModal';
 import { LotTraceModal } from '@/components/LotTraceModal';
-import { Search, Plus, Filter, Download, MoreHorizontal, Moon, Sun, LayoutGrid, List, ArrowUpDown, RefreshCcw, X, ChevronLeft, ChevronRight, SlidersHorizontal, Package, Tag, MapPin, AlertCircle, ArrowRight, ArrowLeftRight, TrendingUp, History, Info, XCircle, Printer, Pencil, Maximize2, Camera, Layers, FileSpreadsheet, Boxes, GitBranch } from 'lucide-react';
+import { Search, Plus, Download, RefreshCcw, X, Package, ArrowLeftRight, History, Printer, Pencil, Maximize2, Camera, Layers, FileSpreadsheet, Boxes, GitBranch } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -22,6 +22,7 @@ import { useLanguage } from '@/components/providers/LanguageProvider';
 import toast from 'react-hot-toast';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import { errorMessage } from '@/lib/errors';
 
 export default function InventoryPage() {
   return (
@@ -60,8 +61,8 @@ function InventoryContent() {
       if (!res.ok) throw new Error(data.error || 'โหลดข้อมูลตัวอย่างไม่สำเร็จ');
       toast.success(data.message || 'โหลดสินค้าตัวอย่างพร้อม FEFO Lots สำเร็จแล้ว');
       fetchData();
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลตัวอย่าง');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการโหลดข้อมูลตัวอย่าง');
     } finally {
       setSeeding(false);
     }
@@ -566,6 +567,14 @@ function InventoryContent() {
                                             {product.stock.toLocaleString()}
                                         </span>
                                     </div>
+                                    {!!product.reserved && (
+                                        <div className="flex justify-between items-center text-[10px]" title="สต็อกถูกตัดจริงตอนส่งออก (SHIPPED) — ระหว่างนี้ออเดอร์ที่เปิดอยู่จองไว้">
+                                            <span className="text-[#4cd7f6]">จองแล้ว {product.reserved.toLocaleString()}</span>
+                                            <span className={cn('font-bold', (product.available ?? 0) <= 0 ? 'text-[#ffb4ab]' : 'text-[#57ec7f]')}>
+                                                พร้อมขาย {(product.available ?? 0).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between items-center text-[10px] text-[#d1c6ab]">
                                         <span>{t('label_min')} {product.minStock}</span>
                                         <div className="flex items-center gap-1 font-bold text-[#facc15] bg-[#090f15] px-1.5 py-0.5 rounded border border-[#30353d]">

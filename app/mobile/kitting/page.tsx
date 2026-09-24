@@ -6,6 +6,7 @@ import { ArrowLeft, RefreshCw, Boxes, Layers, Hammer, ScanLine } from 'lucide-re
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface Component { componentSku?: string; componentName?: string; quantity?: number; unit?: string; }
 interface BOM {
@@ -47,7 +48,7 @@ export default function MobileKittingPage() {
       toast.success(`ประกอบ ${active.kitName} จำนวน ${qty} ชุดแล้ว`);
       setActive(null);
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusy(false); }
   };
 
   const list = boms.filter(b => !search.trim() ||

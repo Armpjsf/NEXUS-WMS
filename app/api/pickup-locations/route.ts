@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import {
   getPickupLocations, createPickupLocation, updatePickupLocation, deletePickupLocation,
 } from '@/lib/data/pickupLocations';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +13,9 @@ export async function GET(request: Request) {
     const kind = (searchParams.get('kind') as any) || undefined;
     const locations = await getPickupLocations(customerId, kind);
     return NextResponse.json({ locations });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API pickup-locations GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -27,9 +28,9 @@ export async function POST(request: Request) {
     const location = await createPickupLocation(body);
     if (!location) return NextResponse.json({ error: 'สร้างจุดรับไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, location });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API pickup-locations POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -41,9 +42,9 @@ export async function PUT(request: Request) {
     const location = await updatePickupLocation(id, patch);
     if (!location) return NextResponse.json({ error: 'อัปเดตจุดรับไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, location });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API pickup-locations PUT error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -55,8 +56,8 @@ export async function DELETE(request: Request) {
     const result = await deletePickupLocation(id);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API pickup-locations DELETE error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

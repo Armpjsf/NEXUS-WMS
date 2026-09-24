@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,8 +36,8 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ bays });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API dock-bays GET error:', error);
-    return NextResponse.json({ bays: [], error: error.message }, { status: 200 });
+    return NextResponse.json({ bays: [], error: errorMessage(error) }, { status: 200 });
   }
 }

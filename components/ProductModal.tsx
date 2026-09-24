@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Loader2, Image as ImageIcon, MapPin, Tag, DollarSign, Package, Upload, FileSpreadsheet } from 'lucide-react';
+import { X, Save, Loader2, Image as ImageIcon, Tag, Upload, FileSpreadsheet } from 'lucide-react';
 import { useLanguage } from '@/components/providers/LanguageProvider';
+import { errorMessage } from '@/lib/errors';
 
 interface ProductModalProps {
     isOpen: boolean;
@@ -113,8 +114,8 @@ export function ProductModal({ isOpen, onClose, product, onSuccess, onOpenImport
             const json = await res.json();
             if (!res.ok) throw new Error(json.error || 'Upload failed');
             setFormData(prev => ({ ...prev, image: json.url }));
-        } catch (err: any) {
-            alert('อัปโหลดรูปไม่สำเร็จ: ' + err.message);
+        } catch (err) {
+            alert('อัปโหลดรูปไม่สำเร็จ: ' + errorMessage(err));
         } finally {
             setUploading(false);
             e.target.value = '';
@@ -139,6 +140,7 @@ export function ProductModal({ isOpen, onClose, product, onSuccess, onOpenImport
                     name: formData.name,
                     category: formData.category,
                     price: parseFloat(formData.price) || 0,
+                    ...(formData.cost !== '' ? { cost: parseFloat(formData.cost) || 0 } : {}),
                     minStock: parseFloat(formData.minStock) || 0,
                     unit: formData.unit,
                     location: formData.location,
@@ -195,8 +197,8 @@ export function ProductModal({ isOpen, onClose, product, onSuccess, onOpenImport
             onSuccess();
             onClose();
 
-        } catch (error: any) {
-            alert('Error: ' + error.message);
+        } catch (error) {
+            alert('Error: ' + errorMessage(error));
         } finally {
             setLoading(false);
         }

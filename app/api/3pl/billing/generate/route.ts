@@ -4,7 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { calculateClientBilling } from '@/lib/billingEngine';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
-import { nextDocNumber } from '@/lib/docNumber';
+import { bangkokDate } from '@/lib/docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -46,14 +47,16 @@ export async function POST(req: Request) {
       itemsCount: body.itemsCount || 0
     });
 
-    const invoiceNumber = await nextDocNumber('INV', { date: 'yyyymmdd', pad: 4 });
+    // Proforma only — nothing is saved, so don't consume a real INV number
+    // (gaps in invoice numbering are an accounting problem).
+    const invoiceNumber = `PROFORMA-${bangkokDate('yyyymmdd')}`;
 
     return NextResponse.json({
       success: true,
       invoiceNumber,
       calculation
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { nextDocNumber } from '@/lib/docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,14 +25,16 @@ export async function GET(request: Request) {
       if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       return NextResponse.json({ order: data });
     }
-    const status = searchParams.get('status') || undefined;
-    let q = supabase.from('purchase_orders').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(200);
-    if (status) q = q.eq('status', status);
+    // status=DRAFT or status=DRAFT,ORDERED
+    const statuses = (searchParams.get('status') || '').split(',').map(s => s.trim()).filter(Boolean);
+    let q = supabase.from('purchase_orders').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(500);
+    if (statuses.length === 1) q = q.eq('status', statuses[0]);
+    else if (statuses.length > 1) q = q.in('status', statuses);
     const { data, error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ orders: data || [] });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -89,8 +92,45 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, po: data });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API create PO Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
+  }
+}
+
+// PO lifecycle: DRAFT → ORDERED (sent to supplier) → RECEIVED (set by the GRN
+// commit), or CANCELLED from DRAFT/ORDERED. PATCH { id, status }.
+const PO_TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ['ORDERED', 'CANCELLED'],
+  ORDERED: ['CANCELLED', 'RECEIVED'],
+};
+
+export async function PATCH(request: Request) {
+  try {
+    const { id, status } = await request.json();
+    if (!id || !status) return NextResponse.json({ error: 'ต้องระบุ id และ status' }, { status: 400 });
+    const orgId = await getCurrentOrgId();
+    const { data: po } = await supabase.from('purchase_orders').select('id, status, po_number')
+      .eq('org_id', orgId).eq('id', id).maybeSingle();
+    if (!po) return NextResponse.json({ error: 'ไม่พบใบสั่งซื้อ' }, { status: 404 });
+    if (!(PO_TRANSITIONS[po.status] || []).includes(status)) {
+      return NextResponse.json({ error: `เปลี่ยนสถานะจาก ${po.status} เป็น ${status} ไม่ได้` }, { status: 409 });
+    }
+    const { data, error } = await supabase.from('purchase_orders')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('org_id', orgId).eq('id', id).select().single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const session = await getServerSession(authOptions);
+    const { logAction } = await import('@/lib/auditTrail');
+    await logAction({
+      userId: session?.user?.id || 'System', userName: session?.user?.name || 'System',
+      action: 'UPDATE', module: 'PurchaseOrder',
+      description: `${po.po_number}: ${po.status} → ${status}`,
+    }).catch(() => {});
+
+    return NextResponse.json({ success: true, po: data });
+  } catch (error) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generatePalletZpl, generateProductZpl } from '@/lib/hardware/zplGenerator';
+import { errorMessage } from '@/lib/errors';
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
       zpl: zplCode,
       instructions: 'Send this RAW payload to port 9100 of any Zebra/TSC industrial network printer.'
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

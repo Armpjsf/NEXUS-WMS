@@ -7,8 +7,6 @@ import {
   Scan,
   RotateCcw,
   CheckCircle2,
-  Package,
-  AlertCircle
 } from 'lucide-react';
 import CameraScannerModal from '@/components/CameraScannerModal';
 

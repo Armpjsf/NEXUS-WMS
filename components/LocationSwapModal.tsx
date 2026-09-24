@@ -5,14 +5,12 @@ import {
   ArrowLeftRight,
   MoveRight,
   MapPin,
-  Package,
   Search,
-  CheckCircle2,
   X,
-  AlertCircle,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { errorMessage } from '@/lib/errors';
 
 interface ProductItem {
   id: string | number;
@@ -119,8 +117,8 @@ export function LocationSwapModal({
           toast.error(data.error || 'ย้ายพิกัดไม่สำเร็จ');
         }
       }
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setIsSubmitting(false);
     }

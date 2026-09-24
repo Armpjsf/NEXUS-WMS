@@ -5,10 +5,18 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  Truck, Plus, Search, Trash2, Edit2, ArrowLeft, RefreshCw,
-  Phone, Globe, CheckCircle2, Star, ExternalLink, X
+  Truck,
+  Plus,
+  Trash2,
+  Edit2,
+  ArrowLeft,
+  RefreshCw,
+  Phone,
+  Star,
+  X,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { errorMessage } from '@/lib/errors';
 
 interface Carrier {
   id: string;
@@ -92,8 +100,8 @@ export default function AdminCarriersPage() {
       toast.success(isEdit ? 'อัปเดตผู้ให้บริการขนส่งเรียบร้อย' : 'เพิ่มผู้ให้บริการขนส่งเรียบร้อย');
       setShowModal(false);
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการบันทึก');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการบันทึก');
     } finally {
       setSaving(false);
     }
@@ -107,8 +115,8 @@ export default function AdminCarriersPage() {
       if (!res.ok) throw new Error(json.error || 'ลบไม่สำเร็จ');
       toast.success('ลบขนส่งเรียบร้อย');
       load();
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการลบ');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการลบ');
     }
   };
 

@@ -5,32 +5,36 @@ import { getCurrentOrgId } from '@/lib/orgContext';
 import { checkPlanLimit } from '@/lib/planLimits';
 import { resetBinsBulk } from '@/lib/stockLocations';
 import { upsertProductsForOrg } from '@/lib/data/productUpsert';
+import { fetchAllRows } from '@/lib/data/fetchAll';
+import { getReservedMap } from '@/lib/reservations';
+import { errorMessage } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
     const orgId = await getCurrentOrgId();
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('org_id', orgId)
-      .order('created_at', { ascending: false });
+    // Page past Supabase's 1000-row cap (a bare select silently truncated the list).
+    const [products, reserved] = await Promise.all([
+      fetchAllRows((f, t) => supabase.from('products').select('*')
+        .eq('org_id', orgId).order('created_at', { ascending: false }).range(f, t)),
+      getReservedMap(orgId),
+    ]);
 
-    if (error) {
-      console.error('Supabase GET Products Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json(mapProductRows(products));
-  } catch (error: any) {
+    // Stock is deducted at SHIPPED; until then open orders hold a reservation.
+    // Expose it so screens can show on-hand vs reserved vs available.
+    return NextResponse.json(mapProductRows(products).map(p => {
+      const r = reserved[p.id] || 0;
+      return { ...p, reserved: r, available: p.stock - r };
+    }));
+  } catch (error) {
     console.error('API GET Products Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) || 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, sku, category, stock, minStock, min_stock, unit, price, location, barcode, image_url, image } = body;
+    const { name, sku, category, stock, minStock, min_stock, unit, price, cost, location, barcode, image_url, image } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Product Name is required' }, { status: 400 });
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
         min_stock: Number(min_stock || minStock || 5),
         unit: unit || 'pcs',
         price: Number(price || 0),
+        ...(Number(cost) > 0 ? { cost_price: Number(cost) } : {}),
         location: location || 'Unassigned',
         barcode: barcode || null,
         image_url: image_url || image || null,
@@ -75,9 +80,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API POST Product Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -105,9 +110,9 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API PUT Product Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -133,7 +138,7 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

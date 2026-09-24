@@ -1,5 +1,5 @@
 
-import { getAllTransactions, type Transaction, getProducts } from './data/wms';
+import { getAllTransactions, type Transaction } from './data/wms';
 
 export interface InventoryBatch {
   date: string;

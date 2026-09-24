@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { closeOrderFromTmsPod } from '@/lib/data/orders';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,8 +97,8 @@ export async function POST(request: Request) {
       action: 'STATUS_UPDATED',
       tms_status: status,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[WMS Webhook Error]:', err);
-    return NextResponse.json({ error: err?.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) || 'Internal Server Error' }, { status: 500 });
   }
 }

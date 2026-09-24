@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { recommendPutaway } from '@/lib/putawayEngine';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
 
     const recommendation = await recommendPutaway({ sku, quantity: qty, weightKg: weight });
     return NextResponse.json({ success: true, data: recommendation });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }

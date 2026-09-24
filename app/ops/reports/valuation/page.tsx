@@ -1,21 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ReceiptText,
-  DollarSign,
   AlertTriangle,
-  Clock,
-  TrendingDown,
   Download,
   Search,
   Printer,
-  Package,
-  Boxes,
   RefreshCw,
-  Sparkles
 } from 'lucide-react';
-import { ValuationSummary, DeadStockItem } from '@/lib/data/valuation';
+import type { ValuationSummary } from '@/lib/data/valuation';
 import { exportToExcel } from '@/lib/export/excel';
 import { cn } from '@/lib/utils';
 
@@ -130,6 +124,11 @@ export default function ValuationReportPage() {
           <div className="text-[11px] text-[#8a92a6] mt-0.5">
             รวม {data?.totalUnits.toLocaleString() || 0} ชิ้น ({data?.totalSkus || 0} SKU)
           </div>
+          {!!data?.skusWithoutCost && (
+            <div className="text-[11px] text-amber-400 mt-1">
+              ⚠ {data.skusWithoutCost} SKU ยังไม่มีต้นทุน — ไม่นับในยอดนี้ (ตั้งราคาทุนที่หน้าสินค้า หรือรับเข้าจาก PO)
+            </div>
+          )}
         </div>
 
         <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm">
@@ -259,7 +258,9 @@ export default function ValuationReportPage() {
                       {item.stock.toLocaleString()} {item.unit}
                     </td>
                     <td className="py-3 px-4 text-right text-[#d1c6ab]">
-                      ฿{item.costPrice.toLocaleString()}
+                      {item.costSource === 'NONE'
+                        ? <span className="text-amber-400 text-[11px]">ไม่มีต้นทุน</span>
+                        : <>฿{item.costPrice.toLocaleString()}</>}
                     </td>
                     <td className="py-3 px-4 text-right font-black text-rose-600">
                       ฿{item.totalCostValue.toLocaleString()}

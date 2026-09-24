@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { updateWcsMissionFromWebhook } from '@/lib/wcsEngine';
+import { errorMessage } from '@/lib/errors';
 
 /**
  * Open Webhook Endpoint for Warehouse Control Systems (WCS) & Robotics Fleet Managers
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       message: `WCS callback for mission ${missionCode} processed successfully`,
       mission: result.mission
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: errorMessage(error) }, { status: 500 });
   }
 }

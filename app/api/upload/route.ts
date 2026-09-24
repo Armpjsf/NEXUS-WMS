@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +44,8 @@ export async function POST(request: Request) {
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return NextResponse.json({ success: true, url: data.publicUrl });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API upload Error:', error);
-    return NextResponse.json({ error: error.message || 'Upload failed' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) || 'Upload failed' }, { status: 500 });
   }
 }

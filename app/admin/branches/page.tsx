@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Save, Trash2, Plus, ArrowLeft, RefreshCw, AlertCircle, Link as LinkIcon, Palette, Pencil, MapPin, Warehouse } from 'lucide-react';
+import { Building2, Trash2, Plus, ArrowLeft, RefreshCw, Pencil, MapPin, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { getApiUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';

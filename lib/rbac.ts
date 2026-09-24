@@ -26,7 +26,8 @@ export function isManagementOnlyPath(pathname: string): boolean {
 // open to staff: e.g. mobile dispatch lists carriers & fleet). Pages for these
 // live under /admin, but the page guard alone left the API writable by any
 // signed-in staff. /api/admin/** is guarded separately (all methods).
-const MANAGEMENT_WRITE_APIS = ['/api/org', '/api/branches', '/api/carriers', '/api/fleet-vehicles', '/api/suppliers'];
+// /api/po/create = purchasing (POST create, PATCH status); receiving staff only read it.
+const MANAGEMENT_WRITE_APIS = ['/api/org', '/api/branches', '/api/carriers', '/api/fleet-vehicles', '/api/suppliers', '/api/po/create'];
 
 export function isManagementOnlyApiWrite(pathname: string, method: string): boolean {
   const m = method.toUpperCase();
@@ -50,7 +51,7 @@ export function sectionForPath(pathname: string): string | null {
   if (p.startsWith('/cycle-count') || p.startsWith('/adjustments') || p.startsWith('/ops/cycle-count')) return 'cycle-count';
   // งานสต็อกที่ sensitive — ทำบนคอมโดยแอดมินเท่านั้น: ปรับสต็อกด่วน, โอนข้ามสาขา
   // map เป็น section ที่ไม่มี role staff ใดถือ → เห็นเฉพาะ management (canAccessSection short-circuit)
-  if (p.startsWith('/adjust') || p.startsWith('/transfers')) return 'inventory-admin';
+  if (p.startsWith('/adjust') || p.startsWith('/transfers') || p.startsWith('/ops/purchase-orders')) return 'inventory-admin';
   // สต็อกทั่วไปที่ staff ใช้ได้: ดูสต็อก + แจ้งชำรุด
   if (p.startsWith('/inventory') || p.startsWith('/stock-card') || p.startsWith('/damage')) return 'inventory';
   if (p.startsWith('/analytics') || p.startsWith('/hq')) return 'analytics';

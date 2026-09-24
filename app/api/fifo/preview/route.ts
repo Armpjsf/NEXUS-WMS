@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTransactions } from '@/lib/data/wms';
-import { allocateFIFO, FIFOAllocation, AllocationMethod } from '@/lib/fifo';
+import { allocateFIFO, AllocationMethod } from '@/lib/fifo';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,9 +61,9 @@ export async function POST(request: NextRequest) {
             message
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('FIFO Preview Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
     }
 }
 

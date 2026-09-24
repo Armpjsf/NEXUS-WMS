@@ -3,33 +3,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { 
-  PackagePlus, 
-  Boxes, 
-  ClipboardCheck, 
-  Search, 
-  Truck, 
-  Camera, 
-  ArrowUpRight, 
-  CheckCircle2, 
-  AlertCircle, 
-  RefreshCw, 
-  Scan, 
-  Layers, 
-  Clock, 
-  ExternalLink, 
-  ChevronRight, 
-  PackageMinus, 
-  Sparkles, 
-  MapPin, 
+import {
+  PackagePlus,
+  Boxes,
+  ClipboardCheck,
+  Search,
+  Truck,
+  Camera,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Scan,
+  Layers,
+  Clock,
+  ChevronRight,
+  PackageMinus,
+  MapPin,
   X,
   ShieldCheck,
   UserCheck,
   LogOut,
-  RotateCcw,
   Mic,
-  ArrowLeftRight,
-  Zap
+  Zap,
 } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';

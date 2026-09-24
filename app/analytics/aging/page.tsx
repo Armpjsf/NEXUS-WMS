@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, AlertCircle, CheckCircle, Download, ArrowLeft, Layers, X, Calendar, Package } from 'lucide-react';
+import { Clock, AlertCircle, Download, ArrowLeft, Layers, X, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { useLanguage } from '@/components/providers/LanguageProvider';

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTransfers, createTransfer, updateTransferStatus } from '@/lib/data/transfers';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,9 +8,9 @@ export async function GET() {
   try {
     const transfers = await getTransfers();
     return NextResponse.json({ transfers });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API transfers GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -26,9 +27,9 @@ export async function POST(req: Request) {
     const transfer = await createTransfer(body);
     if (!transfer) return NextResponse.json({ success: false, error: 'บันทึกใบโอนไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, transfer });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API transfers POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -42,8 +43,8 @@ export async function PUT(req: Request) {
 
     const updated = await updateTransferStatus(id, status);
     return NextResponse.json({ success: true, transfer: updated });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API transfers PUT error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

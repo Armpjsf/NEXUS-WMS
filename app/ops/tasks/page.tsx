@@ -1,23 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  CheckCircle2, 
-  Clock, 
-  ArrowRight, 
-  Boxes, 
-  Truck, 
-  RefreshCw, 
-  Play, 
-  Check, 
-  Zap, 
-  MapPin, 
-  AlertTriangle,
+import {
+  CheckCircle2,
+  RefreshCw,
+  Check,
   Flame,
-  UserCheck
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SmartTasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);

@@ -45,6 +45,16 @@ export async function getReservedQty(orgId: string, sku: string): Promise<number
   return (data || []).reduce((s: number, r: any) => s + Number(r.qty_reserved || 0), 0);
 }
 
+/** sku → Σ qty_reserved of ACTIVE reservations, for the whole org (one query). */
+export async function getReservedMap(orgId: string): Promise<Record<string, number>> {
+  const { data, error } = await getServiceSupabase()
+    .from(TABLE).select('sku, qty_reserved').eq('org_id', orgId).eq('status', 'ACTIVE');
+  if (error) return {}; // table not migrated → nothing reserved
+  const map: Record<string, number> = {};
+  for (const r of data || []) map[r.sku] = (map[r.sku] || 0) + Number(r.qty_reserved || 0);
+  return map;
+}
+
 /** available = products.stock − active reservations. Null if SKU not in catalog. */
 export async function getAvailable(orgId: string, sku: string): Promise<number | null> {
   const admin = getServiceSupabase();

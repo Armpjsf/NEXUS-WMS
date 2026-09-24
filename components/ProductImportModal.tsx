@@ -1,23 +1,21 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  UploadCloud, 
-  FileSpreadsheet, 
-  Download, 
-  CheckCircle2, 
-  AlertCircle, 
-  Layers, 
-  ArrowRight, 
+import {
+  X,
+  UploadCloud,
+  FileSpreadsheet,
+  Download,
+  CheckCircle2,
   RefreshCw,
   FileText,
-  Table
+  Table,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import { errorMessage } from '@/lib/errors';
 
 interface ProductImportModalProps {
   isOpen: boolean;
@@ -246,7 +244,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
 
         setParsedData(parsed);
         toast.success(`อ่านข้อมูลสำเร็จ ตรวจพบ ${parsed.length} รายการ`);
-      } catch (err: any) {
+      } catch (err) {
         console.error('File parsing error:', err);
         toast.error('ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบว่าเป็นไฟล์ Excel หรือ CSV ที่ถูกต้อง');
       } finally {
@@ -282,8 +280,8 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
       // Reset
       setFile(null);
       setParsedData([]);
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาดในการนำเข้าสินค้า');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการนำเข้าสินค้า');
     } finally {
       setIsImporting(false);
     }

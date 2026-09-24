@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Trash2, Save, X } from 'lucide-react';
+import { Truck, Plus, Trash2, Save } from 'lucide-react';
+import { errorMessage } from '@/lib/errors';
 
 interface Vehicle { id: string; plate: string; driverName: string; vehicleType: string; active: boolean }
 
@@ -36,7 +37,7 @@ export default function FleetPage() {
       toast.success('เพิ่มรถแล้ว');
       setForm({ plate: '', driverName: '', vehicleType: '4-Wheel' });
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
   const save = async (v: Vehicle) => {
@@ -47,7 +48,7 @@ export default function FleetPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'บันทึกไม่สำเร็จ');
       toast.success('บันทึกแล้ว');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(errorMessage(e)); }
   };
 
   const remove = async (id: string) => {
@@ -59,7 +60,7 @@ export default function FleetPage() {
       if (!res.ok) throw new Error('ลบไม่สำเร็จ');
       toast.success('ลบแล้ว');
       setVehicles(prev => prev.filter(x => x.id !== id));
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(errorMessage(e)); }
   };
 
   const patch = (id: string, key: keyof Vehicle, value: any) =>

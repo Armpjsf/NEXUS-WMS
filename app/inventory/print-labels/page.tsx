@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowLeft, Printer, Minus, Plus, Copy, Settings } from 'lucide-react';
+import { ArrowLeft, Printer, Minus, Plus, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 

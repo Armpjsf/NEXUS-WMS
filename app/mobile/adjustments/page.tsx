@@ -6,6 +6,7 @@ import { ArrowLeft, RefreshCw, ClipboardCheck, Check, X, MapPin, ArrowRight } fr
 import toast from 'react-hot-toast';
 import MobileNav from '@/components/MobileNav';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface Adj {
   requestId?: string;
@@ -51,7 +52,7 @@ export default function MobileAdjustmentsPage() {
       toast.success(action === 'APPROVE' ? 'อนุมัติแล้ว — ยอดสต็อกอัปเดต' : 'ปฏิเสธคำขอแล้ว');
       setRejecting(null); setReason('');
       load();
-    } catch (e: any) { toast.error(e.message); } finally { setBusyId(null); }
+    } catch (e) { toast.error(errorMessage(e)); } finally { setBusyId(null); }
   };
 
   const pending = items.filter(a => (a.status || 'PENDING') === 'PENDING');

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { registerDeviceToken } from '@/lib/data/wms';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,8 @@ export async function POST(req: Request) {
       success: true,
       message: status === 'updated' ? 'Already registered' : 'Token registered',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[PushRegister] Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

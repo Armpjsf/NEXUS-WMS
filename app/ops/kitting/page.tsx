@@ -5,20 +5,16 @@ import {
   Boxes,
   Plus,
   Layers,
-  Wrench,
-  CheckCircle2,
-  AlertTriangle,
-  RotateCcw,
   Search,
   RefreshCw,
-  ArrowRight,
   Split,
   Hammer,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { BillOfMaterials, BomComponent } from '@/lib/kittingEngine';
+import { errorMessage } from '@/lib/errors';
 
 export default function KittingPage() {
   const [boms, setBoms] = useState<BillOfMaterials[]>([]);
@@ -76,8 +72,8 @@ export default function KittingPage() {
       } else {
         toast.error(data.error);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -104,8 +100,8 @@ export default function KittingPage() {
       } else {
         toast.error(data.error);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     }
   };
 

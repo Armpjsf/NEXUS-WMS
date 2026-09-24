@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { createWarehouseTask } from '@/lib/taskEngine';
+import { errorMessage } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -26,8 +27,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, data: data || [] });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, data: result.data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

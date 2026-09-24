@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +31,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ transactions: transactions || [] });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API GET Transactions Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) || 'Internal Server Error' }, { status: 500 });
   }
 }

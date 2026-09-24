@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSuppliers, getSupplierById, createSupplier, updateSupplier, deleteSupplier } from '@/lib/data/suppliers';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,9 +17,9 @@ export async function GET(request: Request) {
     const q = searchParams.get('q') || undefined;
     const suppliers = await getSuppliers(q);
     return NextResponse.json({ suppliers });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API suppliers GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -32,9 +33,9 @@ export async function POST(request: Request) {
     const supplier = await createSupplier(body);
     if (!supplier) return NextResponse.json({ error: 'เพิ่มผู้จำหน่ายไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, supplier });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API suppliers POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -47,9 +48,9 @@ export async function PUT(request: Request) {
     const supplier = await updateSupplier(id, patch);
     if (!supplier) return NextResponse.json({ error: 'อัปเดตผู้จำหน่ายไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, supplier });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API suppliers PUT error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
@@ -62,8 +63,8 @@ export async function DELETE(request: Request) {
     const ok = await deleteSupplier(id);
     if (!ok) return NextResponse.json({ error: 'ลบผู้จำหน่ายไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API suppliers DELETE error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

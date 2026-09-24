@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getBins, getBinsForSkus } from '@/lib/stockLocations';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, bins: await getBinsForSkus(orgId, list) });
     }
     return NextResponse.json({ success: false, error: 'ระบุ sku หรือ skus' }, { status: 400 });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, bins: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), bins: [] }, { status: 200 });
   }
 }

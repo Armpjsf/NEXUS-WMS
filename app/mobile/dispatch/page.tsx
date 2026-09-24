@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Minus, Trash2, Check, MapPin, Phone, User, PackageCheck, ScanLine, PenLine, ChevronDown, LocateFixed, Warehouse, FileText, X } from 'lucide-react';
+import { Truck, Plus, Minus, Trash2, Check, MapPin, User, PackageCheck, ScanLine, PenLine, ChevronDown, LocateFixed, Warehouse, FileText, X } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import SignatureModal from '@/components/SignatureModal';
 import { getApiUrl } from '@/lib/config';
+import { errorMessage } from '@/lib/errors';
 
 interface Item { sku: string; name: string; qty: number; drop: number; scanned?: boolean; override?: boolean }
 interface Drop { name: string; phone: string; address: string; lat?: number | null; lng?: number | null }
@@ -173,7 +174,7 @@ export default function MobileDispatchPage() {
       const p = j.location;
       setPickupOpts(prev => [...prev, { id: p.id, customerId: p.customerId ?? null, name: p.name, address: p.address || '', phone: p.phone || '', lat: p.lat ?? null, lng: p.lng ?? null, kind: p.kind || 'DROP', isDefault: !!p.isDefault }]);
       toast.success('บันทึกจุดส่งแล้ว — ครั้งหน้าเลือกได้เลย', { id: t });
-    } catch (e: any) { toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t }); }
+    } catch (e) { toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด', { id: t }); }
   };
 
   const savePickup = async () => {
@@ -196,8 +197,8 @@ export default function MobileDispatchPage() {
       setAddingPickup(false);
       setNewPickup({ name: '', address: '', lat: '', lng: '' });
       toast.success('เพิ่มจุดรับแล้ว');
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาด');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด');
     } finally { setSavingPickup(false); }
   };
 
@@ -330,8 +331,8 @@ export default function MobileDispatchPage() {
       setActiveDrop(1); setChecked(false); setVehicleId('');
       setCustomerStaffSig(''); setCheckerSig('');
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-    } catch (e: any) {
-      toast.error(e.message || 'เกิดข้อผิดพลาด', { id: t });
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด', { id: t });
     } finally { setSubmitting(false); }
   };
 

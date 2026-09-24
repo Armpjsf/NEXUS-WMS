@@ -8,6 +8,7 @@
 // Postgres rejects onConflict 'org_id,sku' (42P10: no matching constraint), so
 // we fall back to an explicit update-or-insert scoped to the org.
 import { getServiceSupabase } from '@/lib/supabase';
+import { hasColumn } from '@/lib/schemaProbe';
 
 type Row = Record<string, any> & { sku: string };
 
@@ -16,7 +17,11 @@ export async function upsertProductsForOrg(
   rows: Row[],
 ): Promise<{ data: any[]; error: { message: string } | null }> {
   const admin = getServiceSupabase();
-  const scoped = rows.map(r => ({ ...r, org_id: orgId }));
+  let scoped: Row[] = rows.map(r => ({ ...r, org_id: orgId }));
+  // cost_price comes with sql/20260925; drop it until the column exists.
+  if (scoped.some(r => 'cost_price' in r)) {
+    if (!(await hasColumn('products', 'cost_price'))) scoped = scoped.map(({ cost_price: _c, ...r }) => r as Row);
+  }
 
   const first = await admin.from('products').upsert(scoped, { onConflict: 'org_id,sku' }).select();
   if (!first.error) return { data: first.data || [], error: null };

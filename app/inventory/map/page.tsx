@@ -12,16 +12,9 @@ import {
   Sparkles,
   AlertTriangle,
   CheckCircle2,
-  XCircle,
-  HelpCircle,
-  ExternalLink,
   Flame,
-  Activity,
   Printer,
-  ChevronRight,
   X,
-  PackageCheck,
-  TrendingUp,
   ArrowLeftRight,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -31,14 +24,10 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { LocationSwapModal } from '@/components/LocationSwapModal';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/config';
-import { toast } from 'react-hot-toast';
 import { db } from '@/lib/db';
 import {
   buildWarehouseMap,
-  WarehouseZone,
   WarehouseBin,
-  WarehouseRack,
-  WarehouseMapStats,
 } from '@/lib/warehouseMap';
 
 export default function WarehouseMapPage() {

@@ -5,6 +5,7 @@ import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { checkBayConflict, DockAppointment } from '@/lib/dockEngine';
 import { nextDocNumber } from '@/lib/docNumber';
+import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,8 +39,8 @@ export async function GET() {
       .order('scheduled_start', { ascending: true });
     if (error) throw error;
     return NextResponse.json({ success: true, appointments: (data || []).map(mapApt) });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message, appointments: [] }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ success: false, error: errorMessage(err), appointments: [] }, { status: 200 });
   }
 }
 
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
       .select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, appointment: mapApt(data) });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

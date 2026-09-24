@@ -5,25 +5,19 @@ import {
   ArrowLeft,
   Boxes,
   CheckCircle2,
-  AlertTriangle,
   Printer,
   Sparkles,
   Barcode,
-  RefreshCw,
   Plus,
   Play,
   RotateCcw,
   Layers,
   MapPin,
-  TrendingDown,
-  Navigation,
-  FileSpreadsheet,
   Trash2,
   Search,
   Volume2,
   VolumeX,
   Eye,
-  Smartphone,
   Camera,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -40,10 +34,11 @@ import {
   PickingWave,
   parseLocation,
 } from '@/lib/picking';
-import { speakPickInstruction, speakThai, triggerHaptic, speakScanSuccess, speakScanMismatch, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
+import { speakPickInstruction, speakThai, triggerHaptic, speakScanSuccess, speakScanMismatch } from '@/lib/voiceAssistant';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
+import { errorMessage } from '@/lib/errors';
 
 export default function WavePickingPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -163,8 +158,8 @@ export default function WavePickingPage() {
           toast.error('ไม่พบสินค้าที่มีสต็อกในคลัง');
         }
       }
-    } catch (e: any) {
-      toast.error('ดึงออเดอร์ไม่สำเร็จ: ' + e.message);
+    } catch (e) {
+      toast.error('ดึงออเดอร์ไม่สำเร็จ: ' + errorMessage(e));
     }
   };
 
