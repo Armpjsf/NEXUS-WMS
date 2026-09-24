@@ -93,6 +93,7 @@ export default function Dashboard() {
   // Dashboard Customization
   const { visibleWidgets, toggleWidget, mounted } = useDashboardCustomization();
   const [selectedForecastItem, setSelectedForecastItem] = useState<any>(null);
+  const [activityDays, setActivityDays] = useState<7 | 30>(7);
   const [forecastHistory, setForecastHistory] = useState<Array<{ date: string; stock: number }>>([]);
 
   // Real 7-day stock history for the selected SKU (depletion chart).
@@ -515,13 +516,29 @@ export default function Dashboard() {
 
                   chart_weekly_activity: visibleWidgets['charts'] ? (
                        <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg flex flex-col">
-                           <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
-                             <span className="w-1.5 h-4 bg-[#f97316] rounded-full"></span>
-                             {t('chart_weekly_activity')}
-                           </h3>
+                           <div className="mb-6 flex items-center justify-between gap-2">
+                             <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider flex items-center gap-2">
+                               <span className="w-1.5 h-4 bg-[#f97316] rounded-full"></span>
+                               {activityDays === 7 ? t('chart_weekly_activity') : 'กิจกรรม 30 วัน'}
+                             </h3>
+                             <div className="flex gap-1">
+                               {([7, 30] as const).map(n => (
+                                 <button key={n} onClick={() => setActivityDays(n)}
+                                   className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors ${activityDays === n ? 'bg-[#f97316] text-[#1b1600] border-[#f97316]' : 'text-[#8a92a6] border-[#30353d] hover:text-[#dee2ec]'}`}>
+                                   {n} วัน
+                                 </button>
+                               ))}
+                             </div>
+                           </div>
+                           {(() => {
+                             const rows = (data?.movementData || []).slice(-activityDays);
+                             return rows.length > 0 && rows.every((r: any) => !r.in && !r.out) ? (
+                               <p className="-mt-4 mb-2 text-[11px] text-[#8a92a6]">ไม่มีการรับเข้า/จ่ายออกในช่วงนี้</p>
+                             ) : null;
+                           })()}
                            <div className="flex-1 w-full min-h-0">
                               <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={data?.movementData || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                  <BarChart data={(data?.movementData || []).slice(-activityDays)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                       <defs>
                                            <linearGradient id="colorInGrad" x1="0" y1="0" x2="0" y2="1">
                                                <stop offset="5%" stopColor="#4cd7f6" stopOpacity={0.9}/>
@@ -537,8 +554,8 @@ export default function Dashboard() {
                                       <YAxis stroke="#64748b" fontSize={10} tick={{fill: '#d1c6ab'}} />
                                       <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255, 255, 255, 0.04)'}} />
                                       <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: '#dee2ec' }} />
-                                      <Bar dataKey="in" name={t('legend_inbound')} fill="url(#colorInGrad)" radius={[4, 4, 0, 0]} barSize={12} />
-                                      <Bar dataKey="out" name={t('legend_outbound')} fill="url(#colorOutGrad)" radius={[4, 4, 0, 0]} barSize={12} />
+                                      <Bar dataKey="in" name={t('legend_inbound')} fill="url(#colorInGrad)" radius={[4, 4, 0, 0]} barSize={activityDays === 7 ? 12 : 5} />
+                                      <Bar dataKey="out" name={t('legend_outbound')} fill="url(#colorOutGrad)" radius={[4, 4, 0, 0]} barSize={activityDays === 7 ? 12 : 5} />
                                   </BarChart>
                               </ResponsiveContainer>
                           </div>

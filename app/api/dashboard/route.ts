@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { fetchAllRows } from '@/lib/data/fetchAll';
 import { errorMessage } from '@/lib/errors';
+import { bkkDay } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,13 +79,22 @@ export async function GET(request: Request) {
             { name: 'Out', value: outOfStockCount },
         ].filter(d => d.value > 0);
 
-        // 7. Weekly activity — last 7 days in/out
-        const movementData: { name: string; in: number; out: number }[] = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(now - i * 864e5);
-            const key = d.toISOString().slice(0, 10);
-            const dayTx = allTx.filter(t => (t.created_at || '').slice(0, 10) === key);
-            movementData.push({ name: `${d.getDate()}/${d.getMonth() + 1}`, in: sumType(dayTx, 'IN'), out: sumType(dayTx, 'OUT') });
+        // 7. Daily activity — last 30 days in/out on the Bangkok calendar (the
+        //    chart shows the last 7 or all 30). Grouping by the UTC date put
+        //    00:00–07:00 Bangkok movements on the previous day.
+        const dayTotals = new Map<string, { in: number; out: number }>();
+        for (const t of allTx) {
+            if (!t.created_at || (t.type !== 'IN' && t.type !== 'OUT')) continue;
+            const day = bkkDay(t.created_at);
+            const cur = dayTotals.get(day) || { in: 0, out: 0 };
+            if (t.type === 'IN') cur.in += Number(t.qty || 0); else cur.out += Number(t.qty || 0);
+            dayTotals.set(day, cur);
+        }
+        const movementData: { date: string; name: string; in: number; out: number }[] = [];
+        for (let i = 29; i >= 0; i--) {
+            const day = bkkDay(now - i * 864e5);
+            const [, m, d] = day.split('-');
+            movementData.push({ date: day, name: `${Number(d)}/${Number(m)}`, ...(dayTotals.get(day) || { in: 0, out: 0 }) });
         }
 
         // 8. Low-stock table

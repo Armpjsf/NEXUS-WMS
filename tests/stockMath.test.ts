@@ -98,3 +98,28 @@ describe('generateDepletionData', () => {
     expect(none.filter(d => !d.predicted)).toHaveLength(1);
   });
 });
+
+import { deriveHistoricalLots, historicalLotNumber } from '@/lib/lotHistory';
+
+describe('historical lot trace (FIFO replay)', () => {
+  it('names lots by UTC receive date like the lot-building script', () => {
+    expect(historicalLotNumber('2025-02-20T17:30:00Z')).toBe('RCV-20250220');
+  });
+  it('allocates shipments oldest lot first and keeps doc refs', () => {
+    const lots = deriveHistoricalLots(
+      [{ qty: 10, created_at: '2025-01-05T03:00:00Z' }, { qty: 20, created_at: '2025-02-20T03:00:00Z' }],
+      [
+        { type: 'OUT', qty: 8, created_at: '2025-01-10T03:00:00Z', doc_ref: 'A' },
+        { type: 'OUT', qty: 5, created_at: '2025-03-01T03:00:00Z', doc_ref: 'B' },
+        { type: 'DAMAGE', qty: 1, created_at: '2025-03-02T03:00:00Z', doc_ref: '' },
+      ],
+    );
+    expect(lots.get('RCV-20250105')?.consumed).toEqual([
+      { docRef: 'A', type: 'OUT', qty: 8, at: '2025-01-10T03:00:00Z' },
+      { docRef: 'B', type: 'OUT', qty: 2, at: '2025-03-01T03:00:00Z' },
+    ]);
+    const feb = lots.get('RCV-20250220')!;
+    expect(feb.received).toBe(20);
+    expect(feb.consumed.map(c => [c.docRef, c.qty])).toEqual([['B', 3], ['', 1]]);
+  });
+});

@@ -113,6 +113,12 @@ export function LotTraceModal({ isOpen, onClose, product }: Props) {
                     </div>
                   </div>
 
+                  {trace.source === 'ledger-fifo' && (
+                    <p className="text-[11px] text-[#8a92a6] -mt-1">
+                      ล็อตย้อนหลัง (ก่อนเปิดระบบติดตามล็อต) — คำนวณจากประวัติรับ-จ่ายแบบเข้าก่อนออกก่อน (FIFO){trace.totals?.damaged ? ` · ตัดชำรุด ${trace.totals.damaged}` : ''}
+                    </p>
+                  )}
+
                   {/* recipients / recall list */}
                   <div>
                     <div className="text-[11px] font-bold text-[#8a92a6] uppercase mb-2 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> ผู้รับที่กระทบ (Recall List)</div>
@@ -121,8 +127,12 @@ export function LotTraceModal({ isOpen, onClose, product }: Props) {
                         {recipients.map((r, i) => (
                           <div key={i} className="flex items-center justify-between bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2">
                             <div className="min-w-0">
-                              <div className="text-sm font-bold text-[#dee2ec] truncate">{r.party || '(ไม่ระบุลูกค้า)'}</div>
-                              <div className="text-[11px] text-[#8a92a6] font-mono">{r.docRef || '-'}</div>
+                              <div className="text-sm font-bold text-[#dee2ec] truncate">
+                                {r.party || (/^HIST-/.test(r.docRef || '') ? 'ข้อมูลย้อนหลัง (ไม่มีชื่อลูกค้า)' : '(ไม่ระบุลูกค้า)')}
+                              </div>
+                              <div className="text-[11px] text-[#8a92a6] font-mono">
+                                {/^HIST-/.test(r.docRef || '') ? 'นำเข้าจากประวัติ ไม่มีเลขเอกสาร' : (r.docRef || '-')}
+                              </div>
                             </div>
                             <span className="text-sm font-black text-[#facc15] font-mono shrink-0">{r.qty}</span>
                           </div>
