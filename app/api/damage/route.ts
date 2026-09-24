@@ -92,7 +92,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Missing status or sent_to_hq' }, { status: 400 });
     }
 
-    const { error } = await supabase.from('damage_records').update(patch).eq('id', targetId);
+    const { error } = await supabase.from('damage_records').update(patch).eq('id', targetId).eq('org_id', await getCurrentOrgId());
     if (error) {
       console.error('Supabase update damage Error:', error);
       return NextResponse.json({ error: 'Failed to update record' }, { status: 500 });

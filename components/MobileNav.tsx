@@ -21,7 +21,7 @@ export default function MobileNav() {
   const { t } = useLanguage();
   const pathname = usePathname();
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role || 'Staff';
+  const role = session?.user?.role || 'Staff';
 
   // Tailor bottom navigation based on employee's section role
   const getNavItems = () => {

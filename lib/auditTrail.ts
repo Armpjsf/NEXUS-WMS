@@ -2,6 +2,7 @@
 // Logs user actions for tracking changes (Persistent via Supabase)
 
 import { getServiceSupabase } from './supabase';
+import { getCurrentOrgId } from './orgContext';
 
 export interface AuditLog {
   id: string;
@@ -31,6 +32,7 @@ export async function logAction(params: {
   const timestamp = new Date().toISOString();
 
   const entry = {
+    org_id: await getCurrentOrgId(),
     ts: timestamp,
     user_id: params.userId,
     user_name: params.userName,
@@ -63,9 +65,11 @@ export async function getAuditLogs(params?: {
   endDate?: Date;
   limit?: number;
 }) {
+  const orgId = await getCurrentOrgId();
   let query = getServiceSupabase()
     .from('audit_log')
     .select('*')
+    .eq('org_id', orgId)
     .order('ts', { ascending: false })
     .limit(params?.limit || 100);
 

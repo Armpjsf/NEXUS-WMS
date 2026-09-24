@@ -8,7 +8,13 @@
     "build": "next build",
     "build:mobile": "set NEXT_PUBLIC_MOBILE_BUILD=true && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint . --quiet",
+    "test": "vitest run",
+    "check:org-scope": "node scripts/check-org-scope.mjs",
+    "test:flow": "node scripts/flow-check.mjs",
+    "verify": "npm run check:org-scope && npm run lint && npm run typecheck && npm test",
+    "typecheck": "tsc --noEmit",
+    "check:schema": "node scripts/check-schema.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
@@ -64,6 +70,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

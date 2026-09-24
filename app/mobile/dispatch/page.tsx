@@ -147,7 +147,7 @@ export default function MobileDispatchPage() {
     );
   };
 
-  const useGpsForDrop = (idx: number) => {
+  const captureGpsForDrop = (idx: number) => {
     if (!navigator.geolocation) { toast.error('อุปกรณ์ไม่รองรับ GPS'); return; }
     const t = toast.loading('กำลังอ่านตำแหน่ง GPS...');
     navigator.geolocation.getCurrentPosition(
@@ -478,7 +478,7 @@ export default function MobileDispatchPage() {
               <input value={d.phone} onChange={e => patchDrop(idx, 'phone', e.target.value)} placeholder="เบอร์โทร" inputMode="tel" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
               <textarea value={d.address} onChange={e => patchDrop(idx, 'address', e.target.value)} placeholder="ที่อยู่จัดส่ง *" rows={2} className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none resize-none" />
               <div className="flex items-center gap-2">
-                <button onClick={() => useGpsForDrop(idx)} className="flex items-center gap-1 text-[11px] font-bold text-slate-500 active:scale-95">
+                <button onClick={() => captureGpsForDrop(idx)} className="flex items-center gap-1 text-[11px] font-bold text-slate-500 active:scale-95">
                   <LocateFixed className="w-3.5 h-3.5 text-cyan-600" /> ปักพิกัด GPS
                 </button>
                 <button onClick={() => saveDropAsPoint(idx)} className="flex items-center gap-1 text-[11px] font-bold text-cyan-600 active:scale-95">

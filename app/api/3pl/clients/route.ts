@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
+import { nextMasterCode } from '@/lib/docNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     const admin = getServiceSupabase();
     const row = {
       org_id: orgId,
-      client_code: b.clientCode || `CLI-${Math.floor(1000 + Math.random() * 9000)}`,
+      client_code: b.clientCode || await nextMasterCode('CLI', orgId, { table: 'third_party_clients', column: 'client_code' }),
       client_name: String(b.clientName).trim(),
       contact_person: b.contactPerson || '', email: b.email || '', phone: b.phone || '',
       storage_rate_per_cbm_day: Number(b.storageRatePerCbmDay) || 15,

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const allowedOwners = (session?.user as any)?.allowedOwners;
+    const allowedOwners = session?.user?.allowedOwners;
     
     // Fetch products (Filtered) and damage records (All) in parallel
     const [products, damageRecords] = await Promise.all([

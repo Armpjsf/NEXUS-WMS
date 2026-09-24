@@ -1,2 +1,0 @@
-﻿app/inventory/print-labels/page.tsx(36,5): error TS2561: Object literal may only specify known properties, but 'contentRef' does not exist in type 'IReactToPrintProps'. Did you mean to write 'content'?
-components/providers/GlobalNotificationProvider.tsx(56,18): error TS2353: Object literal may only specify known properties, and 'vibrate' does not exist in type 'NotificationOptions'.

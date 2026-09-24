@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { bomId, quantity, action } = body; // action: 'ASSEMBLE' | 'DISASSEMBLE'
     const buildQty = Math.max(1, Number(quantity) || 1);
-    const actor = (session.user as any)?.name || session.user?.email || 'Warehouse';
+    const actor = session.user?.name || session.user?.email || 'Warehouse';
 
     const { data: bomRow, error: bomErr } = await admin
       .from('bill_of_materials').select('*').eq('org_id', orgId).eq('id', bomId).maybeSingle();
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       orgId, entityName: 'bill_of_materials', entityId: bomRow.id, action: 'UPDATE',
       beforeState: { kitSku: bomRow.kit_sku, action: isAssemble ? 'BEFORE_ASSEMBLE' : 'BEFORE_DISASSEMBLE' },
       afterState: { kitSku: bomRow.kit_sku, qty: buildQty, componentsMoved: components },
-      performedBy: (session.user as any)?.id || 'admin', userEmail: session.user?.email || 'admin@nexus.com',
+      performedBy: session.user?.id || 'admin', userEmail: session.user?.email || 'admin@nexus.com',
       reason: `${isAssemble ? 'รวมชุดสินค้า (Kitting)' : 'แยกชุดสินค้า (De-kitting)'}: ${bomRow.kit_name} x ${buildQty} ชุด`,
     }).catch(() => {});
 

@@ -104,7 +104,7 @@ export default function MobileHubPage() {
 
   // Hardware Laser Scanner (PDA)
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const userRole: string = user?.role || 'Staff';
   const userName: string = user?.name || 'พนักงานคลัง';
 

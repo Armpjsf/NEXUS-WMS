@@ -55,6 +55,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import BranchSelector from './BranchSelector';
+import { ExperimentalPill } from '@/components/ui/ExperimentalBanner';
 
 type NavItem = {
   label: string;
@@ -63,6 +64,8 @@ type NavItem = {
   tone: 'blue' | 'teal' | 'emerald' | 'amber' | 'rose' | 'violet' | 'cyan' | 'steel';
   adminOnly?: boolean;
   viewerAllowed?: boolean;
+  /** Simulated / not wired to real hardware or APIs yet — shows a "ทดลอง" pill. */
+  experimental?: boolean;
 };
 
 type NavGroup = {
@@ -165,7 +168,7 @@ export default function Sidebar() {
     }
   };
 
-  const userRole = (session?.user as any)?.role || 'User';
+  const userRole = session?.user?.role || 'User';
   const isAdminRole = adminRoles.includes(userRole);
 
   // P1 cleanup: ยุบเมนูซ้ำ (พิมพ์ฉลาก/สแกน/ตรวจนับ/รายงาน/AI) + ย้ายเมนูมือถือ (/mobile/*) ไปไว้ที่ MobileNav
@@ -196,7 +199,7 @@ export default function Sidebar() {
       accent: 'bg-emerald-500',
       items: [
         { label: 'คิวงานอัจฉริยะ (Smart Tasks)', href: '/ops/tasks', icon: Boxes, tone: 'amber' },
-        { label: 'หุ่นยนต์ & WCS Gateway', href: '/ops/wcs', icon: Cpu, tone: 'cyan', adminOnly: true },
+        { label: 'หุ่นยนต์ & WCS Gateway', href: '/ops/wcs', icon: Cpu, tone: 'cyan', adminOnly: true, experimental: true },
         { label: 'สั่งหยิบด้วยเสียง (Voice Picking)', href: '/ops/voice-picking', icon: Mic, tone: 'amber' },
         { label: 'ASN แจ้งของเข้าล่วงหน้า (EDI)', href: '/ops/asn', icon: ArrowDownToLine, tone: 'emerald' },
         { label: 'รับเข้า & จัดเก็บ (GRN)', href: '/ops/receiving', icon: ArrowDownToLine, tone: 'emerald' },
@@ -233,7 +236,7 @@ export default function Sidebar() {
       accent: 'bg-violet-500',
       items: [
         { label: t('menu_analytics'), href: '/analytics', icon: BarChart3, tone: 'violet' },
-        { label: 'เซนเซอร์ห้องเย็น (Cold-Chain IoT)', href: '/ops/iot/cold-chain', icon: ThermometerSnowflake, tone: 'cyan' },
+        { label: 'เซนเซอร์ห้องเย็น (Cold-Chain IoT)', href: '/ops/iot/cold-chain', icon: ThermometerSnowflake, tone: 'cyan', experimental: true },
         { label: 'ประสิทธิภาพแรงงาน (Labor LMS)', href: '/ops/analytics/productivity', icon: Activity, tone: 'violet' },
         { label: 'LMS ภาระงานรายคน (Leaderboard)', href: '/ops/lms', icon: Users, tone: 'violet' },
         { label: 'รายงานเคลื่อนไหว', href: '/analytics/movements', icon: FileBarChart, tone: 'cyan', viewerAllowed: true },
@@ -400,6 +403,7 @@ export default function Sidebar() {
                         <div className="flex items-center gap-2 min-w-0">
                           <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-accent-gold' : 'text-text-tactical group-hover:text-foreground')} />
                           {!collapsed && <span className="truncate">{item.label}</span>}
+                          {!collapsed && item.experimental && <ExperimentalPill />}
                         </div>
                         {!collapsed && isActive && (
                           <span className="font-mono text-[9px] bg-accent-gold text-accent-gold-dark px-1 py-0.5 rounded font-bold shrink-0">

@@ -12,6 +12,7 @@ import { binMoveAll } from '@/lib/stockLocations';
 const supabase = getServiceSupabase();
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { nextDocNumber } from './docNumber';
 
 export interface LPNItem {
   id?: string;
@@ -38,11 +39,11 @@ export interface LPN {
 // Fallback in-memory store if database table is not yet migrated
 const memoryLpns: Map<string, LPN> = new Map();
 
-export function generateLpnNumber(type: 'PALLET' | 'MASTER_CARTON' | 'TOTE' | 'CAGE' = 'PALLET'): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  const prefix = type === 'PALLET' ? 'PL' : type === 'MASTER_CARTON' ? 'MC' : type === 'TOTE' ? 'TT' : 'CG';
-  return `LPN-${dateStr}-${prefix}${rand}`;
+const LPN_TYPE_CODE = { PALLET: 'PL', MASTER_CARTON: 'MC', TOTE: 'TT', CAGE: 'CG' } as const;
+
+/** LPN-<type>-YYYYMMDD-NNNN from the atomic doc sequence (no random collisions). */
+export async function generateLpnNumber(type: 'PALLET' | 'MASTER_CARTON' | 'TOTE' | 'CAGE' = 'PALLET'): Promise<string> {
+  return nextDocNumber(`LPN-${LPN_TYPE_CODE[type] || 'PL'}`, { date: 'yyyymmdd', pad: 4, existing: { table: 'license_plate_numbers', column: 'lpn_number' } });
 }
 
 export async function createLPN(params: {
@@ -53,7 +54,7 @@ export async function createLPN(params: {
   notes?: string;
 }): Promise<LPN> {
   const orgId = await getCurrentOrgId();
-  const lpnNumber = params.lpnNumber || generateLpnNumber(params.lpnType);
+  const lpnNumber = params.lpnNumber || await generateLpnNumber(params.lpnType);
 
   const newLpn: LPN = {
     lpnNumber,
@@ -66,7 +67,7 @@ export async function createLPN(params: {
     createdAt: new Date().toISOString()
   };
 
-  try {
+  {
     const { data: header, error: hErr } = await supabase
       .from('license_plate_numbers')
       .insert({
@@ -81,7 +82,10 @@ export async function createLPN(params: {
       .select()
       .single();
 
-    if (!hErr && header) {
+    // Fail loudly: the old in-memory fallback returned success for an LPN that
+    // was never saved (and vanished on the next serverless instance).
+    if (hErr || !header) throw new Error(`บันทึก LPN ไม่สำเร็จ: ${hErr?.message || 'no row returned'}`);
+    {
       if (params.items.length > 0) {
         const itemRows = params.items.map(it => ({
           lpn_id: header.id,
@@ -91,11 +95,10 @@ export async function createLPN(params: {
           quantity: it.quantity,
           unit: it.unit || 'pcs'
         }));
-        await supabase.from('lpn_items').insert(itemRows);
+        const { error: iErr } = await supabase.from('lpn_items').insert(itemRows);
+        if (iErr) throw new Error(`บันทึกรายการใน LPN ${lpnNumber} ไม่สำเร็จ: ${iErr.message}`);
       }
     }
-  } catch (err) {
-    console.warn('LPN database write fallback to memory:', err);
   }
 
   memoryLpns.set(lpnNumber, newLpn);
@@ -130,7 +133,8 @@ export async function moveLPN(lpnNumber: string, newLocation: string, operator =
       await supabase
         .from('license_plate_numbers')
         .update({ location_code: newLocation, updated_at: new Date().toISOString() })
-        .eq('id', existing.id);
+        .eq('id', existing.id)
+        .eq('org_id', orgId);
 
       // ย้ายสต็อกราย SKU จาก bin เดิมของพาเลท → bin ปลายทาง (ยอดตามไปจริงต่อ bin)
       // ย้ายเฉพาะจำนวนที่อยู่ bin ต้นทางของพาเลท ไม่ไปแตะ bin อื่นของ SKU เดียวกัน

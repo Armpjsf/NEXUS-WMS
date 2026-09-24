@@ -6,6 +6,7 @@ import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binAdd } from '@/lib/stockLocations';
 import { toBaseQty } from '@/lib/uom';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export type ReceiptStatus = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
 
@@ -62,12 +63,7 @@ function toRow(items: ReceiptLine[]) {
 }
 
 async function nextReceiptNo(): Promise<string> {
-  const d = new Date();
-  const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const prefix = `GRN-${ymd}-`;
-  const { count } = await supabase
-    .from('receipts').select('id', { count: 'exact', head: true }).like('receipt_no', `${prefix}%`);
-  return `${prefix}${String((count || 0) + 1).padStart(3, '0')}`;
+  return nextDocNumber('GRN', { existing: { table: 'receipts', column: 'receipt_no' } });
 }
 
 export async function listReceipts(opts: { status?: string; limit?: number } = {}): Promise<Receipt[]> {
@@ -147,6 +143,7 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
 }
 
 export async function cancelReceipt(id: string): Promise<boolean> {
-  const { error } = await getServiceSupabase().from('receipts').update({ status: 'CANCELLED' }).eq('id', id);
+  const orgId = await getCurrentOrgId();
+  const { error } = await getServiceSupabase().from('receipts').update({ status: 'CANCELLED' }).eq('id', id).eq('org_id', orgId);
   return !error;
 }

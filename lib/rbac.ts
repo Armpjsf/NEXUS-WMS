@@ -22,6 +22,19 @@ export function isManagementOnlyPath(pathname: string): boolean {
   return false;
 }
 
+// Master-data / tenant-settings APIs whose WRITES are management-only (reads stay
+// open to staff: e.g. mobile dispatch lists carriers & fleet). Pages for these
+// live under /admin, but the page guard alone left the API writable by any
+// signed-in staff. /api/admin/** is guarded separately (all methods).
+const MANAGEMENT_WRITE_APIS = ['/api/org', '/api/branches', '/api/carriers', '/api/fleet-vehicles', '/api/suppliers'];
+
+export function isManagementOnlyApiWrite(pathname: string, method: string): boolean {
+  const m = method.toUpperCase();
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return false;
+  const p = pathname.replace(/\/+$/, '');
+  return MANAGEMENT_WRITE_APIS.includes(p);
+}
+
 // Map a URL path to a logical "section" used by ROLE_DEFINITIONS.allowedSections.
 export function sectionForPath(pathname: string): string | null {
   const p = pathname.replace(/^\/mobile/, '') || '/';

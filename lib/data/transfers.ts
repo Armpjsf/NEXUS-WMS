@@ -3,6 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export type TransferStatus = 'DRAFT' | 'PENDING' | 'IN_TRANSIT' | 'COMPLETED' | 'CANCELLED';
 
@@ -57,44 +58,11 @@ export async function getTransfers(): Promise<StockTransfer[]> {
     .eq('org_id', orgId)
     .order('created_at', { ascending: false });
 
-  if (error || !data || data.length === 0) {
-    // Fallback demonstration seeds if table is empty or not yet created
-    return [
-      {
-        id: 'tr-001',
-        orgId,
-        transferNo: 'TR-20260910-001',
-        fromBranchId: 'hq',
-        toBranchId: 'branch-urt',
-        status: 'IN_TRANSIT',
-        items: [
-          { sku: 'SKU-001', name: 'กล่องกระดาษลูกฟูก เบอร์ 0', qty: 150, unit: 'ใบ' },
-          { sku: 'SKU-003', name: 'เทปใสปิดกล่อง 2 นิ้ว', qty: 30, unit: 'ม้วน' },
-        ],
-        totalQty: 180,
-        notes: 'เติมสต็อกสาขาสุราษฎร์ธานีประจำสัปดาห์',
-        createdBy: 'Admin WMS',
-        shippedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'tr-002',
-        orgId,
-        transferNo: 'TR-20260908-002',
-        fromBranchId: 'hq',
-        toBranchId: 'branch-skn',
-        status: 'COMPLETED',
-        items: [
-          { sku: 'SKU-002', name: 'บับเบิ้ลกันกระแทก 65cm x 100m', qty: 20, unit: 'ม้วน' },
-        ],
-        totalQty: 20,
-        notes: 'เบิกด่วน สาขาสมุทรสาคร',
-        createdBy: 'Manager',
-        shippedAt: new Date(Date.now() - 86400000).toISOString(),
-        receivedAt: new Date().toISOString(),
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
+  // No demo fallback: an empty/missing table must show as empty, never as
+  // invented transfers on a live system.
+  if (error) {
+    console.warn('[transfers] list error:', error.message);
+    return [];
   }
 
   return data.map(mapTransfer);
@@ -108,8 +76,7 @@ export async function createTransfer(input: {
 }): Promise<StockTransfer | null> {
   const orgId = await getCurrentOrgId();
   const client = getServiceSupabase();
-  const ts = Date.now().toString().slice(-6);
-  const transferNo = `TR-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${ts}`;
+  const transferNo = await nextDocNumber('TR', { date: 'yyyymmdd', existing: { table: 'stock_transfers', column: 'transfer_no' } });
   const totalQty = input.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
 
   const row = {
@@ -131,8 +98,9 @@ export async function createTransfer(input: {
     .single();
 
   if (error) {
-    console.warn('[transfers] database insert fallback:', error.message);
-    return mapTransfer({ ...row, id: `tr-${Date.now()}` });
+    // Report the failure — returning a fake row made the UI say "saved".
+    console.error('[transfers] insert failed:', error.message);
+    return null;
   }
 
   return mapTransfer(data);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
     const { sku, productName, locationCode, systemQty, countedQty, reasonCode, notes, requestedBy = 'Operator' } = body;
 
     const diffQty = Number(countedQty || 0) - Number(systemQty || 0);
-    const requestNo = `ADJ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const requestNo = await nextDocNumber('ADJ', { date: 'yyyymmdd', pad: 4, existing: { table: 'stock_adjustment_requests', column: 'request_no' } });
 
     const newReq = {
       id: requestNo,

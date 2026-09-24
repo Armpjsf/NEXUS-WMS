@@ -4,6 +4,7 @@
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binAdd } from '@/lib/stockLocations';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export type RmaStatus = 'REQUESTED' | 'APPROVED' | 'RECEIVED' | 'RESTOCKED' | 'SCRAPPED' | 'REJECTED';
 
@@ -32,11 +33,7 @@ function mapRma(r: any): ReturnOrder {
 }
 
 async function nextRmaNo(): Promise<string> {
-  const d = new Date();
-  const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const prefix = `RMA-${ymd}-`;
-  const { count } = await supabase.from('return_orders').select('id', { count: 'exact', head: true }).like('rma_no', `${prefix}%`);
-  return `${prefix}${String((count || 0) + 1).padStart(3, '0')}`;
+  return nextDocNumber('RMA', { existing: { table: 'return_orders', column: 'rma_no' } });
 }
 
 export async function listReturns(opts: { status?: string } = {}): Promise<ReturnOrder[]> {

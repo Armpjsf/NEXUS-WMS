@@ -196,7 +196,7 @@ function InventoryContent() {
     const isExpiringSoon = expTime !== null && expTime > now && (expTime - now) <= 30 * 86400000;
     const isExpired = expTime !== null && expTime <= now;
 
-    let matchStatus = filterStatus === 'ALL' || 
+    const matchStatus = filterStatus === 'ALL' || 
                       (filterStatus === 'LOW' && stockStatus === 'LOW') || 
                       (filterStatus === 'OK' && stockStatus === 'OK') ||
                       (filterStatus === 'INACTIVE') ||

@@ -68,6 +68,7 @@ export async function POST(req: Request) {
       const swapRef = `SWAP-${Date.now()}`;
       await supabase.from('stock_transactions').insert([
         {
+          org_id: orgId,
           type: 'RELOCATE',
           sku: sourceProduct.sku,
           product_name: sourceProduct.name,
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
           created_at: new Date().toISOString()
         },
         {
+          org_id: orgId,
           type: 'RELOCATE',
           sku: targetProduct.sku,
           product_name: targetProduct.name,
@@ -99,7 +101,7 @@ export async function POST(req: Request) {
         action: 'UPDATE',
         beforeState: { location: locA, swappedWith: targetProduct.sku },
         afterState: { location: locB },
-        performedBy: (session.user as any)?.id || 'user',
+        performedBy: session.user?.id || 'user',
         userEmail: session.user?.email || '',
         reason: reason || `สลับตำแหน่งจัดเก็บ 1-Click ระหว่าง [${sourceProduct.sku}] (${locA} ➔ ${locB}) และ [${targetProduct.sku}] (${locB} ➔ ${locA})`
       });
@@ -138,6 +140,7 @@ export async function POST(req: Request) {
       if (updateErr) throw updateErr;
 
       await supabase.from('stock_transactions').insert({
+        org_id: orgId,
         type: 'RELOCATE',
         sku: product.sku,
         product_name: product.name,
@@ -156,7 +159,7 @@ export async function POST(req: Request) {
         action: 'UPDATE',
         beforeState: { location: oldLocation },
         afterState: { location: newLocation.trim() },
-        performedBy: (session.user as any)?.id || 'user',
+        performedBy: session.user?.id || 'user',
         userEmail: session.user?.email || '',
         reason: reason || `ย้ายพิกัดสินค้า [${product.sku}] จาก ${oldLocation} ➔ ${newLocation.trim()}`
       });

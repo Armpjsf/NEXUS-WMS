@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 import { resetBinsBulk } from '@/lib/stockLocations';
+import { upsertProductsForOrg } from '@/lib/data/productUpsert';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,22 +58,12 @@ export async function POST(request: Request) {
     for (let i = 0; i < cleanedProducts.length; i += chunkSize) {
       const chunk = cleanedProducts.slice(i, i + chunkSize);
 
-      const { data, error } = await supabase
-        .from('products')
-        .upsert(chunk, { onConflict: 'sku' })
-        .select();
-
+      // Conflict target is (org_id, sku) — never 'sku' alone (cross-tenant overwrite).
+      const { error } = await upsertProductsForOrg(orgId, chunk);
       if (error) {
-        // Fallback: try onConflict 'org_id,sku' or simple insert
-        const fallback = await supabase
-          .from('products')
-          .upsert(chunk, { onConflict: 'org_id,sku' });
-
-        if (fallback.error) {
-          console.error('Batch Import Chunk Error:', fallback.error);
-          errors.push(`Chunk ${Math.floor(i / chunkSize) + 1}: ${fallback.error.message}`);
-          continue;
-        }
+        console.error('Batch Import Chunk Error:', error);
+        errors.push(`Chunk ${Math.floor(i / chunkSize) + 1}: ${error.message}`);
+        continue;
       }
 
       totalImported += chunk.length;

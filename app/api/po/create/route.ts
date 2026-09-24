@@ -3,19 +3,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export const dynamic = 'force-dynamic';
 
 // Generate a system PO number: PO-YYMMDD-XXX
 async function nextPoNumber(): Promise<string> {
-  const d = new Date();
-  const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const prefix = `PO-${ymd}-`;
-  const { count } = await supabase
-    .from('purchase_orders')
-    .select('id', { count: 'exact', head: true })
-    .like('po_number', `${prefix}%`);
-  return `${prefix}${String((count || 0) + 1).padStart(3, '0')}`;
+  return nextDocNumber('PO', { existing: { table: 'purchase_orders', column: 'po_number' } });
 }
 
 // List purchase orders (for receiving prefill etc.).
@@ -50,8 +44,6 @@ export async function POST(request: Request) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items to order' }, { status: 400 });
     }
-
-    // @ts-ignore
     const session = await getServerSession(authOptions);
 
     const total =

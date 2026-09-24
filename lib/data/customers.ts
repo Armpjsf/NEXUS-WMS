@@ -3,6 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { nextMasterCode } from '@/lib/docNumber';
 
 export interface Customer {
   id: string;
@@ -91,8 +92,7 @@ export async function createCustomer(input: Partial<Customer>): Promise<Customer
 
   let code = (input.code || '').trim().toUpperCase();
   if (!code) {
-    const ts = Date.now().toString().slice(-4);
-    code = `CUST-${ts}`;
+    code = await nextMasterCode('CUST', orgId, { table: 'customers', column: 'code' });
   }
 
   const row = {

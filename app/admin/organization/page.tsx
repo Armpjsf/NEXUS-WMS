@@ -11,7 +11,8 @@ const COLORS = ['#0ea5e9', '#6366f1', '#0d9488', '#e11d48', '#d97706', '#7c3aed'
 
 export default function OrganizationPage() {
   const [name, setName] = useState('');
-  const [plan, setPlan] = useState('ENTERPRISE');
+  const [plan, setPlan] = useState('FREE');
+  const [canEditPlan, setCanEditPlan] = useState(false);
   const [color, setColor] = useState('#0ea5e9');
   const [logo, setLogo] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,7 @@ export default function OrganizationPage() {
 
   useEffect(() => {
     fetch('/api/org', { cache: 'no-store' }).then(r => r.json()).then(d => {
-      setName(d.name || ''); setPlan(d.plan || 'ENTERPRISE');
+      setName(d.name || ''); setPlan(d.plan || 'FREE'); setCanEditPlan(!!d.canEditPlan);
       setColor(d.brandingColor || '#0ea5e9'); setLogo(d.brandingLogo || '');
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -43,7 +44,7 @@ export default function OrganizationPage() {
     try {
       const res = await fetch('/api/org', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, plan, brandingColor: color, brandingLogo: logo }),
+        body: JSON.stringify({ name, brandingColor: color, brandingLogo: logo, ...(canEditPlan ? { plan } : {}) }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
@@ -101,9 +102,10 @@ export default function OrganizationPage() {
             <label className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block mb-2">แพ็กเกจ</label>
             <div className="flex gap-2">
               {PLANS.map(p => (
-                <button key={p} onClick={() => setPlan(p)} className={`px-4 py-2 rounded-xl font-bold text-sm border transition-colors ${plan === p ? 'bg-slate-900 text-white border-slate-900' : 'bg-[#171c23] text-[#8a92a6] border-[#30353d] hover:bg-[#1b2027]'}`}>{p}</button>
+                <button key={p} onClick={() => canEditPlan && setPlan(p)} disabled={!canEditPlan && plan !== p} className={`px-4 py-2 rounded-xl font-bold text-sm border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${plan === p ? 'bg-slate-900 text-white border-slate-900' : 'bg-[#171c23] text-[#8a92a6] border-[#30353d] hover:bg-[#1b2027]'}`}>{p}</button>
               ))}
             </div>
+            {!canEditPlan && <p className="text-xs text-[#8a92a6] mt-2">เปลี่ยนแพ็กเกจได้เฉพาะผู้ดูแลแพลตฟอร์ม — ติดต่อผู้ให้บริการเพื่ออัปเกรด</p>}
           </div>
         </div>
 

@@ -5,6 +5,18 @@ import { logAction } from "@/lib/auditTrail";
 
 export const dynamic = 'force-dynamic';
 
+// Same rule as the /admin/users page guard in proxy.ts: Manager is management
+// but must not manage credentials. Only a Super Admin may grant Super Admin.
+function writeForbidden(callerRole: string | undefined, targetRole?: string): NextResponse | null {
+    if (callerRole !== 'Super Admin' && callerRole !== 'Admin') {
+        return NextResponse.json({ error: 'Forbidden: เฉพาะ Admin จัดการผู้ใช้ได้' }, { status: 403 });
+    }
+    if (targetRole === 'Super Admin' && callerRole !== 'Super Admin') {
+        return NextResponse.json({ error: 'Forbidden: เฉพาะ Super Admin ตั้งสิทธิ์ Super Admin ได้' }, { status: 403 });
+    }
+    return null;
+}
+
 export async function GET() {
   const guard = await requireManagement();
   if (guard.error) return guard.error;
@@ -29,7 +41,9 @@ export async function POST(req: Request) {
         const currentUserId = adminUser?.id || 'admin';
 
         const body = await req.json();
-        
+        const forbidden = writeForbidden(adminUser?.role, body?.data?.role);
+        if (forbidden) return forbidden;
+
         if (body.action === 'add') {
             const result = await addUser(body.data);
             if (result && typeof result === 'object' && 'error' in result) {
@@ -47,7 +61,8 @@ export async function POST(req: Request) {
 
             return NextResponse.json({ success: true });
         } else if (body.action === 'update') {
-            await updateUser(body.id, body.data);
+            const updated = await updateUser(body.id, body.data);
+            if (!updated) return NextResponse.json({ error: 'อัปเดตผู้ใช้ไม่สำเร็จ' }, { status: 500 });
             
             await logAction({
                  userId: currentUserId,
@@ -73,6 +88,9 @@ export async function DELETE(req: Request) {
         const adminUser = guard.user;
         const currentUser = adminUser?.username || 'Unknown Admin';
         const currentUserId = adminUser?.id || 'admin';
+
+        const forbidden = writeForbidden(adminUser?.role);
+        if (forbidden) return forbidden;
 
         const { id } = await req.json();
         if (!id) return NextResponse.json({ error: 'Missing user id' }, { status: 400 });

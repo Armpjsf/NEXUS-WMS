@@ -119,6 +119,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       try {
         const branchCode = (order.branchCode || process.env.TMS_BRANCH_ID || 'URT').trim();
         const { getServiceSupabase } = await import('@/lib/supabase');
+        // org-scope-ok: runs from the TMS push path without a session; falls back to env when ambiguous
         const { data: bRow } = await getServiceSupabase()
           .from('branches')
           .select('name, warehouse_name, pickup_address')

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,7 @@ export async function GET() {
       .eq('org_id', orgId).order('created_at', { ascending: false }).limit(100);
     const ids = (heads || []).map((h: any) => h.id);
     const { data: lines } = ids.length
+      // org-scope-ok: ids come from the org-scoped header query above
       ? await admin.from('asn_lines').select('*').in('asn_id', ids)
       : { data: [] as any[] };
     const byAsn = new Map<string, any[]>();
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
     const items = Array.isArray(b.items) ? b.items.filter((i: any) => i.sku) : [];
     if (items.length === 0) return NextResponse.json({ error: 'ต้องมีรายการสินค้าอย่างน้อย 1' }, { status: 400 });
     const admin = getServiceSupabase();
-    const asnNo = b.asnNo || `ASN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+    const asnNo = b.asnNo || await nextDocNumber('ASN', { date: 'yyyymmdd', existing: { table: 'asn_headers', column: 'asn_no' } });
 
     const { data: head, error } = await admin.from('asn_headers').insert({
       org_id: orgId, asn_no: asnNo, supplier: b.supplier || '', po_number: b.poNumber || '',

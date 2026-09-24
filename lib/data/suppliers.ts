@@ -3,6 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { nextMasterCode } from '@/lib/docNumber';
 
 export interface Supplier {
   id: string;
@@ -82,8 +83,7 @@ export async function createSupplier(input: Partial<Supplier>): Promise<Supplier
 
   let code = (input.code || '').trim().toUpperCase();
   if (!code) {
-    const ts = Date.now().toString().slice(-4);
-    code = `SUPP-${ts}`;
+    code = await nextMasterCode('SUPP', orgId, { table: 'suppliers', column: 'code' });
   }
 
   const row = {

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { requireManagement } from '@/lib/apiAuth';
+import { upsertProductsForOrg } from '@/lib/data/productUpsert';
 
 export async function POST() {
   try {
+    // Seeding demo stock overwrites real SKUs with the same code — management only.
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
     const orgId = await getCurrentOrgId();
 
     const now = new Date();
@@ -113,14 +117,8 @@ export async function POST() {
     ];
 
     // Upsert products
-    const { data, error } = await supabase
-      .from('products')
-      .upsert(demoProducts, { onConflict: 'org_id,sku' });
-
-    if (error) {
-      // If error with conflict constraint, try basic insert
-      await supabase.from('products').insert(demoProducts);
-    }
+    const { data, error } = await upsertProductsForOrg(orgId, demoProducts);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({
       success: true,

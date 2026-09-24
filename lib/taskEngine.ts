@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { nextDocNumber } from './docNumber';
 
 export interface WarehouseTask {
   id: string;
@@ -33,7 +34,7 @@ export async function createWarehouseTask(
   task: Omit<WarehouseTask, 'id' | 'taskNumber' | 'createdAt'>
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const taskNumber = `TSK-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const taskNumber = await nextDocNumber('TSK', { date: 'yyyymmdd', pad: 4, existing: { table: 'warehouse_tasks', column: 'task_number' } });
 
     const { data, error } = await supabase
       .from('warehouse_tasks')

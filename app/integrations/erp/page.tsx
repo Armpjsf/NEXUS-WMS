@@ -292,7 +292,7 @@ export default function ErpIntegrationPage() {
 
             <div className="flex items-center justify-between bg-[#090f15] p-3 rounded-lg border border-[#30353d] text-xs">
               <span className="text-[#4cd7f6] font-bold">POST /api/erp/asn</span>
-              <span className="text-[10px] text-[#8a92a6]">Format: application/json</span>
+              <span className="text-[10px] text-[#8a92a6]">Format: application/json · Header: x-api-key</span>
             </div>
 
             <div className="bg-[#090f15] p-4 rounded-lg border border-[#30353d] text-xs text-[#dee2ec] overflow-x-auto">
@@ -332,7 +332,7 @@ export default function ErpIntegrationPage() {
 
             <div className="flex items-center justify-between bg-[#090f15] p-3 rounded-lg border border-[#30353d] text-xs">
               <span className="text-[#57ec7f] font-bold">POST /api/erp/orders</span>
-              <span className="text-[10px] text-[#8a92a6]">Format: application/json</span>
+              <span className="text-[10px] text-[#8a92a6]">Format: application/json · Header: x-api-key</span>
             </div>
 
             <div className="bg-[#090f15] p-4 rounded-lg border border-[#30353d] text-xs text-[#dee2ec] overflow-x-auto">

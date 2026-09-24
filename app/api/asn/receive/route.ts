@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     if (!head) return NextResponse.json({ error: 'ไม่พบ ASN' }, { status: 404 });
     if (head.status === 'RECEIVED') return NextResponse.json({ error: 'ASN นี้แปลงเป็นใบรับแล้ว' }, { status: 400 });
 
+    // org-scope-ok: child rows of an ASN header already verified for this org
     const { data: lines } = await admin.from('asn_lines').select('*').eq('asn_id', asnId);
     const items = (lines || []).map((l: any) => ({ sku: l.sku, name: l.name || l.sku, expectedQty: Number(l.expected_qty || 0) }));
     if (items.length === 0) return NextResponse.json({ error: 'ASN ไม่มีรายการ' }, { status: 400 });
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
 
     await admin.from('asn_headers')
       .update({ status: 'RECEIVED', receipt_id: (receipt as any).id, updated_at: new Date().toISOString() })
-      .eq('id', asnId);
+      .eq('id', asnId).eq('org_id', orgId);
 
     return NextResponse.json({ success: true, message: `สร้างใบรับจาก ${head.asn_no} แล้ว`, receiptId: (receipt as any).id });
   } catch (err: any) {

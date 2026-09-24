@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { checkBayConflict, DockAppointment } from '@/lib/dockEngine';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
       }, { status: 409 });
     }
 
-    const apptNumber = `APT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const apptNumber = await nextDocNumber('APT', { date: 'yyyymmdd', pad: 4, existing: { table: 'dock_appointments', column: 'appointment_number' } });
     const { data, error } = await admin
       .from('dock_appointments')
       .insert({

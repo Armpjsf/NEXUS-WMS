@@ -207,7 +207,7 @@ export default function VoicePickingPage() {
                   <span className="px-3 py-1 bg-[#252a32] border border-[#30353d] rounded-full text-xs font-mono font-bold tracking-widest uppercase text-[#facc15]">
                     งานที่ {currentStepIndex + 1} จาก {tasks.length}
                   </span>
-                  <span className="text-xs text-[#8a92a6]">Wave: WAVE-2026-B01</span>
+                  {currentStep && <span className="text-xs text-[#8a92a6]">SKU: {currentStep.sku}</span>}
                 </div>
                 <button
                   onClick={handlePlayPrompt}

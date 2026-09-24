@@ -129,7 +129,7 @@ export function generateDepletionData(currentStock: number, burnRate: number, hi
         const d = new Date(today);
         d.setDate(today.getDate() - i);
         
-        let stockVal = currentStock + (burnRate * i); // Reverse engineer past stock
+        const stockVal = currentStock + (burnRate * i); // Reverse engineer past stock
         if (history.length > 0 && i < history.length) {
             // Use real history if available (TODO: match indices correctly)
         }

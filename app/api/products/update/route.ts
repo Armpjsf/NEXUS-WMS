@@ -77,7 +77,6 @@ export async function POST(request: Request) {
 
     try {
       const { logAction } = await import('@/lib/auditTrail');
-      // @ts-ignore
       const session = await getServerSession(authOptions);
       await logAction({
         userId: session?.user?.email || 'System',

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
     try {
         const session = await getServerSession(authOptions);
-        const allowedOwners = (session?.user as any)?.allowedOwners;
+        const allowedOwners = session?.user?.allowedOwners;
 
         const { searchParams } = new URL(request.url);
         const startDate = searchParams.get('startDate');
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         ];
 
         // 3. Filter
-        let filtered = allTransactions.filter(t => {
+        const filtered = allTransactions.filter(t => {
             // valid date check
             if (!t.date) return false;
 

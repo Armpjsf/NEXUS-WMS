@@ -3,6 +3,7 @@
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { nextMasterCode } from '@/lib/docNumber';
 
 export interface Carrier {
   id: string;
@@ -82,8 +83,7 @@ export async function createCarrier(input: Partial<Carrier>): Promise<Carrier | 
 
   let code = (input.code || '').trim().toUpperCase();
   if (!code) {
-    const ts = Date.now().toString().slice(-4);
-    code = `CARRIER-${ts}`;
+    code = await nextMasterCode('CARRIER', orgId, { table: 'carriers', column: 'code' });
   }
 
   // If this carrier is set to default, unset other defaults

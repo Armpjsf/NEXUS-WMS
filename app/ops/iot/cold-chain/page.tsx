@@ -18,6 +18,7 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { SensorTelemetry } from '@/lib/iot/sensorEngine';
 import { NotificationResult } from '@/lib/notifications/notificationGateway';
+import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
 
 export default function ColdChainIotPage() {
   const [sensors, setSensors] = useState<SensorTelemetry[]>([]);
@@ -81,6 +82,9 @@ export default function ColdChainIotPage() {
     <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
       <AmbientBackground />
       <div className="relative z-10 mx-auto max-w-7xl space-y-6">
+        <ExperimentalBanner>
+          ยังไม่ได้ต่อเซนเซอร์จริง — ค่าอุณหภูมิมาจากการส่งทดสอบ และการแจ้งเตือนส่งเข้าคิว MOCK_STAGING ไม่ถึงผู้รับจริง
+        </ExperimentalBanner>
 
         {/* Header Tactical Banner */}
         <div className="relative mx-auto flex flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between">

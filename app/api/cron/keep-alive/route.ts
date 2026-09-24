@@ -37,6 +37,7 @@ export async function GET(request: Request) {
 
     // 3. Housekeeping: remove old heartbeat records older than 30 days to avoid clutter
     const cutoff30d = new Date(Date.now() - 30 * 864e5).toISOString();
+    // org-scope-ok: platform housekeeping of HEARTBEAT rows
     await admin
       .from('audit_log')
       .delete()

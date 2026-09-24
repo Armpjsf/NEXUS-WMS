@@ -2,13 +2,14 @@ import { withAuth } from "next-auth/middleware"
 import { getToken } from "next-auth/jwt"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { MANAGEMENT_ROLES, isManagementOnlyPath, isManagementRole, canAccessSection, sectionForPath } from "./lib/rbac"
+import { MANAGEMENT_ROLES, isManagementOnlyPath, isManagementRole, canAccessSection, sectionForPath, isManagementOnlyApiWrite } from "./lib/rbac"
 import { rateLimit, clientIp } from "./lib/rateLimit"
 
-// Must match the secret used in authOptions (same fallback) so getToken can
-// decode the session cookie even when NEXTAUTH_SECRET is unset — otherwise
-// every logged-in request looks unauthenticated (pages loop to /login, APIs 401).
-const AUTH_SECRET = process.env.NEXTAUTH_SECRET || "wms360_secret_key_2026"
+import { getAuthSecret } from "./lib/authSecret"
+
+// Must match the secret used in authOptions so getToken can decode the session
+// cookie. undefined = production without NEXTAUTH_SECRET → proxy fails closed.
+const AUTH_SECRET = getAuthSecret()
 
 // Page guard (redirects to /login).
 const pageAuth = withAuth(
@@ -19,8 +20,9 @@ const pageAuth = withAuth(
   {
     callbacks: {
       authorized: ({ req, token }) => {
-        // 1. Require Token for protected routes
-        if (!token) return false;
+        // 1. Require Token for protected routes (and not revoked: the user was
+        //    deleted/disabled after signing in)
+        if (!token || token.revoked) return false;
 
         const path = req.nextUrl.pathname;
         const role = token.role as string;
@@ -72,6 +74,13 @@ const pageAuth = withAuth(
 export default async function proxy(req: NextRequest, event: any) {
   const { pathname } = req.nextUrl;
 
+  if (!AUTH_SECRET) {
+    return NextResponse.json(
+      { error: 'Server misconfigured: NEXTAUTH_SECRET is not set' },
+      { status: 503 },
+    );
+  }
+
   if (pathname.startsWith('/api/')) {
     // B3: brute-force guard on the credentials login — 10 attempts / minute / IP.
     if (pathname.startsWith('/api/auth/callback/credentials') && req.method === 'POST') {
@@ -83,7 +92,18 @@ export default async function proxy(req: NextRequest, event: any) {
         );
       }
     }
-    // Public: NextAuth, cron (own secret), self-service onboarding (signup), and ERP endpoints.
+    // Public self-signup creates an org + admin + seed data — cap it per IP.
+    if (pathname.startsWith('/api/onboarding') && req.method === 'POST') {
+      const r = rateLimit(`onboarding:${clientIp(req)}`, 5, 60 * 60_000);
+      if (!r.ok) {
+        return NextResponse.json(
+          { error: 'สมัครใช้งานบ่อยเกินไป กรุณาลองใหม่ภายหลัง' },
+          { status: 429, headers: { 'retry-after': String(Math.ceil(r.retryAfterMs / 1000)) } },
+        );
+      }
+    }
+    // Public: NextAuth, cron (own secret), self-service onboarding (signup), and ERP
+    // endpoints (each /api/erp route authenticates via lib/erpAuth: session or x-api-key).
     // /api/wcs/callback is an external robotics webhook — it authenticates with
     // its own WCS_WEBHOOK_SECRET (no session), so it must bypass the session gate.
     if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public') || pathname.startsWith('/api/erp') || pathname.startsWith('/api/wcs/callback') || pathname === '/api/health') {
@@ -94,13 +114,18 @@ export default async function proxy(req: NextRequest, event: any) {
       return NextResponse.next();
     }
     const token = await getToken({ req, secret: AUTH_SECRET });
-    if (!token) {
+    if (!token || token.revoked) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     // B3: management-only API surface (admin data-quality/rules/users) — a valid
     // session is not enough; the role must be management. Closes the gap where
     // any signed-in staff could call admin APIs directly.
     if (pathname.startsWith('/api/admin/') && !isManagementRole(token.role as string)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    // Writes to tenant settings / master data (org, branches, carriers, fleet,
+    // suppliers) are management-only; reads stay open for floor screens.
+    if (isManagementOnlyApiWrite(pathname, req.method) && !isManagementRole(token.role as string)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     return NextResponse.next();

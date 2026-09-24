@@ -18,6 +18,8 @@ export interface CarrierShipmentRequest {
 }
 
 export interface CarrierShipmentResult {
+  /** true = no real carrier API was called; the tracking number is fake. */
+  simulated: boolean;
   trackingNumber: string;
   carrierCode: CarrierCode;
   carrierName: string;
@@ -37,20 +39,22 @@ export interface CarrierShipmentResult {
   };
 }
 
+// SIMULATED: no carrier API integration yet. Numbers carry a SIM- prefix so a
+// fake AWB can never be handed to a customer as a real tracking number.
 export function generateTrackingNumber(carrier: CarrierCode): string {
   const randDigits = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join('');
 
   switch (carrier) {
     case 'FLASH_EXPRESS':
-      return `TH${randDigits(10)}F`;
+      return `SIM-TH${randDigits(10)}F`;
     case 'KERRY_EXPRESS':
-      return `KER${randDigits(9)}`;
+      return `SIM-KER${randDigits(9)}`;
     case 'JT_EXPRESS':
-      return `888${randDigits(9)}`;
+      return `SIM-888${randDigits(9)}`;
     case 'THAILAND_POST_EMS':
-      return `ED${randDigits(8)}TH`;
+      return `SIM-ED${randDigits(8)}TH`;
     default:
-      return `TRK-${randDigits(10)}`;
+      return `SIM-TRK-${randDigits(10)}`;
   }
 }
 
@@ -79,6 +83,7 @@ export async function dispatchCarrierShipment(req: CarrierShipmentRequest): Prom
   const shippingFee = baseRate + Math.max(0, Math.ceil(weight - 1) * 15);
 
   return {
+    simulated: true,
     trackingNumber,
     carrierCode: req.carrierCode,
     carrierName,

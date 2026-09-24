@@ -262,11 +262,12 @@ export async function saveRule(rule: AutomationRule): Promise<boolean> {
 
 // No-op: Supabase tables need no ensure step (kept for signature parity).
 export async function ensureRulesSheet(): Promise<void> {
-  /* tables are created by supabase_schema.sql */
+  /* tables are created by sql/000_base_setup.sql (+ dated migrations in sql/) */
 }
 
 // ---- Per-user config (key/value) ----
 export async function getUserConfig(userEmail: string, key: string): Promise<string | null> {
+  // org-scope-ok: per-user preference keyed by the (platform-unique) user email
   const { data, error } = await supabase
     .from('user_config')
     .select('config_value')
@@ -281,6 +282,7 @@ export async function getUserConfig(userEmail: string, key: string): Promise<str
 }
 
 export async function saveUserConfig(userEmail: string, key: string, value: any): Promise<boolean> {
+  // org-scope-ok: per-user preference keyed by the (platform-unique) user email
   const { error } = await supabase.from('user_config').upsert(
     {
       user_email: userEmail,

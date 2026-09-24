@@ -13,6 +13,7 @@ export async function GET() {
   let db: 'ok' | 'down' = 'down';
   let dbError: string | undefined;
   try {
+    // org-scope-ok: connectivity probe, reads no tenant data back
     const { error } = await getServiceSupabase().from('products').select('sku').limit(1);
     if (!error) db = 'ok'; else dbError = error.message;
   } catch (e: any) {

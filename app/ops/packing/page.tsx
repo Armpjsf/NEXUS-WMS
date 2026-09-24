@@ -25,6 +25,7 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
 
 interface OrderItem {
   sku: string;
@@ -212,6 +213,7 @@ export default function PackingQAPage() {
         })
       });
       const packJson = await packRes.json();
+      if (!packRes.ok) throw new Error(packJson.error || 'บันทึกการแพ็คไม่สำเร็จ');
 
       // 2. Dispatch carrier shipment & get tracking AWB
       const carrierRes = await fetch('/api/carrier/ship', {
@@ -541,6 +543,12 @@ export default function PackingQAPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
+
+                {shipmentResult.simulated && (
+                  <ExperimentalBanner>
+                    ยังไม่ได้เชื่อม API ขนส่งจริง — เลขพัสดุ SIM-… เป็นเลขจำลอง ห้ามส่งให้ลูกค้าหรือใช้ติดกล่องจริง
+                  </ExperimentalBanner>
+                )}
 
                 {/* White Sticker Mockup */}
                 <div className="bg-white text-black p-4 rounded-lg shadow-xl border-2 border-black font-sans text-xs space-y-2">

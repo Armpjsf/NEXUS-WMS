@@ -1,5 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { getAuthSecret } from "./authSecret";
+
+// Built-in bootstrap/dev accounts (see authorize below) have no app_users row,
+// so a missing row must not revoke them.
+const BOOTSTRAP_IDS = new Set(['1', '2', 'admin']);
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -28,7 +33,7 @@ export const authOptions: NextAuthOptions = {
               orgId: dbUser.orgId || '00000000-0000-0000-0000-000000000001',
               allowedBranches: dbUser.allowedBranches || ['*'],
               allowedOwners: dbUser.allowedOwners || ['*'],
-            } as any;
+            };
           }
         } catch (e) {
           console.warn('[auth] Supabase verify failed, falling back to bootstrap accounts:', e);
@@ -45,10 +50,10 @@ export const authOptions: NextAuthOptions = {
         if (bootstrapAllowed) {
           if ((u === "admin" || u === "admin@wms360.pro") && (p === "admin1234" || p === "admin" || p === "123456")) {
             console.warn('[auth] bootstrap admin login used — create a real app_users admin and unset ENABLE_BOOTSTRAP_ADMIN');
-            return { id: "1", name: "Warehouse Admin", email: "admin@wms360.pro", role: "Admin", allowedBranches: ["*"], allowedOwners: ["*"] } as any;
+            return { id: "1", name: "Warehouse Admin", email: "admin@wms360.pro", role: "Admin", allowedBranches: ["*"], allowedOwners: ["*"] };
           }
           if ((u === "staff" || u === "user") && (p === "123456" || p === "staff" || p === "user")) {
-            return { id: "2", name: "Warehouse Staff", email: "staff@wms360.pro", role: "Staff", allowedBranches: ["*"], allowedOwners: ["*"] } as any;
+            return { id: "2", name: "Warehouse Staff", email: "staff@wms360.pro", role: "Staff", allowedBranches: ["*"], allowedOwners: ["*"] };
           }
         }
 
@@ -59,27 +64,33 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.uid = (user as any).id;
-        token.role = (user as any).role;
-        token.orgId = (user as any).orgId || '00000000-0000-0000-0000-000000000001';
-        token.allowedBranches = (user as any).allowedBranches;
-        token.allowedOwners = (user as any).allowedOwners;
+        token.uid = user.id;
+        token.role = user.role;
+        token.orgId = user.orgId || '00000000-0000-0000-0000-000000000001';
+        token.allowedBranches = user.allowedBranches;
+        token.allowedOwners = user.allowedOwners;
         token.roleSyncedAt = Date.now();
       } else if (token.uid) {
         // Re-sync role/permissions from DB so an admin's change in user
         // settings takes effect without forcing the user to re-login.
         // Throttled to at most once every 30s to avoid a DB hit per request.
-        const last = (token.roleSyncedAt as number) || 0;
+        const last = token.roleSyncedAt || 0;
         if (Date.now() - last > 30_000) {
           try {
             const { getUserById } = await import('./users');
-            const fresh = await getUserById(token.uid as string);
+            const fresh = await getUserById(token.uid);
             if (fresh) {
               token.role = fresh.role;
               token.allowedBranches = fresh.allowedBranches || ['*'];
               token.allowedOwners = fresh.allowedOwners || ['*'];
+              // A deactivated account loses access on its next request
+              // instead of keeping a valid session until the JWT expires.
+              token.revoked = fresh.status !== 'Active';
+            } else if (!BOOTSTRAP_IDS.has(token.uid)) {
+              token.revoked = true; // deleted from app_users
             }
           } catch (e) {
+            // DB unreachable: keep the current token (don't lock everyone out).
             console.warn('[auth] role re-sync failed:', e);
           }
           token.roleSyncedAt = Date.now();
@@ -89,10 +100,12 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session?.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).orgId = token.orgId;
-        (session.user as any).allowedBranches = token.allowedBranches;
-        (session.user as any).allowedOwners = token.allowedOwners;
+        session.user.id = token.uid;
+        session.user.username = session.user.name || undefined;
+        session.user.role = token.role;
+        session.user.orgId = token.orgId;
+        session.user.allowedBranches = token.allowedBranches;
+        session.user.allowedOwners = token.allowedOwners;
       }
       return session;
     }
@@ -103,5 +116,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "wms360_secret_key_2026",
+  secret: getAuthSecret(),
 };

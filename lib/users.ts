@@ -172,6 +172,7 @@ export async function getUsers(): Promise<User[]> {
 export async function verifyUser(username: string, password: string): Promise<User | null> {
   try {
     const admin = getServiceSupabase();
+    // org-scope-ok: login resolves the user (and thus the org) by global-unique username
     const { data, error } = await admin
       .from('app_users').select('*').ilike('username', username);
     if (error) { console.error('Verify User Error:', error.message); return null; }
@@ -192,6 +193,7 @@ export async function verifyUser(username: string, password: string): Promise<Us
       const ok = await bcrypt.compare(password, row.password_hash);
       if (ok) {
         // Best-effort last-login stamp
+        // org-scope-ok: row.id comes from the verified login row
         admin.from('app_users').update({ last_login: new Date().toISOString() }).eq('id', row.id).then(() => {}, () => {});
         return { ...mapUser(row), lastLogin: new Date().toISOString() };
       }
@@ -208,16 +210,14 @@ export async function verifyUser(username: string, password: string): Promise<Us
 // a user's role/branches takes effect on the user's next request instead of
 // staying stale until they re-login.
 export async function getUserById(userId: string): Promise<User | null> {
-  try {
-    const { data, error } = await getServiceSupabase()
-      .from('app_users').select('*').eq('id', userId).maybeSingle();
-    if (error) { console.error('Get User By Id Error:', error.message); return null; }
-    if (!data) return null;
-    return mapUser(data);
-  } catch (e) {
-    console.error('Get User By Id Error:', e);
-    return null;
-  }
+  // org-scope-ok: session refresh by the signed-in user's own id
+  const { data, error } = await getServiceSupabase()
+    .from('app_users').select('*').eq('id', userId).maybeSingle();
+  // Throw on DB errors so the caller can tell "user deleted" (null) apart
+  // from "couldn't check" (exception) — only the former revokes a session.
+  if (error) throw new Error(`Get User By Id Error: ${error.message}`);
+  if (!data) return null;
+  return mapUser(data);
 }
 
 export async function addUser(user: any) {
@@ -253,13 +253,17 @@ export async function updateUser(userId: string, data: any) {
   if (data.password) patch.password_hash = await bcrypt.hash(data.password, 10);
 
   if (Object.keys(patch).length === 0) return true;
-  const { error } = await getServiceSupabase().from('app_users').update(patch).eq('id', userId);
+  // Scope to the caller's org: an admin must not edit another tenant's user by id.
+  const orgId = await getCurrentOrgId();
+  const { error } = await getServiceSupabase().from('app_users').update(patch).eq('id', userId).eq('org_id', orgId);
   if (error) { console.error('Update User Error:', error.message); return false; }
   return true;
 }
 
 export async function deleteUser(userId: string): Promise<boolean> {
-  const { error } = await getServiceSupabase().from('app_users').delete().eq('id', userId);
+  const orgId = await getCurrentOrgId();
+  const { data, error } = await getServiceSupabase().from('app_users').delete()
+    .eq('id', userId).eq('org_id', orgId).select('id');
   if (error) { console.error('Delete User Error:', error.message); return false; }
-  return true;
+  return (data || []).length > 0;
 }

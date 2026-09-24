@@ -26,6 +26,7 @@ import {
 import Link from 'next/link';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
+import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
 
 interface RobotFleetDevice {
   id: string;
@@ -180,7 +181,10 @@ export default function WcsRoboticsPage() {
     <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8">
       <AmbientBackground />
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
-        
+        <ExperimentalBanner>
+          ยังไม่ได้ต่อหุ่นยนต์/AGV จริง — ปุ่ม &quot;จำลองความคืบหน้า&quot; เดินภารกิจแทนอุปกรณ์ ใช้เพื่อทดสอบ flow เท่านั้น
+        </ExperimentalBanner>
+
         {/* Navigation Breadcrumb */}
         <Link href="/ops/tasks" className="text-[#8a92a6] hover:text-cyan-400 flex items-center gap-2 mb-4 transition-colors font-medium">
           <ArrowLeft className="w-4 h-4" /> กลับไปยังระบบงานปฏิบัติการ

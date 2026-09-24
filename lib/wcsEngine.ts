@@ -11,6 +11,7 @@
 import { getServiceSupabase } from '@/lib/supabase';
 import { DEFAULT_ORG } from '@/lib/orgContext';
 import { binMove } from '@/lib/stockLocations';
+import { nextDocNumber } from './docNumber';
 
 export interface RobotFleetDevice {
   id: string;
@@ -108,7 +109,7 @@ export async function dispatchWcsMission(orgId: string, data: {
   robotCode?: string;
 }): Promise<WcsMission> {
   const admin = getServiceSupabase();
-  const missionCode = `WCS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+  const missionCode = await nextDocNumber('WCS', { date: 'yyyymmdd', existing: { table: 'wcs_missions', column: 'mission_code' } });
 
   // Auto-assign an idle robot when none is explicitly selected.
   let assignedCode = data.robotCode;
@@ -174,6 +175,7 @@ export async function updateWcsMissionFromWebhook(payload: {
 }): Promise<{ success: boolean; mission?: WcsMission; error?: string }> {
   const admin = getServiceSupabase();
   // Look up by mission_code alone — external callers carry no org session.
+  // org-scope-ok: WCS callback (WCS_WEBHOOK_SECRET); later writes pin existing.org_id
   const { data: existing } = await admin
     .from('wcs_missions').select('*').eq('mission_code', payload.missionCode).maybeSingle();
   if (!existing) {
@@ -185,7 +187,7 @@ export async function updateWcsMissionFromWebhook(payload: {
     status: payload.status,
     completed_at: payload.status === 'COMPLETED' ? now : existing.completed_at,
     error_message: payload.errorMessage || null,
-  }).eq('id', existing.id);
+  }).eq('id', existing.id).eq('org_id', existing.org_id);
 
   if (payload.status === 'COMPLETED') {
     await applyMissionStockMove(admin, existing);
@@ -209,7 +211,7 @@ export async function updateWcsMissionFromWebhook(payload: {
   }
 
   const { data: updated } = await admin
-    .from('wcs_missions').select('*').eq('id', existing.id).maybeSingle();
+    .from('wcs_missions').select('*').eq('id', existing.id).eq('org_id', existing.org_id).maybeSingle();
   return { success: true, mission: updated ? mapMission(updated) : undefined };
 }
 
@@ -224,10 +226,10 @@ export async function simulateFleetMovement(orgId: string): Promise<{ message: s
 
   for (const m of rows || []) {
     if (m.status === 'DISPATCHED') {
-      await admin.from('wcs_missions').update({ status: 'IN_TRANSIT' }).eq('id', m.id);
+      await admin.from('wcs_missions').update({ status: 'IN_TRANSIT' }).eq('id', m.id).eq('org_id', orgId);
       updatedCount++;
     } else if (m.status === 'IN_TRANSIT') {
-      await admin.from('wcs_missions').update({ status: 'COMPLETED', completed_at: now }).eq('id', m.id);
+      await admin.from('wcs_missions').update({ status: 'COMPLETED', completed_at: now }).eq('id', m.id).eq('org_id', orgId);
       await applyMissionStockMove(admin, m);
       if (m.assigned_robot_code) {
         const { data: dev } = await admin

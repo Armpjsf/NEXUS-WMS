@@ -4,6 +4,7 @@ import { mapProductRows, mapProductRow } from '@/lib/data/products';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { checkPlanLimit } from '@/lib/planLimits';
 import { resetBinsBulk } from '@/lib/stockLocations';
+import { upsertProductsForOrg } from '@/lib/data/productUpsert';
 
 export async function GET(request: Request) {
   try {
@@ -46,10 +47,7 @@ export async function POST(request: Request) {
       if (limitErr) return NextResponse.json({ error: limitErr }, { status: 403 });
     }
 
-    const { data, error } = await supabase
-      .from('products')
-      .upsert({
-        org_id: orgId,
+    const { data, error } = await upsertProductsForOrg(orgId, [{
         sku: itemSku,
         name,
         category: category || 'General',
@@ -61,8 +59,7 @@ export async function POST(request: Request) {
         barcode: barcode || null,
         image_url: image_url || image || null,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'sku' })
-      .select();
+      }]);
 
     if (error) {
       console.error('Supabase Add Product Error:', error);

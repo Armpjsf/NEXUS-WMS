@@ -49,3 +49,11 @@ android/app/google-services.json
 # Local agent & scratch
 .claude/
 scratch/
+
+# Build / debug output (never commit)
+*.log
+build_log.txt
+debug_output.txt
+health_*.txt
+tsc.log
+/scratch/

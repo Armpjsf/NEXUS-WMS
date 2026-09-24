@@ -31,7 +31,7 @@ export async function getFIFOStack(sku: string): Promise<FIFOStack> {
     const productTx = allTx.filter(t => t.sku === sku);
 
     // Initialize Stack
-    let layers: InventoryBatch[] = [];
+    const layers: InventoryBatch[] = [];
 
     // Replay History
     for (const tx of productTx) {
@@ -82,7 +82,7 @@ export async function getFIFOStack(sku: string): Promise<FIFOStack> {
  */
 export async function simulateSale(sku: string, saleQty: number, salePrice: number) {
     const stack = await getFIFOStack(sku);
-    let layers = JSON.parse(JSON.stringify(stack.layers)); // Deep copy to simulate
+    const layers = JSON.parse(JSON.stringify(stack.layers)); // Deep copy to simulate
     
     let remainingQty = saleQty;
     let totalCOGS = 0;
@@ -136,7 +136,7 @@ export async function calculateHistoricalProfit() {
 
     // Process each SKU
     for (const sku in txBySku) {
-        let layers: InventoryBatch[] = [];
+        const layers: InventoryBatch[] = [];
         const transactions = txBySku[sku];
 
         for (const tx of transactions) {
@@ -153,7 +153,7 @@ export async function calculateHistoricalProfit() {
                  // However, we need to handle the case where layers run out (Negative Stock in history)
                  // If layers empty, use 0 cost or last known cost? Let's use 0 for safety but flag it.
                  
-                 let consumedLayersCount = 0;
+                 const consumedLayersCount = 0;
 
                  while (qtyLeft > 0) {
                      if (layers.length === 0) {

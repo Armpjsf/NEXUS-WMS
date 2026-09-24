@@ -33,6 +33,7 @@ export async function onboardOrganization(input: OnboardInput): Promise<OnboardR
   // Uniqueness checks
   const { data: slugTaken } = await admin.from('organizations').select('id').eq('slug', slug).maybeSingle();
   if (slugTaken) return { ok: false, error: `slug "${slug}" ถูกใช้แล้ว` };
+  // org-scope-ok: usernames are unique across the platform (login has no org)
   const { data: userTaken } = await admin.from('app_users').select('id').ilike('username', username).maybeSingle();
   if (userTaken) return { ok: false, error: `ชื่อผู้ใช้ "${username}" ถูกใช้แล้ว` };
 

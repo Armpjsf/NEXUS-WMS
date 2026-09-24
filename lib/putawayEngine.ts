@@ -30,15 +30,15 @@ export async function recommendPutaway(params: {
   // Rule 1: Check Cross-Docking (Pending open orders waiting for this SKU)
   try {
     const { data: openOrders } = await supabase
-      .from('orders')
-      .select('order_no, status, items')
+      .from('outbound_orders')
+      .select('order_no, status, items_json')
       .eq('org_id', orgId)
       .in('status', ['NEW', 'PICKING'])
       .limit(10);
 
     if (openOrders && openOrders.length > 0) {
       for (const ord of openOrders) {
-        const items = ord.items || [];
+        const items = ord.items_json || [];
         const hasSku = Array.isArray(items) && items.some((it: any) => it.sku === sku || it.name === sku);
         if (hasSku) {
           return {

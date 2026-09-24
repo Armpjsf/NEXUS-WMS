@@ -25,10 +25,6 @@ export default function DashboardAlertsBanner() {
   const [summary, setSummary] = useState<AlertSummary | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
-
   const fetchAlerts = async () => {
     try {
       const res = await fetch(getApiUrl('/api/alerts'));
@@ -41,6 +37,10 @@ export default function DashboardAlertsBanner() {
       console.error('Failed to fetch alerts:', err);
     }
   };
+
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
 
   const dismissAll = () => {
     const newDismissed = new Set(dismissed);

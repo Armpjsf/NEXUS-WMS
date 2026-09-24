@@ -204,13 +204,13 @@ export function calculateSShapePickPath<T extends { location?: string }>(
 }
 
 /**
- * Generate a unique Wave Number (e.g. WAVE-20260820-001)
+ * Wave label for the current picking session (e.g. WAVE-20260820-143015).
+ * Client-side and display-only (not persisted), so a Bangkok timestamp is
+ * enough — unlike the old 3-digit random suffix it can't repeat within a day.
  */
-export function generateWaveNumber(): string {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const randomSuffix = Math.floor(100 + Math.random() * 900);
-  return `WAVE-${dateStr}-${randomSuffix}`;
+export function generateWaveNumber(now: Date = new Date()): string {
+  const bkk = new Date(now.getTime() + 7 * 3600_000).toISOString(); // UTC+7
+  return `WAVE-${bkk.slice(0, 10).replace(/-/g, '')}-${bkk.slice(11, 19).replace(/:/g, '')}`;
 }
 
 /**

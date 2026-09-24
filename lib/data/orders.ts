@@ -8,6 +8,7 @@ import { binConsume } from '@/lib/stockLocations';
 import { reserveForOrder, consumeOrderReservations, releaseOrderReservations } from '@/lib/reservations';
 import { toBaseQty } from '@/lib/uom';
 import { fetchAllRows } from '@/lib/data/fetchAll';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -239,14 +240,7 @@ function mapOrder(r: any): OutboundOrder {
 }
 
 async function nextOrderNo(): Promise<string> {
-  const d = new Date();
-  const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const prefix = `ORD-${ymd}-`;
-  const { count } = await supabase
-    .from('outbound_orders')
-    .select('id', { count: 'exact', head: true })
-    .like('order_no', `${prefix}%`);
-  return `${prefix}${String((count || 0) + 1).padStart(3, '0')}`;
+  return nextDocNumber('ORD', { existing: { table: 'outbound_orders', column: 'order_no' } });
 }
 
 export async function listOrders(opts: { status?: string; limit?: number } = {}): Promise<OutboundOrder[]> {
@@ -300,6 +294,7 @@ async function attachLotNos(orgId: string, order: OutboundOrder): Promise<Outbou
 // holding the id — only surface this through purpose-built public documents.
 export async function getOrderPublic(id: string): Promise<OutboundOrder | null> {
   if (!id) return null;
+  // org-scope-ok: public QC slip, gated by the unguessable order UUID
   const { data, error } = await getServiceSupabase()
     .from('outbound_orders').select('*').eq('id', id).maybeSingle();
   if (error || !data) return null;
@@ -680,6 +675,7 @@ export async function closeOrderFromTmsPod(input: {
   notes?: string;
 }): Promise<{ ok: boolean; order?: OutboundOrder; error?: string }> {
   const admin = getServiceSupabase();
+  // org-scope-ok: TMS callback (no session) — order_no / tms_job_id are globally unique
   let query = admin.from('outbound_orders').select('*');
 
   if (input.orderNo) {
@@ -719,17 +715,20 @@ export async function closeOrderFromTmsPod(input: {
   };
 
   // Try updating with tms columns
-  let { data: updated, error: updateError } = await admin
+  // org-scope-ok: orderRow.id resolved by the TMS lookup above
+  const first = await admin
     .from('outbound_orders')
     .update(updateData)
     .eq('id', orderRow.id)
     .select()
     .single();
+  let updated = first.data;
 
-  if (updateError) {
+  if (first.error) {
     // Fallback: strip extra columns if not yet migrated in Supabase
     delete updateData.tms_status;
     delete updateData.tms_synced_at;
+    // org-scope-ok: same row as above (fallback without tms columns)
     const { data: fbData, error: fbError } = await admin
       .from('outbound_orders')
       .update(updateData)
@@ -806,6 +805,7 @@ export async function syncOrderWithTms(orderId: string): Promise<{ ok: boolean; 
   // Try saving tms_status to db
   try {
     const admin = getServiceSupabase();
+    // org-scope-ok: current.id is the order just pushed to TMS
     await admin.from('outbound_orders').update({
       tms_status: job.status,
       tms_job_id: job.jobId,

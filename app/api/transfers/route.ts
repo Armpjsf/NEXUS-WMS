@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     }
 
     const transfer = await createTransfer(body);
+    if (!transfer) return NextResponse.json({ success: false, error: 'บันทึกใบโอนไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, transfer });
   } catch (error: any) {
     console.error('API transfers POST error:', error);

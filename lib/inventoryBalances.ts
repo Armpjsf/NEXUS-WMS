@@ -113,15 +113,23 @@ export async function allocateStock(
       return { success: false, error: 'Insufficient available quantity to reserve' };
     }
 
-    const { error: updateErr } = await supabase
+    // Optimistic lock: only apply if nobody changed qty_allocated since we read
+    // it — two concurrent reservations could otherwise both pass the check above.
+    const { data: updatedRows, error: updateErr } = await supabase
       .from('inventory_balances')
       .update({
         qty_allocated: currentAlloc + qtyToAllocate,
         updated_at: new Date().toISOString()
       })
-      .eq('id', record.id);
+      .eq('id', record.id)
+      .eq('org_id', orgId)
+      .eq('qty_allocated', record.qty_allocated ?? 0)
+      .select('id');
 
     if (updateErr) return { success: false, error: updateErr.message };
+    if (!updatedRows || updatedRows.length === 0) {
+      return { success: false, error: 'ยอดจองถูกแก้ไขพร้อมกัน กรุณาลองใหม่ (concurrent reservation)' };
+    }
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

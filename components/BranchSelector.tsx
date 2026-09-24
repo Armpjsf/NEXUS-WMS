@@ -56,7 +56,7 @@ export default function BranchSelector() {
     }, [session]);
 
     // Filter Branches based on Permission
-    const allowedBranches = (session?.user as any)?.allowedBranches || ['*']; // Default * if not loaded yet
+    const allowedBranches = session?.user?.allowedBranches || ['*']; // Default * if not loaded yet
     
     const visibleBranches = branches.filter(b => {
         if (allowedBranches.includes('*')) return true;

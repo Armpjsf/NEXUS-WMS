@@ -69,7 +69,7 @@ export default function OrdersPage() {
   const [qcOrder, setQcOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const { data: session } = useSession();
-  const isManagement = ['Super Admin', 'Admin', 'Manager'].includes((session?.user as any)?.role || '');
+  const isManagement = ['Super Admin', 'Admin', 'Manager'].includes(session?.user?.role || '');
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // PDA Scanner for Order lookup

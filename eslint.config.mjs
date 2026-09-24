@@ -5,21 +5,24 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
+  {
+    rules: {
+      // Legacy debt tracked as warnings (burn down over time); anything that
+      // is a real bug stays an error.
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      // Style / perf findings in legacy screens — not bugs.
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
+    "android/**",
+    "public/**",
     "next-env.d.ts",
-    // Temporary Ignore to allow deployment despite legacy code issues
-    "app/**",
-    "lib/**",
-    "components/**",
-    "scripts/**",
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.js"
   ]),
 ]);
 

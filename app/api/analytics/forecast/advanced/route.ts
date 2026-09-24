@@ -52,9 +52,8 @@ export async function GET() {
 
         // 3. Sort by Risk
         report.sort((a, b) => {
-            const riskScore = { 'Very High': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
-            // @ts-ignore
-            return riskScore[b.riskLevel] - riskScore[a.riskLevel];
+            const riskScore: Record<string, number> = { 'Very High': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
+            return (riskScore[b.riskLevel] || 0) - (riskScore[a.riskLevel] || 0);
         });
 
         return NextResponse.json(report);

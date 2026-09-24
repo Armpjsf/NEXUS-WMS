@@ -32,9 +32,8 @@ export async function POST(request: Request) {
     if (!Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json({ error: 'ต้องมีรายการสินค้าอย่างน้อย 1 รายการ' }, { status: 400 });
     }
-    // @ts-ignore
     const session = await getServerSession(authOptions);
-    const order = await createOrder({ ...body, createdBy: (session?.user as any)?.name || session?.user?.email || 'System' });
+    const order = await createOrder({ ...body, createdBy: session?.user?.name || session?.user?.email || 'System' });
     if (!order) return NextResponse.json({ error: 'สร้างออเดอร์ไม่สำเร็จ' }, { status: 500 });
     return NextResponse.json({ success: true, order });
   } catch (error: any) {

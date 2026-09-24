@@ -74,6 +74,7 @@ export async function POST(request: Request) {
 
     // Intermediate status update (e.g. In Transit, Picked Up)
     const admin = getServiceSupabase();
+    // org-scope-ok: TMS webhook (TMS_WEBHOOK_SECRET) addresses orders by global-unique order_no / tms_job_id
     let query = admin.from('outbound_orders').update({
       tms_status: status,
       tms_synced_at: new Date().toISOString(),

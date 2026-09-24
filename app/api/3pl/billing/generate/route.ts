@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { calculateClientBilling } from '@/lib/billingEngine';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { getServiceSupabase } from '@/lib/supabase';
+import { nextDocNumber } from '@/lib/docNumber';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
       itemsCount: body.itemsCount || 0
     });
 
-    const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const invoiceNumber = await nextDocNumber('INV', { date: 'yyyymmdd', pad: 4 });
 
     return NextResponse.json({
       success: true,
