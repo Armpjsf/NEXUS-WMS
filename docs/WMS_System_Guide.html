@@ -313,7 +313,6 @@ const flows = [
   ], desc:'เมื่อออฟไลน์ ธุรกรรมจะถูกเก็บในคิว <b>Dexie/IndexedDB</b> (สถานะ PENDING) → hook <b>useOfflineSync</b> เฝ้าดู เมื่อกลับมาออนไลน์จะส่งคิวเข้า API ทีละรายการ → เขียนลง Sheets แล้วล้างคิว'},
 
   {key:'cycle', name:'ตรวจนับสต็อก (Cycle Count)', steps:[
-    {s:'Cron / กำหนดการ', x:'/api/cron/cycle-count'},
     {s:'มือถือ Cycle Count', x:'สแกน + นับจริง'},
     {s:'POST /api/cycle-count', x:'ส่งผลนับ'},
     {s:'เทียบกับ Sheets', x:'หาส่วนต่าง'},
