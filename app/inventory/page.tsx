@@ -198,7 +198,8 @@ function InventoryContent() {
     const isExpired = expTime !== null && expTime <= now;
 
     const matchStatus = filterStatus === 'ALL' || 
-                      (filterStatus === 'LOW' && stockStatus === 'LOW') || 
+                      (filterStatus === 'LOW' && stockStatus === 'LOW') ||
+                      (filterStatus === 'OUT' && p.stock <= 0) ||
                       (filterStatus === 'OK' && stockStatus === 'OK') ||
                       (filterStatus === 'INACTIVE') ||
                       (filterStatus === 'EXPIRING' && isExpiringSoon) ||
@@ -409,6 +410,7 @@ function InventoryContent() {
                 >
                     <option value="ALL">{t('filter_all_status')}</option>
                     <option value="LOW">{t('filter_low_stock')}</option>
+                    <option value="OUT">{t('filter_out_of_stock')}</option>
                     <option value="EXPIRING">⏰ ใกล้หมดอายุ (≤ 30 วัน)</option>
                     <option value="EXPIRED">❌ หมดอายุแล้ว</option>
                     <option value="OK">{t('filter_in_stock')}</option>
