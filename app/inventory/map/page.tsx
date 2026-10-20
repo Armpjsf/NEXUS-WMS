@@ -29,6 +29,7 @@ import {
   buildWarehouseMap,
   WarehouseBin,
 } from '@/lib/warehouseMap';
+import Warehouse3DViewer from '@/components/warehouse/Warehouse3DViewer';
 
 export default function WarehouseMapPage() {
   return (
@@ -58,6 +59,8 @@ function WarehouseMapContent() {
   // View Controls
   const [selectedZoneId, setSelectedZoneId] = useState<string>('A');
   const [heatmapMode, setHeatmapMode] = useState<'STOCK' | 'VELOCITY'>('STOCK');
+  const [viewMode, setViewMode] = useState<'3D' | '2D'>('3D');
+  const [layout3D, setLayout3D] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBin, setSelectedBin] = useState<WarehouseBin | null>(null);
   const [swapProduct, setSwapProduct] = useState<any>(null);
@@ -103,6 +106,10 @@ function WarehouseMapContent() {
       const cached = await db.products.toArray();
       if (cached.length > 0) setProducts(cached);
     } finally {
+              const layoutUrl = getApiUrl('/api/warehouse/layout?branchId=' + (branchId || 'MAIN'));
+        fetch(layoutUrl).then(r => r.json()).then(res => {
+          if (res?.success && res.data) setLayout3D(res.data);
+        }).catch(() => {});
       setLoading(false);
     }
   };
@@ -315,6 +322,28 @@ function WarehouseMapContent() {
               />
             </div>
 
+                        {/* View Mode 3D / 2D Toggle */}
+            <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
+              <button
+                onClick={() => setViewMode('3D')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+                  viewMode === '3D' ? 'bg-[#facc15] text-[#1b1600] shadow-md shadow-[#facc15]/20 font-black' : 'text-[#8a92a6]'
+                )}
+              >
+                <Box className="w-3.5 h-3.5" /> 3D Digital Twin
+              </button>
+              <button
+                onClick={() => setViewMode('2D')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+                  viewMode === '2D' ? 'bg-[#171c23] text-[#dee2ec] shadow-sm' : 'text-[#8a92a6]'
+                )}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" /> 2D ผังแบน
+              </button>
+            </div>
+
             {/* Heatmap Toggle */}
             <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
               <button
@@ -383,8 +412,23 @@ function WarehouseMapContent() {
           )}
         </div>
 
+                {/* 3D Visual Warehouse Digital Twin */}
+        {viewMode === '3D' && layout3D && (
+          <Warehouse3DViewer
+            layout={layout3D}
+            products={products}
+            heatmapMode={heatmapMode === 'VELOCITY' ? 'VELOCITY' : 'STOCK'}
+            branchName={layout3D.name || 'คลังสินค้าหลัก'}
+            onSelectBin={(binCode, binData) => {
+              // Open modal if bin found
+              const foundBin = zones.flatMap(z => z.aisles).flatMap(a => a.racks).flatMap(r => r.bins).find(b => b.binCode === binCode);
+              if (foundBin) setSelectedBin(foundBin);
+            }}
+          />
+        )}
+
         {/* 2D Interactive Warehouse Floor Layout */}
-        <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 text-white min-h-[500px]">
+        <div className={cn("bg-[#171c23] rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#30353d] text-[#dee2ec] min-h-[500px]", viewMode === '3D' && 'hidden')}>
           <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
             <div>
               <h2 className="text-lg font-black flex items-center gap-2 text-teal-400">
