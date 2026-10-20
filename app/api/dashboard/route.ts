@@ -18,57 +18,156 @@ export async function GET(request: Request) {
         const year1 = Number(searchParams.get('year1')) || new Date().getFullYear();
         const year2 = Number(searchParams.get('year2')) || year1 - 1;
 
-        // 1. Products (paged — full catalog)
-        const prods = await fetchAllRows((f, t) => supabase
-            .from('products').select('*').eq('org_id', orgId).range(f, t));
+        // 1 & 2. Fetch Products and Movement History in parallel
+        const [prods, allTx] = await Promise.all([
+            fetchAllRows((f, t) => supabase
+                .from('products').select('*').eq('org_id', orgId).range(f, t)),
+            fetchAllRows((f, t) => supabase
+                .from('stock_transactions')
+                .select('type, sku, product_name, qty, doc_ref, location, created_at, unit_price')
+                .eq('org_id', orgId).order('created_at', { ascending: false }).range(f, t)),
+        ]);
 
-        // 2. Full movement history (paged) so charts/top-sellers/yearly compare are real.
-        const allTx = await fetchAllRows((f, t) => supabase
-            .from('stock_transactions')
-            .select('type, sku, product_name, qty, doc_ref, location, created_at, unit_price')
-            .eq('org_id', orgId).order('created_at', { ascending: false }).range(f, t));
+        // Pre-index products by SKU/name and compute product KPIs in a single pass
+        const prodBySku = new Map<string, any>();
+        const nameBySku = new Map<string, string>();
+        const imgBySku = new Map<string, string>();
+        const catMap: Record<string, number> = {};
+        const lowStockCandidates: any[] = [];
 
-        // Period window (defaults to the sent range; falls back to "all")
-        const from = startDate ? new Date(startDate).getTime() : -Infinity;
-        const to = endDate ? new Date(endDate + 'T23:59:59').getTime() : Infinity;
-        const inWindow = (t: any) => { const ts = t.created_at ? new Date(t.created_at).getTime() : 0; return ts >= from && ts <= to; };
-        const periodTx = allTx.filter(inWindow);
-
-        const nameBySku = new Map(prods.map(p => [p.sku, p.name || p.sku]));
-        const imgBySku = new Map(prods.map(p => [p.sku, p.image_url || '']));
-
-        // 3. KPIs
         const totalProducts = prods.length;
-        const activeSkuCount = prods.filter(p => Number(p.stock || 0) > 0).length;
-        const totalStock = prods.reduce((s, p) => s + Number(p.stock || 0), 0);
-        const totalValue = prods.reduce((s, p) => s + (Number(p.stock || 0) * Number(p.price || 0)), 0);
-        const lowStockCount = prods.filter(p => Number(p.stock || 0) > 0 && Number(p.stock || 0) <= Number(p.min_stock || 5)).length;
-        const outOfStockCount = prods.filter(p => Number(p.stock || 0) <= 0).length;
+        let activeSkuCount = 0;
+        let totalStock = 0;
+        let totalValue = 0;
+        let lowStockCount = 0;
+        let outOfStockCount = 0;
+
+        for (const p of prods) {
+            const sku = p.sku;
+            const stock = Number(p.stock || 0);
+            const price = Number(p.price || 0);
+            const minStock = Number(p.min_stock || 5);
+
+            if (sku) {
+                prodBySku.set(sku, p);
+                nameBySku.set(sku, p.name || sku);
+                imgBySku.set(sku, p.image_url || '');
+            }
+            if (p.name && !prodBySku.has(p.name)) {
+                prodBySku.set(p.name, p);
+            }
+
+            totalStock += stock;
+            totalValue += stock * price;
+
+            if (stock > 0) {
+                activeSkuCount++;
+                if (stock <= minStock) {
+                    lowStockCount++;
+                    lowStockCandidates.push(p);
+                }
+            } else {
+                outOfStockCount++;
+            }
+
+            const cat = p.category || 'ทั่วไป';
+            catMap[cat] = (catMap[cat] || 0) + stock;
+        }
+
         const healthyCount = Math.max(0, activeSkuCount - lowStockCount);
 
-        // period in/out/damage
-        const sumType = (arr: any[], type: string) => arr.filter(t => t.type === type).reduce((s, t) => s + Number(t.qty || 0), 0);
-        const periodIn = sumType(periodTx, 'IN');
-        const periodOut = sumType(periodTx, 'OUT');
-        const periodDamage = sumType(periodTx, 'DAMAGE');
-
-        // aging: SKUs in stock with no OUT in the last 90 days
+        // Single pass over allTx for period stats, all-time totals, daily activity,
+        // lastOutBySku, 90-day burn rate, YoY monthly comparison, and annual trend
+        const from = startDate ? new Date(startDate).getTime() : -Infinity;
+        const to = endDate ? new Date(endDate + 'T23:59:59').getTime() : Infinity;
         const now = Date.now();
+        const WINDOW_DAYS = 90;
+        const since90 = now - WINDOW_DAYS * 864e5;
+
+        let periodIn = 0;
+        let periodOut = 0;
+        let periodDamage = 0;
+        let totalInAll = 0;
+        let totalOutAll = 0;
+        let totalDamageAll = 0;
+
         const lastOutBySku = new Map<string, number>();
-        for (const t of allTx) if (t.type === 'OUT') { const ts = new Date(t.created_at).getTime(); if (ts > (lastOutBySku.get(t.sku) || 0)) lastOutBySku.set(t.sku, ts); }
-        const agingStockCount = prods.filter(p => Number(p.stock || 0) > 0 && (now - (lastOutBySku.get(p.sku) || 0)) > 90 * 864e5).length;
+        const outBySku = new Map<string, number>();
+        const out90 = new Map<string, number>();
+        const dayTotals = new Map<string, { in: number; out: number }>();
+        const y1 = Array.from({ length: 12 }, () => ({ in: 0, out: 0 }));
+        const y2 = Array.from({ length: 12 }, () => ({ in: 0, out: 0 }));
+        const yearAgg = new Map<number, { inbound: number; outbound: number }>();
+
+        for (const t of allTx) {
+            const qty = Number(t.qty || 0);
+            const type = t.type;
+            const sku = t.sku;
+            const ts = t.created_at ? new Date(t.created_at).getTime() : 0;
+            const inWindow = ts >= from && ts <= to;
+
+            if (type === 'IN') {
+                totalInAll += qty;
+                if (inWindow) periodIn += qty;
+            } else if (type === 'OUT') {
+                totalOutAll += qty;
+                if (inWindow) {
+                    periodOut += qty;
+                    outBySku.set(sku, (outBySku.get(sku) || 0) + qty);
+                }
+                if (ts > (lastOutBySku.get(sku) || 0)) {
+                    lastOutBySku.set(sku, ts);
+                }
+                if (ts >= since90) {
+                    out90.set(sku, (out90.get(sku) || 0) + qty);
+                }
+            } else if (type === 'DAMAGE') {
+                totalDamageAll += qty;
+                if (inWindow) periodDamage += qty;
+            }
+
+            if (t.created_at && (type === 'IN' || type === 'OUT')) {
+                const day = bkkDay(t.created_at);
+                const cur = dayTotals.get(day) || { in: 0, out: 0 };
+                if (type === 'IN') cur.in += qty;
+                else cur.out += qty;
+                dayTotals.set(day, cur);
+
+                const d = new Date(ts);
+                const y = d.getFullYear();
+                if (y) {
+                    const m = d.getMonth();
+                    if (y === year1) {
+                        if (type === 'IN') y1[m].in += qty;
+                        else y1[m].out += qty;
+                    }
+                    if (y === year2) {
+                        if (type === 'IN') y2[m].in += qty;
+                        else y2[m].out += qty;
+                    }
+                    const ye = yearAgg.get(y) || { inbound: 0, outbound: 0 };
+                    if (type === 'IN') ye.inbound += qty;
+                    else ye.outbound += qty;
+                    yearAgg.set(y, ye);
+                }
+            }
+        }
+
+        // Aging: SKUs in stock with no OUT in the last 90 days
+        let agingStockCount = 0;
+        for (const p of prods) {
+            if (Number(p.stock || 0) > 0 && (now - (lastOutBySku.get(p.sku) || 0)) > 90 * 864e5) {
+                agingStockCount++;
+            }
+        }
 
         // turnover ≈ period OUT / average on-hand
         const turnoverRate = totalStock > 0 ? (periodOut / totalStock) * 100 : 0;
 
         // 4. Category breakdown (by stock)
-        const catMap: Record<string, number> = {};
-        prods.forEach(p => { const c = p.category || 'ทั่วไป'; catMap[c] = (catMap[c] || 0) + Number(p.stock || 0); });
         const categoryBreakdown = Object.entries(catMap).map(([name, value]) => ({ name, value }));
 
         // 5. Top sellers by OUT qty (period)
-        const outBySku = new Map<string, number>();
-        for (const t of periodTx) if (t.type === 'OUT') outBySku.set(t.sku, (outBySku.get(t.sku) || 0) + Number(t.qty || 0));
         const topSellers = [...outBySku.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
             .map(([sku, qty]) => ({ name: nameBySku.get(sku) || sku, sku, qty }));
 
@@ -79,17 +178,7 @@ export async function GET(request: Request) {
             { name: 'Out', value: outOfStockCount },
         ].filter(d => d.value > 0);
 
-        // 7. Daily activity — last 30 days in/out on the Bangkok calendar (the
-        //    chart shows the last 7 or all 30). Grouping by the UTC date put
-        //    00:00–07:00 Bangkok movements on the previous day.
-        const dayTotals = new Map<string, { in: number; out: number }>();
-        for (const t of allTx) {
-            if (!t.created_at || (t.type !== 'IN' && t.type !== 'OUT')) continue;
-            const day = bkkDay(t.created_at);
-            const cur = dayTotals.get(day) || { in: 0, out: 0 };
-            if (t.type === 'IN') cur.in += Number(t.qty || 0); else cur.out += Number(t.qty || 0);
-            dayTotals.set(day, cur);
-        }
+        // 7. Daily activity — last 30 days in/out on the Bangkok calendar
         const movementData: { date: string; name: string; in: number; out: number }[] = [];
         for (let i = 29; i >= 0; i--) {
             const day = bkkDay(now - i * 864e5);
@@ -98,8 +187,7 @@ export async function GET(request: Request) {
         }
 
         // 8. Low-stock table
-        const lowStock = prods
-            .filter(p => Number(p.stock || 0) > 0 && Number(p.stock || 0) <= Number(p.min_stock || 5))
+        const lowStock = lowStockCandidates
             .sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0))
             .slice(0, 20)
             .map(p => ({ name: p.name || p.sku, sku: p.sku, qty: Number(p.stock || 0), status: 'Low Stock', image: p.image_url || '' }));
@@ -111,15 +199,10 @@ export async function GET(request: Request) {
             time: t.created_at ? new Date(t.created_at).toLocaleDateString('th-TH') : '-',
         }));
 
-        // 10. Executive block (real aggregates) --------------------------------
-        const totalOutAll = allTx.filter(t => t.type === 'OUT').reduce((s, t) => s + Number(t.qty || 0), 0);
-        const totalInAll = allTx.filter(t => t.type === 'IN').reduce((s, t) => s + Number(t.qty || 0), 0);
-        const totalDamageAll = allTx.filter(t => t.type === 'DAMAGE').reduce((s, t) => s + Number(t.qty || 0), 0);
+        // 10. Executive block (real aggregates)
         const damageRate = (totalOutAll + totalDamageAll) > 0 ? (totalDamageAll / (totalOutAll + totalDamageAll)) * 100 : 0;
         const spaceEff = totalProducts > 0 ? (activeSkuCount / totalProducts) * 100 : 0;
 
-        // Waterfall: Inbound (+) → Outbound (−) → Damage (−) → Closing (= stock).
-        // Each floating bar needs a transparent base `value` + visible `barValue`.
         let run = 0;
         const wf: { name: string; value: number; barValue: number }[] = [];
         wf.push({ name: 'Inbound', value: 0, barValue: totalInAll }); run = totalInAll;
@@ -127,7 +210,6 @@ export async function GET(request: Request) {
         wf.push({ name: 'Damage', value: run - totalDamageAll, barValue: totalDamageAll }); run -= totalDamageAll;
         wf.push({ name: 'Closing', value: 0, barValue: run });
 
-        // Radar: Actual vs Target(100) per KPI
         const radarData = [
             { metric: 'ความแม่นยำ', actual: 100, target: 100 },
             { metric: 'หมุนเวียน', actual: Math.min(100, Math.round(turnoverRate)), target: 100 },
@@ -136,17 +218,6 @@ export async function GET(request: Request) {
             { metric: 'ชำรุดต่ำ', actual: Math.round(100 - damageRate), target: 100 },
         ];
 
-        // Monthly IN/OUT per year for the YoY chart
-        const monthAgg = (year: number) => {
-            const arr = new Array(12).fill(0).map(() => ({ in: 0, out: 0 }));
-            for (const t of allTx) {
-                const d = new Date(t.created_at); if (d.getFullYear() !== year) continue;
-                if (t.type === 'IN') arr[d.getMonth()].in += Number(t.qty || 0);
-                else if (t.type === 'OUT') arr[d.getMonth()].out += Number(t.qty || 0);
-            }
-            return arr;
-        };
-        const y1 = monthAgg(year1), y2 = monthAgg(year2);
         const yearlyComparison = {
             labels: { year1: String(year1), year2: String(year2) },
             data: TH_MONTHS.map((month, i) => ({
@@ -154,15 +225,6 @@ export async function GET(request: Request) {
             })),
         };
 
-        // All-time trend by calendar year
-        const yearAgg = new Map<number, { inbound: number; outbound: number }>();
-        for (const t of allTx) {
-            const y = new Date(t.created_at).getFullYear(); if (!y) continue;
-            const e = yearAgg.get(y) || { inbound: 0, outbound: 0 };
-            if (t.type === 'IN') e.inbound += Number(t.qty || 0);
-            else if (t.type === 'OUT') e.outbound += Number(t.qty || 0);
-            yearAgg.set(y, e);
-        }
         const annualTrend = [...yearAgg.entries()].sort((a, b) => a[0] - b[0])
             .map(([year, v]) => ({ year: String(year), inbound: v.inbound, outbound: v.outbound }));
 
@@ -172,10 +234,6 @@ export async function GET(request: Request) {
         };
 
         // 11. Forecast — burn rate from OUT over the last 90 days, days-to-stockout
-        const WINDOW_DAYS = 90;
-        const since = now - WINDOW_DAYS * 864e5;
-        const out90 = new Map<string, number>();
-        for (const t of allTx) if (t.type === 'OUT' && new Date(t.created_at).getTime() >= since) out90.set(t.sku, (out90.get(t.sku) || 0) + Number(t.qty || 0));
         const forecasts = prods
             .filter(p => Number(p.stock || 0) > 0 && (out90.get(p.sku) || 0) > 0)
             .map(p => {
@@ -218,7 +276,11 @@ export async function GET(request: Request) {
                 qty: t.qty, date: t.created_at ? new Date(t.created_at).toLocaleDateString('th-TH') : '-',
                 docRef: t.doc_ref || '-', location: t.location || '-',
             })),
-            topProducts: topSellers.slice(0, 5).map(t => ({ name: t.name, sku: t.sku, stock: nameBySku.has(t.sku) ? Number(prods.find(p => p.sku === t.sku)?.stock || 0) : 0 })),
+            topProducts: topSellers.slice(0, 5).map(t => ({
+                name: t.name,
+                sku: t.sku,
+                stock: Number(prodBySku.get(t.sku)?.stock || 0),
+            })),
         });
     } catch (error) {
         console.error('API Dashboard Error:', error);

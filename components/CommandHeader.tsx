@@ -84,7 +84,10 @@ export default function CommandHeader({ onToggleSidebar }: CommandHeaderProps) {
   };
 
   return (
-    <header className="fixed top-0 left-0 md:left-80 right-0 h-16 bg-[#090f15]/95 backdrop-blur-md border-b border-[#30353d]/50 z-40 px-4 md:px-6 flex items-center justify-between gap-4">
+    <header
+      style={{ top: 'var(--safe-top, 0px)' }}
+      className="fixed top-0 left-0 md:left-80 right-0 h-16 bg-[#090f15]/95 backdrop-blur-md border-b border-[#30353d]/50 z-40 px-4 md:px-6 flex items-center justify-between gap-4"
+    >
       {/* Left: Mobile Menu Toggle & Barcode Search Bar */}
       <div className="flex items-center gap-3 flex-1 max-w-xl">
         <button

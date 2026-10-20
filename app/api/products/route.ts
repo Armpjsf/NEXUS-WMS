@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { mapProductRows, mapProductRow } from '@/lib/data/products';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { requireManagement } from '@/lib/apiAuth';
 import { checkPlanLimit } from '@/lib/planLimits';
 import { resetBinsBulk } from '@/lib/stockLocations';
 import { upsertProductsForOrg } from '@/lib/data/productUpsert';
@@ -88,6 +89,9 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
+
     const body = await request.json();
     const { sku, id, updates } = body;
 
@@ -109,7 +113,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });
+    const updatedRow = data?.[0];
+    if (updatedRow && (updates?.stock !== undefined || updates?.location !== undefined)) {
+      try {
+        await resetBinsBulk(orgId, [{
+          sku: updatedRow.sku,
+          binCode: updatedRow.location || 'UNASSIGNED',
+          quantity: Number(updatedRow.stock || 0),
+        }]);
+      } catch (e) {
+        console.warn('Product PUT: bin resync failed', e);
+      }
+    }
+
+    return NextResponse.json({ success: true, product: updatedRow ? mapProductRow(updatedRow) : null });
   } catch (error) {
     console.error('API PUT Product Error:', error);
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
@@ -118,6 +135,9 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
+
     const { searchParams } = new URL(request.url);
     const sku = searchParams.get('sku');
     const id = searchParams.get('id');

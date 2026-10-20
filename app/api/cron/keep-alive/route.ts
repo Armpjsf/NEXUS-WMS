@@ -11,6 +11,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   try {
+    const secret = process.env.CRON_SECRET;
+    const provided = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    if (secret ? provided !== secret : process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const admin = getServiceSupabase();
     const nowISO = new Date().toISOString();
 

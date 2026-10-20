@@ -92,11 +92,40 @@ export default function AsnPage() {
 }
 
 function CreateAsn({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [pos, setPos] = useState<any[]>([]);
+  const [selectedPoId, setSelectedPoId] = useState('');
   const [supplier, setSupplier] = useState('');
   const [poNumber, setPoNumber] = useState('');
   const [eta, setEta] = useState('');
   const [items, setItems] = useState<{ sku: string; name: string; qty: string }[]>([{ sku: '', name: '', qty: '' }]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/po/create', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d?.orders)) setPos(d.orders);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSelectPo = (poId: string) => {
+    setSelectedPoId(poId);
+    const po = pos.find(p => p.id === poId);
+    if (!po) return;
+    setPoNumber(po.po_number || '');
+    setSupplier(po.supplier || '');
+    const poLines = Array.isArray(po.items_json) ? po.items_json : [];
+    if (poLines.length > 0) {
+      setItems(
+        poLines.map((l: any) => ({
+          sku: String(l.sku || l.id || l.name || ''),
+          name: String(l.name || l.sku || ''),
+          qty: String(l.qty || 1),
+        }))
+      );
+    }
+  };
 
   const setItem = (i: number, k: string, v: string) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
 
@@ -119,6 +148,21 @@ function CreateAsn({ onClose, onDone }: { onClose: () => void; onDone: () => voi
           <button onClick={onClose} className="p-2 text-[#8a92a6] hover:text-[#dee2ec]"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-3">
+          <div>
+            <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">ดึงข้อมูลจากใบสั่งซื้อ (PO)</label>
+            <select
+              value={selectedPoId}
+              onChange={e => handleSelectPo(e.target.value)}
+              className="w-full bg-[#0f141b] border border-[#30353d] rounded-lg px-3 py-2 text-sm text-[#dee2ec] outline-none focus:border-[#facc15]"
+            >
+              <option value="">— เลือก PO ที่มีในระบบ หรือกรอกเองด้านล่าง —</option>
+              {pos.map((p: any) => (
+                <option key={p.id} value={p.id}>
+                  {p.po_number} · {p.supplier || 'ไม่ระบุผู้ขาย'} ({(p.items_json || []).length} รายการ)
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="ผู้ขาย (Supplier)" className="bg-[#0f141b] border border-[#30353d] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#facc15]" />
             <input value={poNumber} onChange={e => setPoNumber(e.target.value)} placeholder="เลข PO (ถ้ามี)" className="bg-[#0f141b] border border-[#30353d] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#facc15]" />

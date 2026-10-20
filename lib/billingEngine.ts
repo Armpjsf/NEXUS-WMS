@@ -46,7 +46,7 @@ export const initial3PlClients: ThirdPartyClient[] = [];
 
 export function calculateClientBilling(
   client: ThirdPartyClient,
-  params: {
+  usage: {
     periodStart: string;
     periodEnd: string;
     daysCount?: number;
@@ -55,10 +55,22 @@ export function calculateClientBilling(
     itemsCount?: number;
   }
 ): BillingPeriodCalculation {
-  const days = params.daysCount || 30;
-  const cbm = params.avgOccupiedCbm || 45.5; // 45.5 ลูกบาศก์เมตร
-  const orders = params.ordersCount || 320;
-  const items = params.itemsCount || 980;
+  const days =
+    usage.daysCount !== undefined && Number.isFinite(Number(usage.daysCount)) && Number(usage.daysCount) > 0
+      ? Number(usage.daysCount)
+      : 30;
+  const cbm =
+    usage.avgOccupiedCbm !== undefined && Number.isFinite(Number(usage.avgOccupiedCbm))
+      ? Math.max(0, Number(usage.avgOccupiedCbm))
+      : 0;
+  const orders =
+    usage.ordersCount !== undefined && Number.isFinite(Number(usage.ordersCount))
+      ? Math.max(0, Number(usage.ordersCount))
+      : 0;
+  const items =
+    usage.itemsCount !== undefined && Number.isFinite(Number(usage.itemsCount))
+      ? Math.max(0, Number(usage.itemsCount))
+      : 0;
 
   const totalCbmDays = cbm * days;
   const storageAmount = Math.round(totalCbmDays * client.storageRatePerCbmDay * 100) / 100;
@@ -75,8 +87,8 @@ export function calculateClientBilling(
   return {
     clientId: client.id,
     clientName: client.clientName,
-    periodStart: params.periodStart,
-    periodEnd: params.periodEnd,
+    periodStart: usage.periodStart,
+    periodEnd: usage.periodEnd,
     totalDays: days,
     occupiedCbm: cbm,
     totalCbmDays,

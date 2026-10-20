@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
   ShoppingBag,
@@ -14,8 +14,11 @@ import {
   Settings2,
   Download,
   FileDown,
+  Save,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -32,6 +35,7 @@ import { errorMessage } from '@/lib/errors';
 type ActiveTab = 'IMPORT' | 'API_CONFIG' | 'HISTORY';
 
 export default function MarketplaceIntegrationsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('IMPORT');
 
   // File Upload State
@@ -40,6 +44,9 @@ export default function MarketplaceIntegrationsPage() {
   const [detectedPlatform, setDetectedPlatform] = useState<MarketplacePlatform | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [parsing, setParsing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
+  const [savingConfig, setSavingConfig] = useState(false);
 
   // Template Modal
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -67,6 +74,174 @@ export default function MarketplaceIntegrationsPage() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const applyConfig = (raw: any) => {
+      try {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (!parsed || typeof parsed !== 'object') return;
+        if (parsed.shopeeConfig) setShopeeConfig(prev => ({ ...prev, ...parsed.shopeeConfig }));
+        if (parsed.tiktokConfig) setTiktokConfig(prev => ({ ...prev, ...parsed.tiktokConfig }));
+        if (parsed.lazadaConfig) setLazadaConfig(prev => ({ ...prev, ...parsed.lazadaConfig }));
+      } catch {
+        // ignore invalid config
+      }
+    };
+
+    try {
+      const local = localStorage.getItem('marketplace_api_config');
+      if (local) applyConfig(local);
+    } catch {
+      // ignore storage error
+    }
+
+    fetch('/api/user/config?key=marketplace_api_config')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.value) {
+          applyConfig(data.value);
+          try {
+            localStorage.setItem(
+              'marketplace_api_config',
+              typeof data.value === 'string' ? data.value : JSON.stringify(data.value)
+            );
+          } catch {
+            // ignore
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveApiConfig = async () => {
+    setSavingConfig(true);
+    const payload = { shopeeConfig, tiktokConfig, lazadaConfig, updatedAt: new Date().toISOString() };
+    try {
+      localStorage.setItem('marketplace_api_config', JSON.stringify(payload));
+      await fetch('/api/user/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'marketplace_api_config', value: payload }),
+      }).catch(() => {});
+      triggerHaptic('success');
+      toast.success('บันทึกการตั้งค่า Marketplace API เรียบร้อยแล้ว!');
+    } catch (e) {
+      toast.error('บันทึกการตั้งค่าไม่สำเร็จ: ' + errorMessage(e));
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleImportToWavePicking = async () => {
+    if (parsedOrders.length === 0 || importing) return;
+    setImporting(true);
+
+    try {
+      const grouped = new Map<string, NormalizedMarketplaceOrder[]>();
+      for (const row of parsedOrders) {
+        const key = (row.orderNo || '').trim();
+        if (!key) continue;
+        const list = grouped.get(key) || [];
+        list.push(row);
+        grouped.set(key, list);
+      }
+
+      const entries = Array.from(grouped.entries());
+      const total = entries.length;
+      setImportProgress({ current: 0, total });
+
+      const existingRefs = new Set<string>();
+      try {
+        const existingRes = await fetch('/api/orders?limit=500');
+        if (existingRes.ok) {
+          const existingData = await existingRes.json();
+          for (const ord of existingData.orders || []) {
+            if (ord.refNo) existingRefs.add(String(ord.refNo).trim().toLowerCase());
+            if (ord.orderNo) existingRefs.add(String(ord.orderNo).trim().toLowerCase());
+            const m = String(ord.notes || '').match(/Order #([^\s(]+)/i);
+            if (m?.[1]) existingRefs.add(m[1].trim().toLowerCase());
+          }
+        }
+      } catch {
+        // non-fatal if check fails
+      }
+
+      let createdCount = 0;
+      let skippedCount = 0;
+      let failedCount = 0;
+
+      for (let i = 0; i < entries.length; i++) {
+        const [orderNo, rows] = entries[i];
+        setImportProgress({ current: i + 1, total });
+
+        if (existingRefs.has(orderNo.toLowerCase())) {
+          skippedCount++;
+          continue;
+        }
+
+        const first = rows[0];
+        const platform = first.platform || detectedPlatform || 'CUSTOM';
+        const defaultCarrier =
+          platform === 'SHOPEE'
+            ? 'SPX'
+            : platform === 'TIKTOK'
+            ? 'JNT'
+            : platform === 'LAZADA'
+            ? 'LEX'
+            : 'FLASH';
+        const shipAddress = [first.address, first.postalCode].filter(Boolean).join(' ').trim();
+
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderNo,
+            channel: platform,
+            refNo: orderNo,
+            customerName: first.customerName || 'ลูกค้าทั่วไป',
+            phone: first.phone || '',
+            shipAddress,
+            carrier: defaultCarrier,
+            trackingNo: first.trackingNo || '',
+            notes: `[${platform}] Order #${orderNo}${first.trackingNo ? ` (Tracking: ${first.trackingNo})` : ''}`,
+            items: rows.map(r => ({
+              sku: r.sku,
+              name: r.productName || r.sku,
+              qty: Number(r.qty) || 1,
+              price: Number(r.price) || 0,
+            })),
+          }),
+        });
+
+        if (res.ok) {
+          createdCount++;
+          existingRefs.add(orderNo.toLowerCase());
+        } else if (res.status === 409) {
+          skippedCount++;
+        } else {
+          failedCount++;
+        }
+      }
+
+      triggerHaptic('success');
+      if (createdCount > 0) {
+        const extra = skippedCount > 0 ? ` (ข้ามซ้ำ ${skippedCount} ออเดอร์)` : '';
+        toast.success(`สร้างคำสั่งซื้อสำเร็จ ${createdCount} ออเดอร์${extra}! กำลังเข้าสู่ Wave Picking...`);
+        router.push('/ops/wave-picking');
+      } else if (skippedCount > 0 && failedCount === 0) {
+        toast.success(`ออเดอร์ทั้ง ${skippedCount} รายการถูกนำเข้าไปแล้ว กำลังเข้าสู่ Wave Picking...`);
+        router.push('/ops/wave-picking');
+      } else {
+        toast.error(`ไม่สามารถนำเข้าออเดอร์ได้ (ล้มเหลว ${failedCount} รายการ)`);
+      }
+    } catch (e) {
+      triggerHaptic('error');
+      toast.error('เกิดข้อผิดพลาดในการสร้างออเดอร์: ' + errorMessage(e));
+    } finally {
+      setImporting(false);
+      setImportProgress(null);
+    }
+  };
 
   // Process File
   const handleFile = async (file: File) => {
@@ -382,12 +557,25 @@ export default function MarketplaceIntegrationsPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href="/ops/wave-picking"
-                      className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-1.5 transition-all"
+                    <button
+                      type="button"
+                      onClick={handleImportToWavePicking}
+                      disabled={importing}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:opacity-60 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-1.5 transition-all"
                     >
-                      <Boxes className="w-4 h-4" /> ส่งเข้า Wave Picking ทันที
-                    </Link>
+                      {importing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {importProgress
+                            ? `กำลังนำเข้า ${importProgress.current}/${importProgress.total} ออเดอร์...`
+                            : 'กำลังนำเข้าออเดอร์...'}
+                        </>
+                      ) : (
+                        <>
+                          <Boxes className="w-4 h-4" /> ส่งเข้า Wave Picking ทันที
+                        </>
+                      )}
+                    </button>
 
                     <Link
                       href="/barcode/thermal-labels"
@@ -452,14 +640,25 @@ export default function MarketplaceIntegrationsPage() {
         {/* TAB 2: DIRECT API CONFIGURATIONS (Future Readiness) */}
         {activeTab === 'API_CONFIG' && (
           <div className="space-y-6">
-            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-xs text-blue-900 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-bold text-blue-950">โครงสร้างรองรับการเชื่อมต่อ Direct API</h4>
-                <p className="mt-0.5 leading-relaxed text-blue-800">
-                  ระบบได้เตรียมฟิลด์ Credential และ Webhook Endpoints สำหรับแต่ละแพลตฟอร์มไว้แล้ว เมื่อคุณพร้อมสมัครบัญชี Developer สามารถนำ Key มากรอกเพื่อเปิดใช้งานได้ทันที
-                </p>
+            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-xs text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-blue-950">โครงสร้างรองรับการเชื่อมต่อ Direct API</h4>
+                  <p className="mt-0.5 leading-relaxed text-blue-800">
+                    ระบบได้เตรียมฟิลด์ Credential และ Webhook Endpoints สำหรับแต่ละแพลตฟอร์มไว้แล้ว เมื่อคุณพร้อมสมัครบัญชี Developer สามารถนำ Key มากรอกเพื่อเปิดใช้งานได้ทันที
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={handleSaveApiConfig}
+                disabled={savingConfig}
+                className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold rounded-xl text-xs shadow-md flex items-center justify-center gap-1.5 transition-all flex-shrink-0"
+              >
+                {savingConfig ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                บันทึกการตั้งค่า
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

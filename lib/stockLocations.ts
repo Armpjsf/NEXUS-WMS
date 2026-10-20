@@ -15,6 +15,7 @@
  */
 
 import { getServiceSupabase } from '@/lib/supabase';
+import { consumeLotQty } from '@/lib/lots';
 
 const TABLE = 'stock_locations';
 export const UNASSIGNED = 'UNASSIGNED';
@@ -114,19 +115,20 @@ async function reconcile(admin: Admin, orgId: string, sku: string): Promise<numb
 export async function binAdd(
   orgId: string, sku: string, binCode: string, qty: number, opts?: { lotNo?: string; docRef?: string; party?: string }
 ): Promise<number> {
-  // C1: record an IN lot movement (lotted receipts only)
-  if (opts?.lotNo && (Number(qty) || 0) > 0) {
-    await logLotMoves(orgId, sku, 'IN', [{ binCode: norm(binCode), quantity: Number(qty) || 0, lotNo: opts.lotNo }], opts);
-  }
+  const bin = norm(binCode);
+  const add = Number(qty) || 0;
   const atomic = await rpcOrNull('wms_bin_add', {
-    p_org: orgId, p_sku: sku, p_bin: norm(binCode), p_qty: Number(qty) || 0, p_lot: opts?.lotNo ?? null,
+    p_org: orgId, p_sku: sku, p_bin: bin, p_qty: add, p_lot: opts?.lotNo ?? null,
   });
-  if (atomic != null) return Number(atomic);
+  if (atomic != null) {
+    if (opts?.lotNo && add > 0) {
+      await logLotMoves(orgId, sku, 'IN', [{ binCode: bin, quantity: add, lotNo: opts.lotNo }], opts);
+    }
+    return Number(atomic);
+  }
 
   const admin = getServiceSupabase();
   await ensureSeeded(admin, orgId, sku);
-  const bin = norm(binCode);
-  const add = Number(qty) || 0;
 
   const lot = opts?.lotNo || '';
   const { data: existing } = await admin
@@ -134,12 +136,17 @@ export async function binAdd(
   if (existing) {
     await admin.from(TABLE)
       .update({ quantity: Number(existing.quantity || 0) + add, updated_at: new Date().toISOString() })
-      .eq('id', existing.id);
+      .eq('id', existing.id)
+      .eq('org_id', orgId);
   } else {
     await admin.from(TABLE)
       .insert({ org_id: orgId, sku, bin_code: bin, quantity: add, lot_no: lot });
   }
-  return reconcile(admin, orgId, sku);
+  const total = await reconcile(admin, orgId, sku);
+  if (opts?.lotNo && add > 0) {
+    await logLotMoves(orgId, sku, 'IN', [{ binCode: bin, quantity: add, lotNo: opts.lotNo }], opts);
+  }
+  return total;
 }
 
 /**
@@ -154,8 +161,13 @@ export async function binConsume(
     p_org: orgId, p_sku: sku, p_qty: Number(qty) || 0, p_prefer: opts?.preferBin ? norm(opts.preferBin) : null,
   });
   if (atomic != null) {
-    const takenA = Array.isArray(atomic.taken) ? atomic.taken : [];
+    const takenA: { binCode: string; quantity: number; lotNo?: string }[] = Array.isArray(atomic.taken) ? atomic.taken : [];
     await logLotMoves(orgId, sku, 'OUT', takenA, opts); // C1 traceability
+    for (const t of takenA) {
+      if (t.lotNo && Number(t.quantity) > 0) {
+        try { await consumeLotQty(orgId, sku, t.lotNo, Number(t.quantity)); } catch { /* best-effort */ }
+      }
+    }
     return { taken: takenA, shortfall: Number(atomic.shortfall || 0), total: Number(atomic.total || 0) };
   }
 
@@ -211,13 +223,19 @@ export async function binConsume(
     if (use <= 0) continue;
     await admin.from(TABLE)
       .update({ quantity: avail - use, updated_at: new Date().toISOString() })
-      .eq('id', b.id);
+      .eq('id', b.id)
+      .eq('org_id', orgId);
     taken.push({ binCode: b.bin_code, quantity: use, lotNo: b.lot_no || undefined });
     need -= use;
   }
 
   const total = await reconcile(admin, orgId, sku);
   await logLotMoves(orgId, sku, 'OUT', taken, opts); // C1 traceability
+  for (const t of taken) {
+    if (t.lotNo && Number(t.quantity) > 0) {
+      try { await consumeLotQty(orgId, sku, t.lotNo, Number(t.quantity)); } catch { /* best-effort */ }
+    }
+  }
   return { taken, shortfall: need, total };
 }
 
@@ -254,13 +272,13 @@ export async function binMove(
     const use = Math.min(avail, need);
     if (use <= 0) continue;
     await admin.from(TABLE)
-      .update({ quantity: avail - use, updated_at: new Date().toISOString() }).eq('id', s.id);
+      .update({ quantity: avail - use, updated_at: new Date().toISOString() }).eq('id', s.id).eq('org_id', orgId);
     const lot = s.lot_no || '';
     const { data: dst } = await admin
       .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', to).eq('lot_no', lot).maybeSingle();
     if (dst) {
       await admin.from(TABLE)
-        .update({ quantity: Number(dst.quantity || 0) + use, updated_at: new Date().toISOString() }).eq('id', dst.id);
+        .update({ quantity: Number(dst.quantity || 0) + use, updated_at: new Date().toISOString() }).eq('id', dst.id).eq('org_id', orgId);
     } else {
       await admin.from(TABLE)
         .insert({ org_id: orgId, sku, bin_code: to, quantity: use, lot_no: lot });

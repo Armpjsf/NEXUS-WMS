@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Prompt, Outfit, Chivo, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
@@ -81,8 +81,14 @@ export const metadata: Metadata = {
     telephone: false,
   },
 };
-export const viewport = {
-  themeColor: "#0f141b",
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#171c23",
 };
 
 export default function RootLayout({

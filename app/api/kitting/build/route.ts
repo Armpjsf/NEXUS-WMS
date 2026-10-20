@@ -30,18 +30,33 @@ export async function POST(req: Request) {
     const components: Comp[] = Array.isArray(bomRow.components) ? bomRow.components : [];
     const isAssemble = action !== 'DISASSEMBLE';
 
-    // อ่านสต็อกชิ้นส่วนปัจจุบัน
+    // อ่านสต็อกชิ้นส่วนและชุดสินค้าปัจจุบันก่อนทำการปรับสต็อกใดๆ
     const skus = components.map(c => c.componentSku).filter(Boolean);
-    const { data: prods } = await admin
-      .from('products').select('sku, name, stock, price, location').eq('org_id', orgId).in('sku', skus.length ? skus : ['__none__']);
+    const [{ data: prods }, { data: kitProd }] = await Promise.all([
+      admin.from('products').select('sku, name, stock, price, location').eq('org_id', orgId).in('sku', skus.length ? skus : ['__none__']),
+      admin.from('products').select('sku, stock, price').eq('org_id', orgId).eq('sku', bomRow.kit_sku).maybeSingle(),
+    ]);
     const stockMap = new Map((prods || []).map((p: any) => [p.sku, p]));
 
     if (isAssemble) {
-      // 1. เช็คชิ้นส่วนพอมั้ย
+      // 1a. เช็คชิ้นส่วนพอมั้ย
       const missing = components.filter(c => Number(stockMap.get(c.componentSku)?.stock || 0) < c.quantity * buildQty)
         .map(c => ({ sku: c.componentSku, required: c.quantity * buildQty, available: Number(stockMap.get(c.componentSku)?.stock || 0) }));
       if (missing.length > 0) {
         return NextResponse.json({ error: 'ชิ้นส่วนในสต็อกไม่เพียงพอสำหรับการรวมชุด', missingComponents: missing }, { status: 400 });
+      }
+    } else {
+      // 1b. DISASSEMBLE: เช็คสต็อกชุดสินค้าสำเร็จรูปพอมั้ย
+      const availKitStock = Number(kitProd?.stock || 0);
+      if (availKitStock < buildQty) {
+        return NextResponse.json(
+          {
+            error: `สต็อกชุดสินค้า ${bomRow.kit_name || bomRow.kit_sku} ไม่เพียงพอสำหรับการแยกชุด (ต้องการ ${buildQty}, คงเหลือ ${availKitStock})`,
+            available: availKitStock,
+            required: buildQty,
+          },
+          { status: 400 },
+        );
       }
     }
 
@@ -64,7 +79,6 @@ export async function POST(req: Request) {
     }
 
     // 3. ปรับสต็อกชุดสินค้า (ASSEMBLE = เพิ่ม, DISASSEMBLE = ตัด) — สร้าง product ชุดถ้ายังไม่มี
-    const { data: kitProd } = await admin.from('products').select('sku, stock, price').eq('org_id', orgId).eq('sku', bomRow.kit_sku).maybeSingle();
     if (!kitProd && isAssemble) {
       // create the kit product with 0 stock; binAdd reconciles the total from bins
       await admin.from('products').insert({

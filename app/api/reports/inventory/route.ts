@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { getTransactions } from '@/lib/data/wms';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import { getCurrentOrgId } from '@/lib/orgContext';
+import { fetchAllRows } from '@/lib/data/fetchAll';
+import { getProducts, type Product, type Transaction } from '@/lib/data/wms';
 import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
@@ -18,62 +21,100 @@ export async function GET(request: Request) {
         const owner = searchParams.get('owner');
         const search = searchParams.get('search')?.toLowerCase();
 
-        // 1. Fetch ALL transactions (Parallel) - Filtered by User's Allowed Owners
-        const [inbound, outbound] = await Promise.all([
-            getTransactions('IN', undefined, allowedOwners),
-            getTransactions('OUT', undefined, allowedOwners)
+        const orgId = await getCurrentOrgId();
+
+        // Pre-parse date boundaries once and push down .gte / .lte to Supabase
+        const startIso = startDate ? new Date(startDate).toISOString() : null;
+        const endIso = endDate
+            ? new Date(endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`).toISOString()
+            : null;
+        const startMs = startDate ? new Date(startDate).getTime() : null;
+        const endMs = endDate
+            ? new Date(endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`).getTime()
+            : null;
+
+        // Fetch products and filtered transactions in parallel
+        const [products, rawRows] = await Promise.all([
+            getProducts(undefined, allowedOwners),
+            fetchAllRows((f, t) => {
+                let q = supabase
+                    .from('stock_transactions')
+                    .select('*')
+                    .eq('org_id', orgId)
+                    .order('created_at', { ascending: false })
+                    .range(f, t);
+
+                if (type && type !== 'ALL') {
+                    q = q.eq('type', type);
+                } else {
+                    q = q.in('type', ['IN', 'OUT']);
+                }
+                if (startIso) q = q.gte('created_at', startIso);
+                if (endIso) q = q.lte('created_at', endIso);
+                return q;
+            }),
         ]);
 
-        // 2. Normalize and Combine
-        // Add a 'type' field to identify source
-        const allTransactions = [
-            ...inbound.map(t => ({ ...t, type: 'IN' })),
-            ...outbound.map(t => ({ ...t, type: 'OUT' }))
-        ];
+        // Pre-index products in a Map by lowercase SKU and product name (O(P) instead of O(P*T) .find())
+        const productMap = new Map<string, Product>();
+        for (const p of products) {
+            if (p.id) productMap.set(String(p.id).trim().toLowerCase(), p);
+            if (p.name) productMap.set(p.name.trim().toLowerCase(), p);
+        }
 
-        // 3. Filter
-        const filtered = allTransactions.filter(t => {
-            // valid date check
-            if (!t.date) return false;
+        const allowSet =
+            allowedOwners && allowedOwners.length > 0 && !allowedOwners.includes('*')
+                ? new Set(allowedOwners.map((o: string) => o.toLowerCase().trim()))
+                : null;
+        const ownerFilter = owner && owner !== 'ALL' ? owner.toLowerCase().trim() : null;
 
-            // Date Range Filter (Simple String Comparison YYYY-MM-DD or parse)
-            // Assuming dates are YYYY-MM-DD or standard enough. 
-            // If Google Sheets returns DD/MM/YYYY, we might need parsing. 
-            // Let's assume standard format for now or just simple includes for partial matches if needed.
-            // Better: Parse to timestamp for accurate comparison
-            try {
-                const tDate = new Date(t.date).getTime();
-                if (startDate && tDate < new Date(startDate).getTime()) return false;
-                if (endDate && tDate > new Date(endDate).getTime()) return false;
-            } catch (e) {
-                // Invalid date in row, maybe skip or include?
-                // console.warn("Invalid date:", t.date);
-            }
+        const filtered: Transaction[] = [];
 
-            // Type Filter
-            if (type && type !== 'ALL' && t.type !== type) return false;
+        for (const r of rawRows || []) {
+            if (!r.created_at) continue;
+            const ts = new Date(r.created_at).getTime();
+            if (startMs !== null && ts < startMs) continue;
+            if (endMs !== null && ts > endMs) continue;
 
-            // Search (Product Name, ID)
+            const skuStr = String(r.sku || '').trim();
+            const prodNameStr = String(r.product_name || skuStr).trim();
+            const matchedProduct =
+                productMap.get(skuStr.toLowerCase()) || productMap.get(prodNameStr.toLowerCase());
+
+            const txOwner = String(r.owner || matchedProduct?.owner || '').trim();
+            if (allowSet && !allowSet.has(txOwner.toLowerCase())) continue;
+            if (ownerFilter && txOwner.toLowerCase() !== ownerFilter) continue;
+
             if (search) {
-                const searchContent = `${t.product || ''} ${t.sku || ''} ${t.docRef || ''}`.toLowerCase();
-                if (!searchContent.includes(search)) return false;
+                const searchContent = `${prodNameStr} ${skuStr} ${r.doc_ref || ''}`.toLowerCase();
+                if (!searchContent.includes(search)) continue;
             }
 
-            return true;
-        });
+            filtered.push({
+                date: r.created_at,
+                type: r.type,
+                sku: skuStr,
+                product: prodNameStr,
+                qty: Number(r.qty ?? 0),
+                price: Number(r.unit_price ?? matchedProduct?.price ?? 0),
+                docRef: r.doc_ref || '',
+                timestamp: ts,
+                batch: r.batch_no || '',
+                expiryDate: r.expiry_date || '',
+                owner: txOwner,
+            });
+        }
 
-        // 4. Sort (Newest First)
-        filtered.sort((a, b) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-        });
+        // Sort newest first using precomputed numeric timestamp
+        filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-        // 5. Pagination (Optional, but good for large datasets)
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '50');
+        // Pagination
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const limit = parseInt(searchParams.get('limit') || '50', 10);
         const total = filtered.length;
         const totalPages = Math.ceil(total / limit);
         const offset = (page - 1) * limit;
-        
+
         const paginatedData = filtered.slice(offset, offset + limit);
 
         return NextResponse.json({
@@ -82,15 +123,13 @@ export async function GET(request: Request) {
                 total,
                 page,
                 limit,
-                totalPages
-            }
+                totalPages,
+            },
         });
-
     } catch (error) {
-        console.error("Report API Error:", error);
+        console.error('Report API Error:', error);
         return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
     }
 }
 
-// Vercel: allow up to 60s (Hobby max) — this route does Sheets-heavy work.
 export const maxDuration = 60;

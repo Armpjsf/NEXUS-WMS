@@ -3,6 +3,7 @@
 
 import bcrypt from 'bcryptjs';
 import { getServiceSupabase } from '@/lib/supabase';
+import { resetBinsBulk } from '@/lib/stockLocations';
 
 export interface OnboardInput {
   orgName: string;
@@ -37,9 +38,9 @@ export async function onboardOrganization(input: OnboardInput): Promise<OnboardR
   const { data: userTaken } = await admin.from('app_users').select('id').ilike('username', username).maybeSingle();
   if (userTaken) return { ok: false, error: `ชื่อผู้ใช้ "${username}" ถูกใช้แล้ว` };
 
-  // 1) Organization
+  // 1) Organization — public onboarding always starts on FREE
   const { data: org, error: orgErr } = await admin.from('organizations').insert({
-    name: orgName, slug, plan: input.plan || 'FREE', status: 'ACTIVE',
+    name: orgName, slug, plan: 'FREE', status: 'ACTIVE',
   }).select().single();
   if (orgErr || !org) return { ok: false, error: orgErr?.message || 'สร้างองค์กรไม่สำเร็จ' };
   const orgId = org.id;
@@ -67,6 +68,16 @@ export async function onboardOrganization(input: OnboardInput): Promise<OnboardR
     { sku: 'SKU-0003', name: 'สินค้าตัวอย่าง C', category: 'General', stock: 8, min_stock: 10, unit: 'box', price: 300, location: 'B-01-01' },
   ].map((p) => ({ ...p, org_id: orgId }));
   await admin.from('products').insert(products);
+
+  // Sync stock_locations for the 3 seeded products
+  try {
+    await resetBinsBulk(
+      orgId,
+      products.map((p) => ({ sku: p.sku, binCode: p.location, quantity: p.stock })),
+    );
+  } catch (e) {
+    console.warn('Onboarding bin seed warning:', e);
+  }
 
   return { ok: true, orgId, username };
 }

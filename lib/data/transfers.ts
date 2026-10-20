@@ -4,6 +4,7 @@
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { nextDocNumber } from '@/lib/docNumber';
+import { binAdd, binConsume } from '@/lib/stockLocations';
 
 export type TransferStatus = 'DRAFT' | 'PENDING' | 'IN_TRANSIT' | 'COMPLETED' | 'CANCELLED';
 
@@ -37,8 +38,8 @@ export function mapTransfer(r: any): StockTransfer {
     id: r.id,
     orgId: r.org_id || '',
     transferNo: r.transfer_no || '',
-    fromBranchId: r.from_branch_id || 'hq',
-    toBranchId: r.to_branch_id || '',
+    fromBranchId: r.from_branch_id || r.from_branch || 'hq',
+    toBranchId: r.to_branch_id || r.to_branch || '',
     status: r.status || 'DRAFT',
     items,
     totalQty: r.total_qty || totalQty,
@@ -108,16 +109,44 @@ export async function createTransfer(input: {
 
 export async function updateTransferStatus(
   id: string,
-  newStatus: TransferStatus
+  newStatus: TransferStatus,
+  approvedBy?: string,
 ): Promise<StockTransfer | null> {
   const orgId = await getCurrentOrgId();
   const client = getServiceSupabase();
-  const patch: Record<string, any> = { status: newStatus };
 
+  const { data: existing, error: fetchErr } = await client
+    .from('stock_transfers')
+    .select('*')
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .maybeSingle();
+
+  if (fetchErr || !existing) {
+    console.warn('[transfers] transfer not found:', fetchErr?.message);
+    return null;
+  }
+
+  if (existing.status === newStatus) {
+    return mapTransfer(existing);
+  }
+
+  const prevStatus: TransferStatus = existing.status || 'DRAFT';
+  const items: TransferLine[] = Array.isArray(existing.items)
+    ? existing.items
+    : typeof existing.items === 'string'
+      ? JSON.parse(existing.items || '[]')
+      : [];
+  const fromBranch = existing.from_branch || existing.from_branch_id || 'HQ';
+  const toBranch = existing.to_branch || existing.to_branch_id || 'MAIN';
+  const actor = approvedBy || existing.created_by || 'System';
+
+  const patch: Record<string, any> = { status: newStatus };
   if (newStatus === 'IN_TRANSIT') {
     patch.shipped_at = new Date().toISOString();
   } else if (newStatus === 'COMPLETED') {
     patch.received_at = new Date().toISOString();
+    if (!existing.shipped_at) patch.shipped_at = new Date().toISOString();
   }
 
   const { data, error } = await client
@@ -125,12 +154,105 @@ export async function updateTransferStatus(
     .update(patch)
     .eq('id', id)
     .eq('org_id', orgId)
+    .neq('status', newStatus)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.warn('[transfers] update error fallback:', error.message);
     return null;
   }
+  if (!data) {
+    return mapTransfer(existing);
+  }
+
+  // Move stock & log stock_transactions according to transition
+  if (newStatus === 'IN_TRANSIT' && (prevStatus === 'DRAFT' || prevStatus === 'PENDING')) {
+    for (const item of items) {
+      const qty = Number(item.qty || 0);
+      if (!item.sku || qty <= 0) continue;
+      await binConsume(orgId, item.sku, qty, {
+        preferBin: fromBranch,
+        docRef: existing.transfer_no,
+        party: toBranch,
+      });
+      await client.from('stock_transactions').insert({
+        org_id: orgId,
+        sku: item.sku,
+        product_name: item.name || item.sku,
+        type: 'OUT',
+        qty,
+        location: fromBranch,
+        doc_ref: existing.transfer_no,
+        notes: 'Transfer Out to ' + toBranch,
+        user_name: actor,
+      });
+    }
+  } else if (newStatus === 'COMPLETED') {
+    if (prevStatus === 'DRAFT' || prevStatus === 'PENDING') {
+      // Skipped IN_TRANSIT — consume from origin first
+      for (const item of items) {
+        const qty = Number(item.qty || 0);
+        if (!item.sku || qty <= 0) continue;
+        await binConsume(orgId, item.sku, qty, {
+          preferBin: fromBranch,
+          docRef: existing.transfer_no,
+          party: toBranch,
+        });
+        await client.from('stock_transactions').insert({
+          org_id: orgId,
+          sku: item.sku,
+          product_name: item.name || item.sku,
+          type: 'OUT',
+          qty,
+          location: fromBranch,
+          doc_ref: existing.transfer_no,
+          notes: 'Transfer Out to ' + toBranch,
+          user_name: actor,
+        });
+      }
+    }
+    for (const item of items) {
+      const qty = Number(item.qty || 0);
+      if (!item.sku || qty <= 0) continue;
+      await binAdd(orgId, item.sku, toBranch || 'MAIN', qty, {
+        docRef: existing.transfer_no,
+        party: fromBranch,
+      });
+      await client.from('stock_transactions').insert({
+        org_id: orgId,
+        sku: item.sku,
+        product_name: item.name || item.sku,
+        type: 'IN',
+        qty,
+        location: toBranch || 'MAIN',
+        doc_ref: existing.transfer_no,
+        notes: 'Transfer In from ' + fromBranch,
+        user_name: actor,
+      });
+    }
+  } else if (newStatus === 'CANCELLED' && prevStatus === 'IN_TRANSIT') {
+    // Restore deducted stock back to origin branch
+    for (const item of items) {
+      const qty = Number(item.qty || 0);
+      if (!item.sku || qty <= 0) continue;
+      await binAdd(orgId, item.sku, fromBranch || 'HQ', qty, {
+        docRef: existing.transfer_no,
+        party: toBranch,
+      });
+      await client.from('stock_transactions').insert({
+        org_id: orgId,
+        sku: item.sku,
+        product_name: item.name || item.sku,
+        type: 'IN',
+        qty,
+        location: fromBranch || 'HQ',
+        doc_ref: existing.transfer_no,
+        notes: 'Transfer Reversal (Cancelled) from ' + toBranch,
+        user_name: actor,
+      });
+    }
+  }
+
   return mapTransfer(data);
 }

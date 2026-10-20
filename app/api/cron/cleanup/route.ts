@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   // finished robot missions
   results.push(await purge('wcs_missions', 'created_at', cutoff(days('WCS_RETENTION_DAYS', 30)), ['COMPLETED', 'FAILED', 'CANCELLED']));
   // simple activity log (NOT the immutable enterprise audit trail)
-  results.push(await purge('audit_log', 'created_at', cutoff(days('AUDIT_LOG_RETENTION_DAYS', 90))));
+  results.push(await purge('audit_log', 'ts', cutoff(days('AUDIT_LOG_RETENTION_DAYS', 90))));
 
   const total = results.reduce((s, r) => s + (r.deleted || 0), 0);
   log.info('cron cleanup done', { total });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { requireManagement } from '@/lib/apiAuth';
 import { upsertProductsForOrg } from '@/lib/data/productUpsert';
+import { resetBinsBulk } from '@/lib/stockLocations';
 import { errorMessage } from '@/lib/errors';
 
 export async function POST() {
@@ -118,8 +119,18 @@ export async function POST() {
     ];
 
     // Upsert products
-    const { data, error } = await upsertProductsForOrg(orgId, demoProducts);
+    const { error } = await upsertProductsForOrg(orgId, demoProducts);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Sync stock_locations so bin quantities match products.stock
+    try {
+      await resetBinsBulk(
+        orgId,
+        demoProducts.map(p => ({ sku: p.sku, binCode: p.location || 'UNASSIGNED', quantity: Number(p.stock || 0) })),
+      );
+    } catch (e) {
+      console.warn('Seed products: bin resync failed', e);
+    }
 
     return NextResponse.json({
       success: true,

@@ -129,7 +129,7 @@ export default function PurchaseOrdersPage() {
                         <a href={`/print/purchase-order?id=${po.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบสั่งซื้อ" className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors"><FileText className="w-4 h-4" /></a>
                         {po.status === 'DRAFT' && <Btn onClick={() => setStatus(po, 'ORDERED')} tone="primary"><Send className="w-4 h-4" /> ส่งสั่งซื้อ</Btn>}
                         {(po.status === 'DRAFT' || po.status === 'ORDERED') && (
-                          <Link href="/ops/receiving" title="สร้างใบรับเข้าแล้วเลือก PO นี้" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 transition-all">
+                          <Link href={`/ops/receiving?po=${encodeURIComponent(po.po_number)}`} title="สร้างใบรับเข้าแล้วเลือก PO นี้" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 transition-all">
                             <ArrowDownToLine className="w-4 h-4" /> รับเข้า
                           </Link>
                         )}

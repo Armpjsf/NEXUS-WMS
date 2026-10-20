@@ -76,7 +76,10 @@ export default function MobileNav() {
     <>
       {/* App-styled alert/confirm host for all mobile pages */}
       <MobileDialogHost />
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#171c23]/95 backdrop-blur-md border-t border-[#30353d] z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+      <nav
+        style={{ paddingBottom: 'var(--safe-bottom, 0px)' }}
+        className="fixed bottom-0 left-0 right-0 bg-[#171c23]/95 backdrop-blur-md border-t border-[#30353d] z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-[var(--safe-bottom,0px)]"
+      >
         <div className="flex justify-around items-center h-16">
           {navItems.map(item => {
             const Icon = item.icon;

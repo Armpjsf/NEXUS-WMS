@@ -19,6 +19,7 @@ import {
   VolumeX,
   Eye,
   Camera,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,9 +52,11 @@ export default function WavePickingPage() {
 
   // New Wave Form State
   const [isCreatingWave, setIsCreatingWave] = useState(false);
-  const [selectedSkus, setSelectedSkus] = useState<Array<{ sku: string; qty: number; orderRef?: string }>>([]);
+  const [selectedSkus, setSelectedSkus] = useState<Array<{ sku: string; qty: number; orderRef?: string; orderId?: string }>>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [pickerName, setPickerName] = useState('Warehouse Operator');
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [isCompletingWave, setIsCompletingWave] = useState(false);
 
   // Fast Scan Bar State
   const [scanInput, setScanInput] = useState('');
@@ -77,8 +80,26 @@ export default function WavePickingPage() {
     }
   };
 
+  // Load Pending Orders
+  const loadPendingOrders = async (): Promise<any[]> => {
+    try {
+      const res = await fetch(getApiUrl('/api/orders?limit=100'));
+      if (res.ok) {
+        const data = await res.json();
+        const allOrders = data.orders || [];
+        const pending = allOrders.filter((o: any) => o.status === 'NEW' || o.status === 'PICKING');
+        setPendingOrders(pending);
+        return pending;
+      }
+    } catch (e) {
+      console.error('Failed to load pending orders:', e);
+    }
+    return [];
+  };
+
   useEffect(() => {
     loadProducts();
+    loadPendingOrders();
   }, []);
 
   // Filtered products for creating wave
@@ -115,21 +136,56 @@ export default function WavePickingPage() {
     toast.success(`เพิ่ม ${product.name} เข้า Wave`);
   };
 
-  // 1-Click Load Pending Orders from Fulfillment API or Fast-Moving items
+  // 1-Click Load Pending Orders from Fulfillment API or Orders API or Fast-Moving items
   const loadPendingOrdersToWave = async () => {
     try {
       const toastId = toast.loading('กำลังดึงรายการออเดอร์ค้างส่ง...');
-      const res = await fetch(getApiUrl('/api/orders/fulfillment?action=check_pending')).catch(() => null);
+      const [res, latestPending] = await Promise.all([
+        fetch(getApiUrl('/api/orders/fulfillment?action=check_pending')).catch(() => null),
+        loadPendingOrders(),
+      ]);
+      const orderMap = new Map<string, string>();
+      for (const o of latestPending) {
+        if (o.orderNo && o.id) orderMap.set(o.orderNo, o.id);
+        if (o.id) orderMap.set(o.id, o.id);
+      }
+
       let found = false;
 
       if (res && res.ok) {
         const data = await res.json();
         if (data?.pending_tasks && data.pending_tasks.length > 0) {
-          const itemsToWave = data.pending_tasks.map((task: any) => ({
-            sku: task.item_name || task.sku,
-            qty: parseInt(task.amount || task.qty) || 1,
-            orderRef: task.doc_ref || task.order_no || 'Pending Order',
-          }));
+          const itemsToWave = data.pending_tasks.map((task: any) => {
+            const ref = task.doc_ref || task.order_no || 'Pending Order';
+            return {
+              sku: task.sku || task.item_name,
+              qty: parseInt(task.amount || task.qty) || 1,
+              orderRef: ref,
+              orderId: task.order_id || orderMap.get(ref) || ref,
+            };
+          });
+          setSelectedSkus(itemsToWave);
+          setIsCreatingWave(true);
+          triggerHaptic('success');
+          toast.dismiss(toastId);
+          toast.success(`ดึงสำเร็จ! พบ ${itemsToWave.length} รายการจากออเดอร์ค้างส่ง`);
+          found = true;
+        }
+      }
+
+      if (!found && latestPending.length > 0) {
+        const itemsToWave: Array<{ sku: string; qty: number; orderRef?: string; orderId?: string }> = [];
+        for (const ord of latestPending) {
+          for (const it of ord.items || []) {
+            itemsToWave.push({
+              sku: it.sku || it.name,
+              qty: Number(it.qty || 1),
+              orderRef: ord.orderNo || ord.id,
+              orderId: ord.id,
+            });
+          }
+        }
+        if (itemsToWave.length > 0) {
           setSelectedSkus(itemsToWave);
           setIsCreatingWave(true);
           triggerHaptic('success');
@@ -164,7 +220,7 @@ export default function WavePickingPage() {
   };
 
   // Generate and start Wave with S-Shape calculation & Voice Prompt
-  const handleStartWave = () => {
+  const handleStartWave = async () => {
     if (selectedSkus.length === 0) {
       toast.error('กรุณาเลือกสินค้าอย่างน้อย 1 รายการเพื่อสร้าง Wave');
       return;
@@ -179,10 +235,14 @@ export default function WavePickingPage() {
       location: string;
       status: 'PENDING' | 'PICKED' | 'SHORTAGE';
       orderDocNum?: string;
+      orderId?: string;
       category?: string;
       unit?: string;
     }> = selectedSkus.map((item, idx) => {
       const prod = products.find(p => p.id === item.sku || p.name === item.sku);
+      const matchedOrder = pendingOrders.find(
+        o => o.id === item.orderId || o.orderNo === item.orderRef || o.id === item.orderRef
+      );
       return {
         id: `wave-item-${idx + 1}`,
         sku: item.sku,
@@ -192,6 +252,7 @@ export default function WavePickingPage() {
         location: prod?.location || 'Unassigned',
         status: 'PENDING',
         orderDocNum: item.orderRef,
+        orderId: item.orderId || matchedOrder?.id || item.orderRef,
         category: prod?.category || 'General',
         unit: prod?.unit || 'pcs',
       };
@@ -226,6 +287,53 @@ export default function WavePickingPage() {
       setTimeout(() => {
         speakPickInstruction(optimizedItems[0]);
       }, 1500);
+    }
+  };
+
+  // Complete Wave & Update all distinct orders in activeWave to PICKED
+  const handleCompleteWave = async () => {
+    if (!activeWave) return;
+    setIsCompletingWave(true);
+    try {
+      const distinctOrderIds = Array.from(
+        new Set(
+          activeWave.items
+            .map((it: any) => {
+              const ref = it.orderId || it.orderDocNum;
+              if (!ref) return null;
+              const matched = pendingOrders.find(o => o.id === ref || o.orderNo === ref);
+              return matched?.id || ref;
+            })
+            .filter((id): id is string => Boolean(id) && !id.startsWith('ORD-AUTO-'))
+        )
+      );
+
+      let updatedCount = 0;
+      for (const orderId of distinctOrderIds) {
+        try {
+          const res = await fetch(getApiUrl('/api/orders'), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: orderId, status: 'PICKED' }),
+          });
+          if (res.ok) updatedCount++;
+        } catch (err) {
+          console.error(`Failed to update order ${orderId} to PICKED:`, err);
+        }
+      }
+
+      await Promise.all([loadPendingOrders(), loadProducts()]);
+      triggerHaptic('success');
+      toast.success(
+        updatedCount > 0
+          ? `🎉 บันทึกการหยิบครบถ้วน และส่งต่อ ${updatedCount} ออเดอร์ไปจุดแพ็กเรียบร้อย!`
+          : '🎉 บันทึกการหยิบครบถ้วนเรียบร้อย!'
+      );
+      setActiveWave(null);
+    } catch (e) {
+      toast.error('บันทึกผล Wave ไม่สำเร็จ: ' + errorMessage(e));
+    } finally {
+      setIsCompletingWave(false);
     }
   };
 
@@ -979,15 +1087,21 @@ export default function WavePickingPage() {
 
                 {currentStats?.isCompleted && (
                   <button
-                    onClick={() => {
-                      triggerHaptic('success');
-                      toast.success('🎉 บันทึกการหยิบครบถ้วนเรียบร้อย!');
-                      setActiveWave(null);
-                    }}
-                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#dee2ec] font-black rounded-xl text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                    onClick={handleCompleteWave}
+                    disabled={isCompletingWave}
+                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-[#dee2ec] font-black rounded-xl text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    เสร็จสิ้น Wave และส่งต่อไปจุดแพ็ก
+                    {isCompletingWave ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        กำลังบันทึกและส่งต่อ...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        เสร็จสิ้น Wave และส่งต่อไปจุดแพ็ก
+                      </>
+                    )}
                   </button>
                 )}
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -12,70 +12,186 @@ import {
   Search,
   Volume2,
   RefreshCw,
+  Sparkles,
+  ArrowRight,
+  ClipboardList,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
 import { speakPutawayLocation, triggerHaptic } from '@/lib/voiceAssistant';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
+import { getApiUrl } from '@/lib/config';
 import { errorMessage } from '@/lib/errors';
+
+interface PutawayTask {
+  id: string;
+  task_type: string;
+  priority: number;
+  product_name?: string;
+  sku?: string;
+  requested_qty?: number;
+  source_location?: string;
+  target_location?: string;
+  status?: string;
+}
+
+interface RecommendationInfo {
+  recommendedLocation: string;
+  ruleApplied: string;
+  reason: string;
+  fromBin?: string;
+  isCrossDock?: boolean;
+}
 
 export default function MobilePutawayPage() {
   const [step, setStep] = useState<'SCAN_ITEM' | 'CONFIRM_LOCATION' | 'DONE'>('SCAN_ITEM');
   const [products, setProducts] = useState<any[]>([]);
+  const [putawayTasks, setPutawayTasks] = useState<PutawayTask[]>([]);
   const [loadingProds, setLoadingProds] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Selected Product & Bin state
+
+  // Selected Product, Task & Bin state
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [fromBin, setFromBin] = useState('RCV-DOCK');
   const [targetBin, setTargetBin] = useState('');
   const [putawayQty, setPutawayQty] = useState<number>(1);
   const [lotNumber, setLotNumber] = useState('');
-  
+  const [recommendation, setRecommendation] = useState<RecommendationInfo | null>(null);
+  const [loadingRec, setLoadingRec] = useState(false);
+
   // Camera Scanner modal
   const [cameraMode, setCameraMode] = useState<'ITEM' | 'LOC' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        setLoadingProds(true);
-        const res = await fetch('/api/products');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) setProducts(data);
-        }
-      } catch (err) {
-        console.error('Failed to load products:', err);
-      } finally {
-        setLoadingProds(false);
+  const loadData = useCallback(async () => {
+    try {
+      setLoadingProds(true);
+      const [prodRes, taskRes] = await Promise.all([
+        fetch(getApiUrl('/api/products'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/tasks?type=PUTAWAY'), { cache: 'no-store' }),
+      ]);
+
+      if (prodRes.ok) {
+        const data = await prodRes.json();
+        if (Array.isArray(data)) setProducts(data);
       }
+
+      if (taskRes.ok) {
+        const tData = await taskRes.json();
+        const pending = (tData.data || []).filter(
+          (t: PutawayTask) => t.task_type === 'PUTAWAY' && t.status !== 'COMPLETED'
+        );
+        setPutawayTasks(pending);
+      }
+    } catch (err) {
+      console.error('Failed to load putaway data:', err);
+    } finally {
+      setLoadingProds(false);
     }
-    loadProducts();
   }, []);
 
-  const handleSelectItem = (p: any) => {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const fetchSmartRecommendation = useCallback(async (sku: string, qty: number, preferredTarget?: string, preferredFrom?: string) => {
+    setLoadingRec(true);
+    try {
+      const res = await fetch(
+        getApiUrl(`/api/putaway/recommend?sku=${encodeURIComponent(sku)}&qty=${encodeURIComponent(String(qty))}`),
+        { cache: 'no-store' }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        const rec = json.data;
+        if (rec) {
+          setRecommendation(rec);
+          if (!preferredFrom && (rec.fromBin || json.fromBin)) {
+            setFromBin(rec.fromBin || json.fromBin);
+          }
+          if (!preferredTarget && rec.recommendedLocation) {
+            setTargetBin(rec.recommendedLocation);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Putaway recommendation lookup failed:', err);
+    } finally {
+      setLoadingRec(false);
+    }
+  }, []);
+
+  const handleSelectItem = (p: any, opts?: { taskId?: string; qty?: number; from?: string; to?: string }) => {
+    const sku = p.sku || p.id || p.name;
+    const initialQty = opts?.qty && opts.qty > 0 ? opts.qty : 1;
+    const initialFrom = opts?.from || (p.location && p.location !== 'Unassigned' && p.location !== '-' ? p.location : 'RCV-DOCK');
+    const initialTo =
+      opts?.to && opts.to !== 'Unassigned' && opts.to !== '-'
+        ? opts.to
+        : p.location && p.location !== 'Unassigned' && p.location !== '-' && p.location !== 'RCV-DOCK'
+          ? p.location
+          : 'A-01-01';
+
     setSelectedProduct(p);
-    // Initial suggested bin is current primary location, or A-01-01
-    const loc = (p.location && p.location !== 'Unassigned' && p.location !== '-') 
-      ? p.location 
-      : 'A-01-01';
-    setTargetBin(loc);
-    setPutawayQty(1);
+    setSelectedTaskId(opts?.taskId || null);
+    setFromBin(initialFrom);
+    setTargetBin(initialTo);
+    setPutawayQty(initialQty);
+    setRecommendation(null);
     setCameraMode(null);
     setStep('CONFIRM_LOCATION');
     triggerHaptic('success');
     toast.success(`เลือกสินค้า: ${p.name}`);
+
+    fetchSmartRecommendation(sku, initialQty, opts?.to, opts?.from);
+  };
+
+  const handleSelectTask = (task: PutawayTask) => {
+    const q = (task.sku || task.product_name || '').toLowerCase();
+    const matchedProd = products.find(
+      p =>
+        (p.sku || '').toLowerCase() === q ||
+        (p.id || '').toLowerCase() === q ||
+        (p.name || '').toLowerCase() === q
+    ) || {
+      id: task.sku || task.product_name,
+      sku: task.sku || task.product_name,
+      name: task.product_name || task.sku || 'สินค้ารอจัดเก็บ',
+      stock: task.requested_qty || 1,
+      location: task.source_location || 'RCV-DOCK',
+      unit: 'ชิ้น',
+    };
+
+    handleSelectItem(matchedProd, {
+      taskId: task.id,
+      qty: Number(task.requested_qty || 1),
+      from: task.source_location || 'RCV-DOCK',
+      to: task.target_location || undefined,
+    });
   };
 
   const handleScanBarcode = (code: string) => {
     const q = code.trim().toLowerCase();
     if (step === 'SCAN_ITEM') {
-      const match = products.find(p => 
-        (p.sku || '').toLowerCase() === q ||
-        (p.id || '').toLowerCase() === q ||
-        (p.barcode || '').toLowerCase() === q ||
-        (p.name || '').toLowerCase() === q
+      // Check pending putaway task first
+      const taskMatch = putawayTasks.find(
+        t => (t.sku || '').toLowerCase() === q || (t.product_name || '').toLowerCase() === q
+      );
+      if (taskMatch) {
+        playScannerAudio('success');
+        handleSelectTask(taskMatch);
+        return;
+      }
+
+      const match = products.find(
+        p =>
+          (p.sku || '').toLowerCase() === q ||
+          (p.id || '').toLowerCase() === q ||
+          (p.barcode || '').toLowerCase() === q ||
+          (p.name || '').toLowerCase() === q
       );
       if (match) {
         playScannerAudio('success');
@@ -86,13 +202,13 @@ export default function MobilePutawayPage() {
         toast.error(`ไม่พบสินค้ารหัส "${code}" ในระบบ`);
       }
     } else if (step === 'CONFIRM_LOCATION') {
-      // In confirm location, barcode scan updates the bin
-      setTargetBin(code.trim().toUpperCase());
+      const scannedLoc = code.trim().toUpperCase();
+      setTargetBin(scannedLoc);
       setCameraMode(null);
       playScannerAudio('success');
       triggerHaptic('success');
-      speakPutawayLocation(code.trim().toUpperCase());
-      toast.success(`เลือกพิกัด: ${code.trim().toUpperCase()}`);
+      speakPutawayLocation(scannedLoc);
+      toast.success(`เลือกพิกัด: ${scannedLoc}`);
     }
   };
 
@@ -115,25 +231,29 @@ export default function MobilePutawayPage() {
 
     setSubmitting(true);
     try {
-      const sku = selectedProduct.sku || selectedProduct.id;
-      const res = await fetch('/api/inbound', {
+      const sku = selectedProduct.sku || selectedProduct.id || selectedProduct.name;
+      const res = await fetch(getApiUrl('/api/putaway/recommend'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sku,
+          fromBin: fromBin.trim() || 'RCV-DOCK',
+          toBin: targetBin.trim().toUpperCase(),
           qty: putawayQty,
-          location: targetBin.trim().toUpperCase(),
-          batch: lotNumber.trim() || undefined,
-          docRef: `PUTAWAY-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`,
+          taskId: selectedTaskId || undefined,
+          lotNo: lotNumber.trim() || undefined,
         }),
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'จัดเก็บเข้าพิกัดไม่สำเร็จ');
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'ย้ายพิกัดจัดเก็บไม่สำเร็จ');
+      }
 
       triggerHaptic('success');
-      toast.success(`จัดเก็บ ${selectedProduct.name} เข้า ${targetBin.toUpperCase()} เรียบร้อย!`);
+      toast.success(`ย้ายพิกัด ${selectedProduct.name} → ${targetBin.toUpperCase()} เรียบร้อย!`);
       setStep('DONE');
+      loadData();
     } catch (err) {
       triggerHaptic('error');
       toast.error(errorMessage(err) || 'เกิดข้อผิดพลาดในการจัดเก็บ');
@@ -142,21 +262,23 @@ export default function MobilePutawayPage() {
     }
   };
 
-  const filteredProducts = products.filter(p => {
-    if (!searchQuery.trim()) return false;
-    const q = searchQuery.toLowerCase();
-    return (
-      (p.name || '').toLowerCase().includes(q) ||
-      (p.sku || '').toLowerCase().includes(q) ||
-      (p.id || '').toLowerCase().includes(q) ||
-      (p.barcode || '').toLowerCase().includes(q)
-    );
-  }).slice(0, 6);
+  const filteredProducts = products
+    .filter(p => {
+      if (!searchQuery.trim()) return false;
+      const q = searchQuery.toLowerCase();
+      return (
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.sku || '').toLowerCase().includes(q) ||
+        (p.id || '').toLowerCase().includes(q) ||
+        (p.barcode || '').toLowerCase().includes(q)
+      );
+    })
+    .slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 max-w-md mx-auto">
-      {/* Top Bar - Tactical Header */}
-      <div className="bg-[#171c23] text-white p-4 border-b border-[#30353d] relative overflow-hidden shadow-xl">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 max-w-md mx-auto font-sans select-none">
+      {/* Top Bar - Tactical Sticky Header */}
+      <header className="sticky top-0 z-30 bg-[#171c23] text-white px-4 py-3 border-b border-[#30353d] shadow-xl">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
         <div className="flex items-center justify-between">
           <Link
@@ -169,28 +291,91 @@ export default function MobilePutawayPage() {
             <Layers className="w-4 h-4 text-[#57ec7f]" />
             <span>จัดเก็บขึ้นชั้น (Putaway)</span>
           </h1>
-          <button
-            type="button"
-            onClick={() => setCameraMode(step === 'SCAN_ITEM' ? 'ITEM' : 'LOC')}
-            className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95"
-            title="เปิดกล้องสแกน"
-          >
-            <Scan className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={loadData}
+              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95"
+              title="รีเฟรชคิวงาน"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingProds ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCameraMode(step === 'SCAN_ITEM' ? 'ITEM' : 'LOC')}
+              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95"
+              title="เปิดกล้องสแกน"
+            >
+              <Scan className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="p-4 space-y-4">
         {step === 'SCAN_ITEM' && (
           <div className="space-y-4">
+            {/* Pending Putaway Tasks Queue */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
+                    <ClipboardList className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900">
+                      คิวงานรอจัดเก็บขึ้นชั้น (Pending Putaway Queue)
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      แตะเลือกรายการที่รับเข้าแล้วเพื่อย้ายจากจุดพักขึ้นชั้นวาง
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {putawayTasks.length} งาน
+                </span>
+              </div>
+
+              {putawayTasks.length === 0 ? (
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-center text-xs text-slate-500">
+                  ไม่มีคิวงานค้างในระบบ — สามารถสแกนหรือค้นหาสินค้าด้านล่างเพื่อย้ายช่องจัดเก็บได้ทันที
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                  {putawayTasks.map(task => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => handleSelectTask(task)}
+                      className="w-full text-left p-3 rounded-2xl bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-200/80 flex items-center justify-between gap-2 active:scale-[0.99] transition-all"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-900 truncate">
+                          {task.product_name || task.sku}
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
+                          <span>{task.source_location || 'RCV-DOCK'}</span>
+                          <ArrowRight className="w-3 h-3 text-emerald-600" />
+                          <span className="font-bold text-emerald-700">{task.target_location || 'AI แนะนำ'}</span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-xs font-bold font-mono shrink-0">
+                        {task.requested_qty || 1} ชิ้น
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm text-center space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto">
-                <Package className="w-8 h-8" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto">
+                <Package className="w-7 h-7" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-slate-900">ขั้นตอนที่ 1: สแกนหรือเลือกสินค้า</h2>
+                <h2 className="text-base font-black text-slate-900">ขั้นตอนที่ 1: สแกนหรือเลือกสินค้า</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  ยิงบาร์โค้ดสินค้าที่ต้องการนำขึ้นชั้นวาง หรือพิมพ์ค้นหาจากแคตตาล็อก
+                  ยิงบาร์โค้ดสินค้าที่ต้องการย้ายขึ้นชั้นวาง (ย้าย Bin โดยไม่บวกสต็อกซ้ำ)
                 </p>
               </div>
 
@@ -222,7 +407,7 @@ export default function MobilePutawayPage() {
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-lg divide-y divide-slate-100 overflow-hidden">
                   {filteredProducts.map(p => (
                     <div
-                      key={p.id || p.sku}
+                      key={p.id || p.sku || p.name}
                       onClick={() => handleSelectItem(p)}
                       className="p-3 hover:bg-emerald-50/50 cursor-pointer flex items-center justify-between transition-colors"
                     >
@@ -251,25 +436,67 @@ export default function MobilePutawayPage() {
         {step === 'CONFIRM_LOCATION' && selectedProduct && (
           <div className="space-y-4">
             {/* Selected Product Banner */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                สินค้าที่กำลังจัดเก็บ (Target SKU):
+                สินค้าที่กำลังจัดเก็บขึ้นชั้น (Relocate Bin):
               </span>
               <div className="text-base font-black text-slate-900 leading-tight">
                 {selectedProduct.name}
               </div>
               <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
                 <span className="font-mono">SKU: {selectedProduct.sku || selectedProduct.id}</span>
-                <span>สต็อกรวมปัจจุบัน: <strong className="text-slate-900 font-mono font-black">{selectedProduct.stock ?? 0}</strong> {selectedProduct.unit || 'ชิ้น'}</span>
+                <span>
+                  สต็อกรวมคงเดิม:{' '}
+                  <strong className="text-slate-900 font-mono font-black">
+                    {selectedProduct.stock ?? 0}
+                  </strong>{' '}
+                  {selectedProduct.unit || 'ชิ้น'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+                <span className="text-slate-500">ย้ายจากพิกัดต้นทาง:</span>
+                <input
+                  type="text"
+                  value={fromBin}
+                  onChange={e => setFromBin(e.target.value.toUpperCase())}
+                  className="px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 font-mono font-bold text-slate-800 text-xs w-32 uppercase"
+                />
               </div>
             </div>
+
+            {/* AI Putaway Recommendation Banner */}
+            {(loadingRec || recommendation) && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    AI แนะนำพิกัดจัดเก็บ (Directed Putaway)
+                  </span>
+                  {recommendation?.recommendedLocation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetBin(recommendation.recommendedLocation);
+                        speakPutawayLocation(recommendation.recommendedLocation);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
+                    >
+                      ใช้ {recommendation.recommendedLocation}
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-emerald-700 leading-relaxed">
+                  {loadingRec ? 'กำลังคำนวณพิกัดที่เหมาะสม...' : recommendation?.reason}
+                </p>
+              </div>
+            )}
 
             {/* Putaway Bin Selection Section */}
             <div className="p-5 bg-white rounded-3xl border-2 border-emerald-500/40 shadow-md space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider">
                   <MapPin className="w-4 h-4 text-emerald-600" />
-                  <span>พิกัดจัดเก็บเป้าหมาย (Putaway Bin):</span>
+                  <span>พิกัดจัดเก็บปลายทาง (Target Bin):</span>
                 </div>
                 <button
                   type="button"
@@ -319,7 +546,7 @@ export default function MobilePutawayPage() {
             {/* Quantity to Putaway */}
             <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
               <label className="block text-xs font-bold text-slate-600">
-                จำนวนที่นำขึ้นชั้นวาง ({selectedProduct.unit || 'ชิ้น'}):
+                จำนวนที่ย้ายขึ้นชั้นวาง ({selectedProduct.unit || 'ชิ้น'}):
               </label>
               <div className="flex items-center gap-2">
                 <button
@@ -413,7 +640,7 @@ export default function MobilePutawayPage() {
             <div className="space-y-1">
               <div className="text-xl font-black text-slate-900">จัดเก็บสินค้าขึ้นชั้นสำเร็จ!</div>
               <p className="text-xs text-slate-500">
-                ระบบได้บันทึกการนำสินค้าเข้าสู่พิกัดและกระทบยอดคงเหลือรวมเรียบร้อยแล้ว
+                ย้ายสินค้าจากพิกัดพักสินค้าเข้าสู่ชั้นวางเรียบร้อยแล้ว โดยไม่นับสต็อกซ้ำ
               </p>
             </div>
 
@@ -423,12 +650,18 @@ export default function MobilePutawayPage() {
                 <span className="font-bold text-slate-900">{selectedProduct.name}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-500">ย้ายจากพิกัด:</span>
+                <span className="font-mono font-bold text-slate-700">{fromBin}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-500">พิกัดจัดเก็บ (Bin):</span>
                 <span className="font-mono font-black text-emerald-600 text-sm">{targetBin}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">จำนวนที่จัดเก็บ:</span>
-                <span className="font-mono font-bold text-slate-900">{putawayQty} {selectedProduct.unit || 'ชิ้น'}</span>
+                <span className="font-mono font-bold text-slate-900">
+                  {putawayQty} {selectedProduct.unit || 'ชิ้น'}
+                </span>
               </div>
               {lotNumber && (
                 <div className="flex justify-between">
@@ -442,6 +675,7 @@ export default function MobilePutawayPage() {
               onClick={() => {
                 setStep('SCAN_ITEM');
                 setSelectedProduct(null);
+                setSelectedTaskId(null);
                 setTargetBin('');
                 setPutawayQty(1);
                 setLotNumber('');
@@ -461,9 +695,15 @@ export default function MobilePutawayPage() {
           onClose={() => setCameraMode(null)}
           onScan={handleScanBarcode}
           title={cameraMode === 'ITEM' ? 'สแกนบาร์โค้ดสินค้า' : 'สแกนบาร์โค้ดพิกัดชั้นวาง (Bin)'}
-          description={cameraMode === 'ITEM' ? 'เล็งกล้องไปที่บาร์โค้ดหรือ QR Code สินค้า' : 'เล็งกล้องไปที่ป้ายพิกัดช่องหรือเชลฟ์'}
+          description={
+            cameraMode === 'ITEM'
+              ? 'เล็งกล้องไปที่บาร์โค้ดหรือ QR Code สินค้า'
+              : 'เล็งกล้องไปที่ป้ายพิกัดช่องหรือเชลฟ์'
+          }
         />
       )}
+
+      <MobileNav />
     </div>
   );
 }

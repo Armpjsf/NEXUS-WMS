@@ -24,6 +24,7 @@ export default function ThreePlBillingPage() {
   const [selectedClient, setSelectedClient] = useState<ThirdPartyClient | null>(null);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
   const [billingResult, setBillingResult] = useState<{
     invoiceNumber: string;
     calculation: BillingPeriodCalculation;
@@ -92,6 +93,36 @@ export default function ThreePlBillingPage() {
       }
     } catch (err) {
       toast.error(errorMessage(err));
+    }
+  };
+
+  const handleLoadLiveUsage = async () => {
+    if (!selectedClient) return;
+    setIsLoadingUsage(true);
+    try {
+      const params = new URLSearchParams({
+        clientCode: selectedClient.clientCode || '',
+        clientId: selectedClient.id || '',
+        clientName: selectedClient.clientName || '',
+        daysCount: String(billingDays || 30),
+      });
+      const res = await fetch(`/api/3pl/billing/generate?${params.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        const usage = data.usage || data;
+        setOccupiedCbm(Number(usage.avgOccupiedCbm || 0));
+        setOrdersCount(Number(usage.ordersCount || 0));
+        setItemsCount(Number(usage.itemsCount || 0));
+        toast.success(
+          `ดึงยอดจริงจากคลังแล้ว: ${Number(usage.avgOccupiedCbm || 0)} CBM, ${Number(usage.ordersCount || 0)} ออเดอร์, ${Number(usage.itemsCount || 0)} ชิ้น`
+        );
+      } else {
+        toast.error(data.error || 'ดึงข้อมูลการใช้งานไม่สำเร็จ');
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsLoadingUsage(false);
     }
   };
 
@@ -277,18 +308,29 @@ export default function ThreePlBillingPage() {
 
                   {/* Billing Generator Parameters */}
                   <div className="bg-[#12161d] p-4 rounded-xl border border-[#30353d] space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-bold text-xs text-[#facc15] flex items-center gap-1.5">
                         <Calculator className="w-4 h-4 text-[#facc15]" />
                         คำนวณบิลรอบค่าบริการ (Automated Invoice Calculation)
                       </h3>
-                      <button
-                        onClick={handleGenerateBilling}
-                        disabled={isCalculating}
-                        className="px-4 py-1.5 bg-[#facc15] hover:bg-[#eab308] text-[#1b1600] rounded-lg text-xs font-black shadow transition flex items-center gap-1"
-                      >
-                        {isCalculating ? 'กำลังคำนวณ...' : '⚡ คำนวณบิลทันที'}
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleLoadLiveUsage}
+                          disabled={isLoadingUsage}
+                          className="px-3 py-1.5 bg-[#4cd7f6]/15 hover:bg-[#4cd7f6]/25 border border-[#4cd7f6]/40 text-[#4cd7f6] rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingUsage ? 'animate-spin' : ''}`} />
+                          {isLoadingUsage ? 'กำลังดึงข้อมูล...' : 'ดึงยอดใช้งานจริงจากคลัง (Load Live Usage)'}
+                        </button>
+                        <button
+                          onClick={handleGenerateBilling}
+                          disabled={isCalculating}
+                          className="px-4 py-1.5 bg-[#facc15] hover:bg-[#eab308] text-[#1b1600] rounded-lg text-xs font-black shadow transition flex items-center gap-1"
+                        >
+                          {isCalculating ? 'กำลังคำนวณ...' : '⚡ คำนวณบิลทันที'}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">

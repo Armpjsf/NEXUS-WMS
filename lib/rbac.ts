@@ -4,7 +4,7 @@
 
 import { ROLE_DEFINITIONS } from './users';
 
-export const MANAGEMENT_ROLES = ['Super Admin', 'Admin', 'Manager'] as const;
+export const MANAGEMENT_ROLES = ['Super Admin', 'Admin', 'Manager', 'Executive'] as const;
 
 export function isManagementRole(role?: string | null): boolean {
   return !!role && (MANAGEMENT_ROLES as readonly string[]).includes(role);
@@ -27,7 +27,19 @@ export function isManagementOnlyPath(pathname: string): boolean {
 // live under /admin, but the page guard alone left the API writable by any
 // signed-in staff. /api/admin/** is guarded separately (all methods).
 // /api/po/create = purchasing (POST create, PATCH status); receiving staff only read it.
-const MANAGEMENT_WRITE_APIS = ['/api/org', '/api/branches', '/api/carriers', '/api/fleet-vehicles', '/api/suppliers', '/api/po/create'];
+const MANAGEMENT_WRITE_APIS = [
+  '/api/org',
+  '/api/branches',
+  '/api/carriers',
+  '/api/fleet-vehicles',
+  '/api/suppliers',
+  '/api/po/create',
+  '/api/customers',
+  '/api/products/import',
+  '/api/stock/import-history',
+  '/api/lots/recall',
+  '/api/adjustments/approve',
+];
 
 export function isManagementOnlyApiWrite(pathname: string, method: string): boolean {
   const m = method.toUpperCase();

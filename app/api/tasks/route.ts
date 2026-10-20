@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
-import { createWarehouseTask } from '@/lib/taskEngine';
+import { createWarehouseTask, updateTaskStatus } from '@/lib/taskEngine';
 import { errorMessage } from '@/lib/errors';
 
 export async function GET(request: Request) {
@@ -38,22 +38,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { action, taskId, completedQty, ...taskData } = body;
 
-    // Handle Complete Task
+    // Handle Complete Task (moves bin stock for PUTAWAY / REPLENISHMENT / TRANSFER)
     if (action === 'COMPLETE' && taskId) {
-      const { data, error } = await supabase
-        .from('warehouse_tasks')
-        .update({
-          status: 'COMPLETED',
-          completed_qty: Number(completedQty || 0),
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', taskId)
-        .eq('org_id', orgId)
-        .select()
-        .single();
-
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      return NextResponse.json({ success: true, data });
+      const result = await updateTaskStatus(orgId, taskId, 'COMPLETED', completedQty);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, data: result.data, moved: result.moved });
     }
 
     // Otherwise create task

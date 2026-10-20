@@ -35,54 +35,71 @@ interface OrderItem {
 }
 
 interface PackingOrder {
+  id: string;
   orderNo: string;
   customerName: string;
   channel: string;
   carrier: string;
   status: string;
+  trackingNo?: string;
   items: OrderItem[];
 }
 
 export default function PackingQAPage() {
   const [orders, setOrders] = useState<PackingOrder[]>([]);
+  const [packedOrders, setPackedOrders] = useState<PackingOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [rateShop, setRateShop] = useState<{
+    cheapest: { carrier: string; zone: string; price: number; etaDays?: number } | null;
+    options: Array<{ carrier: string; zone: string; price: number; etaDays?: number }>;
+  } | null>(null);
+  const [shippingId, setShippingId] = useState<string | null>(null);
+
+  const loadPackingOrders = async () => {
+    try {
+      setLoadingOrders(true);
+      const res = await fetch('/api/orders?limit=100');
+      if (res.ok) {
+        const json = await res.json();
+        const allOrders = json.orders || [];
+        const mapToPackingOrder = (o: any): PackingOrder => ({
+          id: o.id || o.orderNo,
+          orderNo: o.orderNo || o.id,
+          customerName: o.customerName || 'ลูกค้าทั่วไป',
+          channel: o.channel || 'Direct',
+          carrier: o.carrier || 'STANDARD',
+          status: o.status || 'PICKED',
+          trackingNo: o.trackingNo || '',
+          items: (o.items || []).map((it: any) => ({
+            sku: it.sku,
+            name: it.name || it.sku,
+            qty: Number(it.qty || 1),
+            verifiedQty: Number(it.packed || 0),
+            isVerified: Number(it.packed || 0) >= Number(it.qty || 1),
+            unit: it.unit || 'ชิ้น',
+            weightKg: Number(it.weightKg || 1.0)
+          }))
+        });
+        const packable = allOrders
+          .filter((o: any) => o.status === 'PICKED' || o.status === 'PACKING')
+          .map(mapToPackingOrder);
+        const alreadyPacked = allOrders
+          .filter((o: any) => o.status === 'PACKED')
+          .map(mapToPackingOrder);
+        setOrders(packable);
+        setPackedOrders(alreadyPacked);
+        if (packable.length > 0 && !selectedOrder) {
+          setSelectedOrder(packable[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load packing orders:', e);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadPackingOrders() {
-      try {
-        setLoadingOrders(true);
-        const res = await fetch('/api/orders?limit=100');
-        if (res.ok) {
-          const json = await res.json();
-          const allOrders = json.orders || [];
-          const packable = allOrders.filter((o: any) => o.status === 'PICKED' || o.status === 'PACKING');
-          const formatted: PackingOrder[] = packable.map((o: any) => ({
-            orderNo: o.orderNo || o.id,
-            customerName: o.customerName || 'ลูกค้าทั่วไป',
-            channel: o.channel || 'Direct',
-            carrier: o.carrier || 'STANDARD',
-            status: o.status || 'PICKED',
-            items: (o.items || []).map((it: any) => ({
-              sku: it.sku,
-              name: it.name || it.sku,
-              qty: Number(it.qty || 1),
-              verifiedQty: Number(it.packed || 0),
-              isVerified: Number(it.packed || 0) >= Number(it.qty || 1),
-              unit: it.unit || 'ชิ้น',
-              weightKg: Number(it.weightKg || 1.0)
-            }))
-          }));
-          setOrders(formatted);
-          if (formatted.length > 0) {
-            setSelectedOrder(formatted[0]);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load packing orders:', e);
-      } finally {
-        setLoadingOrders(false);
-      }
-    }
     loadPackingOrders();
   }, []);
 
@@ -187,6 +204,54 @@ export default function PackingQAPage() {
     ? selectedOrder.items.every(it => it.verifiedQty >= it.qty)
     : false;
 
+  // Live Carrier Rate Shopping (/api/carriers/rate-shop)
+  useEffect(() => {
+    if (!selectedOrder) {
+      setRateShop(null);
+      return;
+    }
+    const weight = actualWeight > 0 ? actualWeight : estimatedWeight || 1;
+    let cancelled = false;
+    fetch(`/api/carriers/rate-shop?weight=${encodeURIComponent(String(weight))}&zone=ALL`)
+      .then(r => r.json())
+      .then(d => {
+        if (!cancelled && d?.success) {
+          setRateShop({ cheapest: d.cheapest || null, options: d.options || [] });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedOrder?.orderNo, actualWeight, estimatedWeight]);
+
+  // Confirm Handover / Mark Order as SHIPPED
+  const handleMarkShipped = async (orderId: string, trackingNo?: string) => {
+    if (!orderId) return;
+    setShippingId(orderId);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          status: 'SHIPPED',
+          ...(trackingNo ? { trackingNo } : {}),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'อัปเดตสถานะจัดส่งไม่สำเร็จ');
+      toast.success(`🚚 ยืนยันส่งมอบขนส่ง (SHIPPED) เรียบร้อย!`);
+      setPackedOrders(prev => prev.filter(o => o.id !== orderId && o.orderNo !== orderId));
+      setShipmentResult(null);
+      loadPackingOrders();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setShippingId(null);
+    }
+  };
+
   // Complete Packing Session & Generate Shipping AWB
   const handleCompletePacking = async () => {
     if (!selectedOrder) return;
@@ -202,6 +267,7 @@ export default function PackingQAPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          orderId: selectedOrder.id,
           orderNo: selectedOrder.orderNo,
           packedBy: 'Operator Station 01',
           actualWeightKg: actualWeight || estimatedWeight,
@@ -218,7 +284,7 @@ export default function PackingQAPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderNo: selectedOrder.orderNo,
-          carrierCode: selectedOrder.carrier,
+          carrierCode: rateShop?.cheapest?.carrier || selectedOrder.carrier,
           recipientName: selectedOrder.customerName,
           packageWeightKg: actualWeight || estimatedWeight,
           itemCount: selectedOrder.items.reduce((sum, it) => sum + it.qty, 0)
@@ -227,11 +293,16 @@ export default function PackingQAPage() {
       const carrierJson = await carrierRes.json();
 
       toast.success(packJson.message || 'แพ็คสินค้าเรียบร้อยแล้ว!');
-      setShipmentResult(carrierJson.data);
+      setShipmentResult({
+        ...(carrierJson.data || {}),
+        orderId: selectedOrder.id,
+        orderNo: selectedOrder.orderNo,
+      });
 
-      // Remove from pending list
+      // Remove from pending list & refresh packed orders
       setOrders(orders.filter(o => o.orderNo !== selectedOrder.orderNo));
       setSelectedOrder(null);
+      loadPackingOrders();
     } catch (e) {
       toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการบันทึก');
     } finally {
@@ -335,6 +406,40 @@ export default function PackingQAPage() {
                 })
               )}
             </div>
+
+            {/* Packed Orders Ready to Ship */}
+            {packedOrders.length > 0 && (
+              <div className="pt-4 border-t border-[#30353d] space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-[#57ec7f] flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-[#57ec7f]" />
+                    <span>แพ็คเสร็จรอส่งมอบขนส่ง ({packedOrders.length})</span>
+                  </span>
+                </div>
+                {packedOrders.map((ord) => (
+                  <div
+                    key={ord.id}
+                    className="p-3.5 rounded-xl border border-[#57ec7f]/30 bg-[#171c23] flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#dee2ec]">{ord.orderNo}</div>
+                      <div className="text-[11px] text-[#8a92a6] truncate">
+                        {ord.customerName} · {ord.carrier}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={shippingId === ord.id}
+                      onClick={() => handleMarkShipped(ord.id, ord.trackingNo)}
+                      className="px-3 py-1.5 rounded-lg bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] font-black text-[11px] flex items-center gap-1 shrink-0 disabled:opacity-50"
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      {shippingId === ord.id ? 'กำลังส่ง...' : 'ยืนยันส่งออก (SHIP)'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Column 2 & 3: Packing Station Verification Terminal */}
@@ -348,9 +453,20 @@ export default function PackingQAPage() {
                     <h2 className="text-lg font-bold text-[#facc15]">{selectedOrder.orderNo}</h2>
                     <p className="text-xs text-[#dee2ec] mt-0.5">{selectedOrder.customerName} ({selectedOrder.channel})</p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-[#8a92a6] block">ขนส่งที่เลือก</span>
-                    <span className="text-xs font-bold text-[#57ec7f]">{selectedOrder.carrier}</span>
+                  <div className="text-right space-y-1">
+                    <div>
+                      <span className="text-[10px] text-[#8a92a6] block">ขนส่งที่เลือก</span>
+                      <span className="text-xs font-bold text-[#57ec7f]">{selectedOrder.carrier}</span>
+                    </div>
+                    {rateShop?.cheapest && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#facc15]/15 border border-[#facc15]/40 text-[#facc15] text-[11px] font-bold">
+                        <Truck className="w-3.5 h-3.5" />
+                        <span>
+                          แนะนำถูกสุด: {rateShop.cheapest.carrier} ฿{rateShop.cheapest.price}
+                          {rateShop.cheapest.etaDays ? ` (${rateShop.cheapest.etaDays} วัน)` : ''}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -574,17 +690,30 @@ export default function PackingQAPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 text-xs">
+                <div className="flex flex-wrap justify-end gap-2 pt-2 text-xs">
                   <button
                     onClick={() => {
                       toast.success('สั่งพิมพ์ใบปะหน้าเข้าเครื่องพิมพ์เรียบร้อย');
-                      setShipmentResult(null);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#57ec7f] text-[#090f15] font-bold"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] font-bold"
                   >
                     <Printer className="w-4 h-4" />
                     <span>พิมพ์ใบปะหน้า (Print AWB)</span>
                   </button>
+                  {shipmentResult.orderId && (
+                    <button
+                      disabled={shippingId === shipmentResult.orderId}
+                      onClick={() => handleMarkShipped(shipmentResult.orderId, shipmentResult.trackingNumber)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] font-black shadow-lg disabled:opacity-50"
+                    >
+                      <Truck className="w-4 h-4" />
+                      <span>
+                        {shippingId === shipmentResult.orderId
+                          ? 'กำลังยืนยัน...'
+                          : 'ยืนยันส่งมอบขนส่ง (Mark SHIPPED)'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </motion.div>
             </div>

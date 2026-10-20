@@ -20,14 +20,20 @@ import {
   synthesizeErrorSpeech,
 } from '@/lib/voiceEngine';
 
+type ExtendedVoicePickStep = VoicePickStep & {
+  orderId?: string;
+  orderNo?: string;
+};
+
 export default function VoicePickingPage() {
-  const [tasks, setTasks] = useState<VoicePickStep[]>([]);
+  const [tasks, setTasks] = useState<ExtendedVoicePickStep[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [checkDigitInput, setCheckDigitInput] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [pickStatus, setPickStatus] = useState<'IDLE' | 'CORRECT' | 'WRONG'>('IDLE');
   const [isCompleted, setIsCompleted] = useState(false);
+  const [completedOrderIds, setCompletedOrderIds] = useState<string[]>([]);
 
   const fetchPickTasks = async () => {
     setLoadingTasks(true);
@@ -37,7 +43,7 @@ export default function VoicePickingPage() {
         const json = await res.json();
         const orders = json.orders || [];
         const pendingOrders = orders.filter((o: any) => o.status === 'NEW' || o.status === 'PICKING');
-        const steps: VoicePickStep[] = [];
+        const steps: ExtendedVoicePickStep[] = [];
         let stepCounter = 1;
 
         for (const order of pendingOrders) {
@@ -52,7 +58,9 @@ export default function VoicePickingPage() {
               productName: item.name || item.sku,
               targetQuantity: Number(item.qty || 1),
               unit: item.unit || 'ชิ้น',
-              checkDigit
+              checkDigit,
+              orderId: order.id,
+              orderNo: order.orderNo || order.id,
             });
           }
         }
@@ -94,6 +102,25 @@ export default function VoicePickingPage() {
     speakText(prompt);
   };
 
+  const markOrdersPicked = async (orderIds: string[]) => {
+    const uniqueIds = Array.from(new Set(orderIds.filter(Boolean)));
+    for (const orderId of uniqueIds) {
+      if (completedOrderIds.includes(orderId)) continue;
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: orderId, status: 'PICKED' }),
+        });
+        if (res.ok) {
+          setCompletedOrderIds(prev => (prev.includes(orderId) ? prev : [...prev, orderId]));
+        }
+      } catch (err) {
+        console.error(`Failed to mark order ${orderId} as PICKED:`, err);
+      }
+    }
+  };
+
   const handleConfirmPick = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!currentStep) return;
@@ -103,12 +130,26 @@ export default function VoicePickingPage() {
       speakText(synthesizeConfirmSuccess(currentStep));
       toast.success(`ยืนยันหยิบสำเร็จ! (${currentStep.targetQuantity} ${currentStep.unit})`);
 
-      setTimeout(() => {
+      // Check if this step completes all items for currentStep.orderId
+      if (currentStep.orderId) {
+        const hasMoreStepsForOrder = tasks
+          .slice(currentStepIndex + 1)
+          .some(t => t.orderId === currentStep.orderId);
+        if (!hasMoreStepsForOrder) {
+          void markOrdersPicked([currentStep.orderId]);
+        }
+      }
+
+      setTimeout(async () => {
         setCheckDigitInput('');
         setPickStatus('IDLE');
         if (currentStepIndex + 1 < tasks.length) {
           setCurrentStepIndex(prev => prev + 1);
         } else {
+          const allOrderIds = Array.from(
+            new Set(tasks.map(t => t.orderId).filter((id): id is string => Boolean(id)))
+          );
+          await markOrdersPicked(allOrderIds);
           setIsCompleted(true);
           speakText('ยินดีด้วยค่ะ คุณหยิบสินค้าในรอบนี้ครบทุกรายการเรียบร้อยแล้ว');
         }
@@ -126,6 +167,7 @@ export default function VoicePickingPage() {
     setIsCompleted(false);
     setCheckDigitInput('');
     setPickStatus('IDLE');
+    setCompletedOrderIds([]);
   };
 
   return (

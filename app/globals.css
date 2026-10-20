@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 :root {
+  /* Mobile Safe-Area Insets (iOS Dynamic Island / Notch / Home Indicator & Android Cutout / Status Bar) */
+  --app-safe-top: 0px;
+  --app-safe-bottom: 0px;
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--app-safe-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--app-safe-bottom, 0px));
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
   /* Canvas Background & Main Foreground */
   --background: #0f141b;
   --foreground: #dee2ec;
@@ -204,6 +212,66 @@ textarea {
   html.sidebar-collapsed #main-content {
     padding-left: 5rem !important;
   }
+}
+
+/* ============================================================
+   Mobile Safe-Area Utilities & Automatic Cutout / Notch Protection
+   ============================================================ */
+.pt-safe {
+  padding-top: var(--safe-top) !important;
+}
+
+.pb-safe {
+  padding-bottom: var(--safe-bottom) !important;
+}
+
+.top-safe {
+  top: var(--safe-top) !important;
+}
+
+/* Fixed top status-bar shield so OS clock / battery % / signal icons are never
+   overlapped by scrolling content and always have high-contrast dark backing */
+.mobile-status-bar-shield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-top);
+  background-color: #171c23;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* Every sticky top header in /mobile/* automatically clears the front camera
+   cutout, iPhone Dynamic Island / Notch, and OS status bar */
+#main-content.mobile-shell > div > header:first-of-type,
+#main-content.mobile-shell > div > div.sticky.top-0:first-of-type,
+#main-content.mobile-shell > div > div > div.sticky.top-0:first-of-type,
+header.sticky.top-0 {
+  position: sticky !important;
+  top: 0 !important;
+  padding-top: calc(0.75rem + var(--safe-top)) !important;
+}
+
+/* Keep the top 2px tactical gradient bar visible right below the status-bar shield */
+#main-content.mobile-shell > div > header:first-of-type > div.absolute.top-0.left-0.right-0,
+header.sticky.top-0 > div.absolute.top-0.left-0.right-0 {
+  top: var(--safe-top) !important;
+}
+
+/* Offset floating sticky header on /mobile/inventory (top-2) */
+#main-content.mobile-shell > div > div.relative.z-10 > div.sticky.top-2:first-of-type {
+  top: calc(0.5rem + var(--safe-top)) !important;
+}
+
+#main-content.mobile-shell > div > div.relative.z-10:has(> div.sticky.top-2:first-of-type) {
+  padding-top: calc(0.75rem + var(--safe-top)) !important;
+}
+
+/* Full-screen fixed modals in mobile respect top cutout & bottom gesture bar */
+#main-content.mobile-shell div.fixed.inset-0 {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
 }
 
 /* ============================================================

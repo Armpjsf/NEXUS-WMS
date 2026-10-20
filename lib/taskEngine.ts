@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { binMove } from '@/lib/stockLocations';
 import { nextDocNumber } from './docNumber';
 import { errorMessage } from '@/lib/errors';
 
@@ -62,6 +63,81 @@ export async function createWarehouseTask(
 
     if (error) return { success: false, error: error.message };
     return { success: true, data };
+  } catch (err) {
+    return { success: false, error: errorMessage(err) };
+  }
+}
+
+/**
+ * Update a warehouse task status and execute physical bin stock movement
+ * when completing PUTAWAY, REPLENISHMENT, or TRANSFER tasks.
+ */
+export async function updateTaskStatus(
+  orgId: string,
+  taskId: string,
+  status: WarehouseTask['status'],
+  completedQty?: number
+): Promise<{ success: boolean; data?: any; moved?: number; error?: string }> {
+  try {
+    const { data: existing, error: fetchErr } = await supabase
+      .from('warehouse_tasks')
+      .select('*')
+      .eq('org_id', orgId)
+      .eq('id', taskId)
+      .maybeSingle();
+
+    if (fetchErr || !existing) {
+      return { success: false, error: fetchErr?.message || 'Task not found' };
+    }
+
+    const qty = Number(
+      completedQty !== undefined && completedQty !== null
+        ? completedQty
+        : existing.requested_qty ?? existing.qty ?? 0
+    );
+
+    let movedQty = 0;
+    if (
+      status === 'COMPLETED' &&
+      existing.status !== 'COMPLETED' &&
+      (existing.task_type === 'PUTAWAY' ||
+        existing.task_type === 'REPLENISHMENT' ||
+        existing.task_type === 'TRANSFER') &&
+      existing.sku &&
+      existing.source_location &&
+      existing.target_location &&
+      qty > 0
+    ) {
+      const moveRes = await binMove(
+        orgId,
+        existing.sku,
+        existing.source_location,
+        existing.target_location,
+        Number(qty)
+      );
+      movedQty = moveRes.moved;
+    }
+
+    const updatePayload: Record<string, any> = {
+      status,
+    };
+    if (status === 'COMPLETED') {
+      updatePayload.completed_qty = qty;
+      updatePayload.completed_at = new Date().toISOString();
+    } else if (completedQty !== undefined) {
+      updatePayload.completed_qty = Number(completedQty);
+    }
+
+    const { data, error } = await supabase
+      .from('warehouse_tasks')
+      .update(updatePayload)
+      .eq('id', taskId)
+      .eq('org_id', orgId)
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data, moved: movedQty };
   } catch (err) {
     return { success: false, error: errorMessage(err) };
   }

@@ -25,6 +25,9 @@ import {
   LogOut,
   Mic,
   Zap,
+  RotateCcw,
+  ArrowLeftRight,
+  SlidersHorizontal,
 } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
@@ -253,6 +256,54 @@ export default function MobileHubPage() {
 
   const secondaryWorkflows = [
     {
+      id: 'lpn-management',
+      title: 'จัดการพาเลท LPN',
+      desc: 'สแกนเลขพาเลท LPN เพื่อตรวจสอบหรือย้ายพิกัดทั้งพาเลท',
+      icon: Boxes,
+      href: '/mobile/lpn',
+      badge: 'LPN',
+    },
+    {
+      id: 'kitting-assembly',
+      title: 'ประกอบชุดสินค้า Kitting',
+      desc: 'รวมชุดสินค้าตามสูตร BOM และตัดสต็อกวัตถุดิบอัตโนมัติ',
+      icon: Layers,
+      href: '/mobile/kitting',
+      badge: 'Kitting',
+    },
+    {
+      id: 'rma-returns',
+      title: 'รับคืนสินค้า RMA',
+      desc: 'รับคืนสินค้าจากลูกค้า คัดแยกสภาพและเติมกลับเข้าสต็อก',
+      icon: RotateCcw,
+      href: '/mobile/returns',
+      badge: 'RMA',
+    },
+    {
+      id: 'approve-adjustments',
+      title: 'อนุมัติปรับสต็อก',
+      desc: 'ตรวจสอบและอนุมัติคำขอปรับยอดสต็อก (Maker-Checker)',
+      icon: ClipboardCheck,
+      href: '/mobile/adjustments',
+      badge: 'Approval',
+    },
+    {
+      id: 'quick-adjust',
+      title: 'ปรับสต็อกด่วน (Quick Adjust)',
+      desc: 'สแกนส่งคำขอปรับเพิ่ม-ลดยอดสต็อกหน้างานเข้าคิวรออนุมัติ',
+      icon: SlidersHorizontal,
+      href: '/mobile/adjust',
+      badge: 'Adjust',
+    },
+    {
+      id: 'branch-transfers',
+      title: 'โอนย้ายสต็อกข้ามสาขา',
+      desc: 'ส่งออกและตรวจรับสินค้าโอนย้ายระหว่างคลัง/สาขา',
+      icon: ArrowLeftRight,
+      href: '/mobile/transfers',
+      badge: 'Transfer',
+    },
+    {
       id: 'outbound-issue',
       title: 'เบิกจ่ายตรง / ใช้ภายใน',
       desc: 'เบิกกล่อง เทป หรือตัวอย่างสินค้า',
@@ -281,7 +332,7 @@ export default function MobileHubPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
       {/* Top App Bar - NEXUS Tactical Command Header */}
-      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
+      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl overflow-hidden text-[#dee2ec]">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">

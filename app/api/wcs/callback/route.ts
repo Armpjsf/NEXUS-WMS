@@ -1,5 +1,8 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { updateWcsMissionFromWebhook } from '@/lib/wcsEngine';
+import { getAuthSecret } from '@/lib/authSecret';
+import { getSessionUser } from '@/lib/apiAuth';
 import { errorMessage } from '@/lib/errors';
 
 /**
@@ -11,20 +14,35 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     // External robot fleet managers have no session — authenticate with a shared
-    // secret instead. When WCS_WEBHOOK_SECRET is set it is enforced; if unset
-    // (local/dev), the endpoint stays open but warns.
+    // secret instead. When WCS_WEBHOOK_SECRET is set it is enforced; in production,
+    // fail closed if unset unless the caller has a valid NextAuth session token.
     const secret = process.env.WCS_WEBHOOK_SECRET;
     if (secret) {
       const provided = req.headers.get('x-wcs-secret') || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
       if (provided !== secret) {
-        return NextResponse.json({ success: false, error: 'Unauthorized WCS callback' }, { status: 401 });
+        const authSecret = getAuthSecret();
+        const token = authSecret ? await getToken({ req, secret: authSecret }) : null;
+        const user = token || (await getSessionUser());
+        if (!user) {
+          return NextResponse.json({ success: false, error: 'Unauthorized WCS callback' }, { status: 401 });
+        }
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      const authSecret = getAuthSecret();
+      const token = authSecret ? await getToken({ req, secret: authSecret }) : null;
+      const user = token || (await getSessionUser());
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: 'WCS webhook secret is not configured' },
+          { status: 503 },
+        );
       }
     } else {
       console.warn('[wcs/callback] WCS_WEBHOOK_SECRET not set — endpoint is unauthenticated');
     }
 
     const body = await req.json();
-    const { missionCode, robotCode, status, batteryLevel, currentLocation, errorMessage } = body;
+    const { missionCode, robotCode, status, batteryLevel, currentLocation, errorMessage: missionErr } = body;
 
     if (!missionCode || !status) {
       return NextResponse.json(
@@ -46,7 +64,7 @@ export async function POST(req: NextRequest) {
       status,
       batteryLevel: typeof batteryLevel === 'number' ? batteryLevel : undefined,
       currentLocation,
-      errorMessage
+      errorMessage: missionErr,
     });
 
     if (!result.success) {

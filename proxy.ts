@@ -39,7 +39,7 @@ const pageAuth = withAuth(
         }
 
         // 3. Management-only areas (all of /admin/** except /admin/customers,
-        //    plus /ai-reorder) are restricted to Super Admin / Admin / Manager.
+        //    plus /ai-reorder) are restricted to Super Admin / Admin / Manager / Executive.
         //    This closes the gap where non-management staff could open
         //    /admin/organization, /admin/branches, /admin/rules, etc. directly.
         if (isManagementOnlyPath(path) &&
@@ -48,10 +48,12 @@ const pageAuth = withAuth(
         }
 
         // 4. Even within management, only Super Admin / Admin manage user
-        //    credentials and billing (Manager is excluded).
-        if (role === 'Manager') {
+        //    credentials and billing (Manager & Executive are excluded).
+        //    Executive is read-only management and cannot access /admin/users or /admin/organization.
+        if (role === 'Manager' || role === 'Executive') {
             if (path.startsWith('/admin/users') ||
-                path.startsWith('/admin/billing')) {
+                path.startsWith('/admin/billing') ||
+                (role === 'Executive' && path.startsWith('/admin/organization'))) {
                 return false;
             }
         }
@@ -104,9 +106,18 @@ export default async function proxy(req: NextRequest, event: any) {
     }
     // Public: NextAuth, cron (own secret), self-service onboarding (signup), and ERP
     // endpoints (each /api/erp route authenticates via lib/erpAuth: session or x-api-key).
-    // /api/wcs/callback is an external robotics webhook — it authenticates with
-    // its own WCS_WEBHOOK_SECRET (no session), so it must bypass the session gate.
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/cron') || pathname.startsWith('/api/onboarding') || pathname.startsWith('/api/public') || pathname.startsWith('/api/erp') || pathname.startsWith('/api/wcs/callback') || pathname === '/api/health') {
+    // /api/wcs/callback and /api/webhooks/tms are external webhooks — they authenticate
+    // with their own secrets (no session), so they must bypass the session gate.
+    if (
+      pathname.startsWith('/api/auth') ||
+      pathname.startsWith('/api/cron') ||
+      pathname.startsWith('/api/onboarding') ||
+      pathname.startsWith('/api/public') ||
+      pathname.startsWith('/api/erp') ||
+      pathname.startsWith('/api/wcs/callback') ||
+      pathname.startsWith('/api/webhooks/tms') ||
+      pathname === '/api/health'
+    ) {
       return NextResponse.next();
     }
     // Let CORS preflights through; the actual request still gets checked.
@@ -117,15 +128,22 @@ export default async function proxy(req: NextRequest, event: any) {
     if (!token || token.revoked) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const role = token.role as string;
+    if (
+      (role === 'Viewer' || role === 'Executive') &&
+      !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase())
+    ) {
+      return NextResponse.json({ error: 'Forbidden: Read-only role' }, { status: 403 });
+    }
     // B3: management-only API surface (admin data-quality/rules/users) — a valid
     // session is not enough; the role must be management. Closes the gap where
     // any signed-in staff could call admin APIs directly.
-    if (pathname.startsWith('/api/admin/') && !isManagementRole(token.role as string)) {
+    if (pathname.startsWith('/api/admin/') && !isManagementRole(role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     // Writes to tenant settings / master data (org, branches, carriers, fleet,
     // suppliers) are management-only; reads stay open for floor screens.
-    if (isManagementOnlyApiWrite(pathname, req.method) && !isManagementRole(token.role as string)) {
+    if (isManagementOnlyApiWrite(pathname, req.method) && !isManagementRole(role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     return NextResponse.next();
@@ -153,8 +171,26 @@ export const config = {
   matcher: [
     "/",
     "/dashboard/:path*",
+    "/home/:path*",
+    "/tasks/:path*",
     "/inventory/:path*",
     "/ops/:path*",
+    "/receiving/:path*",
+    "/putaway/:path*",
+    "/returns/:path*",
+    "/lpn/:path*",
+    "/picking/:path*",
+    "/wave-picking/:path*",
+    "/voice-picking/:path*",
+    "/kitting/:path*",
+    "/dispatch/:path*",
+    "/jobs/:path*",
+    "/outbound/:path*",
+    "/dock/:path*",
+    "/cycle-count/:path*",
+    "/adjustments/:path*",
+    "/adjust/:path*",
+    "/transfers/:path*",
     "/stock-card/:path*",
     "/po-log/:path*",
     "/orders/:path*",

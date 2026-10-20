@@ -18,6 +18,7 @@ export interface ReceiptLine {
   expectedQty: number;
   receivedQty?: number;
   putawayBin?: string;
+  bin?: string;
   uom?: string;      // A4/A-UI: unit the receivedQty is counted in (blank = base)
   /** Cost per base unit. Blank = taken from the linked PO line, if any. */
   unitCost?: number;
@@ -119,18 +120,48 @@ export async function createReceipt(input: {
 export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<Receipt | null> {
   const receipt = await getReceipt(id);
   if (!receipt) return null;
+  if (receipt.status === 'DONE' || receipt.status === 'CANCELLED') return receipt;
+
   const admin = getServiceSupabase();
   const orgId = await getCurrentOrgId();
+
+  // Atomic conditional update to claim this receipt transition to DONE first,
+  // preventing concurrent double-clicks / retries from double-counting stock.
+  const merged = toRow(lines.map((l) => ({ ...l, done: (Number(l.receivedQty) || 0) > 0 })));
+  const now = new Date().toISOString();
+  const { data: claimed, error: claimErr } = await admin
+    .from('receipts')
+    .update({
+      items_json: merged,
+      status: 'DONE',
+      received_at: now,
+      completed_at: now,
+    })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .neq('status', 'DONE')
+    .neq('status', 'CANCELLED')
+    .select()
+    .maybeSingle();
+
+  if (claimErr) {
+    console.error('[receipts] commit error:', claimErr);
+    return null;
+  }
+  if (!claimed) {
+    return (await getReceipt(id)) || receipt;
+  }
+
   // Cost comes from the line, else from the linked PO (PO price = purchase cost).
   const poCost = await poCostMap(admin, orgId, receipt.poNumber);
 
   for (const line of lines) {
     // A-UI #2: receivedQty may be entered in cartons/pallets — convert to base.
-    const recv = await toBaseQty(orgId, line.sku, Number(line.receivedQty) || 0, line.uom);
-    if (recv <= 0) continue;
+    const baseQty = await toBaseQty(orgId, line.sku, Number(line.receivedQty) || 0, line.uom);
+    if (baseQty <= 0) continue;
 
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
-    const binCode = line.putawayBin || prod?.location || 'RECEIVING-DOCK';
+    const binCode = line.putawayBin || line.bin || prod?.location || 'RECEIVING-DOCK';
     if (!prod) {
       // create the product first with 0 stock; binAdd reconciles the total from bins
       await admin.from('products').insert({
@@ -144,9 +175,9 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
     // increments the lot record — creating it, with its expiry, if new.
     const lotNo = line.lotNo?.trim() || '';
     const expDate = normalizeDate(line.expDate);
-    await binAdd(orgId, line.sku, binCode, recv, lotNo ? { lotNo, docRef: receipt.receiptNo, party: receipt.supplier || undefined } : undefined);
+    await binAdd(orgId, line.sku, binCode, baseQty, lotNo ? { lotNo, docRef: receipt.receiptNo, party: receipt.supplier || undefined } : undefined);
     if (lotNo) {
-      await recordLotReceipt(admin, orgId, { sku: line.sku, lotNumber: lotNo, qty: recv, expDate, note: `รับเข้า ${receipt.receiptNo}` });
+      await recordLotReceipt(admin, orgId, { sku: line.sku, lotNumber: lotNo, qty: baseQty, expDate, note: `รับเข้า ${receipt.receiptNo}` });
     }
 
     // Cost per BASE unit. A cost typed on the line is per the line's uom
@@ -156,32 +187,45 @@ export async function commitReceipt(id: string, lines: ReceiptLine[]): Promise<R
       const perUom = await toBaseQty(orgId, line.sku, 1, line.uom);
       unitCost = Number(line.unitCost) / (perUom > 0 ? perUom : 1);
     }
-    await applyReceiptCost(admin, orgId, line.sku, stockBefore, recv, unitCost);
+    await applyReceiptCost(admin, orgId, line.sku, stockBefore, baseQty, unitCost);
 
     await insertTxWithCost(admin, {
       org_id: orgId,
       type: 'IN', sku: line.sku, product_name: line.name || prod?.name || line.sku,
-      qty: recv, unit_price: Number(prod?.price || 0), doc_ref: receipt.receiptNo,
-      location: line.putawayBin || prod?.location || '', user_name: receipt.createdBy || 'Warehouse',
+      qty: baseQty, unit_price: Number(prod?.price || 0), doc_ref: receipt.receiptNo,
+      location: line.putawayBin || line.bin || prod?.location || '', user_name: receipt.createdBy || 'Warehouse',
       ...(lotNo ? { batch_no: lotNo } : {}),
       ...(expDate ? { expiry_date: expDate } : {}),
       ...(unitCost > 0 ? { unit_cost: unitCost } : {}),
     });
-  }
 
-  const merged = toRow(lines.map((l) => ({ ...l, done: (Number(l.receivedQty) || 0) > 0 })));
-  const now = new Date().toISOString();
-  const { data, error } = await admin.from('receipts').update({
-    items_json: merged, status: 'DONE', received_at: now, completed_at: now,
-  }).eq('id', id).eq('org_id', orgId).select().single();
-  if (error) { console.error('[receipts] commit error:', error); return null; }
+    // Best-effort insert a PUTAWAY task in warehouse_tasks for lines received into staging/dock bins
+    const sourceBin = (line.bin || line.putawayBin || 'RCV-DOCK').trim();
+    if (['RCV-DOCK', 'STAGE-IN', 'RECEIVING', 'RECEIVING-DOCK'].includes(sourceBin.toUpperCase())) {
+      try {
+        await admin.from('warehouse_tasks').insert({
+          org_id: orgId,
+          task_type: 'PUTAWAY',
+          status: 'PENDING',
+          priority: 'NORMAL',
+          source_location: line.bin || line.putawayBin || 'RCV-DOCK',
+          target_location: prod?.location || 'A-01-01',
+          sku: line.sku,
+          product_name: line.name || prod?.name || line.sku,
+          qty: baseQty,
+        });
+      } catch {
+        /* warehouse_tasks optional / best-effort */
+      }
+    }
+  }
 
   // A receipt made from a PO closes that PO.
   if (receipt.poNumber) {
     await admin.from('purchase_orders').update({ status: 'RECEIVED', updated_at: now })
       .eq('org_id', orgId).eq('po_number', receipt.poNumber).in('status', ['DRAFT', 'ORDERED']);
   }
-  return mapReceipt(data);
+  return mapReceipt(claimed);
 }
 
 export async function cancelReceipt(id: string): Promise<boolean> {

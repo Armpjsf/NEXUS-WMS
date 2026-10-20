@@ -10,6 +10,7 @@ import {
   Split,
   Hammer,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
@@ -30,6 +31,10 @@ export default function KittingPage() {
   const [newKitName, setNewKitName] = useState('');
   const [newLaborCost, setNewLaborCost] = useState(0);
   const [componentsList, setComponentsList] = useState<BomComponent[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [compSkuInput, setCompSkuInput] = useState('');
+  const [compNameInput, setCompNameInput] = useState('');
+  const [compQtyInput, setCompQtyInput] = useState(1);
 
   const fetchBoms = async () => {
     setLoading(true);
@@ -51,7 +56,53 @@ export default function KittingPage() {
 
   useEffect(() => {
     fetchBoms();
+    fetch('/api/products')
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d)) setProducts(d);
+      })
+      .catch(() => {});
   }, []);
+
+  const handleAddComponent = () => {
+    const skuTrimmed = compSkuInput.trim();
+    if (!skuTrimmed) {
+      toast.error('กรุณาเลือกหรือระบุรหัสชิ้นส่วน (Component SKU)');
+      return;
+    }
+    const qty = Math.max(1, Number(compQtyInput) || 1);
+    const matchedProd = products.find(
+      p => (p.id || p.sku || '').toLowerCase() === skuTrimmed.toLowerCase() || (p.name || '').toLowerCase() === skuTrimmed.toLowerCase()
+    );
+    const finalSku = matchedProd?.id || matchedProd?.sku || skuTrimmed;
+    const finalName = compNameInput.trim() || matchedProd?.name || finalSku;
+    const finalUnit = matchedProd?.unit || 'ชิ้น';
+
+    setComponentsList(prev => {
+      const existingIdx = prev.findIndex(c => c.componentSku === finalSku);
+      if (existingIdx >= 0) {
+        return prev.map((c, idx) =>
+          idx === existingIdx ? { ...c, quantity: c.quantity + qty } : c
+        );
+      }
+      return [
+        ...prev,
+        {
+          componentSku: finalSku,
+          componentName: finalName,
+          quantity: qty,
+          unit: finalUnit,
+        },
+      ];
+    });
+    setCompSkuInput('');
+    setCompNameInput('');
+    setCompQtyInput(1);
+  };
+
+  const handleRemoveComponent = (index: number) => {
+    setComponentsList(prev => prev.filter((_, idx) => idx !== index));
+  };
 
   const handleBuildOrDisassemble = async (action: 'ASSEMBLE' | 'DISASSEMBLE') => {
     if (!selectedBom) return;
@@ -81,6 +132,10 @@ export default function KittingPage() {
 
   const handleCreateBom = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (componentsList.length === 0) {
+      toast.error('กรุณาเพิ่มชิ้นส่วนประกอบอย่างน้อย 1 รายการ');
+      return;
+    }
     try {
       const res = await fetch('/api/kitting', {
         method: 'POST',
@@ -96,6 +151,10 @@ export default function KittingPage() {
       if (data.success) {
         toast.success('สร้างสูตร BOM สำเร็จ');
         setShowCreateModal(false);
+        setNewKitSku('');
+        setNewKitName('');
+        setNewLaborCost(0);
+        setComponentsList([]);
         fetchBoms();
       } else {
         toast.error(data.error);
@@ -341,14 +400,99 @@ export default function KittingPage() {
                   />
                 </div>
 
-                <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d] space-y-2">
-                  <span className="font-bold text-[#8a92a6] block text-[11px]">ชิ้นส่วนในชุด (ตัวอย่างอัตโนมัติ):</span>
-                  {componentsList.map((c, i) => (
-                    <div key={i} className="flex justify-between items-center text-[#dee2ec]">
-                      <span>{c.componentSku} - {c.componentName}</span>
-                      <span className="font-bold text-[#57ec7f]">{c.quantity} {c.unit}</span>
+                <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d] space-y-3">
+                  <span className="font-bold text-[#8a92a6] block text-[11px]">
+                    เพิ่มชิ้นส่วนประกอบ (Add BOM Components):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <div className="sm:col-span-5">
+                      <input
+                        type="text"
+                        list="bom-product-skus"
+                        placeholder="เลือกหรือพิมพ์รหัส SKU..."
+                        value={compSkuInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCompSkuInput(val);
+                          const matched = products.find(
+                            p => (p.id || p.sku || '').toLowerCase() === val.toLowerCase()
+                          );
+                          if (matched && matched.name) {
+                            setCompNameInput(matched.name);
+                          }
+                        }}
+                        className="w-full px-2.5 py-2 border border-[#30353d] rounded-lg bg-[#171c23] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                      />
+                      <datalist id="bom-product-skus">
+                        {products.map((p: any, idx: number) => (
+                          <option key={`${p.id || p.sku || idx}`} value={p.id || p.sku || p.name}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </datalist>
                     </div>
-                  ))}
+                    <div className="sm:col-span-4">
+                      <input
+                        type="text"
+                        placeholder="ชื่อชิ้นส่วน..."
+                        value={compNameInput}
+                        onChange={(e) => setCompNameInput(e.target.value)}
+                        className="w-full px-2.5 py-2 border border-[#30353d] rounded-lg bg-[#171c23] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                      />
+                    </div>
+                    <div className="sm:col-span-3 flex gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        value={compQtyInput}
+                        onChange={(e) => setCompQtyInput(Math.max(1, Number(e.target.value) || 1))}
+                        className="w-16 px-2 py-2 border border-[#30353d] rounded-lg bg-[#171c23] text-[#dee2ec] text-center font-bold focus:border-[#4cd7f6] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddComponent}
+                        className="flex-1 px-2.5 py-2 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-lg font-black flex items-center justify-center gap-1 whitespace-nowrap"
+                        title="เพิ่มชิ้นส่วน (Add Component)"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> เพิ่ม
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-[#262c36]">
+                    <span className="font-bold text-[#8a92a6] block text-[11px]">
+                      ชิ้นส่วนในชุด ({componentsList.length} รายการ):
+                    </span>
+                    {componentsList.length === 0 ? (
+                      <div className="text-[11px] text-[#8a92a6] py-2 text-center">
+                        ยังไม่มีชิ้นส่วนในชุด กรุณาเลือก SKU และกด &quot;+ เพิ่ม&quot;
+                      </div>
+                    ) : (
+                      componentsList.map((c, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between items-center bg-[#171c23] px-3 py-1.5 rounded-lg border border-[#30353d] text-[#dee2ec]"
+                        >
+                          <span className="truncate pr-2">
+                            <strong className="text-[#4cd7f6]">{c.componentSku}</strong> - {c.componentName}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-bold text-[#57ec7f]">
+                              {c.quantity} {c.unit}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveComponent(i)}
+                              className="p-1 text-[#8a92a6] hover:text-rose-400 transition"
+                              title="ลบชิ้นส่วน"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-[#30353d]">

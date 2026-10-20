@@ -22,7 +22,20 @@ export async function GET(request: Request) {
     }
 
     const orgId = await getCurrentOrgId();
-    const queryTerms = Array.from(new Set([sku, name].filter(Boolean).map(x => x!.trim()))).filter(Boolean);
+
+    // Deduplicate terms case-insensitively so when sku.toLowerCase() === name.toLowerCase()
+    // we only run 2 queries instead of 4 identical ones.
+    const uniqueByLower = new Map<string, string>();
+    for (const raw of [sku, name]) {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) continue;
+      const lower = trimmed.toLowerCase();
+      if (!uniqueByLower.has(lower)) {
+        uniqueByLower.set(lower, trimmed);
+      }
+    }
+    const queryTerms = Array.from(uniqueByLower.values());
+    const normalizedTerms = Array.from(uniqueByLower.keys());
 
     const queryPromises = [];
     for (const term of queryTerms) {
@@ -43,8 +56,6 @@ export async function GET(request: Request) {
       if (r.id) seen.add(r.id);
       return true;
     });
-
-    const normalizedTerms = queryTerms.map(t => t.toLowerCase());
 
     // Match by SKU or product name (legacy sheets keyed on name).
     const productMovs = (rows || [])

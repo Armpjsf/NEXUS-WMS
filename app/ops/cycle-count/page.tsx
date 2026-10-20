@@ -29,6 +29,7 @@ import { errorMessage } from '@/lib/errors';
 
 interface CountItem {
   sku: string;
+  productName: string;
   location: string;
   systemQty: number;
   actualQty: string;
@@ -46,6 +47,7 @@ export default function CycleCountPage() {
   const [countDate, setCountDate] = useState(new Date().toISOString().split('T')[0]);
   const [countNote, setCountNote] = useState('');
   const [showCountCam, setShowCountCam] = useState(false);
+  const [lastSavedVariances, setLastSavedVariances] = useState<number>(0);
 
   // Enterprise Feature: Blind Cycle Count Mode
   const [isBlindCount, setIsBlindCount] = useState(true);
@@ -65,7 +67,8 @@ export default function CycleCountPage() {
 
         // Initialize count items
         const items: CountItem[] = data.map((p: any) => ({
-          sku: p.name,
+          sku: p.id || p.name,
+          productName: p.name || p.id,
           location: p.location || '-',
           systemQty: p.stock || 0,
           actualQty: '',
@@ -104,7 +107,10 @@ export default function CycleCountPage() {
   const handleItemCountScan = (scanned: string) => {
     const q = scanned.trim().toLowerCase();
     const found = countItems.find(
-      it => it.sku.toLowerCase() === q || it.location.toLowerCase() === q
+      it =>
+        it.sku.toLowerCase() === q ||
+        it.productName.toLowerCase() === q ||
+        it.location.toLowerCase() === q
     );
 
     if (found) {
@@ -112,7 +118,7 @@ export default function CycleCountPage() {
       const next = current + 1;
       updateActualQty(found.sku, next.toString());
       triggerHaptic('success');
-      toast.success(`นับเพิ่ม ${found.sku}: ${next} ชิ้น`);
+      toast.success(`นับเพิ่ม ${found.productName || found.sku}: ${next} ชิ้น`);
     } else {
       triggerHaptic('error');
       toast.error(`ไม่พบสินค้าสำหรับโค้ด: ${scanned}`);
@@ -132,14 +138,17 @@ export default function CycleCountPage() {
 
     const query = barcodeInput.trim().toLowerCase();
     const target = countItems.find(
-      i => i.sku.toLowerCase() === query || i.location.toLowerCase() === query
+      i =>
+        i.sku.toLowerCase() === query ||
+        i.productName.toLowerCase() === query ||
+        i.location.toLowerCase() === query
     );
 
     if (target) {
       const currentVal = parseInt(target.actualQty) || 0;
       updateActualQty(target.sku, (currentVal + 1).toString());
       triggerHaptic('success');
-      toast.success(`นับเพิ่ม: ${target.sku} (${currentVal + 1})`);
+      toast.success(`นับเพิ่ม: ${target.productName || target.sku} (${currentVal + 1})`);
       setBarcodeInput('');
     } else {
       triggerHaptic('error');
@@ -170,6 +179,10 @@ export default function CycleCountPage() {
           note: countNote,
           items: countedItems.map(i => ({
             sku: i.sku,
+            product_name: i.productName || i.sku,
+            location: i.location,
+            system_qty: i.systemQty,
+            actual_qty: parseInt(i.actualQty),
             systemQty: i.systemQty,
             actualQty: parseInt(i.actualQty),
             variance: i.variance,
@@ -178,9 +191,18 @@ export default function CycleCountPage() {
       });
 
       if (!res.ok) throw new Error('Failed to save');
+      const result = await res.json();
+      const adjCount = result.adjustmentsCreated ?? summary.variances;
+      setLastSavedVariances(adjCount);
 
       triggerHaptic('success');
-      toast.success(`บันทึก Cycle Count ${summary.counted} รายการเรียบร้อย!`);
+      if (adjCount > 0) {
+        toast.success(
+          `บันทึก Cycle Count ${summary.counted} รายการเรียบร้อย! ส่งรายการผลต่าง ${adjCount} รายการเข้าคิวอนุมัติ Maker-Checker (/ops/adjustments) อัตโนมัติ`
+        );
+      } else {
+        toast.success(`บันทึก Cycle Count ${summary.counted} รายการเรียบร้อย!`);
+      }
     } catch (e) {
       toast.error('Error: ' + errorMessage(e));
     } finally {
@@ -367,6 +389,23 @@ export default function CycleCountPage() {
             </button>
           </div>
         </div>
+
+        {lastSavedVariances > 0 && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200">
+            <div className="flex items-center gap-2 font-bold">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                ระบบได้ส่งรายการที่มีผลต่าง ({lastSavedVariances} รายการ) ไปยังคิวขออนุมัติปรับยอดสต็อก (Maker-Checker Adjustments) เรียบร้อยแล้ว
+              </span>
+            </div>
+            <Link
+              href="/ops/adjustments"
+              className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1b1600] font-black transition shrink-0 text-center"
+            >
+              ไปที่ Maker-Checker Adjustments →
+            </Link>
+          </div>
+        )}
 
         {/* Count Table Container */}
         <motion.div

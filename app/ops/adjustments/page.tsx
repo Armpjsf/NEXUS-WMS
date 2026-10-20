@@ -20,11 +20,14 @@ import { errorMessage } from '@/lib/errors';
 interface AdjustmentItem {
   id: string;
   requestId: string;
+  requestNo?: string;
   sku: string;
+  productName?: string;
   itemName?: string;
   location: string;
   systemQty: number;
   countedQty: number;
+  variance?: number;
   diffQty: number;
   unit?: string;
   reason: string;
@@ -67,8 +70,42 @@ export default function StockAdjustmentsPage() {
     try {
       const res = await fetch('/api/adjustments');
       const data = await res.json();
-      if (data.adjustments) {
-        setAdjustments(data.adjustments);
+      const rows = data.data || data.adjustments || [];
+      if (Array.isArray(rows)) {
+        const normalized: AdjustmentItem[] = rows.map((r: any) => {
+          const requestNo = r.requestNo || r.request_no || r.requestId || r.id || '';
+          const systemQty = Number(r.systemQty ?? r.system_qty ?? 0);
+          const countedQty = Number(r.countedQty ?? r.counted_qty ?? 0);
+          const variance = Number(
+            r.variance ?? r.variance_qty ?? r.diffQty ?? r.diff_qty ?? countedQty - systemQty
+          );
+          const productName = r.productName || r.product_name || r.itemName || r.sku || '';
+          return {
+            id: requestNo || r.id,
+            requestId: requestNo,
+            requestNo,
+            sku: r.sku || '',
+            productName,
+            itemName: productName,
+            location: r.location || r.locationCode || r.location_code || 'Unassigned',
+            systemQty,
+            countedQty,
+            variance,
+            diffQty: variance,
+            unit: r.unit || 'ชิ้น',
+            reason: r.reason || r.reasonCode || r.reason_code || 'CYCLE_COUNT_DISCREPANCY',
+            notes: r.notes || '',
+            status: r.status === 'PENDING_APPROVAL' ? 'PENDING' : r.status || 'PENDING',
+            requestedBy: r.requestedBy || r.requested_by || 'Operator',
+            requestedByName: r.requestedByName || r.requested_by || r.requestedBy,
+            approvedBy: r.approvedBy || r.approved_by,
+            approvedByName: r.approvedByName || r.approved_by || r.approvedBy,
+            rejectionReason: r.rejectionReason || r.rejection_reason,
+            createdAt: r.createdAt || r.created_at || new Date().toISOString(),
+            updatedAt: r.updatedAt || r.updated_at,
+          };
+        });
+        setAdjustments(normalized);
       }
     } catch (e) {
       console.error('Failed to load adjustments:', e);
@@ -83,7 +120,8 @@ export default function StockAdjustmentsPage() {
 
   const handleCreateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.sku || !formData.location) {
+    const newReq = formData;
+    if (!newReq.sku || !newReq.location) {
       toast.error('กรุณากรอก SKU และ พิกัดตำแหน่ง');
       return;
     }
@@ -93,17 +131,23 @@ export default function StockAdjustmentsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sku: formData.sku,
-          location: formData.location,
-          systemQty: Number(formData.systemQty),
-          countedQty: Number(formData.countedQty),
-          reason: formData.reason,
-          notes: formData.notes
+          sku: newReq.sku,
+          productName: newReq.itemName || newReq.sku,
+          locationCode: newReq.location,
+          location: newReq.location,
+          systemQty: Number(newReq.systemQty),
+          countedQty: Number(newReq.countedQty),
+          reasonCode: newReq.reason,
+          reason: newReq.reason,
+          notes: newReq.notes,
+          requestedBy: session?.user?.name || session?.user?.email || 'Operator',
         })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`ยื่นคำขอปรับยอดเรียบร้อย เลขที่: ${data.adjustment.requestId}`);
+        const created = data.data || data.adjustment || data.request || {};
+        const reqNo = created.requestNo || created.request_no || created.requestId || created.id || '';
+        toast.success(`ยื่นคำขอปรับยอดเรียบร้อย${reqNo ? ` เลขที่: ${reqNo}` : ''}`);
         setIsRequestModalOpen(false);
         setFormData({
           sku: '',
@@ -126,21 +170,24 @@ export default function StockAdjustmentsPage() {
     }
   };
 
-  const handleApproveReject = async (id: string, decision: 'APPROVED' | 'REJECTED') => {
+  const handleApproveReject = async (id: string, decision: 'APPROVED' | 'REJECTED' | 'APPROVE' | 'REJECT') => {
     setIsSubmitting(true);
     try {
+      const action = decision === 'APPROVED' || decision === 'APPROVE' ? 'APPROVE' : 'REJECT';
       const res = await fetch('/api/adjustments/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           requestId: id,
+          action,
           status: decision,
-          rejectionReason: decision === 'REJECTED' ? rejectReasonInput : undefined
+          approvedBy: session?.user?.name || session?.user?.email || 'Manager Admin',
+          rejectionReason: action === 'REJECT' ? rejectReasonInput : undefined
         })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(decision === 'APPROVED' ? 'อนุมัติการปรับปรุงสต็อกสำเร็จ ยอดสต็อกถูกอัปเดตแล้ว' : 'ปฏิเสธคำขอปรับปรุงสต็อกเรียบร้อย');
+        toast.success(action === 'APPROVE' ? 'อนุมัติการปรับปรุงสต็อกสำเร็จ ยอดสต็อกถูกอัปเดตแล้ว' : 'ปฏิเสธคำขอปรับปรุงสต็อกเรียบร้อย');
         setSelectedForReview(null);
         setRejectReasonInput('');
         fetchAdjustments();

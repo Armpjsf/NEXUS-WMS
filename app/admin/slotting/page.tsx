@@ -74,6 +74,22 @@ export default function SlottingPage() {
     fetchData();
   }, []);
 
+  const fastMoversMisplaced =
+    data?.fastMoversMisplaced ??
+    (data?.recommendations || []).filter(
+      (r: any) =>
+        (r.abcClass === 'A' || r.class === 'A') &&
+        (r.recommendedAction === 'MOVE_TO_GOLDEN_ZONE' || r.action === 'MOVE_FORWARD')
+    ).length;
+
+  const deadstockDeepZoneNeeded =
+    data?.deadstockDeepZoneNeeded ??
+    (data?.recommendations || []).filter(
+      (r: any) =>
+        (r.abcClass === 'C' || r.abcClass === 'D' || r.class === 'C' || r.class === 'D') &&
+        (r.recommendedAction === 'MOVE_TO_DEEP_STORAGE' || r.action === 'MOVE_BACK')
+    ).length;
+
   const handleAction = async (item: SlottingInsight, actionType: 'DISPATCH_TASK' | 'DIRECT_APPLY' | 'DISMISS') => {
     const key = item.productId || item.sku;
 
@@ -215,7 +231,7 @@ export default function SlottingPage() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-amber-400">
-                {data?.fastMoversMisplaced || 0}
+                {fastMoversMisplaced}
               </span>
               <span className="text-sm font-semibold text-[#8a92a6]">SKU ที่เบิกบ่อยแต่อยู่ลึก</span>
             </div>
@@ -233,7 +249,7 @@ export default function SlottingPage() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-rose-400">
-                {data?.deadstockDeepZoneNeeded || 0}
+                {deadstockDeepZoneNeeded}
               </span>
               <span className="text-sm font-semibold text-[#8a92a6]">SKU ไม่ขยับแต่จองที่ทอง</span>
             </div>

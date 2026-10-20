@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { binConsume } from '@/lib/stockLocations';
+import { getReservedMap } from '@/lib/reservations';
 import { toBaseQty } from '@/lib/uom';
 import { captureError } from '@/lib/observability';
 import { errorMessage } from '@/lib/errors';
@@ -24,9 +25,11 @@ export async function POST(request: Request) {
     }
 
     const orgId = await getCurrentOrgId();
+    const overrideReservation = Boolean(body.overrideReservation || body.force);
+    const reservedMap = overrideReservation ? {} : await getReservedMap(orgId);
 
-    // Guard: block dispatch that exceeds available stock (validate ALL lines
-    // before mutating anything, so a partial commit can't happen).
+    // Guard: block dispatch that exceeds available stock (ATP = onHand - reserved).
+    // Validate ALL lines before mutating anything, so a partial commit can't happen.
     const stockCache: Record<string, any> = {};
     const shortages: string[] = [];
     const baseQtyBySku: Record<string, number> = {};
@@ -38,11 +41,17 @@ export async function POST(request: Request) {
       const { data: prodData } = await supabase
         .from('products').select('*').eq('org_id', orgId).eq('sku', sku).maybeSingle();
       stockCache[sku] = prodData;
-      const avail = Number(prodData?.stock || 0);
+      const onHand = Number(prodData?.stock || 0);
+      const reserved = item.overrideReservation ? 0 : Number(reservedMap[sku] || 0);
+      const avail = Math.max(0, onHand - reserved);
       if (!prodData) {
         shortages.push(`${sku}: ไม่พบสินค้าในคลัง`);
       } else if (baseQtyBySku[sku] > avail) {
-        shortages.push(`${prodData.name || sku}: ต้องการ ${baseQtyBySku[sku]} แต่คงเหลือ ${avail}`);
+        shortages.push(
+          reserved > 0
+            ? `${prodData.name || sku}: ต้องการ ${baseQtyBySku[sku]} แต่พร้อมจ่าย (ATP) ${avail} (คงเหลือ ${onHand}, จองแล้ว ${reserved})`
+            : `${prodData.name || sku}: ต้องการ ${baseQtyBySku[sku]} แต่คงเหลือ ${avail}`,
+        );
       }
     }
     if (shortages.length > 0) {

@@ -46,6 +46,7 @@ export default function ReceivingPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [initialPoNumber, setInitialPoNumber] = useState('');
   const [receiving, setReceiving] = useState<Receipt | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showMainScanner, setShowMainScanner] = useState(false);
@@ -59,6 +60,31 @@ export default function ReceivingPage() {
     } catch { toast.error('โหลดใบรับเข้าไม่สำเร็จ'); } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Read ?po= query param on mount and auto-open CreateReceiptModal pre-selected with that PO
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const poParam = sp.get('po')?.trim();
+    if (!poParam) return;
+    fetch('/api/po/create?status=DRAFT,ORDERED', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        const orders: any[] = d?.orders || [];
+        const match = orders.find(p => p.po_number === poParam || p.id === poParam);
+        if (match) {
+          setInitialPoNumber(match.po_number);
+          setShowCreate(true);
+        } else {
+          setInitialPoNumber(poParam);
+          setShowCreate(true);
+        }
+      })
+      .catch(() => {
+        setInitialPoNumber(poParam);
+        setShowCreate(true);
+      });
+  }, []);
 
   const pending = receipts.filter(r => r.status === 'EXPECTED' || r.status === 'RECEIVING');
   const done = receipts.filter(r => r.status === 'DONE');
@@ -215,7 +241,7 @@ export default function ReceivingPage() {
       </div>
 
       <AnimatePresence>
-        {showCreate && <CreateReceiptModal onClose={() => setShowCreate(false)} onDone={() => { setShowCreate(false); load(); }} />}
+        {showCreate && <CreateReceiptModal initialPoNumber={initialPoNumber} onClose={() => { setShowCreate(false); setInitialPoNumber(''); }} onDone={() => { setShowCreate(false); setInitialPoNumber(''); load(); }} />}
         {receiving && <ReceiveModal receipt={receiving} onClose={() => setReceiving(null)} onDone={() => { setReceiving(null); load(); }} />}
       </AnimatePresence>
 
@@ -256,14 +282,15 @@ function Section({ title, icon, items, render, empty, loading }: any) {
   );
 }
 
-function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initialPoNumber?: string; onClose: () => void; onDone: () => void }) {
   const [products, setProducts] = useState<any[]>([]);
   const [pos, setPos] = useState<any[]>([]);
+  const [selectedPoId, setSelectedPoId] = useState('');
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
   const [supplier, setSupplier] = useState('');
-  const [poNumber, setPoNumber] = useState('');
+  const [poNumber, setPoNumber] = useState(initialPoNumber);
   const [saving, setSaving] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
@@ -273,13 +300,27 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
       fetch('/api/po/create?status=DRAFT,ORDERED', { cache: 'no-store' }).then(r => r.json()),
       fetch('/api/suppliers', { cache: 'no-store' }).then(r => r.json()),
     ]).then(([dProd, dPo, dSupp]) => {
-      setProducts(Array.isArray(dProd) ? dProd : []);
-      setPos(dPo?.orders || []);
+      const prodList = Array.isArray(dProd) ? dProd : [];
+      const poList: any[] = dPo?.orders || [];
+      setProducts(prodList);
+      setPos(poList);
       setSuppliers(dSupp?.suppliers || []);
+
+      if (initialPoNumber) {
+        const matched = poList.find(p => p.po_number === initialPoNumber || p.id === initialPoNumber);
+        if (matched) {
+          setSelectedPoId(matched.id);
+          setPoNumber(matched.po_number);
+          setSupplier(matched.supplier || '');
+          const items: any[] = Array.isArray(matched.items_json) ? matched.items_json : [];
+          setLines(items.map(it => ({ sku: it.sku || it.id || it.name, name: it.name, expectedQty: Number(it.qty) || 1, putawayBin: '' })));
+        }
+      }
     }).catch(() => {});
-  }, []);
+  }, [initialPoNumber]);
 
   const prefillFromPO = (poId: string) => {
+    setSelectedPoId(poId);
     const po = pos.find(p => p.id === poId);
     if (!po) { setPoNumber(''); return; }
     setPoNumber(po.po_number);
@@ -330,7 +371,7 @@ function CreateReceiptModal({ onClose, onDone }: { onClose: () => void; onDone: 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-[#8a92a6] uppercase mb-1">เลือกจากใบสั่งซื้อ (PO)</label>
-            <select onChange={e => prefillFromPO(e.target.value)} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm">
+            <select value={selectedPoId} onChange={e => prefillFromPO(e.target.value)} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm">
               <option value="">— ไม่ผูกกับ PO —</option>
               {pos.map(p => <option key={p.id} value={p.id}>{p.po_number} · {p.supplier || 'ไม่ระบุ'}</option>)}
             </select>

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { closeOrderFromTmsPod } from '@/lib/data/orders';
 import { getServiceSupabase } from '@/lib/supabase';
+import { getSessionUser } from '@/lib/apiAuth';
+import { isManagementRole } from '@/lib/rbac';
 import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
@@ -15,12 +17,22 @@ export async function POST(request: Request) {
     const secretHeader = request.headers.get('x-wms-secret') || '';
     const expectedSecret = process.env.TMS_WEBHOOK_SECRET;
 
-    // Validate secret if configured
     if (expectedSecret) {
       const cleanBearer = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
       if (cleanBearer !== expectedSecret && secretHeader !== expectedSecret) {
-        console.warn('[WMS Webhook] Unauthorized attempt from TMS');
-        return NextResponse.json({ error: 'Unauthorized: Invalid webhook secret' }, { status: 401 });
+        const user = await getSessionUser();
+        if (!user || !isManagementRole(user.role)) {
+          console.warn('[WMS Webhook] Unauthorized attempt from TMS');
+          return NextResponse.json({ error: 'Unauthorized: Invalid webhook secret' }, { status: 401 });
+        }
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      const user = await getSessionUser();
+      if (!user || !isManagementRole(user.role)) {
+        return NextResponse.json(
+          { error: 'TMS webhook secret is not configured' },
+          { status: 503 },
+        );
       }
     }
 
@@ -44,13 +56,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing job_id or wms_order_no' }, { status: 400 });
     }
 
-    console.log(`[WMS Webhook] Received ${event} for TMS Job ${job_id} (WMS: ${wms_order_no || 'n/a'}) - Status: ${status}`);
+    const safeJobId = job_id ? String(job_id).replace(/[^a-zA-Z0-9._-]/g, '') : '';
+    if (!wms_order_no && !safeJobId) {
+      return NextResponse.json({ error: 'Invalid job_id' }, { status: 400 });
+    }
+
+    console.log(`[WMS Webhook] Received ${event} for TMS Job ${safeJobId} (WMS: ${wms_order_no || 'n/a'}) - Status: ${status}`);
 
     // If job is completed/delivered with POD proofs -> Auto close the order
     if (is_completed || event === 'job.completed' || ['Completed', 'Delivered'].includes(status)) {
       const closeRes = await closeOrderFromTmsPod({
         orderNo: wms_order_no || undefined,
-        tmsJobId: job_id ? String(job_id) : undefined,
+        tmsJobId: safeJobId || undefined,
         signatureUrl: signature_url,
         photoUrls: Array.isArray(photo_urls) ? photo_urls : [],
         deliveryDate: delivery_date,
@@ -84,7 +101,7 @@ export async function POST(request: Request) {
     if (wms_order_no) {
       query = query.eq('order_no', wms_order_no);
     } else {
-      query = query.or(`tms_job_id.eq.${job_id},tracking_no.eq.${job_id}`);
+      query = query.or(`tms_job_id.eq.${safeJobId},tracking_no.eq.${safeJobId}`);
     }
 
     const { error: upErr } = await query;

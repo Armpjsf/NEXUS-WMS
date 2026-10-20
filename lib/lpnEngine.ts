@@ -4,7 +4,7 @@
  */
 
 import { getServiceSupabase } from '@/lib/supabase';
-import { binMoveAll } from '@/lib/stockLocations';
+import { binMove } from '@/lib/stockLocations';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { recordEnterpriseAudit } from '@/lib/auditTrailEnterprise';
 import { nextDocNumber } from './docNumber';
@@ -95,6 +95,7 @@ export async function createLPN(params: {
           quantity: it.quantity,
           unit: it.unit || 'pcs'
         }));
+        // org-scope-ok: lpn_items is child of license_plate_numbers.id (org-scoped header above)
         const { error: iErr } = await supabase.from('lpn_items').insert(itemRows);
         if (iErr) throw new Error(`บันทึกรายการใน LPN ${lpnNumber} ไม่สำเร็จ: ${iErr.message}`);
       }
@@ -119,6 +120,11 @@ export async function createLPN(params: {
 export async function moveLPN(lpnNumber: string, newLocation: string, operator = 'Operator'): Promise<{ success: boolean; lpn: LPN }> {
   const orgId = await getCurrentOrgId();
   let target = memoryLpns.get(lpnNumber);
+  let oldLocation = target?.locationCode || '';
+  let itemsToMove: { sku: string; quantity: number }[] = (target?.items || [])
+    .filter(it => it.sku && Number(it.quantity) > 0)
+    .map(it => ({ sku: it.sku, quantity: Number(it.quantity) }));
+  let handledInDb = false;
 
   try {
     const { data: existing } = await supabase
@@ -129,27 +135,38 @@ export async function moveLPN(lpnNumber: string, newLocation: string, operator =
       .maybeSingle();
 
     if (existing) {
-      const oldLocation = existing.location_code;
+      oldLocation = existing.location_code;
+      let rawItems: any[] = Array.isArray(existing.lpn_items) ? existing.lpn_items : [];
+      if (rawItems.length === 0 && existing.id) {
+        // org-scope-ok: lpn_items is child of license_plate_numbers.id (org-scoped above)
+        const { data: fetchedItems } = await supabase
+          .from('lpn_items')
+          .select('sku, product_name, lot_number, quantity, unit')
+          .eq('lpn_id', existing.id);
+        if (fetchedItems) rawItems = fetchedItems;
+      }
+
+      itemsToMove = rawItems
+        .filter((it: any) => it.sku && Number(it.quantity) > 0)
+        .map((it: any) => ({ sku: it.sku, quantity: Number(it.quantity) }));
+
       await supabase
         .from('license_plate_numbers')
         .update({ location_code: newLocation, updated_at: new Date().toISOString() })
         .eq('id', existing.id)
         .eq('org_id', orgId);
 
-      // ย้ายสต็อกราย SKU จาก bin เดิมของพาเลท → bin ปลายทาง (ยอดตามไปจริงต่อ bin)
-      // ย้ายเฉพาะจำนวนที่อยู่ bin ต้นทางของพาเลท ไม่ไปแตะ bin อื่นของ SKU เดียวกัน
+      // ย้ายสต็อกราย SKU เฉพาะจำนวนที่อยู่บนพาเลท LPN นี้ ไม่ไปแตะสต็อกของพาเลทอื่นใน bin เดียวกัน
       const movedSkus: string[] = [];
-      const itemSkus: string[] = (existing.lpn_items || [])
-        .map((it: any) => it.sku)
-        .filter(Boolean);
-      for (const sku of itemSkus) {
+      for (const item of itemsToMove) {
         try {
-          const { moved } = await binMoveAll(orgId, sku, oldLocation, newLocation);
-          if (moved > 0) movedSkus.push(sku);
+          const { moved } = await binMove(orgId, item.sku, oldLocation, newLocation, item.quantity);
+          if (moved > 0) movedSkus.push(item.sku);
         } catch (stockErr) {
-          console.warn(`LPN move: bin move failed for ${sku}:`, stockErr);
+          console.warn(`LPN move: bin move failed for ${item.sku}:`, stockErr);
         }
       }
+      handledInDb = true;
 
       target = {
         id: existing.id,
@@ -158,7 +175,7 @@ export async function moveLPN(lpnNumber: string, newLocation: string, operator =
         locationCode: newLocation,
         status: existing.status,
         totalWeight: Number(existing.total_weight || 0),
-        items: (existing.lpn_items || []).map((it: any) => ({
+        items: rawItems.map((it: any) => ({
           sku: it.sku,
           productName: it.product_name,
           lotNumber: it.lot_number,
@@ -185,6 +202,15 @@ export async function moveLPN(lpnNumber: string, newLocation: string, operator =
   }
 
   if (target) {
+    if (!handledInDb && oldLocation && itemsToMove.length > 0) {
+      for (const item of itemsToMove) {
+        try {
+          await binMove(orgId, item.sku, oldLocation, newLocation, item.quantity);
+        } catch (stockErr) {
+          console.warn(`LPN memory fallback move failed for ${item.sku}:`, stockErr);
+        }
+      }
+    }
     target.locationCode = newLocation;
     memoryLpns.set(lpnNumber, target);
     return { success: true, lpn: target };

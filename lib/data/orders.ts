@@ -501,6 +501,7 @@ export async function updateOrder(
     row.notes = currentNotes;
   }
 
+  const nextStatus = patch.status || current.status;
   const movingToShipped = patch.status === 'SHIPPED' && current.status !== 'SHIPPED';
   if (patch.status) {
     row.status = patch.status;
@@ -510,7 +511,8 @@ export async function updateOrder(
   // Deduct stock once, when the order first reaches SHIPPED.
   const orgId = await getCurrentOrgId();
   if (movingToShipped) {
-    await commitStockOut(current, orgId);
+    const orderForShip = patch.items ? { ...current, items: patch.items } : current;
+    await commitStockOut(orderForShip, orgId);
     // A1: reservations are now fulfilled — free them so they stop counting
     // against available (the stock itself was just deducted).
     await consumeOrderReservations(orgId, id).catch(() => {});
@@ -518,6 +520,20 @@ export async function updateOrder(
   // A1: cancelling an order returns its reserved stock to available.
   if (patch.status === 'CANCELLED' && current.status !== 'CANCELLED') {
     await releaseOrderReservations(orgId, id).catch(() => {});
+  }
+  // When editing order lines while the order is still active, re-sync stock_reservations.
+  if (patch.items !== undefined && !['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(nextStatus)) {
+    try {
+      await releaseOrderReservations(orgId, id);
+      await reserveForOrder(
+        orgId,
+        id,
+        current.orderNo,
+        patch.items.map(l => ({ sku: l.sku, qty: Number(l.qty) || 0 })),
+      );
+    } catch (e) {
+      console.warn('[orders] reservation resync failed (non-fatal):', e);
+    }
   }
 
   let { data, error } = await getServiceSupabase()
@@ -602,7 +618,7 @@ export async function addItemsToOrder(
     return { ok: false, error: `เพิ่มของไม่ได้ ออเดอร์อยู่สถานะ ${order.status}` };
   }
 
-  const lines: OrderLine[] = (newLines || [])
+  const addedLines: OrderLine[] = (newLines || [])
     .filter((l) => l && l.sku && Number(l.qty) > 0)
     .map((l) => ({
       sku: String(l.sku).trim(),
@@ -612,10 +628,10 @@ export async function addItemsToOrder(
       location: l.location || '',
       drop: l.drop && Number(l.drop) > 0 ? Number(l.drop) : 1,
     }));
-  if (lines.length === 0) return { ok: false, error: 'ไม่มีรายการสินค้าที่ถูกต้อง' };
+  if (addedLines.length === 0) return { ok: false, error: 'ไม่มีรายการสินค้าที่ถูกต้อง' };
 
   const admin = getServiceSupabase();
-  const mergedItems = [...(order.items || []), ...lines];
+  const mergedItems = [...(order.items || []), ...addedLines];
   const totalQty = mergedItems.reduce((s, l) => s + (Number(l.qty) || 0), 0);
   const totalAmount = mergedItems.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.price) || 0), 0);
 
@@ -630,7 +646,7 @@ export async function addItemsToOrder(
   // 2. ตัดสต็อก OUT เฉพาะของใหม่ — เฉพาะเมื่อ SHIPPED แล้ว (ของเดิมถูกตัดตอน SHIPPED,
   //    ถ้ายังไม่ SHIPPED ของใหม่จะถูกตัดพร้อมกันตอน SHIPPED เอง กันตัดซ้ำ)
   if (order.status === 'SHIPPED') {
-    for (const line of lines) {
+    for (const line of addedLines) {
       const { data: prod } = await admin
         .from('products').select('stock, name, location, price')
         .eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
@@ -646,6 +662,17 @@ export async function addItemsToOrder(
         user_name: actor || order.createdBy || 'Warehouse',
       });
     }
+  } else {
+    try {
+      await reserveForOrder(
+        orgId,
+        id,
+        order.orderNo,
+        addedLines.map(l => ({ sku: l.sku, qty: Number(l.qty) || 0 })),
+      );
+    } catch (e) {
+      console.warn('[orders] addItems reservation failed (non-fatal):', e);
+    }
   }
 
   // 3. ดันของใหม่เข้าดรอปใน TMS (ถ้ามีงานสร้างไว้แล้ว) — additive, non-fatal
@@ -653,7 +680,7 @@ export async function addItemsToOrder(
   if (order.tmsJobId && isTmsEnabled()) {
     tms = await appendTmsJobItems(
       order.tmsJobId,
-      lines.map((l) => ({ code: l.sku, label: l.name, qty: l.qty, drop: l.drop })),
+      addedLines.map((l) => ({ code: l.sku, label: l.name, qty: l.qty, drop: l.drop })),
       order.orderNo
     );
   }
@@ -661,6 +688,8 @@ export async function addItemsToOrder(
   const updated = await getOrder(id);
   return { ok: true, order: updated || undefined, tms };
 }
+
+export const addOrderItems = addItemsToOrder;
 
 // Close WMS order automatically upon receiving POD from TMS Webhook
 export async function closeOrderFromTmsPod(input: {
@@ -681,7 +710,8 @@ export async function closeOrderFromTmsPod(input: {
   if (input.orderNo) {
     query = query.eq('order_no', input.orderNo);
   } else if (input.tmsJobId) {
-    query = query.or(`tms_job_id.eq.${input.tmsJobId},notes.ilike.%[TMS Job: ${input.tmsJobId}]%,tracking_no.eq.${input.tmsJobId}`);
+    const safeJobId = String(input.tmsJobId).replace(/[^a-zA-Z0-9._-]/g, '');
+    query = query.or(`tms_job_id.eq.${safeJobId},notes.ilike.%[TMS Job: ${safeJobId}]%,tracking_no.eq.${safeJobId}`);
   } else {
     return { ok: false, error: 'Missing orderNo or tmsJobId' };
   }

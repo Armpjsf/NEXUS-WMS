@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getDamageRecords } from '@/lib/data/wms';
 import { getCurrentOrgId } from '@/lib/orgContext';
+import { requireManagement } from '@/lib/apiAuth';
+import { binConsume } from '@/lib/stockLocations';
 
 export const dynamic = 'force-dynamic';
+
+const APPROVED_STATUSES = new Set(['อนุมัติ', 'อนุมัติแล้ว', 'APPROVED']);
 
 export async function GET() {
   try {
@@ -62,6 +66,9 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
+
     const body = await req.json();
     const { rowIndex, id, status, approver, sent_to_hq } = body;
 
@@ -79,26 +86,132 @@ export async function PUT(req: Request) {
       }
     }
 
+    const orgId = await getCurrentOrgId();
+    const admin = getServiceSupabase();
+
+    const { data: existing } = await admin
+      .from('damage_records')
+      .select('*')
+      .eq('id', targetId)
+      .eq('org_id', orgId)
+      .maybeSingle();
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+    }
+
     let patch: Record<string, any>;
     if (sent_to_hq) {
       patch = { sent_to_hq };
     } else if (status) {
       patch = {
         status,
-        approved_by: approver || 'Admin',
+        approved_by: approver || guard.user?.name || 'Admin',
         approved_date: new Date().toISOString().split('T')[0],
       };
     } else {
       return NextResponse.json({ error: 'Missing status or sent_to_hq' }, { status: 400 });
     }
 
-    const { error } = await supabase.from('damage_records').update(patch).eq('id', targetId).eq('org_id', await getCurrentOrgId());
+    const { error } = await admin
+      .from('damage_records')
+      .update(patch)
+      .eq('id', targetId)
+      .eq('org_id', orgId);
+
     if (error) {
       console.error('Supabase update damage Error:', error);
       return NextResponse.json({ error: 'Failed to update record' }, { status: 500 });
     }
 
+    // Deduct stock and record a DAMAGE stock_transaction when transitioning from
+    // a non-approved status to an approved status.
+    const wasApproved = APPROVED_STATUSES.has(String(existing.status || '').trim());
+    const nowApproved = status ? APPROVED_STATUSES.has(String(status).trim()) : false;
+    if (!wasApproved && nowApproved) {
+      const dmgQty = Number(existing.quantity || 0);
+      const rawSkuOrName = String(existing.sku || existing.product_name || '').trim();
+      if (rawSkuOrName && dmgQty > 0) {
+        let resolvedSku = rawSkuOrName;
+        let resolvedName = String(existing.product_name || rawSkuOrName);
+        let resolvedPrice = 0;
+        let resolvedLoc = '';
+        try {
+          const { data: bySku } = await admin
+            .from('products')
+            .select('sku, name, price, location')
+            .eq('org_id', orgId)
+            .eq('sku', rawSkuOrName)
+            .maybeSingle();
+          const prod = bySku || (
+            await admin
+              .from('products')
+              .select('sku, name, price, location')
+              .eq('org_id', orgId)
+              .eq('name', existing.product_name)
+              .maybeSingle()
+          ).data;
+          if (prod) {
+            resolvedSku = prod.sku;
+            resolvedName = prod.name || resolvedName;
+            resolvedPrice = Number(prod.price || 0);
+            resolvedLoc = prod.location || '';
+          }
+        } catch {
+          /* fallback to existing.sku || existing.product_name */
+        }
+
+        try {
+          await binConsume(orgId, resolvedSku, dmgQty, {
+            docRef: 'DMG-' + targetId,
+            party: existing.reason,
+          });
+          await admin.from('stock_transactions').insert({
+            org_id: orgId,
+            type: 'DAMAGE',
+            sku: resolvedSku,
+            product_name: resolvedName,
+            qty: dmgQty,
+            unit_price: resolvedPrice,
+            doc_ref: 'DMG-' + targetId,
+            location: resolvedLoc,
+            notes: existing.reason || '',
+            user_name: approver || guard.user?.name || 'Admin',
+          });
+        } catch (stockErr) {
+          console.warn('Damage stock deduction warning:', stockErr);
+        }
+      }
+    }
+
     return NextResponse.json({ message: sent_to_hq ? 'HQ status updated successfully' : 'Status updated' });
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const guard = await requireManagement();
+    if (guard.error) return guard.error;
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    }
+
+    const orgId = await getCurrentOrgId();
+    const { error } = await getServiceSupabase()
+      .from('damage_records')
+      .delete()
+      .eq('id', id)
+      .eq('org_id', orgId);
+
+    if (error) {
+      return NextResponse.json({ error: 'Failed to delete record' }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

@@ -15,17 +15,41 @@ export function normalizeDate(v: unknown): string | null {
   return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s ? null : s;
 }
 
+export interface LotReceiptPayload {
+  sku: string;
+  lotNumber: string;
+  qty: number;
+  expDate?: string | null;
+  mfgDate?: string | null;
+  unitCost?: number;
+  note?: string;
+}
+
 /** Add received qty to a lot (creating it if new); sets expiry when given. */
 export async function recordLotReceipt(
-  admin: Admin,
-  orgId: string,
-  p: { sku: string; lotNumber: string; qty: number; expDate?: string | null; mfgDate?: string | null; unitCost?: number; note?: string },
+  adminOrPayload: Admin | (LotReceiptPayload & { orgId: string }),
+  orgId?: string,
+  p?: LotReceiptPayload,
 ): Promise<void> {
-  const qty = Math.max(0, Number(p.qty) || 0);
+  let admin: Admin;
+  let resolvedOrgId: string;
+  let payload: LotReceiptPayload;
+  if (typeof (adminOrPayload as any)?.from === 'function') {
+    admin = adminOrPayload as Admin;
+    resolvedOrgId = orgId!;
+    payload = p!;
+  } else {
+    const single = adminOrPayload as LotReceiptPayload & { orgId: string };
+    admin = getServiceSupabase();
+    resolvedOrgId = single.orgId;
+    payload = single;
+  }
+
+  const qty = Math.max(0, Number(payload.qty) || 0);
   const now = new Date().toISOString();
   const { data: existing } = await admin.from('product_lots')
     .select('id, received_qty, current_qty, exp_date')
-    .eq('org_id', orgId).eq('sku', p.sku).eq('lot_number', p.lotNumber).maybeSingle();
+    .eq('org_id', resolvedOrgId).eq('sku', payload.sku).eq('lot_number', payload.lotNumber).maybeSingle();
 
   if (existing) {
     const patch: Record<string, unknown> = {
@@ -34,14 +58,40 @@ export async function recordLotReceipt(
       status: 'ACTIVE',
       updated_at: now,
     };
-    if (p.expDate) patch.exp_date = p.expDate;
-    await admin.from('product_lots').update(patch).eq('id', existing.id).eq('org_id', orgId);
+    if (payload.expDate) patch.exp_date = payload.expDate;
+    await admin.from('product_lots').update(patch).eq('id', existing.id).eq('org_id', resolvedOrgId);
     return;
   }
   await admin.from('product_lots').insert({
-    org_id: orgId, sku: p.sku, lot_number: p.lotNumber, batch_number: '',
-    mfg_date: p.mfgDate || null, exp_date: p.expDate || null, status: 'ACTIVE',
-    received_qty: qty, current_qty: qty, unit_cost: Number(p.unitCost) || 0,
-    notes: p.note || '', updated_at: now,
+    org_id: resolvedOrgId, sku: payload.sku, lot_number: payload.lotNumber, batch_number: '',
+    mfg_date: payload.mfgDate || null, exp_date: payload.expDate || null, status: 'ACTIVE',
+    received_qty: qty, current_qty: qty, unit_cost: Number(payload.unitCost) || 0,
+    notes: payload.note || '', updated_at: now,
   });
+}
+
+/** Decrement current_qty (clamped at 0) on product_lots when lotted stock is consumed. */
+export async function consumeLotQty(
+  orgId: string,
+  sku: string,
+  lotNumber: string,
+  qty: number,
+): Promise<void> {
+  const deduct = Math.max(0, Number(qty) || 0);
+  if (!lotNumber || deduct <= 0) return;
+  const admin = getServiceSupabase();
+  const { data: existing } = await admin
+    .from('product_lots')
+    .select('id, current_qty')
+    .eq('org_id', orgId)
+    .eq('sku', sku)
+    .eq('lot_number', lotNumber)
+    .maybeSingle();
+  if (!existing) return;
+  const nextQty = Math.max(0, Number(existing.current_qty || 0) - deduct);
+  await admin
+    .from('product_lots')
+    .update({ current_qty: nextQty, updated_at: new Date().toISOString() })
+    .eq('id', existing.id)
+    .eq('org_id', orgId);
 }

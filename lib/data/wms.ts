@@ -2,7 +2,7 @@
 // These return the SAME shapes the old `@/lib/googleSheets` functions produced,
 // so API routes can migrate by swapping only their import path.
 
-import { supabase } from '@/lib/supabase';
+import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { mapProductRows, type UIProduct } from '@/lib/data/products';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { fetchAllRows } from '@/lib/data/fetchAll';
@@ -15,6 +15,8 @@ export interface Transaction {
   sku: string;
   qty: number;
   price: number;
+  cost?: number;
+  unitCost?: number;
   docRef?: string;
   product?: string;
   timestamp?: number;
@@ -81,19 +83,26 @@ export async function getTransactions(
       .eq('org_id', orgId).eq('type', type)
       .order('created_at', { ascending: true }).range(f, t));
 
-  let rows = (data || []).map((r: any): Transaction => ({
-    date: r.created_at,
-    type: type as any,
-    sku: r.sku,
-    product: r.product_name || r.sku,
-    qty: Number(r.qty ?? 0),
-    price: Number(r.unit_price ?? 0),
-    docRef: r.doc_ref || '',
-    timestamp: r.created_at ? new Date(r.created_at).getTime() : 0,
-    batch: r.batch_no || '',
-    expiryDate: r.expiry_date || '',
-    owner: r.owner || '',
-  }));
+  let rows = (data || []).map((r: any): Transaction => {
+    const unitCost = Number(r.unit_cost ?? 0);
+    const unitPrice = Number(r.unit_price ?? 0);
+    const cost = unitCost > 0 ? unitCost : Number(r.unit_cost ?? r.unit_price ?? 0);
+    return {
+      date: r.created_at,
+      type: type as any,
+      sku: r.sku,
+      product: r.product_name || r.sku,
+      qty: Number(r.qty ?? 0),
+      price: type === 'IN' && unitCost > 0 ? unitCost : unitPrice,
+      cost,
+      ...(unitCost > 0 ? { unitCost } : {}),
+      docRef: r.doc_ref || '',
+      timestamp: r.created_at ? new Date(r.created_at).getTime() : 0,
+      batch: r.batch_no || '',
+      expiryDate: r.expiry_date || '',
+      owner: r.owner || '',
+    };
+  });
 
   if (allowedOwners && allowedOwners.length > 0) {
     const allow = new Set(allowedOwners.map((o) => o.toLowerCase().trim()));
@@ -166,6 +175,8 @@ export async function getProductsUncached(
 }
 
 export interface CycleCountRecord {
+  product_id?: string;
+  sku?: string;
   product_name: string;
   location: string;
   due_date: string;
@@ -336,24 +347,46 @@ export async function removeDeviceTokens(tokens: string[]): Promise<number> {
   return list.length;
 }
 
-export async function addCycleCountEntry(data: CycleCountRecord): Promise<boolean> {
+export async function addCycleCountEntry(entry: CycleCountRecord): Promise<boolean> {
   const orgId = await getCurrentOrgId();
   const { error } = await supabase.from('cycle_count_logs').insert({
     org_id: orgId,
-    product_name: data.product_name,
-    location: data.location,
-    due_date: data.due_date,
-    count_date: data.count_date,
-    inspector: data.inspector,
-    notes: data.notes,
-    system_qty: data.system_qty,
-    actual_qty: data.actual_qty,
-    variance: data.variance,
-    status: data.status,
+    product_name: entry.product_name,
+    location: entry.location,
+    due_date: entry.due_date,
+    count_date: entry.count_date,
+    inspector: entry.inspector,
+    notes: entry.notes,
+    system_qty: entry.system_qty,
+    actual_qty: entry.actual_qty,
+    variance: entry.variance,
+    status: entry.status,
   });
   if (error) {
     console.error('[data/wms] addCycleCountEntry error:', error);
     return false;
   }
+
+  const varianceQty = Number(entry.actual_qty || 0) - Number(entry.system_qty || 0);
+  if (varianceQty !== 0) {
+    try {
+      await getServiceSupabase().from('stock_adjustment_requests').insert({
+        org_id: orgId,
+        request_no: 'ADJ-CC-' + Date.now().toString().slice(-6),
+        sku: entry.product_id || entry.sku || entry.product_name,
+        product_name: entry.product_name,
+        location_code: entry.location || 'UNASSIGNED',
+        system_qty: Number(entry.system_qty || 0),
+        counted_qty: Number(entry.actual_qty || 0),
+        variance_qty: varianceQty,
+        reason_code: 'CYCLE_COUNT',
+        status: 'PENDING_APPROVAL',
+        requested_by: entry.inspector || 'Cycle Count',
+      });
+    } catch (adjErr) {
+      console.warn('[data/wms] cycle count adjustment request failed (non-fatal):', adjErr);
+    }
+  }
+
   return true;
 }
