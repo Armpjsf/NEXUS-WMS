@@ -408,7 +408,7 @@ export default function MobileReturnsPage() {
             <button
               type="submit"
               disabled={!returnNo.trim() || !sku.trim() || submitting}
-              className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-purple-600/25 active:scale-98 disabled:opacity-50 transition-all mt-4"
+              className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-500 hover:to-indigo-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-purple-600/25 active:scale-98 disabled:opacity-50 transition-all mt-4"
             >
               {submitting ? 'กำลังบันทึก...' : 'ยืนยันการรับคืนสินค้า'}
             </button>

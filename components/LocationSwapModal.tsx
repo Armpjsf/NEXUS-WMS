@@ -281,7 +281,7 @@ export function LocationSwapModal({
                       onClick={() => setSelectedTargetProduct(p)}
                       className={`p-2.5 flex items-center justify-between cursor-pointer transition ${
                         selectedTargetProduct?.id === p.id
-                          ? 'bg-accent-gold/10 border-l-4 border-l-accent-gold'
+                          ? 'bg-accent-gold/10 border-l-2 border-l-accent-gold'
                           : 'hover:bg-white/5'
                       }`}
                     >

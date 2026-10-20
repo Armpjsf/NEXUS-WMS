@@ -121,12 +121,12 @@ export default function StaffPerformancePage() {
         </div>
 
         <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-violet-500/10 text-[#facc15] flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5" />
           </div>
           <div>
             <div className="text-[11px] font-bold text-[#8a92a6] uppercase">เวลาต่อออเดอร์เฉลี่ย</div>
-            <div className="text-2xl font-black text-violet-600 mt-0.5">
+            <div className="text-2xl font-black text-[#facc15] mt-0.5">
               {data.avgOrderFulfillmentMinutes} <span className="text-xs text-[#8a92a6] font-normal">นาที/ใบ</span>
             </div>
           </div>

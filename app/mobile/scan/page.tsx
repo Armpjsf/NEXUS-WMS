@@ -151,10 +151,10 @@ export default function MobileScanPage() {
             {/* Scan Frame Overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-72 h-72 border-2 border-white/30 rounded-2xl relative">
-                <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-teal-400 rounded-tl-xl"></div>
-                <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-amber-400 rounded-tr-xl"></div>
-                <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-blue-400 rounded-bl-xl"></div>
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-xl"></div>
+                <div className="absolute -top-1 -left-1 w-8 h-8 border border-teal-400/80 rounded-tl-xl"></div>
+                <div className="absolute -top-1 -right-1 w-8 h-8 border border-amber-400/80 rounded-tr-xl"></div>
+                <div className="absolute -bottom-1 -left-1 w-8 h-8 border border-blue-400/80 rounded-bl-xl"></div>
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 border border-emerald-400/80 rounded-br-xl"></div>
               </div>
             </div>
             <p className="absolute bottom-8 left-0 right-0 text-center text-white/70 text-sm">

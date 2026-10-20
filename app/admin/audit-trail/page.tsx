@@ -109,13 +109,13 @@ export default function AuditTrailPage() {
            <div className="relative z-10 flex items-center gap-6">
                <Link
                 href="/admin"
-                className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-indigo-600 hover:shadow-lg hover:-translate-x-1 transition-all"
+                className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-[#facc15] hover:border-[#facc15]/40 transition-all"
                >
                 <ArrowLeft className="w-6 h-6" />
                </Link>
                <div>
                    <h1 className="text-4xl font-black text-[#dee2ec] tracking-tight flex items-center gap-4">
-                       <div className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white p-3 rounded-2xl shadow-lg shadow-indigo-200">
+                       <div className="bg-[#1b2027] border border-[#30353d] text-[#facc15] p-3 rounded-2xl shadow-sm">
                          <History className="w-8 h-8" />
                        </div>
                        {t('audit_trail_title')}

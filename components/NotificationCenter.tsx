@@ -182,7 +182,7 @@ export default function NotificationCenter({ align = 'left' }: NotificationCente
                       href={alert.actionUrl || '#'}
                       onClick={() => setIsOpen(false)}
                       className={cn(
-                        "flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors border-l-4",
+                        "flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors border-l-2",
                         alert.severity === 'critical' ? 'border-l-rose-500' :
                         alert.severity === 'warning' ? 'border-l-amber-500' : 'border-l-blue-500'
                       )}

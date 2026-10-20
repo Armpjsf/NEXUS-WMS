@@ -36,7 +36,7 @@ export default function AdminPage() {
       desc: t('admin_slotting_desc'), 
       icon: LayoutGrid, 
       href: '/admin/slotting',
-      color: 'from-indigo-600 to-blue-700'
+      color: 'from-amber-600 to-blue-700'
     },
     { 
       title: t('barcode_title'), 

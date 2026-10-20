@@ -105,7 +105,7 @@ export default function DataQualityPage() {
 
            <div className={`p-6 rounded-xl border ${reconcileErrorCount > 0 ? 'bg-purple-500/10 border-purple-500/20' : 'bg-[#171c23] border-[#30353d]'}`}>
                <h3 className="text-[#8a92a6] text-sm mb-2">{t('dq_stock_mismatch')}</h3>
-               <div className={`text-3xl font-bold ${reconcileErrorCount > 0 ? 'text-purple-600' : 'text-[#dee2ec]'}`}>
+               <div className={`text-3xl font-bold ${reconcileErrorCount > 0 ? 'text-[#facc15]' : 'text-[#dee2ec]'}`}>
                    {loading ? '...' : reconcileErrorCount}
                </div>
                <p className="text-xs text-[#8a92a6] mt-2">{t('dq_stock_mismatch_desc')}</p>
@@ -205,7 +205,7 @@ export default function DataQualityPage() {
                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full 
                                        ${issue.type === 'Unknown SKU' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/30' : 
                                          issue.type === 'Invalid Qty' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30' : 
-                                         issue.type === 'Stock Mismatch' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/30' :
+                                         issue.type === 'Stock Mismatch' ? 'bg-purple-500/10 text-[#facc15] border border-purple-500/30' :
                                          'bg-blue-500/10 text-blue-600 border border-blue-500/30'}`}>
                                        {issue.type}
                                    </span>

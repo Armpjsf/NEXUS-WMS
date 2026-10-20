@@ -42,7 +42,7 @@ export default function AnalyticsLandingPage() {
       desc: t('profit_subtitle'),
       href: '/analytics/profit',
       icon: PieChart,
-      color: 'from-purple-500 to-pink-600',
+      color: 'from-amber-500 to-pink-600',
       lightBg: 'bg-purple-500/10',
       iconColor: 'text-purple-600'
     },
@@ -60,7 +60,7 @@ export default function AnalyticsLandingPage() {
         desc: "AI-powered reorder optimization and stockout prediction.",
         href: '/ai-reorder',
         icon: Sparkles,
-        color: 'from-violet-600 to-purple-700',
+        color: 'from-amber-600 to-purple-700',
         lightBg: 'bg-violet-500/10',
         iconColor: 'text-violet-600'
     }

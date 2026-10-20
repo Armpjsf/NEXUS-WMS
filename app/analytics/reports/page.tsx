@@ -26,7 +26,7 @@ const reports = (t: any): ReportConfig[] => [
     description: t('inventory_summary_desc'),
     icon: PackageIcon,
     endpoint: '/api/reports/inventory',
-    color: 'from-indigo-600 to-blue-700'
+    color: 'from-amber-500 to-blue-700'
   },
   {
     id: 'stock_movement',

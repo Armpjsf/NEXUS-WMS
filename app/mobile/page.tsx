@@ -205,10 +205,10 @@ export default function MobileHubPage() {
       subtitle: 'สแกนหรือพิมพ์เพื่อดู Location และยอดคงเหลือ',
       icon: Search,
       href: '/mobile/inventory',
-      color: 'from-purple-600 to-violet-700',
+      color: 'from-teal-600 to-cyan-700',
       tag: 'ค้นหาด่วน',
-      border: 'border-purple-500/30',
-      iconBg: 'bg-purple-500/20 text-purple-400',
+      border: 'border-teal-500/30',
+      iconBg: 'bg-teal-500/20 text-teal-400',
     },
     {
       id: 'smart-tasks',

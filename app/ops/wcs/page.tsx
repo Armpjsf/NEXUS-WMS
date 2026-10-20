@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import {
@@ -318,12 +318,12 @@ export default function WcsRoboticsPage() {
           <div className="bg-[#171c23] p-5 rounded-2xl border border-[#30353d] shadow-sm">
             <div className="flex justify-between items-start mb-3">
               <span className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider">ภารกิจกำลังดำเนินการ</span>
-              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-[#4cd7f6] border border-indigo-500/20">
                 <Boxes className="w-5 h-5" />
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-indigo-400">{stats.activeMissions || 0}</span>
+              <span className="text-3xl font-extrabold text-[#4cd7f6]">{stats.activeMissions || 0}</span>
               <span className="text-xs text-[#8a92a6]">งานเคลื่อนที่</span>
             </div>
             <p className="text-xs text-[#8a92a6] mt-2">หุ่นยนต์กำลังนำส่งสินค้าตามราง/พิกัด</p>

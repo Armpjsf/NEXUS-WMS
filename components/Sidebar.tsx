@@ -96,7 +96,7 @@ const toneStyles = {
   violet: {
     icon: 'text-violet-700',
     soft: 'bg-violet-50 ring-violet-200',
-    active: 'from-violet-700 to-fuchsia-600',
+    active: 'from-[#1b2027] to-fuchsia-600',
   },
   cyan: {
     icon: 'text-cyan-700',
@@ -394,7 +394,7 @@ export default function Sidebar() {
                           'group relative flex min-h-9 items-center gap-2.5 rounded px-2.5 py-1.5 text-xs font-semibold transition-all duration-150',
                           collapsed ? 'justify-center' : 'justify-between',
                           isActive
-                            ? 'bg-surface-steel text-accent-gold font-bold border-l-4 border-accent-gold'
+                            ? 'bg-surface-steel text-accent-gold font-bold border-l-2 border-accent-gold'
                             : 'text-text-tactical hover:bg-surface-card hover:text-foreground'
                         )}
                       >

@@ -195,7 +195,7 @@ export default function CycleCountPage() {
         <div className="flex items-center justify-between gap-3 mb-2">
            <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-50 rounded-xl">
-                  <ClipboardCheck className="w-8 h-8 text-indigo-600" />
+                  <ClipboardCheck className="w-8 h-8 text-[#facc15]" />
               </div>
               <div>
                   <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t('cycle_count_title')}</h1>
@@ -209,7 +209,7 @@ export default function CycleCountPage() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/20 text-white"
+            className="mt-4 bg-gradient-to-r from-amber-500 to-indigo-600 rounded-2xl p-4 shadow-lg shadow-indigo-500/20 text-white"
           >
             <div className="flex justify-between items-center">
                 <span className="text-indigo-100 text-sm font-medium">✨ {t('target_today')}</span>
@@ -228,7 +228,7 @@ export default function CycleCountPage() {
           onClick={() => setActiveTab('count')}
           className={cn(
             "flex-1 py-4 text-sm font-bold transition-all border-b-2 relative",
-            activeTab === 'count' ? "border-indigo-600 text-indigo-600 bg-indigo-50/50" : "border-transparent text-slate-400 hover:text-slate-600"
+            activeTab === 'count' ? "border-indigo-600 text-[#facc15] bg-indigo-50/50" : "border-transparent text-slate-400 hover:text-slate-600"
           )}
         >
           {t('tab_count')} ({filteredItems.length})
@@ -238,7 +238,7 @@ export default function CycleCountPage() {
           onClick={() => setActiveTab('history')}
           className={cn(
             "flex-1 py-4 text-sm font-bold transition-all border-b-2 relative",
-            activeTab === 'history' ? "border-indigo-600 text-indigo-600 bg-indigo-50/50" : "border-transparent text-slate-400 hover:text-slate-600"
+            activeTab === 'history' ? "border-indigo-600 text-[#facc15] bg-indigo-50/50" : "border-transparent text-slate-400 hover:text-slate-600"
           )}
         >
           {t('tab_history')}
@@ -343,7 +343,7 @@ export default function CycleCountPage() {
                           </div>
                         </div>
 
-                        <div className="mt-4 flex justify-end items-center gap-2 text-indigo-600 font-bold text-sm group-hover:gap-3 transition-all">
+                        <div className="mt-4 flex justify-end items-center gap-2 text-[#facc15] font-bold text-sm group-hover:gap-3 transition-all">
                           <span>{t('tap_to_count')}</span> <span className="p-1 bg-indigo-100 rounded-full">➜</span>
                         </div>
                       </motion.div>
@@ -382,7 +382,7 @@ export default function CycleCountPage() {
                           </div>
                           <div>
                             <div className="text-slate-400 text-xs font-bold uppercase mb-1">{t('counted')}</div>
-                            <div className="text-3xl font-black text-indigo-600">{actualQty}</div>
+                            <div className="text-3xl font-black text-[#facc15]">{actualQty}</div>
                           </div>
                         </div>
                         <div className="text-center mt-6 pt-6 border-t border-slate-200">
@@ -545,7 +545,7 @@ export default function CycleCountPage() {
                           )}
                         </td>
                         <td className="p-4 text-right font-mono">{log.system_qty}</td>
-                        <td className="p-4 text-right font-mono text-indigo-600 font-bold">{log.actual_qty}</td>
+                        <td className="p-4 text-right font-mono text-[#facc15] font-bold">{log.actual_qty}</td>
                         <td className={cn("p-4 text-right font-black font-mono", log.variance === 0 ? 'text-slate-300' : log.variance > 0 ? 'text-emerald-500' : 'text-rose-500')}>
                           {log.variance > 0 ? `+${log.variance}` : log.variance}
                         </td>

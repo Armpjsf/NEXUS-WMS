@@ -245,7 +245,7 @@ export default function AIReorderPage() {
                        <ShoppingCart className="w-6 h-6" />
                        <span className="hidden md:inline">{t('ai_cart')}</span>
                        {cart.length > 0 && (
-                           <span className="absolute -top-3 -right-3 bg-gradient-to-br from-rose-500 to-pink-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg animate-bounce border-2 border-white">
+                           <span className="absolute -top-3 -right-3 bg-gradient-to-br from-rose-500 to-pink-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg animate-pulse border-2 border-white">
                                {cart.length}
                            </span>
                        )}

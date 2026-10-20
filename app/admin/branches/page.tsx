@@ -129,12 +129,12 @@ export default function AdminBranchesPage() {
                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-600 via-blue-600 to-amber-500" />
                    
                    <div className="relative z-10 flex items-center gap-6">
-                       <Link href="/admin" className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-indigo-600 hover:shadow-lg hover:-translate-x-1 transition-all">
+                       <Link href="/admin" className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-[#facc15] hover:shadow-lg hover:-translate-x-1 transition-all">
                            <ArrowLeft className="w-6 h-6" />
                        </Link>
                        <div>
                            <h1 className="text-4xl font-black text-[#dee2ec] tracking-tight flex items-center gap-4">
-                               <div className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white p-3 rounded-2xl shadow-lg shadow-indigo-200">
+                               <div className="bg-[#1b2027] border border-[#30353d] text-[#facc15] p-3 rounded-2xl shadow-sm">
                                  <Building2 className="w-8 h-8" />
                                </div>
                                {t('branch_management_title')}
@@ -144,12 +144,12 @@ export default function AdminBranchesPage() {
                    </div>
                    
                    <div className="flex gap-3 relative z-10">
-                        <button onClick={fetchData} className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-indigo-600 hover:shadow-lg transition-all active:scale-95">
+                        <button onClick={fetchData} className="p-4 bg-[#171c23] border border-[#30353d] rounded-2xl text-[#8a92a6] hover:text-[#facc15] hover:shadow-lg transition-all active:scale-95">
                             <RefreshCw className="w-6 h-6" />
                         </button>
                         <button 
                             onClick={() => setIsAdding(!isAdding)}
-                            className="flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-8 py-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-indigo-500/40 transition-all hover:scale-105 active:scale-95"
+                            className="flex items-center gap-3 bg-[#facc15] text-[#1b1600] px-8 py-4 rounded-2xl font-bold hover:bg-[#eec200] transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#facc15]/20"
                         >
                             <Plus className="w-6 h-6" />
                             {t('add_branch')}
@@ -296,7 +296,7 @@ export default function AdminBranchesPage() {
                                 <div className="flex items-center gap-2">
                                     <button 
                                         onClick={() => startEdit(branch)}
-                                        className="p-2.5 text-[#8a92a6] hover:text-indigo-600 hover:bg-indigo-500/10 rounded-xl transition-colors font-bold text-xs flex items-center gap-1 border border-[#30353d]"
+                                        className="p-2.5 text-[#8a92a6] hover:text-[#facc15] hover:bg-indigo-500/10 rounded-xl transition-colors font-bold text-xs flex items-center gap-1 border border-[#30353d]"
                                         title="แก้ไขข้อมูลสาขา & คลังสินค้า"
                                     >
                                         <Pencil className="w-4 h-4" />
