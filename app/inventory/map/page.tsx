@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import {
   ArrowLeft,
   LayoutGrid,
@@ -16,6 +16,9 @@ import {
   Printer,
   X,
   ArrowLeftRight,
+  Wand2,
+  PencilRuler,
+  ScanSearch,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -27,12 +30,24 @@ import { getApiUrl } from '@/lib/config';
 import { db } from '@/lib/db';
 import {
   buildWarehouseMap,
-  WarehouseBin,
+  stockRowsFromProducts,
+  BinStockRow,
+  MapBin,
+  LooseStock,
 } from '@/lib/warehouseMap';
+import {
+  WarehouseLayout,
+  listLayoutBins,
+  validateLayout,
+  inferLayoutFromBinCodes,
+} from '@/lib/warehouseLayout';
 import Warehouse3DViewer from '@/components/warehouse/Warehouse3DViewer';
+import Warehouse2DPlan from '@/components/warehouse/Warehouse2DPlan';
 import WarehouseWizardModal from '@/components/warehouse/WarehouseWizardModal';
 import WarehouseBatchLabelModal from '@/components/warehouse/WarehouseBatchLabelModal';
 import { toast } from 'react-hot-toast';
+
+type LayoutState = WarehouseLayout & { saved?: boolean; legacyFrom?: string | null };
 
 export default function WarehouseMapPage() {
   return (
@@ -51,65 +66,104 @@ export default function WarehouseMapPage() {
   );
 }
 
-function WarehouseMapContent() {
+/**
+ * Branch the map is for. The sidebar BranchSelector puts ?branchId= in the URL;
+ * without it the selector shows URT (or the first branch), so do the same.
+ */
+function useMapBranch(): string | null {
   const searchParams = useSearchParams();
-  const branchId = searchParams.get('branchId') || '';
+  const fromUrl = searchParams.get('branchId') || '';
+  const [fallback, setFallback] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (fromUrl) return;
+    let cancelled = false;
+    fetch(getApiUrl('/api/branches'))
+      .then(r => (r.ok ? r.json() : []))
+      .then((list: any[]) => {
+        if (cancelled) return;
+        const ids = Array.isArray(list) ? list.map(b => b.id || b.code).filter(Boolean) : [];
+        setFallback(ids.includes('URT') ? 'URT' : ids[0] || 'MAIN');
+      })
+      .catch(() => !cancelled && setFallback('MAIN'));
+    return () => { cancelled = true; };
+  }, [fromUrl]);
+
+  return fromUrl || fallback;
+}
+
+function toModalBin(loose: LooseStock): MapBin {
+  return {
+    binCode: loose.binCode,
+    rackCode: '',
+    zoneCode: '',
+    bay: 0,
+    level: 0,
+    products: loose.products,
+    totalStock: loose.totalStock,
+    status: loose.totalStock > 0 ? 'NORMAL' : 'EMPTY',
+    velocityClass: 'D',
+  };
+}
+
+function WarehouseMapContent() {
+  const branchId = useMapBranch();
 
   const [products, setProducts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [stockRows, setStockRows] = useState<BinStockRow[]>([]);
+  const [layout, setLayout] = useState<LayoutState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dirty, setDirty] = useState(false);
 
   // View Controls
-  const [selectedZoneId, setSelectedZoneId] = useState<string>('A');
+  const [zoneFilter, setZoneFilter] = useState<string>('ALL');
   const [heatmapMode, setHeatmapMode] = useState<'STOCK' | 'VELOCITY'>('STOCK');
-  const [viewMode, setViewMode] = useState<'3D' | '2D'>('3D');
-  const [layout3D, setLayout3D] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'3D' | '2D'>('2D');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBin, setSelectedBin] = useState<WarehouseBin | null>(null);
+  const [selectedRackCode, setSelectedRackCode] = useState<string | null>(null);
+  const [selectedBin, setSelectedBin] = useState<MapBin | null>(null);
   const [swapProduct, setSwapProduct] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSavingLayout, setIsSavingLayout] = useState(false);
-  const [generatedBinsList, setGeneratedBinsList] = useState<string[]>([]);
+  const [showOrphans, setShowOrphans] = useState(true);
 
-  // Compute all bin codes for label printing
-  const allBinsList = useMemo(() => {
-    if (generatedBinsList.length > 0) return generatedBinsList;
-    if (!layout3D?.racks) return [];
-    const list: string[] = [];
-    layout3D.racks.forEach((rack: any) => {
-      for (let bay = 1; bay <= (rack.bays || 5); bay++) {
-        for (let lvl = 1; lvl <= (rack.levels || 4); lvl++) {
-          list.push(`${rack.zoneCode}-${String(rack.rackCode).replace(/^[A-Z]-/, '')}-${String(bay).padStart(2, '0')}-${String(lvl).padStart(2, '0')}`.toUpperCase());
-        }
-      }
-    });
-    return list;
-  }, [layout3D, generatedBinsList]);
+  const updateLayout = useCallback((next: LayoutState) => {
+    setLayout(next);
+    setDirty(true);
+  }, []);
 
-  // Save current 3D layout to API
-  const handleSaveLayout = async () => {
-    if (!layout3D) return;
+  const saveLayout = async (toSave: LayoutState | null = layout) => {
+    if (!toSave || !branchId) return;
+    const problems = validateLayout(toSave.racks);
+    if (problems.length) {
+      toast.error(problems[0], { duration: 6000 });
+      return;
+    }
     setIsSavingLayout(true);
     try {
       const res = await fetch(getApiUrl('/api/warehouse/layout'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          branchId: branchId || 'MAIN',
-          name: layout3D.name || 'คลังสินค้าหลัก',
-          widthM: layout3D.widthM || 60,
-          lengthM: layout3D.lengthM || 80,
-          heightM: layout3D.heightM || 12,
-          racks: layout3D.racks || [],
+          branchId,
+          name: toSave.name,
+          widthM: toSave.widthM,
+          lengthM: toSave.lengthM,
+          heightM: toSave.heightM,
+          racks: toSave.racks,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (data?.success) {
-        toast.success('บันทึกผังคลังสินค้า 3D สำเร็จเรียบร้อยแล้ว');
+        toast.success(data.message || 'บันทึกผังคลังเรียบร้อย');
+        if (data.warning) toast(data.warning, { icon: '⚠️', duration: 8000 });
+        setLayout({ ...toSave, branchId, saved: true, legacyFrom: null });
+        setDirty(false);
       } else {
-        toast.error(data?.error || 'ไม่สามารถบันทึกผังคลังได้');
+        toast.error(data?.error || 'ไม่สามารถบันทึกผังคลังได้', { duration: 6000 });
       }
     } catch {
       toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
@@ -118,125 +172,149 @@ function WarehouseMapContent() {
     }
   };
 
-  // Apply Wizard layout
-  const handleApplyWizard = async (newLayout: any, bins: string[]) => {
-    setLayout3D(newLayout);
-    setGeneratedBinsList(bins);
-    setIsSavingLayout(true);
-    try {
-      const res = await fetch(getApiUrl('/api/warehouse/layout'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newLayout),
-      });
-      const data = await res.json();
-      if (data?.success) {
-        toast.success(`สร้างผังคลัง 3D สำเร็จ! รวมความจุ ${bins.length.toLocaleString()} โลเคชัน`);
-      }
-    } catch {
-      toast.error('ไม่สามารถบันทึกผังคลังได้');
-    } finally {
-      setIsSavingLayout(false);
-    }
+  const handleApplyWizard = async (newLayout: any) => {
+    const next: LayoutState = { ...newLayout, branchId: branchId || newLayout.branchId };
+    setLayout(next);
+    await saveLayout(next);
   };
 
-  // Fetch Real Products and Transactions from API / Cache
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!branchId) return;
     setLoading(true);
+    const loadCachedProducts = async () => {
+      const cached = await db.products.toArray().catch(() => []);
+      if (cached.length > 0) setProducts(cached);
+    };
     try {
-      if (navigator.onLine) {
-        const prodUrl = getApiUrl(`/api/products${branchId ? `?branchId=${branchId}` : ''}`);
-        const transUrl = getApiUrl(`/api/transactions?limit=500${branchId ? `&branchId=${branchId}` : ''}`);
+      const [prodRes, transRes, layoutRes, stockRes] = await Promise.all([
+        fetch(getApiUrl('/api/products')).catch(() => null),
+        fetch(getApiUrl('/api/transactions?limit=500')).catch(() => null),
+        fetch(getApiUrl(`/api/warehouse/layout?branchId=${encodeURIComponent(branchId)}`)).catch(() => null),
+        fetch(getApiUrl('/api/warehouse/bin-stock')).catch(() => null),
+      ]);
 
-        const [prodRes, transRes] = await Promise.all([
-          fetch(prodUrl).catch(() => null),
-          fetch(transUrl).catch(() => null),
-        ]);
-
-        if (prodRes && prodRes.ok) {
-          const prodData = await prodRes.json();
-          if (Array.isArray(prodData) && prodData.length > 0) {
-            setProducts(prodData);
-          } else {
-            const cached = await db.products.toArray();
-            if (cached.length > 0) setProducts(cached);
-          }
-        } else {
-          const cached = await db.products.toArray();
-          if (cached.length > 0) setProducts(cached);
-        }
-
-        if (transRes && transRes.ok) {
-          const transData = await transRes.json();
-          if (transData?.transactions && Array.isArray(transData.transactions)) {
-            setTransactions(transData.transactions);
-          }
-        }
-      } else {
-        const cached = await db.products.toArray();
-        if (cached.length > 0) setProducts(cached);
+      let prods: any[] = [];
+      if (prodRes?.ok) {
+        const data = await prodRes.json();
+        if (Array.isArray(data)) prods = data;
       }
+      if (prods.length > 0) setProducts(prods);
+      else await loadCachedProducts();
+
+      if (transRes?.ok) {
+        const data = await transRes.json();
+        if (Array.isArray(data?.transactions)) setTransactions(data.transactions);
+      }
+
+      if (layoutRes?.ok) {
+        const data = await layoutRes.json();
+        if (data?.success && data.data) {
+          setLayout(data.data);
+          setDirty(false);
+        }
+      }
+
+      let rows: BinStockRow[] = [];
+      if (stockRes?.ok) {
+        const data = await stockRes.json();
+        if (data?.success && Array.isArray(data.rows)) rows = data.rows;
+      }
+      // stock_locations not migrated / empty → fall back to products.location
+      setStockRows(rows.length > 0 ? rows : stockRowsFromProducts(prods));
     } catch (e) {
       console.error('Failed to load map data:', e);
-      const cached = await db.products.toArray();
-      if (cached.length > 0) setProducts(cached);
+      await loadCachedProducts();
     } finally {
-              const layoutUrl = getApiUrl('/api/warehouse/layout?branchId=' + (branchId || 'MAIN'));
-        fetch(layoutUrl).then(r => r.json()).then(res => {
-          if (res?.success && res.data) setLayout3D(res.data);
-        }).catch(() => {});
       setLoading(false);
     }
-  };
+  }, [branchId]);
 
   useEffect(() => {
     fetchData();
-  }, [branchId]);
+  }, [fetchData]);
 
-  // Compute Warehouse Map Data
-  const { zones, unassignedProducts, stats } = useMemo(() => {
-    return buildWarehouseMap(products, transactions);
-  }, [products, transactions]);
+  const effectiveStockRows = useMemo(
+    () => (stockRows.length > 0 ? stockRows : stockRowsFromProducts(products)),
+    [stockRows, products],
+  );
 
-  // Set default zone if available
+  const map = useMemo(
+    () => buildWarehouseMap(layout?.racks || [], effectiveStockRows, products, transactions),
+    [layout, effectiveStockRows, products, transactions],
+  );
+  const { zones, stats, orphans, unassigned } = map;
+
   useEffect(() => {
-    if (zones.length > 0 && !zones.some(z => z.zoneId === selectedZoneId)) {
-      setSelectedZoneId(zones[0].zoneId);
-    }
-  }, [zones, selectedZoneId]);
+    if (zoneFilter !== 'ALL' && !zones.some(z => z.zoneCode === zoneFilter)) setZoneFilter('ALL');
+  }, [zones, zoneFilter]);
 
-  const activeZone = useMemo(() => {
-    return zones.find(z => z.zoneId === selectedZoneId) || zones[0];
-  }, [zones, selectedZoneId]);
+  const allBinsList = useMemo(() => listLayoutBins(layout?.racks || []).map(b => b.binCode), [layout]);
 
-  // Highlight matches from Search
-  const matchingBinCodes = useMemo(() => {
-    if (!searchQuery.trim()) return new Set<string>();
-    const q = searchQuery.toLowerCase().trim();
-    const matched = new Set<string>();
-
-    zones.forEach(z => {
-      z.aisles.forEach(a => {
-        a.racks.forEach(r => {
-          r.bins.forEach(b => {
-            if (
-              b.binCode.toLowerCase().includes(q) ||
-              b.products.some(
-                p =>
-                  p.name.toLowerCase().includes(q) ||
-                  p.id.toLowerCase().includes(q) ||
-                  p.category.toLowerCase().includes(q)
-              )
-            ) {
-              matched.add(b.binCode);
-            }
-          });
-        });
+  // Same per-bin stock for the 3D twin.
+  const binStock3D = useMemo(() => {
+    const m = new Map<string, { products: any[]; totalStock: number; velocityClass: string; status: string }>();
+    map.binIndex.forEach((bin, code) => {
+      if (bin.totalStock <= 0) return;
+      m.set(code, {
+        totalStock: bin.totalStock,
+        velocityClass: bin.velocityClass,
+        status: bin.status,
+        products: bin.products.map(p => ({ id: p.id, sku: p.id, name: p.name, stock: p.stock, unit: p.unit })),
       });
     });
+    return m;
+  }, [map]);
 
+  const matchingBinCodes = useMemo(() => {
+    const matched = new Set<string>();
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return matched;
+    map.binIndex.forEach((bin, code) => {
+      if (
+        code.toLowerCase().includes(q) ||
+        bin.products.some(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      ) {
+        matched.add(code);
+      }
+    });
     return matched;
-  }, [zones, searchQuery]);
+  }, [map, searchQuery]);
+
+  // Jump to the first rack holding a search hit.
+  useEffect(() => {
+    if (matchingBinCodes.size === 0) return;
+    const first = map.binIndex.get(Array.from(matchingBinCodes)[0]);
+    if (first) setSelectedRackCode(first.rackCode);
+  }, [matchingBinCodes, map]);
+
+  const handleInferLayout = () => {
+    const codes = Array.from(new Set(effectiveStockRows.map(r => r.binCode)));
+    if (codes.length === 0) {
+      toast.error('ยังไม่มีโลเคชันที่มีสต็อกให้ใช้สร้างผัง');
+      return;
+    }
+    if ((layout?.racks.length || 0) > 0 && !window.confirm('สร้างผังใหม่จากโลเคชันที่มีสต็อกอยู่จริง แทนผังปัจจุบัน?\n(ยังไม่บันทึกจนกว่าจะกด "บันทึกผัง")')) {
+      return;
+    }
+    const { layout: inferred, matched, unmatched } = inferLayoutFromBinCodes(codes, {
+      branchId: branchId || 'MAIN',
+      name: layout?.name,
+      heightM: layout?.heightM,
+    });
+    updateLayout({ ...inferred, saved: layout?.saved, legacyFrom: layout?.legacyFrom });
+    setSelectedRackCode(null);
+    toast.success(`ร่างผัง ${inferred.racks.length} แร็กจาก ${matched} โลเคชัน — ตรวจ/จัดตำแหน่งแล้วกด "บันทึกผัง"`, { duration: 7000 });
+    if (unmatched.length) {
+      toast(`อ่านรูปแบบไม่ได้ ${unmatched.length} รหัส เช่น ${unmatched.slice(0, 3).join(', ')} — เพิ่มเป็นแร็กเองได้ในโหมดแก้ไข 3D`, { icon: 'ℹ️', duration: 9000 });
+    }
+  };
+
+  const openEditor = () => {
+    setViewMode('3D');
+    setIsEditMode(true);
+  };
+
+  const rackCount = layout?.racks.length || 0;
 
   return (
     <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-[#1b2027]">
@@ -257,21 +335,36 @@ function WarehouseMapContent() {
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-[#dee2ec] flex items-center gap-2.5">
                   <LayoutGrid className="w-8 h-8 text-teal-600" />
-                  2D Warehouse Interactive Map
+                  ผังคลังสินค้า
                 </h1>
                 <p className="text-sm text-[#8a92a6] mt-0.5">
-                  ผังคลังสินค้าจำลองเสมือนจริง • แผนผังชั้นวาง (Zone & Rack Heatmap) • จัดสรรพิกัดอัตโนมัติจากสต็อกจริง
+                  {layout?.name || 'คลังสินค้า'} • สาขา <span className="font-mono font-bold text-teal-400">{branchId || '…'}</span> • สต็อกจริงรายช่องจากโลเคชัน
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleInferLayout}
+                className="px-3.5 py-2.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="ร่างผังจากรหัสโลเคชันที่มีสต็อกอยู่จริง"
+              >
+                <ScanSearch className="w-4 h-4" />
+                สร้างผังจากโลเคชันจริง
+              </button>
+              <button
+                onClick={openEditor}
+                className="px-3.5 py-2.5 bg-[#facc15]/10 hover:bg-[#facc15]/20 text-[#facc15] border border-[#facc15]/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+              >
+                <PencilRuler className="w-4 h-4" />
+                แก้ไขผัง
+              </button>
               <Link
                 href="/admin/slotting"
-                className="px-3.5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                className="px-3.5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
               >
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                คำแนะนำ ABC Slotting
+                <Sparkles className="w-4 h-4 text-indigo-400" />
+                ABC Slotting
               </Link>
               <button
                 onClick={fetchData}
@@ -285,21 +378,42 @@ function WarehouseMapContent() {
           </div>
         </header>
 
+        {/* Layout status banners */}
+        {layout?.legacyFrom && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-200 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              สาขา <b className="font-mono">{branchId}</b> ยังไม่มีผังของตัวเอง — กำลังแสดงผังเดิมที่บันทึกไว้ก่อนแยกสาขา (<span className="font-mono">{layout.legacyFrom}</span>).
+              กด &quot;บันทึกผัง&quot; เพื่อเก็บเป็นผังของสาขานี้
+            </span>
+          </div>
+        )}
+        {dirty && (
+          <div className="rounded-2xl border border-[#facc15]/40 bg-[#facc15]/10 px-4 py-3 text-xs text-[#facc15] flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> ผังมีการแก้ไขที่ยังไม่บันทึก
+            </span>
+            <button
+              onClick={() => saveLayout()}
+              disabled={isSavingLayout}
+              className="px-3 py-1.5 rounded-lg bg-[#facc15] text-[#1b1600] font-black disabled:opacity-50"
+            >
+              {isSavingLayout ? 'กำลังบันทึก...' : 'บันทึกผัง'}
+            </button>
+          </div>
+        )}
+
         {/* Stats Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
             <div className="p-3 bg-teal-500/10 text-teal-600 rounded-xl border border-teal-500/20">
               <Box className="w-5 h-5" />
             </div>
-            <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
-                สต็อกจริงในคลัง
-              </span>
-              <span className="text-lg font-black text-[#dee2ec] font-mono">
-                {stats.totalWarehouseStock.toLocaleString()} ชิ้น
-              </span>
+            <div className="min-w-0">
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">สต็อกที่อยู่ในผัง</span>
+              <span className="text-lg font-black text-[#dee2ec] font-mono">{stats.mappedStock.toLocaleString()} ชิ้น</span>
               <span className="text-[10px] text-teal-600 block font-bold">
-                ({products.length} รายการสินค้า)
+                จากทั้งหมด {stats.totalWarehouseStock.toLocaleString()} ชิ้น
               </span>
             </div>
           </div>
@@ -309,74 +423,97 @@ function WarehouseMapContent() {
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
-                อัตราการใช้งาน (Occupancy)
-              </span>
-              <span className="text-lg font-black text-emerald-600 font-mono">
-                {stats.occupancyRate}%
-              </span>
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">อัตราการใช้ช่อง</span>
+              <span className="text-lg font-black text-emerald-600 font-mono">{stats.occupancyRate}%</span>
               <span className="text-[10px] text-[#8a92a6] block">
-                {stats.occupiedBins} จาก {stats.totalBins} ช่อง
+                {stats.occupiedBins.toLocaleString()} จาก {stats.totalBins.toLocaleString()} ช่อง
               </span>
             </div>
           </div>
 
-          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
+          <button
+            onClick={() => setShowOrphans(v => !v)}
+            className={cn(
+              'text-left bg-[#171c23] p-4 rounded-2xl border shadow-sm flex items-center gap-3 transition-colors',
+              orphans.length > 0 ? 'border-amber-500/40 hover:border-amber-400' : 'border-[#30353d]',
+            )}
+          >
             <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl border border-amber-500/20">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
-                สต็อกเหลือน้อย
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">โลเคชันที่ไม่อยู่ในผัง</span>
+              <span className="text-lg font-black text-amber-600 font-mono">{orphans.length.toLocaleString()} รหัส</span>
+              <span className="text-[10px] text-[#8a92a6] block">
+                {stats.orphanStock.toLocaleString()} ชิ้น{stats.unassignedStock > 0 && ` • ไม่ระบุที่ ${stats.unassignedStock.toLocaleString()}`}
               </span>
-              <span className="text-lg font-black text-amber-600 font-mono">
-                {stats.lowStockBins} ช่อง
-              </span>
-              <span className="text-[10px] text-[#8a92a6] block">ต่ำกว่าจุด Safety Stock</span>
             </div>
-          </div>
+          </button>
 
           <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
             <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl border border-blue-500/20">
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">
-                พื้นที่จัดสรร
-              </span>
+              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">โครงสร้างผัง</span>
               <span className="text-lg font-black text-blue-600 font-mono">
-                {zones.length} โซน • {stats.totalRacks} แร็ค
+                {zones.length} โซน • {stats.totalRacks} แร็ก
               </span>
-              <span className="text-[10px] text-blue-600 block font-bold">จัดเรียงตาม ABC หมุนเวียน</span>
+              <span className="text-[10px] text-amber-500 block font-bold">
+                {stats.lowStockBins > 0 ? `${stats.lowStockBins} ช่องสต็อกต่ำ` : ' '}
+              </span>
             </div>
           </div>
         </div>
 
+        {/* Stock the layout doesn't cover */}
+        {showOrphans && (orphans.length > 0 || unassigned) && (
+          <div className="bg-[#171c23] rounded-2xl border border-amber-500/30 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-black text-amber-300">โลเคชันที่มีสต็อกแต่ยังไม่อยู่ในผัง</h3>
+              <span className="text-[11px] text-[#8a92a6]">
+                เพิ่มแร็ก/ปรับรูปแบบรหัสโลเคชันให้ตรงป้ายจริง หรือกด &quot;สร้างผังจากโลเคชันจริง&quot;
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+              {unassigned && (
+                <button
+                  onClick={() => setSelectedBin(toModalBin(unassigned))}
+                  className="px-2.5 py-1 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-200 text-[11px] font-mono"
+                >
+                  ไม่ระบุที่ • {unassigned.totalStock.toLocaleString()}
+                </button>
+              )}
+              {orphans.map(o => (
+                <button
+                  key={o.binCode}
+                  onClick={() => setSelectedBin(toModalBin(o))}
+                  className="px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-100 text-[11px] font-mono hover:border-amber-400"
+                >
+                  {o.binCode} • {o.totalStock.toLocaleString()}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Controls Toolbar */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm">
-          {/* Zone Selector Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-            {zones.map(z => {
-              const isSelected = z.zoneId === selectedZoneId;
+            {[{ zoneCode: 'ALL', totalStock: stats.mappedStock }, ...zones].map(z => {
+              const isSelected = z.zoneCode === zoneFilter;
               return (
                 <button
-                  key={z.zoneId}
-                  onClick={() => setSelectedZoneId(z.zoneId)}
+                  key={z.zoneCode}
+                  onClick={() => setZoneFilter(z.zoneCode)}
                   className={cn(
                     'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap',
-                    isSelected
-                      ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
-                      : 'bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab]'
+                    isSelected ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20' : 'bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab]',
                   )}
                 >
                   <MapPin className="w-3.5 h-3.5" />
-                  {z.name}
-                  <span
-                    className={cn(
-                      'ml-1 px-1.5 py-0.2 rounded text-[10px] font-mono',
-                      isSelected ? 'bg-teal-700 text-teal-100' : 'bg-[#30353d] text-[#d1c6ab]'
-                    )}
-                  >
+                  {z.zoneCode === 'ALL' ? 'ทุกโซน' : `โซน ${z.zoneCode}`}
+                  <span className={cn('ml-1 px-1.5 rounded text-[10px] font-mono', isSelected ? 'bg-teal-700 text-teal-100' : 'bg-[#30353d] text-[#d1c6ab]')}>
                     {z.totalStock.toLocaleString()}
                   </span>
                 </button>
@@ -384,60 +521,57 @@ function WarehouseMapContent() {
             })}
           </div>
 
-          {/* Search SKU and Heatmap Toggle */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 md:w-64">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[12rem] md:w-64">
               <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="ค้นหา SKU หรือชื่อสินค้าเพื่อชี้เป้า..."
+                placeholder="ค้นหา SKU / ชื่อสินค้า / โลเคชัน..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl text-xs outline-none focus:border-teal-500 focus:bg-[#171c23] transition-colors"
               />
             </div>
 
-                        {/* View Mode 3D / 2D Toggle */}
             <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
-              <button
-                onClick={() => setViewMode('3D')}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
-                  viewMode === '3D' ? 'bg-[#facc15] text-[#1b1600] shadow-md shadow-[#facc15]/20 font-black' : 'text-[#8a92a6]'
-                )}
-              >
-                <Box className="w-3.5 h-3.5" /> 3D Digital Twin
-              </button>
               <button
                 onClick={() => setViewMode('2D')}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
-                  viewMode === '2D' ? 'bg-[#171c23] text-[#dee2ec] shadow-sm' : 'text-[#8a92a6]'
+                  viewMode === '2D' ? 'bg-teal-600 text-white shadow-sm' : 'text-[#8a92a6]',
                 )}
               >
-                <LayoutGrid className="w-3.5 h-3.5" /> 2D ผังแบน
+                <LayoutGrid className="w-3.5 h-3.5" /> 2D ผังพื้น
+              </button>
+              <button
+                onClick={() => setViewMode('3D')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+                  viewMode === '3D' ? 'bg-[#facc15] text-[#1b1600] shadow-md shadow-[#facc15]/20 font-black' : 'text-[#8a92a6]',
+                )}
+              >
+                <Box className="w-3.5 h-3.5" /> 3D
               </button>
             </div>
 
-            {/* Heatmap Toggle */}
             <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
               <button
                 onClick={() => setHeatmapMode('STOCK')}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1',
-                  heatmapMode === 'STOCK' ? 'bg-[#171c23] text-[#dee2ec] shadow-sm' : 'text-[#8a92a6]'
+                  heatmapMode === 'STOCK' ? 'bg-[#171c23] text-[#dee2ec] shadow-sm' : 'text-[#8a92a6]',
                 )}
               >
-                <Layers className="w-3.5 h-3.5" /> ระดับสต็อก
+                <Layers className="w-3.5 h-3.5" /> สต็อก
               </button>
               <button
                 onClick={() => setHeatmapMode('VELOCITY')}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1',
-                  heatmapMode === 'VELOCITY' ? 'bg-orange-500 text-white shadow-sm' : 'text-[#8a92a6]'
+                  heatmapMode === 'VELOCITY' ? 'bg-orange-500 text-white shadow-sm' : 'text-[#8a92a6]',
                 )}
               >
-                <Flame className="w-3.5 h-3.5" /> ABC หมุนเวียน
+                <Flame className="w-3.5 h-3.5" /> ABC
               </button>
             </div>
           </div>
@@ -448,201 +582,87 @@ function WarehouseMapContent() {
           <span className="font-bold text-[#d1c6ab]">สัญลักษณ์สี:</span>
           {heatmapMode === 'STOCK' ? (
             <>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-emerald-500" />
-                <span>สต็อกปกติ (Normal)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-amber-500" />
-                <span>สต็อกต่ำ (Low Stock)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-rose-500" />
-                <span>สต็อกหมด (Empty)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-slate-300" />
-                <span>ช่องว่างพร้อมเก็บ</span>
-              </div>
+              <Legend color="bg-emerald-500" label="มีสต็อก" />
+              <Legend color="bg-amber-500" label="สินค้าต่ำกว่า Min" />
+              <Legend color="bg-slate-600" label="ช่องว่าง" />
+              <Legend color="bg-cyan-400" label="ตรงกับที่ค้นหา" />
             </>
           ) : (
             <>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-red-500" />
-                <span>Class A (Fast Moving หยิบบ่อยมาก)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-amber-500" />
-                <span>Class B (Medium Moving หยิบปานกลาง)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-blue-500" />
-                <span>Class C (Slow Moving)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-slate-400" />
-                <span>Class D (Deadstock ไม่เคลื่อนไหว)</span>
-              </div>
+              <Legend color="bg-red-500" label="Class A หยิบบ่อยมาก" />
+              <Legend color="bg-amber-500" label="Class B" />
+              <Legend color="bg-blue-500" label="Class C" />
+              <Legend color="bg-slate-600" label="D / ว่าง" />
             </>
           )}
         </div>
 
-                {/* 3D Visual Warehouse Digital Twin */}
-        {viewMode === '3D' && layout3D && (
+        {/* Empty state: branch has no racks yet */}
+        {!loading && rackCount === 0 && (
+          <div className="bg-[#171c23] rounded-3xl border border-dashed border-teal-500/40 p-8 text-center space-y-4">
+            <LayoutGrid className="w-10 h-10 text-teal-500 mx-auto" />
+            <div>
+              <h2 className="text-lg font-black text-[#dee2ec]">สาขานี้ยังไม่มีผังคลัง</h2>
+              <p className="text-xs text-[#8a92a6] mt-1">
+                เริ่มจากรหัสโลเคชันที่มีสต็อกอยู่จริง ({(orphans.length + (unassigned ? 1 : 0)).toLocaleString()} รหัส) หรือใช้ตัวช่วยสร้างผังแบบกำหนดเอง
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                onClick={handleInferLayout}
+                className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-black flex items-center gap-1.5"
+              >
+                <ScanSearch className="w-4 h-4" /> สร้างผังจากโลเคชันจริง
+              </button>
+              <button
+                onClick={() => setIsWizardOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] text-xs font-bold flex items-center gap-1.5"
+              >
+                <Wand2 className="w-4 h-4 text-[#facc15]" /> ตัวช่วยสร้างผัง
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3D Digital Twin (also the layout editor) */}
+        {viewMode === '3D' && layout && (
           <Warehouse3DViewer
-            layout={layout3D}
+            layout={layout}
             products={products}
+            binStock={binStock3D}
             heatmapMode={heatmapMode === 'VELOCITY' ? 'VELOCITY' : 'STOCK'}
-            branchName={layout3D.name || 'คลังสินค้าหลัก'}
+            branchName={layout.name || 'คลังสินค้า'}
             isEditMode={isEditMode}
             onToggleEditMode={() => setIsEditMode(!isEditMode)}
             onOpenWizard={() => setIsWizardOpen(true)}
             onOpenLabelModal={() => setIsLabelModalOpen(true)}
-            onSaveLayout={handleSaveLayout}
+            onSaveLayout={() => saveLayout()}
             isSaving={isSavingLayout}
-            onUpdateLayout={(newLayout) => setLayout3D(newLayout)}
-            onSelectBin={(binCode, binData) => {
-              // Open modal if bin found
-              const foundBin = zones.flatMap(z => z.aisles).flatMap(a => a.racks).flatMap(r => r.bins).find(b => b.binCode === binCode);
-              if (foundBin) setSelectedBin(foundBin);
+            onUpdateLayout={next => updateLayout({ ...layout, ...next })}
+            onSelectBin={binCode => {
+              const bin = map.binIndex.get(binCode);
+              if (bin) setSelectedBin(bin);
             }}
           />
         )}
 
-        {/* 2D Interactive Warehouse Floor Layout */}
-        <div className={cn("bg-[#171c23] rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#30353d] text-[#dee2ec] min-h-[500px]", viewMode === '3D' && 'hidden')}>
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-            <div>
-              <h2 className="text-lg font-black flex items-center gap-2 text-teal-400">
-                <MapPin className="w-5 h-5" />
-                {activeZone?.name}
-              </h2>
-              <p className="text-xs text-[#8a92a6] mt-0.5">
-                คลิกที่ชั้นวาง (Rack / Bin) เพื่อดูสต็อกสินค้าและรายละเอียดภายในช่อง
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-[#8a92a6] block">จำนวนสต็อกในโซนนี้:</span>
-              <span className="text-xl font-mono font-black text-teal-300">
-                {activeZone?.totalStock.toLocaleString()} ชิ้น
-              </span>
-            </div>
+        {/* 2D floor plan + rack elevation */}
+        {viewMode === '2D' && layout && rackCount > 0 && (
+          <div className="bg-[#171c23] rounded-3xl p-4 sm:p-6 shadow-2xl border border-[#30353d] text-[#dee2ec]">
+            <Warehouse2DPlan
+              layout={layout}
+              map={map}
+              heatmapMode={heatmapMode}
+              matchingBinCodes={matchingBinCodes}
+              zoneFilter={zoneFilter}
+              selectedRackCode={selectedRackCode}
+              onSelectRack={setSelectedRackCode}
+              onSelectBin={setSelectedBin}
+            />
           </div>
+        )}
 
-          {/* Aisles & Racks Grid */}
-          <div className="space-y-8">
-            {activeZone?.aisles.map(aisle => (
-              <div key={aisle.aisleNumber} className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-[#8a92a6] border-b border-slate-800/80 pb-1 font-mono">
-                  <span className="bg-slate-800 px-3 py-1 rounded-md font-bold text-slate-300">
-                    ทางเดินซอย (Aisle {aisle.aisleNumber})
-                  </span>
-                  <span>
-                    {aisle.racks.length} แร็ค • สต็อกรวม {aisle.totalStock.toLocaleString()}
-                  </span>
-                </div>
-
-                {/* Racks Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {aisle.racks.map(rack => (
-                    <div key={rack.rackNumber} className="space-y-2">
-                      {rack.bins.map(bin => {
-                        const isMatched = matchingBinCodes.has(bin.binCode);
-                        const isSelected = selectedBin?.binCode === bin.binCode;
-
-                        // Color coding
-                        let bgClass = 'bg-slate-800/90 border-slate-700';
-                        let badgeColor = 'bg-slate-700 text-slate-300';
-
-                        if (heatmapMode === 'STOCK') {
-                          if (bin.totalStock === 0 && bin.products.length > 0) {
-                            bgClass = 'bg-rose-950/80 border-rose-600 text-rose-200';
-                            badgeColor = 'bg-rose-600 text-white';
-                          } else if (bin.status === 'LOW_STOCK') {
-                            bgClass = 'bg-amber-950/80 border-amber-600 text-amber-200';
-                            badgeColor = 'bg-amber-500 text-[#dee2ec]';
-                          } else if (bin.totalStock > 0) {
-                            bgClass = 'bg-emerald-950/80 border-emerald-600 text-emerald-200';
-                            badgeColor = 'bg-emerald-600 text-white';
-                          }
-                        } else {
-                          // Velocity Heatmap
-                          if (bin.dominantVelocityClass === 'A') {
-                            bgClass = 'bg-red-950/80 border-red-500 text-red-200';
-                            badgeColor = 'bg-red-500 text-white';
-                          } else if (bin.dominantVelocityClass === 'B') {
-                            bgClass = 'bg-amber-950/80 border-amber-500 text-amber-200';
-                            badgeColor = 'bg-amber-500 text-[#dee2ec]';
-                          } else if (bin.dominantVelocityClass === 'C') {
-                            bgClass = 'bg-blue-950/80 border-blue-500 text-blue-200';
-                            badgeColor = 'bg-blue-600 text-white';
-                          }
-                        }
-
-                        return (
-                          <motion.button
-                            key={bin.binCode}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setSelectedBin(bin)}
-                            className={cn(
-                              'w-full p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between min-h-[90px]',
-                              bgClass,
-                              isMatched && 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/30 scale-[1.03]',
-                              isSelected && 'ring-2 ring-teal-400 bg-slate-800'
-                            )}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span className="font-mono font-black text-xs text-white">
-                                {bin.binCode}
-                              </span>
-                              <span
-                                className={cn(
-                                  'px-1.5 py-0.5 rounded text-[10px] font-mono font-black',
-                                  badgeColor
-                                )}
-                              >
-                                {heatmapMode === 'VELOCITY'
-                                  ? `Class ${bin.dominantVelocityClass}`
-                                  : `${bin.totalStock} ชิ้น`}
-                              </span>
-                            </div>
-
-                            <div className="mt-2 text-[11px] truncate w-full">
-                              {bin.products.length === 0 ? (
-                                <span className="text-[#8a92a6] italic">ช่องว่าง</span>
-                              ) : (
-                                <div className="truncate text-slate-300">
-                                  <span className="font-bold">{bin.products[0].name}</span>
-                                  {bin.products.length > 1 && (
-                                    <span className="text-[#8a92a6] ml-1">
-                                      (+{bin.products.length - 1})
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex items-center justify-between text-[10px] text-[#8a92a6] mt-1">
-                              <span className="font-mono">{bin.products.length} SKUs</span>
-                              {isMatched && (
-                                <span className="text-cyan-400 font-bold flex items-center gap-0.5">
-                                  <Sparkles className="w-3 h-3" /> พบสินค้า
-                                </span>
-                              )}
-                            </div>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Selected Bin Details Drawer Modal */}
+        {/* Selected Bin Details */}
         <AnimatePresence>
           {selectedBin && (
             <motion.div
@@ -665,11 +685,11 @@ function WarehouseMapContent() {
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-black text-lg text-[#dee2ec] font-mono">
-                        พิกัด: {selectedBin.binCode}
-                      </h3>
+                      <h3 className="font-black text-lg text-[#dee2ec] font-mono">พิกัด: {selectedBin.binCode}</h3>
                       <p className="text-xs text-[#8a92a6]">
-                        โซน {selectedBin.zone} • ซอย {selectedBin.aisle} • แร็ค {selectedBin.rack}
+                        {selectedBin.rackCode
+                          ? `โซน ${selectedBin.zoneCode} • แร็ก ${selectedBin.rackCode} • ช่อง ${selectedBin.bay} • ชั้น ${selectedBin.level}`
+                          : 'ไม่อยู่ในผังคลังของสาขานี้'}
                       </p>
                     </div>
                   </div>
@@ -683,24 +703,15 @@ function WarehouseMapContent() {
 
                 <div className="grid grid-cols-2 gap-3 bg-[#1b2027] p-3 rounded-2xl border border-[#30353d]">
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">
-                      จำนวนสต็อกรวม
-                    </span>
-                    <span className="text-lg font-black font-mono text-teal-600">
-                      {selectedBin.totalStock.toLocaleString()} ชิ้น
-                    </span>
+                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">สต็อกในช่องนี้</span>
+                    <span className="text-lg font-black font-mono text-teal-600">{selectedBin.totalStock.toLocaleString()} ชิ้น</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">
-                      ความถี่หมุนเวียน (ABC)
-                    </span>
-                    <span className="text-lg font-black font-mono text-[#dee2ec]">
-                      Class {selectedBin.dominantVelocityClass}
-                    </span>
+                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">ความถี่หมุนเวียน (ABC)</span>
+                    <span className="text-lg font-black font-mono text-[#dee2ec]">Class {selectedBin.velocityClass}</span>
                   </div>
                 </div>
 
-                {/* Products List in this Bin */}
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   <span className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block">
                     รายการสินค้าในช่องนี้ ({selectedBin.products.length} รายการ):
@@ -714,35 +725,28 @@ function WarehouseMapContent() {
                     selectedBin.products.map(p => (
                       <div
                         key={p.id}
-                        className="p-3 bg-[#1b2027] hover:bg-teal-500/10/50 rounded-xl border border-[#30353d] flex items-center justify-between text-xs transition-colors"
+                        className="p-3 bg-[#1b2027] rounded-xl border border-[#30353d] flex items-center justify-between gap-2 text-xs"
                       >
-                        <div>
-                          <div className="font-bold text-[#dee2ec]">{p.name}</div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-[#dee2ec] truncate">{p.name}</div>
                           <div className="text-[11px] text-[#8a92a6] flex items-center gap-2 mt-0.5">
-                            <span>หมวด: {p.category}</span>
+                            <span className="font-mono">{p.id}</span>
                             <span>•</span>
-                            <span className="font-mono text-orange-600 font-bold">
-                              ABC: Class {p.velocityClass}
-                            </span>
+                            <span className="font-mono text-orange-500 font-bold">Class {p.velocityClass}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 shrink-0">
                           <div className="text-right font-mono">
-                            <span
-                              className={cn(
-                                'text-sm font-black',
-                                p.stock <= p.minStock ? 'text-amber-600' : 'text-[#dee2ec]'
-                              )}
-                            >
+                            <span className={cn('text-sm font-black', p.totalStock <= p.minStock ? 'text-amber-500' : 'text-[#dee2ec]')}>
                               {p.stock.toLocaleString()} {p.unit}
                             </span>
                             <span className="block text-[10px] text-[#8a92a6]">
-                              Min: {p.minStock}
+                              รวมทุกช่อง {p.totalStock.toLocaleString()} • Min {p.minStock}
                             </span>
                           </div>
                           <button
-                            onClick={() => setSwapProduct({ id: p.id, name: p.name, sku: (p as any).sku || p.id, location: selectedBin.binCode, stock: p.stock })}
+                            onClick={() => setSwapProduct({ id: p.id, name: p.name, sku: p.id, location: selectedBin.binCode, stock: p.stock })}
                             className="px-2 py-1 bg-[#1b2027] hover:bg-[#facc15] hover:text-[#1b1600] text-[#facc15] border border-[#facc15]/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition"
                             title="สลับพิกัดสินค้านี้"
                           >
@@ -757,7 +761,7 @@ function WarehouseMapContent() {
 
                 <div className="pt-2 border-t border-[#30353d] flex items-center justify-between">
                   <Link
-                    href={`/barcode/thermal-labels?bin=${selectedBin.binCode}`}
+                    href={`/barcode/thermal-labels?bin=${encodeURIComponent(selectedBin.binCode)}`}
                     className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
                   >
                     <Printer className="w-4 h-4" /> พิมพ์ป้ายพิกัด 100x50 mm
@@ -774,19 +778,18 @@ function WarehouseMapContent() {
           )}
         </AnimatePresence>
 
-        {/* 1-Click Location Swap Modal */}
         <WarehouseWizardModal
           isOpen={isWizardOpen}
           onClose={() => setIsWizardOpen(false)}
           branchId={branchId || 'MAIN'}
-          branchName={layout3D?.name || 'คลังสินค้าหลัก'}
+          branchName={layout?.name || 'คลังสินค้าหลัก'}
           onApplyLayout={handleApplyWizard}
         />
 
         <WarehouseBatchLabelModal
           isOpen={isLabelModalOpen}
           onClose={() => setIsLabelModalOpen(false)}
-          branchName={layout3D?.name || 'คลังสินค้าหลัก'}
+          branchName={layout?.name || 'คลังสินค้าหลัก'}
           bins={allBinsList}
         />
 
@@ -801,6 +804,15 @@ function WarehouseMapContent() {
           }}
         />
       </div>
+    </div>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={cn('w-3 h-3 rounded', color)} />
+      <span>{label}</span>
     </div>
   );
 }

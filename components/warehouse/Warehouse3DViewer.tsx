@@ -26,7 +26,9 @@ import {
   Save,
   Sliders,
 } from 'lucide-react';
-import { RackConfig } from '@/app/api/warehouse/layout/route';
+import { RackConfig, binCodeFor, DEFAULT_BIN_TEMPLATE, listRackBins } from '@/lib/warehouseLayout';
+
+type BinStockEntry = { products: any[]; totalStock: number; velocityClass: string; status?: string };
 
 interface Warehouse3DProps {
   layout: {
@@ -36,6 +38,8 @@ interface Warehouse3DProps {
     racks: RackConfig[];
   };
   products?: any[];
+  /** Per-bin stock (from stock_locations). Falls back to products.location when absent. */
+  binStock?: Map<string, BinStockEntry>;
   heatmapMode?: 'STOCK' | 'VELOCITY' | 'REALISTIC';
   selectedBinCode?: string | null;
   onSelectBin?: (binCode: string, binData?: any) => void;
@@ -52,6 +56,7 @@ interface Warehouse3DProps {
 export default function Warehouse3DViewer({
   layout,
   products = [],
+  binStock,
   heatmapMode = 'STOCK',
   selectedBinCode,
   onSelectBin,
@@ -72,7 +77,8 @@ export default function Warehouse3DViewer({
 
   // Map products to bins for fast lookup & visualization
   const binDataMap = useMemo(() => {
-    const map = new Map<string, { products: any[]; totalStock: number; velocityClass: string }>();
+    if (binStock) return binStock;
+    const map = new Map<string, BinStockEntry>();
 
     products.forEach(p => {
       const loc = (p.location || 'UNASSIGNED').trim().toUpperCase();
@@ -85,7 +91,7 @@ export default function Warehouse3DViewer({
     });
 
     return map;
-  }, [products]);
+  }, [products, binStock]);
 
   // Selected Rack object for inspector
   const selectedRack = useMemo(() => {
@@ -103,15 +109,26 @@ export default function Warehouse3DViewer({
       return r;
     });
     onUpdateLayout({ ...layout, racks: updatedRacks });
+    // Keep the inspector on this rack while its code is being typed
+    if (patch.rackCode !== undefined) setSelectedRackCode(patch.rackCode);
+  };
+
+  const uniqueRackCode = (base: string) => {
+    const taken = new Set(layout.racks.map(r => r.rackCode));
+    if (!taken.has(base)) return base;
+    for (let i = 2; i < 1000; i++) if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
+    return `${base}-${Date.now()}`;
   };
 
   const handleAddRack = () => {
     if (!onUpdateLayout) return;
-    const nextIdx = layout.racks.length + 1;
-    const newRackCode = `A-${String(nextIdx).padStart(2, '0')}-01`;
+    const zone = selectedRack?.zoneCode || layout.racks[layout.racks.length - 1]?.zoneCode || 'A';
+    const nextIdx = layout.racks.filter(r => r.zoneCode === zone).length + 1;
+    const newRackCode = uniqueRackCode(`${zone}-${String(nextIdx).padStart(2, '0')}`);
     const newRack: RackConfig = {
       rackCode: newRackCode,
-      zoneCode: 'A',
+      zoneCode: zone,
+      binTemplate: selectedRack?.binTemplate,
       posX: 0,
       posZ: 0,
       rotationY: 0,
@@ -131,7 +148,7 @@ export default function Warehouse3DViewer({
     if (!onUpdateLayout) return;
     const isXdock = blockType === 'CROSS_DOCK';
     const nextIdx = layout.racks.filter(r => r.type === blockType).length + 1;
-    const newCode = isXdock ? `XDOCK-${String(nextIdx).padStart(2, '0')}` : `BULK-${String(nextIdx).padStart(2, '0')}`;
+    const newCode = uniqueRackCode(isXdock ? `XDOCK-${String(nextIdx).padStart(2, '0')}` : `BULK-${String(nextIdx).padStart(2, '0')}`);
     const newBlock: RackConfig = {
       rackCode: newCode,
       zoneCode: isXdock ? 'XDOCK' : 'BULK',
@@ -152,7 +169,7 @@ export default function Warehouse3DViewer({
 
   const handleDuplicateRack = (rack: RackConfig) => {
     if (!onUpdateLayout) return;
-    const newRackCode = `${rack.rackCode}-COPY`;
+    const newRackCode = uniqueRackCode(`${rack.rackCode}-COPY`);
     const duplicatedRack: RackConfig = {
       ...rack,
       rackCode: newRackCode,
@@ -356,9 +373,10 @@ export default function Warehouse3DViewer({
 
         // Individual Bins inside this level
         for (let bay = 1; bay <= rack.bays; bay++) {
+          const binCode = binCodeFor(rack, bay, lvl);
+          if (!binCode) continue; // slot switched off (merged bay / no bin)
           countTotalBins++;
           const xPos = -totalRackLength / 2 + (bay - 0.5) * rack.bayWidth;
-          const binCode = `${rack.zoneCode}-${String(rack.rackCode).replace(/^[A-Z]-/, '')}-${String(bay).padStart(2, '0')}-${String(lvl).padStart(2, '0')}`.toUpperCase();
 
           const binData = binDataMap.get(binCode);
           const hasStock = !!(binData && binData.totalStock > 0);
@@ -384,10 +402,11 @@ export default function Warehouse3DViewer({
             boxOpacity = 0.7;
           } else if (hasStock) {
             boxOpacity = 0.9;
+            // Same colours as the 2D plan legend
             if (heatmapMode === 'STOCK') {
-              boxColor = binData.totalStock > 80 ? 0xef4444 : binData.totalStock > 25 ? 0xfacc15 : 0x10b981;
+              boxColor = binData.status === 'LOW_STOCK' ? 0xf59e0b : 0x10b981;
             } else if (heatmapMode === 'VELOCITY') {
-              boxColor = binData.velocityClass === 'A' ? 0x57ec7f : binData.velocityClass === 'B' ? 0x4cd7f6 : 0xfacc15;
+              boxColor = binData.velocityClass === 'A' ? 0xef4444 : binData.velocityClass === 'B' ? 0xf59e0b : binData.velocityClass === 'C' ? 0x3b82f6 : 0x64748b;
             } else {
               boxColor = 0xd97706; // Wooden cardboard pallet
             }
@@ -857,15 +876,18 @@ export default function Warehouse3DViewer({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">โซน (Zone)</label>
-                  <select
+                  <input
+                    type="text"
+                    list="wh-zone-codes"
                     value={selectedRack.zoneCode}
-                    onChange={e => handleUpdateSelectedRack({ zoneCode: e.target.value })}
-                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
-                  >
-                    {['A', 'B', 'C', 'D'].map(z => (
-                      <option key={z} value={z}>Zone {z}</option>
+                    onChange={e => handleUpdateSelectedRack({ zoneCode: e.target.value.toUpperCase() })}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  />
+                  <datalist id="wh-zone-codes">
+                    {Array.from(new Set(layout.racks.map(r => r.zoneCode))).map(z => (
+                      <option key={z} value={z} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
 
                 <div>
@@ -873,7 +895,7 @@ export default function Warehouse3DViewer({
                   <input
                     type="number"
                     min={1}
-                    max={10}
+                    max={20}
                     value={selectedRack.levels}
                     onChange={e => handleUpdateSelectedRack({ levels: Number(e.target.value) })}
                     className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
@@ -881,55 +903,13 @@ export default function Warehouse3DViewer({
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ประเภทพื้นที่ (Storage Type)</label>
-                <select
-                  value={selectedRack.type || 'RACK'}
-                  onChange={e => {
-                    const newType = e.target.value as any;
-                    const patch: Partial<RackConfig> = { type: newType };
-                    if (newType !== 'RACK') {
-                      patch.levels = 1;
-                      patch.color = newType === 'CROSS_DOCK' ? '#facc15' : '#4cd7f6';
-                    }
-                    handleUpdateSelectedRack(patch);
-                  }}
-                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
-                >
-                  <option value="RACK">ชั้นวางเหล็ก (Pallet Rack)</option>
-                  <option value="CROSS_DOCK">ลานเปลี่ยนถ่าย (Cross-Dock Staging)</option>
-                  <option value="FLOOR_BLOCK">ลานวางพื้นเทกอง (Floor Bulk Storage)</option>
-                </select>
-              </div>
-
-              {selectedRack.type !== 'CROSS_DOCK' && selectedRack.type !== 'FLOOR_BLOCK' && (
-                <div>
-                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">รูปแบบการวางสินค้า (Loading Mode)</label>
-                  <select
-                    value={selectedRack.palletMode || 'PALLET'}
-                    onChange={e => {
-                      const mode = e.target.value as any;
-                      handleUpdateSelectedRack({
-                        palletMode: mode,
-                        rackDepth: mode === 'NON_PALLET' ? 0.8 : 1.2,
-                        levelHeight: mode === 'NON_PALLET' ? 0.8 : 1.8,
-                      });
-                    }}
-                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
-                  >
-                    <option value="PALLET">วางบนพาเลท (Palletized Racks)</option>
-                    <option value="NON_PALLET">ไม่ออนพาเลท (กล่อง/ชิ้นสินค้า - Shelving)</option>
-                  </select>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ช่วงเสา (Bays)</label>
                   <input
                     type="number"
                     min={1}
-                    max={20}
+                    max={99}
                     value={selectedRack.bays}
                     onChange={e => handleUpdateSelectedRack({ bays: Number(e.target.value) })}
                     className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
@@ -941,13 +921,59 @@ export default function Warehouse3DViewer({
                   <input
                     type="number"
                     step={0.1}
-                    min={1.0}
-                    max={3.5}
+                    min={0.2}
+                    max={4}
                     value={selectedRack.levelHeight}
                     onChange={e => handleUpdateSelectedRack({ levelHeight: Number(e.target.value) })}
                     className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
                   />
                 </div>
+              </div>
+
+              {/* Bin naming: match the labels on the real racks */}
+              <div className="bg-[#12161d] p-3 rounded-xl border border-[#30353d] space-y-2">
+                <label className="text-[10px] font-mono text-[#8a92a6] block uppercase tracking-wider">
+                  รูปแบบรหัสโลเคชัน (ให้ตรงป้ายจริง)
+                </label>
+                <input
+                  type="text"
+                  value={selectedRack.binTemplate || ''}
+                  placeholder={DEFAULT_BIN_TEMPLATE}
+                  onChange={e => handleUpdateSelectedRack({ binTemplate: e.target.value })}
+                  className="w-full bg-[#171c23] border border-[#30353d] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                />
+                <div className="flex flex-wrap gap-1">
+                  {['{Z}-{R}-{BB}-{LL}', '{Z}-{BBB}', '{Z}-{BBB}.{L}', '{RACK}-{BB}{L}'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => handleUpdateSelectedRack({ binTemplate: t })}
+                      className="px-1.5 py-0.5 rounded bg-[#252a32] hover:bg-[#30353d] text-[10px] font-mono text-[#c9d1e0]"
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[#8a92a6] leading-relaxed">
+                  {'{Z}'} โซน • {'{R}'} รหัสแร็กไม่รวมโซน • {'{RACK}'} รหัสแร็กเต็ม • {'{B}'} ช่อง • {'{L}'} ชั้น (ใส่ B/L หลายตัว = เติม 0 นำหน้า)
+                </p>
+                <div className="text-[10px] font-mono text-[#57ec7f] break-all">
+                  ตัวอย่าง: {(() => {
+                    const bins = listRackBins(selectedRack);
+                    const sample = bins.slice(0, 3).map(b => b.binCode);
+                    return bins.length > 3 ? `${sample.join(', ')} … ${bins[bins.length - 1].binCode} (${bins.length} ช่อง)` : sample.join(', ');
+                  })()}
+                </div>
+                {selectedRack.binOverrides && Object.keys(selectedRack.binOverrides).length > 0 && (
+                  <div className="flex items-center justify-between text-[10px] text-amber-300">
+                    <span>ช่องพิเศษ/รวมช่อง {Object.keys(selectedRack.binOverrides).length} ช่อง</span>
+                    <button
+                      onClick={() => handleUpdateSelectedRack({ binOverrides: {} })}
+                      className="underline hover:text-amber-200"
+                    >
+                      ล้าง
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Coordinates X, Z */}
@@ -972,6 +998,38 @@ export default function Warehouse3DViewer({
                     step={0.5}
                     value={selectedRack.posZ}
                     onChange={e => handleUpdateSelectedRack({ posZ: Number(e.target.value) })}
+                    className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1 text-right font-mono font-bold text-[#dee2ec]"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-[#8a92a6]">หมุน (องศา):</span>
+                  <select
+                    value={Math.round((((selectedRack.rotationY || 0) * 180) / Math.PI + 360) % 360)}
+                    onChange={e => handleUpdateSelectedRack({ rotationY: (Number(e.target.value) * Math.PI) / 180 })}
+                    className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1 text-right font-mono font-bold text-[#dee2ec]"
+                  >
+                    {[0, 90, 180, 270].map(d => <option key={d} value={d}>{d}°</option>)}
+                  </select>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-[#8a92a6]">กว้างต่อช่อง (m):</span>
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.3}
+                    value={selectedRack.bayWidth}
+                    onChange={e => handleUpdateSelectedRack({ bayWidth: Number(e.target.value) })}
+                    className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1 text-right font-mono font-bold text-[#dee2ec]"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-[#8a92a6]">ความลึก (m):</span>
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.3}
+                    value={selectedRack.rackDepth}
+                    onChange={e => handleUpdateSelectedRack({ rackDepth: Number(e.target.value) })}
                     className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1 text-right font-mono font-bold text-[#dee2ec]"
                   />
                 </div>

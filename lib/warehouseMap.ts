@@ -1,36 +1,231 @@
 /**
- * 2D Visual Warehouse Map & Real Data Integration Logic (WMS 360 PRO)
- * Automatically maps real inventory, ABC velocity, and slotting intelligence.
+ * Warehouse map data (2D plan + 3D twin).
+ *
+ * The map is drawn from the branch's saved LAYOUT (lib/warehouseLayout.ts):
+ * every rack expands into its real bay × level bins, then per-bin stock from
+ * stock_locations is laid on top. Nothing is invented — stock sitting in a
+ * bin code that the layout doesn't contain is reported in `orphans`, and
+ * stock with no bin in `unassigned`, so the gap between the map and the real
+ * warehouse is visible instead of hidden.
  */
 
-import { parseLocation, ParsedLocation } from './picking';
 import { performABCAnalysis } from './slotting';
+import { RackConfig, LayoutBin, listRackBins, normalizeBinCode } from './warehouseLayout';
 
-export interface BinProduct {
-  id: string;
-  name: string;
-  category: string;
-  stock: number;
-  minStock: number;
-  unit: string;
-  price: number;
-  velocityClass: 'A' | 'B' | 'C' | 'D';
-  idealZone?: string;
-  action?: string;
+export type VelocityClass = 'A' | 'B' | 'C' | 'D';
+export type BinStatus = 'NORMAL' | 'LOW_STOCK' | 'EMPTY';
+
+/** One stock row: qty of one SKU in one bin (lots summed). */
+export interface BinStockRow {
+  sku: string;
+  binCode: string;
+  quantity: number;
 }
 
+export interface BinProduct {
+  id: string;          // SKU
+  name: string;
+  category: string;
+  stock: number;       // qty in THIS bin
+  totalStock: number;  // qty of the SKU across all bins
+  minStock: number;
+  unit: string;
+  velocityClass: VelocityClass;
+}
+
+export interface MapBin extends LayoutBin {
+  products: BinProduct[];
+  totalStock: number;
+  status: BinStatus;
+  velocityClass: VelocityClass;
+}
+
+export interface MapRack {
+  rack: RackConfig;
+  bins: MapBin[];
+  totalStock: number;
+  occupiedBins: number;
+}
+
+export interface MapZone {
+  zoneCode: string;
+  racks: MapRack[];
+  totalStock: number;
+  totalBins: number;
+  occupiedBins: number;
+}
+
+export interface LooseStock {
+  binCode: string;
+  products: BinProduct[];
+  totalStock: number;
+}
+
+export interface WarehouseMapStats {
+  totalZones: number;
+  totalRacks: number;
+  totalBins: number;
+  occupiedBins: number;
+  occupancyRate: number;
+  lowStockBins: number;
+  mappedStock: number;
+  orphanStock: number;
+  unassignedStock: number;
+  totalWarehouseStock: number;
+  totalProductsCount: number;
+}
+
+export interface WarehouseMapData {
+  zones: MapZone[];
+  binIndex: Map<string, MapBin>;
+  orphans: LooseStock[];
+  unassigned: LooseStock | null;
+  stats: WarehouseMapStats;
+}
+
+const UNASSIGNED_CODES = new Set(['', 'UNASSIGNED', '-', 'NONE']);
+
+const CLASS_RANK: Record<VelocityClass, number> = { A: 0, B: 1, C: 2, D: 3 };
+
+function dominantClass(products: BinProduct[]): VelocityClass {
+  if (products.length === 0) return 'D';
+  return products.reduce<VelocityClass>((best, p) => (CLASS_RANK[p.velocityClass] < CLASS_RANK[best] ? p.velocityClass : best), 'D');
+}
+
+function binStatus(products: BinProduct[], total: number): BinStatus {
+  if (total <= 0) return 'EMPTY';
+  return products.some(p => p.totalStock <= p.minStock) ? 'LOW_STOCK' : 'NORMAL';
+}
+
+/** Fallback when stock_locations isn't available: one row per product at products.location. */
+export function stockRowsFromProducts(products: any[] = []): BinStockRow[] {
+  return products
+    .filter(p => Number(p.stock || 0) > 0)
+    .map(p => ({ sku: String(p.sku || p.id || p.name), binCode: normalizeBinCode(p.location), quantity: Number(p.stock || 0) }));
+}
+
+export function buildWarehouseMap(
+  racks: RackConfig[] = [],
+  stockRows: BinStockRow[] = [],
+  products: any[] = [],
+  transactions: any[] = [],
+): WarehouseMapData {
+  // Product master + ABC class, keyed by SKU.
+  const abc = performABCAnalysis(products, transactions);
+  const classBySku = new Map<string, VelocityClass>();
+  abc.all.forEach(i => classBySku.set(String(i.sku || i.productId), i.class as VelocityClass));
+  const productBySku = new Map<string, any>();
+  products.forEach(p => productBySku.set(String(p.sku || p.id || p.name), p));
+
+  const totalBySku = new Map<string, number>();
+  stockRows.forEach(r => totalBySku.set(r.sku, (totalBySku.get(r.sku) || 0) + Number(r.quantity || 0)));
+
+  // Stock grouped by bin code.
+  const stockByBin = new Map<string, BinProduct[]>();
+  stockRows.forEach(r => {
+    const qty = Number(r.quantity || 0);
+    if (qty <= 0) return;
+    const code = normalizeBinCode(r.binCode);
+    const p = productBySku.get(r.sku);
+    const list = stockByBin.get(code) || [];
+    const existing = list.find(x => x.id === r.sku);
+    if (existing) { existing.stock += qty; }
+    else {
+      list.push({
+        id: r.sku,
+        name: p?.name || r.sku,
+        category: p?.category || 'General',
+        stock: qty,
+        totalStock: totalBySku.get(r.sku) || qty,
+        minStock: Number(p?.minStock ?? p?.min_stock ?? 0),
+        unit: p?.unit || 'pcs',
+        velocityClass: classBySku.get(r.sku) || 'D',
+      });
+    }
+    stockByBin.set(code, list);
+  });
+
+  // Expand the layout into bins and attach stock.
+  const binIndex = new Map<string, MapBin>();
+  const zoneMap = new Map<string, MapZone>();
+  racks.forEach(rack => {
+    const bins: MapBin[] = listRackBins(rack).map(b => {
+      const prods = stockByBin.get(b.binCode) || [];
+      const total = prods.reduce((s, p) => s + p.stock, 0);
+      const bin: MapBin = { ...b, products: prods, totalStock: total, status: binStatus(prods, total), velocityClass: dominantClass(prods) };
+      if (!binIndex.has(b.binCode)) binIndex.set(b.binCode, bin);
+      return bin;
+    });
+    const mapRack: MapRack = {
+      rack,
+      bins,
+      totalStock: bins.reduce((s, b) => s + b.totalStock, 0),
+      occupiedBins: bins.filter(b => b.totalStock > 0).length,
+    };
+    const zoneCode = rack.zoneCode || '-';
+    const zone = zoneMap.get(zoneCode) || { zoneCode, racks: [], totalStock: 0, totalBins: 0, occupiedBins: 0 };
+    zone.racks.push(mapRack);
+    zone.totalStock += mapRack.totalStock;
+    zone.totalBins += bins.length;
+    zone.occupiedBins += mapRack.occupiedBins;
+    zoneMap.set(zoneCode, zone);
+  });
+
+  // Stock the layout doesn't cover.
+  const orphans: LooseStock[] = [];
+  let unassigned: LooseStock | null = null;
+  stockByBin.forEach((prods, code) => {
+    if (binIndex.has(code)) return;
+    const loose = { binCode: code || 'UNASSIGNED', products: prods, totalStock: prods.reduce((s, p) => s + p.stock, 0) };
+    if (UNASSIGNED_CODES.has(code)) {
+      unassigned = unassigned
+        ? { ...unassigned, products: [...unassigned.products, ...prods], totalStock: unassigned.totalStock + loose.totalStock }
+        : { ...loose, binCode: 'UNASSIGNED' };
+    } else {
+      orphans.push(loose);
+    }
+  });
+  orphans.sort((a, b) => a.binCode.localeCompare(b.binCode, undefined, { numeric: true }));
+
+  const zones = Array.from(zoneMap.values()).sort((a, b) => a.zoneCode.localeCompare(b.zoneCode, undefined, { numeric: true }));
+  const allBins = zones.flatMap(z => z.racks.flatMap(r => r.bins));
+  const occupiedBins = allBins.filter(b => b.totalStock > 0).length;
+  const mappedStock = allBins.reduce((s, b) => s + b.totalStock, 0);
+  const orphanStock = orphans.reduce((s, o) => s + o.totalStock, 0);
+  const unassignedStock = (unassigned as LooseStock | null)?.totalStock || 0;
+
+  return {
+    zones,
+    binIndex,
+    orphans,
+    unassigned,
+    stats: {
+      totalZones: zones.length,
+      totalRacks: racks.length,
+      totalBins: allBins.length,
+      occupiedBins,
+      occupancyRate: allBins.length > 0 ? Math.round((occupiedBins / allBins.length) * 100) : 0,
+      lowStockBins: allBins.filter(b => b.status === 'LOW_STOCK').length,
+      mappedStock,
+      orphanStock,
+      unassignedStock,
+      totalWarehouseStock: mappedStock + orphanStock + unassignedStock,
+      totalProductsCount: products.length,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Legacy zone/aisle/rack shapes — still referenced by lib/putaway.ts.
+// ---------------------------------------------------------------------------
 export interface WarehouseBin {
   binCode: string;
   zone: string;
   aisle: number;
   rack: number;
   shelf: number;
-  products: BinProduct[];
   totalStock: number;
-  status: 'NORMAL' | 'LOW_STOCK' | 'EMPTY_CRITICAL' | 'AVAILABLE_EMPTY';
-  dominantVelocityClass: 'A' | 'B' | 'C' | 'D';
 }
-
 export interface WarehouseRack {
   rackNumber: number;
   zone: string;
@@ -39,294 +234,15 @@ export interface WarehouseRack {
   totalStock: number;
   status: 'NORMAL' | 'LOW_STOCK' | 'EMPTY_CRITICAL' | 'AVAILABLE_EMPTY';
 }
-
 export interface WarehouseAisle {
   aisleNumber: number;
   zone: string;
   racks: WarehouseRack[];
   totalStock: number;
 }
-
 export interface WarehouseZone {
   zoneId: string;
   name: string;
-  color: string;
   aisles: WarehouseAisle[];
   totalStock: number;
-  totalBins: number;
-  occupiedBins: number;
-}
-
-export interface WarehouseMapStats {
-  totalZones: number;
-  totalAisles: number;
-  totalRacks: number;
-  totalBins: number;
-  occupiedBins: number;
-  emptyBins: number;
-  occupancyRate: number;
-  lowStockBins: number;
-  outOfStockBins: number;
-  unassignedProductsCount: number;
-  totalWarehouseStock: number;
-  totalProductsCount: number;
-}
-
-const ZONE_COLORS: Record<string, string> = {
-  A: 'emerald',
-  B: 'blue',
-  C: 'amber',
-  D: 'violet',
-  E: 'rose',
-  F: 'cyan',
-};
-
-/**
- * Build structured warehouse 2D map from real live Products & Transactions list
- */
-export function buildWarehouseMap(
-  products: any[] = [],
-  transactions: any[] = []
-): { zones: WarehouseZone[]; unassignedProducts: any[]; stats: WarehouseMapStats } {
-  // 1. Perform ABC Analysis using real system slotting engine
-  const abcInsights = performABCAnalysis(products, transactions);
-  const abcMap = new Map<string, typeof abcInsights.all[0]>();
-  abcInsights.all.forEach(item => {
-    abcMap.set(item.productId || item.productName, item);
-  });
-
-  const binMap = new Map<string, WarehouseBin>();
-  const unassignedProducts: any[] = [];
-  const assignedProducts: any[] = [];
-
-  // 2. Classify products into assigned vs unassigned
-  products.forEach(p => {
-    const loc = p.location?.trim();
-    const isUnassigned = !loc || loc.toLowerCase() === 'unassigned' || loc === '-' || loc.toLowerCase() === 'none';
-
-    const pKey = p.id || p.name;
-    const insight = abcMap.get(pKey);
-    const vClass = (insight?.class || 'C') as 'A' | 'B' | 'C' | 'D';
-
-    const binProduct: BinProduct = {
-      id: p.id || p.name,
-      name: p.name || 'Unnamed Product',
-      category: p.category || 'General',
-      stock: Number(p.stock || 0),
-      minStock: Number(p.minStock || 5),
-      unit: p.unit || 'pcs',
-      price: Number(p.price || 0),
-      velocityClass: vClass,
-      idealZone: insight?.idealZone || 'Middle / Zone B',
-      action: insight?.action || 'KEEP',
-    };
-
-    if (isUnassigned) {
-      unassignedProducts.push({ ...p, binProduct });
-    } else {
-      assignedProducts.push({ ...p, binProduct, loc });
-    }
-  });
-
-  // 3. If products have explicit locations, populate their actual Bins
-  assignedProducts.forEach(({ binProduct, loc }) => {
-    const parsed: ParsedLocation = parseLocation(loc);
-    const binCode = parsed.raw || `${parsed.zone}-${parsed.aisle.toString().padStart(2, '0')}-${parsed.rack.toString().padStart(2, '0')}`;
-
-    if (!binMap.has(binCode)) {
-      binMap.set(binCode, {
-        binCode,
-        zone: parsed.zone,
-        aisle: parsed.aisle,
-        rack: parsed.rack,
-        shelf: parsed.shelf,
-        products: [],
-        totalStock: 0,
-        status: 'NORMAL',
-        dominantVelocityClass: binProduct.velocityClass,
-      });
-    }
-
-    const bin = binMap.get(binCode)!;
-    bin.products.push(binProduct);
-    bin.totalStock += binProduct.stock;
-  });
-
-  // 4. SMART AUTO-PROJECTION FOR UNASSIGNED PRODUCTS:
-  // If many products don't have location strings yet, automatically project them onto the warehouse map
-  // based on their ABC Class (Zone A = Fast, Zone B = Normal, Zone C = Bulk) so the map displays full real data immediately!
-  if (unassignedProducts.length > 0) {
-    unassignedProducts.forEach(({ binProduct }, idx) => {
-      let targetZone = 'B';
-      if (binProduct.velocityClass === 'A') targetZone = 'A';
-      else if (binProduct.velocityClass === 'C' || binProduct.velocityClass === 'D') targetZone = 'C';
-
-      const aisleNum = (idx % 2) + 1; // Aisle 1 or 2
-      const rackNum = Math.floor(idx / 2) % 4 + 1; // Rack 1 to 4
-      const binCode = `${targetZone}-${aisleNum.toString().padStart(2, '0')}-${rackNum.toString().padStart(2, '0')}`;
-
-      if (!binMap.has(binCode)) {
-        binMap.set(binCode, {
-          binCode,
-          zone: targetZone,
-          aisle: aisleNum,
-          rack: rackNum,
-          shelf: 1,
-          products: [],
-          totalStock: 0,
-          status: 'NORMAL',
-          dominantVelocityClass: binProduct.velocityClass,
-        });
-      }
-
-      const bin = binMap.get(binCode)!;
-      bin.products.push(binProduct);
-      bin.totalStock += binProduct.stock;
-    });
-  }
-
-  // 5. Update Statuses & Dominant Velocity for each Bin
-  binMap.forEach(bin => {
-    if (bin.totalStock <= 0) {
-      bin.status = 'EMPTY_CRITICAL';
-    } else if (bin.products.some(p => p.stock <= p.minStock)) {
-      bin.status = 'LOW_STOCK';
-    } else {
-      bin.status = 'NORMAL';
-    }
-
-    if (bin.products.some(p => p.velocityClass === 'A')) bin.dominantVelocityClass = 'A';
-    else if (bin.products.some(p => p.velocityClass === 'B')) bin.dominantVelocityClass = 'B';
-    else if (bin.products.every(p => p.velocityClass === 'D')) bin.dominantVelocityClass = 'D';
-    else bin.dominantVelocityClass = 'C';
-  });
-
-  // 6. Build Structured Zone -> Aisle -> Rack Hierarchy
-  const zoneMap = new Map<string, Map<number, Map<number, WarehouseBin[]>>>();
-
-  // Ensure default standard zones A, B, C exist
-  const defaultZones = ['A', 'B', 'C'];
-  defaultZones.forEach(z => {
-    if (!zoneMap.has(z)) zoneMap.set(z, new Map());
-  });
-
-  binMap.forEach(bin => {
-    const z = bin.zone;
-    if (!zoneMap.has(z)) zoneMap.set(z, new Map());
-
-    const aisleMap = zoneMap.get(z)!;
-    if (!aisleMap.has(bin.aisle)) aisleMap.set(bin.aisle, new Map());
-
-    const rackMap = aisleMap.get(bin.aisle)!;
-    if (!rackMap.has(bin.rack)) rackMap.set(bin.rack, []);
-
-    rackMap.get(bin.rack)!.push(bin);
-  });
-
-  const zones: WarehouseZone[] = [];
-  let totalWarehouseStock = 0;
-
-  zoneMap.forEach((aisleMap, zoneId) => {
-    const aisles: WarehouseAisle[] = [];
-    let zoneStock = 0;
-    let zoneBinsCount = 0;
-    let zoneOccupiedCount = 0;
-
-    const aisleKeys = Array.from(aisleMap.keys()).sort((a, b) => a - b);
-    if (aisleKeys.length === 0) aisleKeys.push(1, 2);
-
-    aisleKeys.forEach(aisleNum => {
-      const rackMap = aisleMap.get(aisleNum) || new Map<number, WarehouseBin[]>();
-      const racks: WarehouseRack[] = [];
-      let aisleStock = 0;
-
-      const rackKeys = Array.from(rackMap.keys()).sort((a, b) => a - b);
-      if (rackKeys.length === 0) rackKeys.push(1, 2, 3, 4);
-
-      rackKeys.forEach(rackNum => {
-        let bins = rackMap.get(rackNum) || [];
-        if (bins.length === 0) {
-          bins = [
-            {
-              binCode: `${zoneId}-${aisleNum.toString().padStart(2, '0')}-${rackNum.toString().padStart(2, '0')}`,
-              zone: zoneId,
-              aisle: aisleNum,
-              rack: rackNum,
-              shelf: 1,
-              products: [],
-              totalStock: 0,
-              status: 'AVAILABLE_EMPTY',
-              dominantVelocityClass: 'D',
-            },
-          ];
-        }
-
-        const rackStock = bins.reduce((sum, b) => sum + b.totalStock, 0);
-        aisleStock += rackStock;
-        zoneBinsCount += bins.length;
-        if (rackStock > 0) zoneOccupiedCount += bins.length;
-
-        let rackStatus: WarehouseRack['status'] = 'AVAILABLE_EMPTY';
-        if (rackStock > 0) {
-          rackStatus = bins.some(b => b.status === 'LOW_STOCK')
-            ? 'LOW_STOCK'
-            : bins.some(b => b.status === 'EMPTY_CRITICAL')
-            ? 'EMPTY_CRITICAL'
-            : 'NORMAL';
-        }
-
-        racks.push({
-          rackNumber: rackNum,
-          zone: zoneId,
-          aisle: aisleNum,
-          bins,
-          totalStock: rackStock,
-          status: rackStatus,
-        });
-      });
-
-      zoneStock += aisleStock;
-      aisles.push({
-        aisleNumber: aisleNum,
-        zone: zoneId,
-        racks,
-        totalStock: aisleStock,
-      });
-    });
-
-    totalWarehouseStock += zoneStock;
-
-    zones.push({
-      zoneId,
-      name: `โซน ${zoneId} (${zoneId === 'A' ? 'Fast-Moving' : zoneId === 'B' ? 'Standard' : 'Bulk / Reserve'})`,
-      color: ZONE_COLORS[zoneId] || 'slate',
-      aisles,
-      totalStock: zoneStock,
-      totalBins: zoneBinsCount,
-      occupiedBins: zoneOccupiedCount,
-    });
-  });
-
-  // Calculate Overall Stats
-  const totalBins = Array.from(binMap.values()).length || zones.reduce((s, z) => s + z.totalBins, 0);
-  const occupiedBins = Array.from(binMap.values()).filter(b => b.totalStock > 0).length;
-  const lowStockBins = Array.from(binMap.values()).filter(b => b.status === 'LOW_STOCK').length;
-  const outOfStockBins = Array.from(binMap.values()).filter(b => b.status === 'EMPTY_CRITICAL').length;
-
-  const stats: WarehouseMapStats = {
-    totalZones: zones.length,
-    totalAisles: zones.reduce((s, z) => s + z.aisles.length, 0),
-    totalRacks: zones.reduce((s, z) => s + z.aisles.reduce((as, a) => as + a.racks.length, 0), 0),
-    totalBins,
-    occupiedBins,
-    emptyBins: totalBins - occupiedBins,
-    occupancyRate: totalBins > 0 ? Math.round((occupiedBins / totalBins) * 100) : 0,
-    lowStockBins,
-    outOfStockBins,
-    unassignedProductsCount: unassignedProducts.length,
-    totalWarehouseStock,
-    totalProductsCount: products.length,
-  };
-
-  return { zones, unassignedProducts, stats };
 }
