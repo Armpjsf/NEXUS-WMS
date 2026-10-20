@@ -461,10 +461,11 @@ export default function Warehouse3DViewer({
           }
 
           const isHit = hasHighlight && highlight.has(binCode);
+          const isFaded = hasHighlight && !isHit && !isThisRackSelected;
           if (isHit) {
             boxColor = 0x22d3ee;
             boxOpacity = 1;
-          } else if (hasHighlight && !isThisRackSelected) {
+          } else if (isFaded) {
             boxOpacity = Math.min(boxOpacity, hasStock ? 0.22 : 0.1); // fade everything that isn't a match
           }
 
@@ -472,8 +473,11 @@ export default function Warehouse3DViewer({
             color: boxColor,
             roughness: 0.6,
             metalness: 0.2,
-            transparent: boxOpacity < 1 && !isThisRackSelected,
-            opacity: boxOpacity,
+            // Stocked slots are solid unless faded by a search; see-through slots
+            // must not write depth or they hide the boxes behind them.
+            transparent: !isThisRackSelected && (!hasStock || isFaded),
+            opacity: !isThisRackSelected && (!hasStock || isFaded) ? boxOpacity : 1,
+            depthWrite: isThisRackSelected || (hasStock && !isFaded),
             emissive: isHit ? 0x0891b2 : 0x000000,
             emissiveIntensity: isHit ? 0.8 : 0,
           });
@@ -518,11 +522,15 @@ export default function Warehouse3DViewer({
         Math.max(1.5, totalRackHeight + 0.2),
         rack.rackDepth + 0.6
       );
+      // Click target only: never let it occlude anything (it is drawn as a
+      // transparent object and would otherwise hide every box in front of the rack centre).
       const hitBoxMat = new THREE.MeshBasicMaterial({
         color: 0x0ea5e9,
         transparent: true,
         opacity: isThisRackSelected ? 0.15 : 0.0,
         wireframe: isThisRackSelected,
+        depthWrite: false,
+        colorWrite: isThisRackSelected,
       });
       const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
       hitBox.position.set(0, Math.max(1.5, totalRackHeight) / 2, 0);
