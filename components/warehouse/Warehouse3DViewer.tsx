@@ -121,9 +121,33 @@ export default function Warehouse3DViewer({
       levelHeight: 1.8,
       rackDepth: 1.2,
       color: '#57ec7f',
+      type: 'RACK',
     };
     onUpdateLayout({ ...layout, racks: [...layout.racks, newRack] });
     setSelectedRackCode(newRackCode);
+  };
+
+  const handleAddFloorBlock = (blockType: 'CROSS_DOCK' | 'FLOOR_BLOCK') => {
+    if (!onUpdateLayout) return;
+    const isXdock = blockType === 'CROSS_DOCK';
+    const nextIdx = layout.racks.filter(r => r.type === blockType).length + 1;
+    const newCode = isXdock ? `XDOCK-${String(nextIdx).padStart(2, '0')}` : `BULK-${String(nextIdx).padStart(2, '0')}`;
+    const newBlock: RackConfig = {
+      rackCode: newCode,
+      zoneCode: isXdock ? 'XDOCK' : 'BULK',
+      posX: isXdock ? 6 : -6,
+      posZ: isXdock ? 15 : 0,
+      rotationY: 0,
+      bays: 4,
+      levels: 1,
+      bayWidth: 2.2,
+      levelHeight: 1.2,
+      rackDepth: 2.4,
+      color: isXdock ? '#facc15' : '#4cd7f6',
+      type: blockType,
+    };
+    onUpdateLayout({ ...layout, racks: [...layout.racks, newBlock] });
+    setSelectedRackCode(newCode);
   };
 
   const handleDuplicateRack = (rack: RackConfig) => {
@@ -247,6 +271,7 @@ export default function Warehouse3DViewer({
     layout.racks.forEach((rack) => {
       const isThisRackSelected = isEditMode && selectedRackCode === rack.rackCode;
       const currentBeamMat = isThisRackSelected ? selectedBeamMat : beamMat;
+      const isFloor = rack.type === 'CROSS_DOCK' || rack.type === 'FLOOR_BLOCK';
 
       const rackGroup = new THREE.Group();
       rackGroup.position.set(rack.posX, 0, rack.posZ);
@@ -255,37 +280,68 @@ export default function Warehouse3DViewer({
       const totalRackLength = rack.bays * rack.bayWidth;
       const totalRackHeight = rack.levels * rack.levelHeight;
 
-      // Vertical Uprights (Posts)
-      const postGeo = new THREE.BoxGeometry(0.12, totalRackHeight + 0.5, 0.12);
-      for (let b = 0; b <= rack.bays; b++) {
-        const xPos = -totalRackLength / 2 + b * rack.bayWidth;
-        // Front upright
-        const postFront = new THREE.Mesh(postGeo, steelPostMat);
-        postFront.position.set(xPos, totalRackHeight / 2, rack.rackDepth / 2);
-        postFront.castShadow = true;
-        rackGroup.add(postFront);
+      if (isFloor) {
+        // Floor Staging Boundary Pad
+        const padGeo = new THREE.PlaneGeometry(totalRackLength, rack.rackDepth);
+        const padMat = new THREE.MeshStandardMaterial({
+          color: rack.type === 'CROSS_DOCK' ? 0x241d08 : 0x0f1c24,
+          roughness: 0.9,
+        });
+        const padMesh = new THREE.Mesh(padGeo, padMat);
+        padMesh.rotation.x = -Math.PI / 2;
+        padMesh.position.set(0, 0.03, 0);
+        padMesh.receiveShadow = true;
+        rackGroup.add(padMesh);
 
-        // Back upright
-        const postBack = new THREE.Mesh(postGeo, steelPostMat);
-        postBack.position.set(xPos, totalRackHeight / 2, -rack.rackDepth / 2);
-        postBack.castShadow = true;
-        rackGroup.add(postBack);
+        // Floor Border Lines (Yellow for Cross-dock, Cyan for Bulk)
+        const borderMat = new THREE.LineBasicMaterial({
+          color: isThisRackSelected ? 0x0ea5e9 : rack.type === 'CROSS_DOCK' ? 0xfacc15 : 0x4cd7f6,
+          linewidth: 2,
+        });
+        const borderGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-totalRackLength / 2, 0.04, -rack.rackDepth / 2),
+          new THREE.Vector3(totalRackLength / 2, 0.04, -rack.rackDepth / 2),
+          new THREE.Vector3(totalRackLength / 2, 0.04, rack.rackDepth / 2),
+          new THREE.Vector3(-totalRackLength / 2, 0.04, rack.rackDepth / 2),
+          new THREE.Vector3(-totalRackLength / 2, 0.04, -rack.rackDepth / 2),
+        ]);
+        const borderLine = new THREE.Line(borderGeo, borderMat);
+        rackGroup.add(borderLine);
+      } else {
+        // Vertical Uprights (Posts)
+        const postGeo = new THREE.BoxGeometry(0.12, totalRackHeight + 0.5, 0.12);
+        for (let b = 0; b <= rack.bays; b++) {
+          const xPos = -totalRackLength / 2 + b * rack.bayWidth;
+          // Front upright
+          const postFront = new THREE.Mesh(postGeo, steelPostMat);
+          postFront.position.set(xPos, totalRackHeight / 2, rack.rackDepth / 2);
+          postFront.castShadow = true;
+          rackGroup.add(postFront);
+
+          // Back upright
+          const postBack = new THREE.Mesh(postGeo, steelPostMat);
+          postBack.position.set(xPos, totalRackHeight / 2, -rack.rackDepth / 2);
+          postBack.castShadow = true;
+          rackGroup.add(postBack);
+        }
       }
 
       // Horizontal Beams & Individual Bins
       const beamGeo = new THREE.BoxGeometry(totalRackLength, 0.08, 0.08);
 
       for (let lvl = 1; lvl <= rack.levels; lvl++) {
-        const yPos = lvl * rack.levelHeight;
+        const yPos = isFloor ? (lvl * 1.1) : (lvl * rack.levelHeight);
 
-        // Front & Back Beams
-        const beamFront = new THREE.Mesh(beamGeo, currentBeamMat);
-        beamFront.position.set(0, yPos, rack.rackDepth / 2);
-        rackGroup.add(beamFront);
+        if (!isFloor) {
+          // Front & Back Beams
+          const beamFront = new THREE.Mesh(beamGeo, currentBeamMat);
+          beamFront.position.set(0, yPos, rack.rackDepth / 2);
+          rackGroup.add(beamFront);
 
-        const beamBack = new THREE.Mesh(beamGeo, currentBeamMat);
-        beamBack.position.set(0, yPos, -rack.rackDepth / 2);
-        rackGroup.add(beamBack);
+          const beamBack = new THREE.Mesh(beamGeo, currentBeamMat);
+          beamBack.position.set(0, yPos, -rack.rackDepth / 2);
+          rackGroup.add(beamBack);
+        }
 
         // Individual Bins inside this level
         for (let bay = 1; bay <= rack.bays; bay++) {
@@ -303,14 +359,14 @@ export default function Warehouse3DViewer({
 
           // Bin Box Geometry
           const boxW = rack.bayWidth * 0.88;
-          const boxH = rack.levelHeight * 0.75;
+          const boxH = isFloor ? 1.0 : (rack.levelHeight * 0.75);
           const boxD = rack.rackDepth * 0.88;
 
           const binBoxGeo = new THREE.BoxGeometry(boxW, boxH, boxD);
 
           // Color calculation based on heatmap mode
-          let boxColor = 0x30353d;
-          let boxOpacity = 0.25;
+          let boxColor = isFloor ? (rack.type === 'CROSS_DOCK' ? 0x854d0e : 0x164e63) : 0x30353d;
+          let boxOpacity = isFloor ? 0.4 : 0.25;
 
           if (isThisRackSelected) {
             boxColor = 0x0284c7; // Highlight selected rack in editor
@@ -335,7 +391,7 @@ export default function Warehouse3DViewer({
           });
 
           const binMesh = new THREE.Mesh(binBoxGeo, binBoxMat);
-          binMesh.position.set(xPos, yPos - boxH / 2 + 0.05, 0);
+          binMesh.position.set(xPos, isFloor ? (boxH / 2 + 0.04) : (yPos - boxH / 2 + 0.05), 0);
           binMesh.castShadow = hasStock;
           binMesh.receiveShadow = true;
 
@@ -348,6 +404,7 @@ export default function Warehouse3DViewer({
             level: lvl,
             hasStock,
             binData,
+            rackType: rack.type || 'RACK',
           };
 
           rackGroup.add(binMesh);
@@ -570,6 +627,20 @@ export default function Warehouse3DViewer({
               <Plus className="w-3.5 h-3.5 text-[#57ec7f]" /> เพิ่มแร็ก
             </button>
 
+            <button
+              onClick={() => handleAddFloorBlock('CROSS_DOCK')}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#facc15]/40 text-[#facc15] hover:bg-[#facc15]/10 transition-all flex items-center gap-1.5 shadow-lg"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#facc15]" /> ลาน Cross-Dock
+            </button>
+
+            <button
+              onClick={() => handleAddFloorBlock('FLOOR_BLOCK')}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#4cd7f6]/40 text-[#4cd7f6] hover:bg-[#4cd7f6]/10 transition-all flex items-center gap-1.5 shadow-lg"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#4cd7f6]" /> ลานวางพื้น (Bulk)
+            </button>
+
             {onOpenLabelModal && (
               <button
                 onClick={onOpenLabelModal}
@@ -634,6 +705,27 @@ export default function Warehouse3DViewer({
                 />
               </div>
 
+              <div>
+                <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ประเภทพื้นที่ (Storage Type)</label>
+                <select
+                  value={selectedRack.type || 'RACK'}
+                  onChange={e => {
+                    const newType = e.target.value as any;
+                    const patch: Partial<RackConfig> = { type: newType };
+                    if (newType !== 'RACK') {
+                      patch.levels = 1;
+                      patch.color = newType === 'CROSS_DOCK' ? '#facc15' : '#4cd7f6';
+                    }
+                    handleUpdateSelectedRack(patch);
+                  }}
+                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                >
+                  <option value="RACK">ชั้นวางเหล็ก (Pallet Rack)</option>
+                  <option value="CROSS_DOCK">ลานเปลี่ยนถ่าย (Cross-Dock Staging)</option>
+                  <option value="FLOOR_BLOCK">ลานวางพื้นเทกอง (Floor Bulk Storage)</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">โซน (Zone)</label>
@@ -659,6 +751,27 @@ export default function Warehouse3DViewer({
                     className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ประเภทพื้นที่ (Storage Type)</label>
+                <select
+                  value={selectedRack.type || 'RACK'}
+                  onChange={e => {
+                    const newType = e.target.value as any;
+                    const patch: Partial<RackConfig> = { type: newType };
+                    if (newType !== 'RACK') {
+                      patch.levels = 1;
+                      patch.color = newType === 'CROSS_DOCK' ? '#facc15' : '#4cd7f6';
+                    }
+                    handleUpdateSelectedRack(patch);
+                  }}
+                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                >
+                  <option value="RACK">ชั้นวางเหล็ก (Pallet Rack)</option>
+                  <option value="CROSS_DOCK">ลานเปลี่ยนถ่าย (Cross-Dock Staging)</option>
+                  <option value="FLOOR_BLOCK">ลานวางพื้นเทกอง (Floor Bulk Storage)</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -746,8 +859,18 @@ export default function Warehouse3DViewer({
                   <h3 className="font-mono font-bold text-base text-[#dee2ec]">
                     {activeBinDetails.binCode}
                   </h3>
-                  <span className="text-[10px] font-mono text-[#8a92a6]">
-                    ช่องที่ {activeBinDetails.bay} • ชั้นที่ {activeBinDetails.level}
+                  <span className="text-[10px] font-mono text-[#8a92a6] flex items-center gap-1.5 mt-0.5">
+                    <span>ช่องที่ {activeBinDetails.bay} • ชั้นที่ {activeBinDetails.level}</span>
+                    {activeBinDetails.rackType === 'CROSS_DOCK' && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#facc15]/20 text-[#facc15] font-bold text-[9px]">
+                        CROSS-DOCK
+                      </span>
+                    )}
+                    {activeBinDetails.rackType === 'FLOOR_BLOCK' && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#4cd7f6]/20 text-[#4cd7f6] font-bold text-[9px]">
+                        FLOOR BULK
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>

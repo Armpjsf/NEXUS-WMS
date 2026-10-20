@@ -15,6 +15,7 @@ export interface RackConfig {
   levelHeight: number;
   rackDepth: number;
   color?: string;
+  type?: 'RACK' | 'FLOOR_BLOCK' | 'CROSS_DOCK';
 }
 
 export interface WarehouseLayoutPayload {
@@ -55,9 +56,26 @@ function generateDefaultRacks(branchId: string): RackConfig[] {
           levelHeight: 1.8,
           rackDepth: 1.2,
           color: zIdx === 0 ? '#57ec7f' : zIdx === 1 ? '#4cd7f6' : zIdx === 2 ? '#facc15' : '#ffb4ab',
+          type: 'RACK',
         });
       }
     }
+  });
+
+  // Default Front Cross-Dock Staging Block
+  racks.push({
+    rackCode: 'XDOCK-01',
+    zoneCode: 'XDOCK',
+    posX: 12,
+    posZ: 24,
+    rotationY: 0,
+    bays: 4,
+    levels: 1,
+    bayWidth: 2.4,
+    levelHeight: 1.2,
+    rackDepth: 2.0,
+    color: '#facc15',
+    type: 'CROSS_DOCK',
   });
 
   return racks;
@@ -102,6 +120,7 @@ export async function GET(req: NextRequest) {
         levelHeight: Number(r.level_height || 1.8),
         rackDepth: Number(r.rack_depth || 1.2),
         color: r.color || '#facc15',
+        type: (r.rack_type || 'RACK') as any,
       }));
     } else {
       // Procedural fallback
@@ -168,6 +187,7 @@ export async function POST(req: NextRequest) {
         bay_width: r.bayWidth,
         level_height: r.levelHeight,
         rack_depth: r.rackDepth,
+        rack_type: r.type || 'RACK',
         color: r.color || '#facc15',
       }));
 

@@ -39,6 +39,8 @@ export default function WarehouseWizardModal({
   const [storageType, setStorageType] = useState<'SELECTIVE' | 'DOUBLE_DEEP' | 'FLOOR_STACK' | 'SHELVING'>('SELECTIVE');
   const [mheType, setMheType] = useState<'REACH_TRUCK' | 'COUNTERBALANCE' | 'VNA' | 'MANUAL'>('REACH_TRUCK');
   const [levels, setLevels] = useState<number>(4);
+  const [includeCrossDock, setIncludeCrossDock] = useState(true);
+  const [includeFloorBulk, setIncludeFloorBulk] = useState(true);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -146,6 +148,52 @@ export default function WarehouseWizardModal({
         });
 
         rackIndex += 2;
+      }
+
+      // Add Cross-Dock Staging Area if enabled
+      if (includeCrossDock) {
+        const xdockRackCode = 'XDOCK-01';
+        const xdockBays = Math.max(3, Math.min(6, Math.floor(usableWidth / 3.5)));
+        racks.push({
+          rackCode: xdockRackCode,
+          zoneCode: 'XDOCK',
+          posX: Math.round((usableWidth / 4) * 10) / 10,
+          posZ: Math.round((lengthM / 2 - stagingLength / 2) * 10) / 10,
+          rotationY: 0,
+          bays: xdockBays,
+          levels: 1,
+          bayWidth: 2.2,
+          levelHeight: 1.2,
+          rackDepth: 2.4,
+          color: '#facc15',
+          type: 'CROSS_DOCK',
+        });
+        for (let b = 1; b <= xdockBays; b++) {
+          generatedBins.push(`${xdockRackCode}-${String(b).padStart(2, '0')}-01`);
+        }
+      }
+
+      // Add Floor Bulk Storage Block if enabled
+      if (includeFloorBulk) {
+        const bulkRackCode = 'BULK-01';
+        const bulkBays = Math.max(3, Math.min(6, Math.floor(usableWidth / 3.5)));
+        racks.push({
+          rackCode: bulkRackCode,
+          zoneCode: 'BULK',
+          posX: Math.round((-usableWidth / 4) * 10) / 10,
+          posZ: Math.round((lengthM / 2 - stagingLength / 2) * 10) / 10,
+          rotationY: 0,
+          bays: bulkBays,
+          levels: 1,
+          bayWidth: 2.2,
+          levelHeight: 1.2,
+          rackDepth: 2.4,
+          color: '#4cd7f6',
+          type: 'FLOOR_BLOCK',
+        });
+        for (let b = 1; b <= bulkBays; b++) {
+          generatedBins.push(`${bulkRackCode}-${String(b).padStart(2, '0')}-01`);
+        }
       }
 
       const payload: WarehouseLayoutPayload = {
@@ -342,6 +390,44 @@ export default function WarehouseWizardModal({
                   {lvl} ชั้น ({lvl * 2} พาเลท/ช่อง)
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Step 5: Floor Staging & Cross-Dock Areas */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+              <Layers className="w-4 h-4" /> 5. โซนวางพื้นและเปลี่ยนถ่ายสินค้า (Floor Staging & Cross-Dock)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#12161d] border border-[#30353d] cursor-pointer hover:border-slate-500 transition-all">
+                <input
+                  type="checkbox"
+                  checked={includeCrossDock}
+                  onChange={e => setIncludeCrossDock(e.target.checked)}
+                  className="mt-0.5 rounded text-[#facc15] focus:ring-0 w-4 h-4"
+                />
+                <div>
+                  <span className="text-xs font-bold text-[#dee2ec] block">ลาน Cross-Dock หน้าคลัง (XDOCK)</span>
+                  <span className="text-[11px] text-[#8a92a6] block mt-0.5">
+                    สำหรับสินค้าผ่านคลัง รับเช้า-ส่งบ่าย ไม่ยกขึ้นแร็ก ตั้งติดกับประตูสไลด์/Dock
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#12161d] border border-[#30353d] cursor-pointer hover:border-slate-500 transition-all">
+                <input
+                  type="checkbox"
+                  checked={includeFloorBulk}
+                  onChange={e => setIncludeFloorBulk(e.target.checked)}
+                  className="mt-0.5 rounded text-[#4cd7f6] focus:ring-0 w-4 h-4"
+                />
+                <div>
+                  <span className="text-xs font-bold text-[#dee2ec] block">ลานวางพื้นเทกอง (Floor Bulk Storage)</span>
+                  <span className="text-[11px] text-[#8a92a6] block mt-0.5">
+                    บล็อกตีเส้นบนพื้นปูน สำหรับสินค้าหนัก เครื่องจักร หรือพาเลทซ้อนบนพื้น
+                  </span>
+                </div>
+              </label>
             </div>
           </div>
 
