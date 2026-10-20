@@ -71,6 +71,8 @@ interface Warehouse3DProps {
   onSaveLayout?: () => void;
   isSaving?: boolean;
   onUpdateLayout?: (newLayout: any) => void;
+  /** Bin codes matching the page search: lit up, the rest dimmed, camera flies to the first. */
+  highlightBinCodes?: Set<string>;
 }
 
 export default function Warehouse3DViewer({
@@ -88,6 +90,7 @@ export default function Warehouse3DViewer({
   onSaveLayout,
   isSaving = false,
   onUpdateLayout,
+  highlightBinCodes,
 }: Warehouse3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
@@ -103,6 +106,9 @@ export default function Warehouse3DViewer({
   const floorSizeRef = useRef(Math.max(layout.widthM, layout.lengthM));
   floorSizeRef.current = Math.max(layout.widthM, layout.lengthM);
   // Latest callback without making it a scene dependency (it's often an inline arrow).
+  // Search highlight: depend on a stable string, not the Set's identity.
+  const highlightKey = useMemo(() => Array.from(highlightBinCodes || []).sort().join('|'), [highlightBinCodes]);
+  const focusedKeyRef = useRef('');
   const onSelectBinRef = useRef(onSelectBin);
   onSelectBinRef.current = onSelectBin;
 
@@ -297,6 +303,10 @@ export default function Warehouse3DViewer({
     const perimeterLine = new THREE.Line(aisleGeo, aisleMarkerMat);
     scene.add(perimeterLine);
 
+    const highlight = new Set(highlightKey ? highlightKey.split('|') : []);
+    const hasHighlight = highlight.size > 0;
+    let firstHit: THREE.Mesh | null = null;
+
     // --- 4. Procedural Racking Construction ---
     const binMeshes: THREE.Mesh[] = [];
     const rackHitBoxes: THREE.Mesh[] = [];
@@ -450,12 +460,22 @@ export default function Warehouse3DViewer({
             }
           }
 
+          const isHit = hasHighlight && highlight.has(binCode);
+          if (isHit) {
+            boxColor = 0x22d3ee;
+            boxOpacity = 1;
+          } else if (hasHighlight && !isThisRackSelected) {
+            boxOpacity = Math.min(boxOpacity, hasStock ? 0.22 : 0.1); // fade everything that isn't a match
+          }
+
           const binBoxMat = new THREE.MeshStandardMaterial({
             color: boxColor,
             roughness: 0.6,
             metalness: 0.2,
-            transparent: !hasStock && !isThisRackSelected,
+            transparent: boxOpacity < 1 && !isThisRackSelected,
             opacity: boxOpacity,
+            emissive: isHit ? 0x0891b2 : 0x000000,
+            emissiveIntensity: isHit ? 0.8 : 0,
           });
 
           // Pallet racking: a wooden pallet under each stocked slot
@@ -488,6 +508,7 @@ export default function Warehouse3DViewer({
 
           rackGroup.add(binMesh);
           binMeshes.push(binMesh);
+          if (isHit && !firstHit) firstHit = binMesh;
         }
       }
 
@@ -613,6 +634,20 @@ export default function Warehouse3DViewer({
     applyCamera();
     applyCameraRef.current = applyCamera;
 
+    // New search → fly the camera to the first matching slot (once per search, so
+    // the user can still orbit around it afterwards).
+    if (!hasHighlight) focusedKeyRef.current = '';
+    else if (firstHit && focusedKeyRef.current !== highlightKey) {
+      focusedKeyRef.current = highlightKey;
+      scene.updateMatrixWorld(true);
+      const p = new THREE.Vector3();
+      (firstHit as THREE.Mesh).getWorldPosition(p);
+      cam.tx = p.x;
+      cam.tz = p.z;
+      cam.dist = Math.min(cam.dist, Math.max(10, p.y * 3));
+      applyCamera();
+    }
+
     const pan = (dx: number, dy: number) => {
       const k = cam.dist * 0.0016;
       // screen-right and screen-up expressed on the ground plane
@@ -727,7 +762,7 @@ export default function Warehouse3DViewer({
       renderer.domElement.removeEventListener('click', handlePointerClick);
       renderer.dispose();
     };
-  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackIdx]);
+  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackIdx, highlightKey]);
 
   const zoomCamera = (factor: number) => {
     if (!camRef.current) return;

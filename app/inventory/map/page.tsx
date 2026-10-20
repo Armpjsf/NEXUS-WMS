@@ -280,6 +280,15 @@ function WarehouseMapContent() {
     return matched;
   }, [map, searchQuery]);
 
+  // Stock that matches the search but sits in a bin the layout doesn't contain.
+  const outsideMatches = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return [] as string[];
+    return [...map.orphans, ...(map.unassigned ? [map.unassigned] : [])]
+      .filter(o => o.binCode.toLowerCase().includes(q) || o.products.some(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)))
+      .map(o => o.binCode);
+  }, [map, searchQuery]);
+
   // Jump to the first rack holding a search hit.
   useEffect(() => {
     if (matchingBinCodes.size === 0) return;
@@ -529,8 +538,32 @@ function WarehouseMapContent() {
                 placeholder="ค้นหา SKU / ชื่อสินค้า / โลเคชัน..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl text-xs outline-none focus:border-teal-500 focus:bg-[#171c23] transition-colors"
+                className="w-full pl-9 pr-28 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl text-xs outline-none focus:border-teal-500 focus:bg-[#171c23] transition-colors"
               />
+              {searchQuery.trim() && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <span
+                    className={cn(
+                      'px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap',
+                      matchingBinCodes.size > 0 ? 'bg-cyan-500/15 text-cyan-600' : 'bg-rose-500/15 text-rose-500',
+                    )}
+                    title={outsideMatches.length ? `อยู่นอกผัง: ${outsideMatches.slice(0, 10).join(', ')}` : undefined}
+                  >
+                    {matchingBinCodes.size > 0
+                      ? `พบ ${matchingBinCodes.size} ช่อง`
+                      : outsideMatches.length > 0
+                        ? `นอกผัง ${outsideMatches.length}`
+                        : 'ไม่พบ'}
+                  </span>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="p-0.5 rounded text-slate-400 hover:text-slate-600"
+                    aria-label="ล้างคำค้น"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
@@ -631,6 +664,7 @@ function WarehouseMapContent() {
             layout={layout}
             products={products}
             binStock={binStock3D}
+            highlightBinCodes={matchingBinCodes}
             heatmapMode={heatmapMode === 'VELOCITY' ? 'VELOCITY' : 'STOCK'}
             branchName={layout.name || 'คลังสินค้า'}
             isEditMode={isEditMode}
