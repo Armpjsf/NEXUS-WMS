@@ -16,6 +16,7 @@ export interface RackConfig {
   rackDepth: number;
   color?: string;
   type?: 'RACK' | 'FLOOR_BLOCK' | 'CROSS_DOCK';
+  palletMode?: 'PALLET' | 'NON_PALLET';
 }
 
 export interface WarehouseLayoutPayload {

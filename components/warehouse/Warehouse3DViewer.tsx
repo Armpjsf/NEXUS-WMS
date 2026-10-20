@@ -341,6 +341,16 @@ export default function Warehouse3DViewer({
           const beamBack = new THREE.Mesh(beamGeo, currentBeamMat);
           beamBack.position.set(0, yPos, -rack.rackDepth / 2);
           rackGroup.add(beamBack);
+
+          // If non-pallet shelving, add a solid shelf decking board
+          if (rack.palletMode === 'NON_PALLET') {
+            const deckGeo = new THREE.BoxGeometry(totalRackLength, 0.02, rack.rackDepth);
+            const deckMat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.8 });
+            const deck = new THREE.Mesh(deckGeo, deckMat);
+            deck.position.set(0, yPos - 0.04, 0);
+            deck.receiveShadow = true;
+            rackGroup.add(deck);
+          }
         }
 
         // Individual Bins inside this level
@@ -405,6 +415,7 @@ export default function Warehouse3DViewer({
             hasStock,
             binData,
             rackType: rack.type || 'RACK',
+            palletMode: rack.palletMode || 'PALLET',
           };
 
           rackGroup.add(binMesh);
@@ -726,6 +737,27 @@ export default function Warehouse3DViewer({
                 </select>
               </div>
 
+              {selectedRack.type !== 'CROSS_DOCK' && selectedRack.type !== 'FLOOR_BLOCK' && (
+                <div>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">รูปแบบการวางสินค้า (Loading Mode)</label>
+                  <select
+                    value={selectedRack.palletMode || 'PALLET'}
+                    onChange={e => {
+                      const mode = e.target.value as any;
+                      handleUpdateSelectedRack({
+                        palletMode: mode,
+                        rackDepth: mode === 'NON_PALLET' ? 0.8 : 1.2,
+                        levelHeight: mode === 'NON_PALLET' ? 0.8 : 1.8,
+                      });
+                    }}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  >
+                    <option value="PALLET">วางบนพาเลท (Palletized Racks)</option>
+                    <option value="NON_PALLET">ไม่ออนพาเลท (กล่อง/ชิ้นสินค้า - Shelving)</option>
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">โซน (Zone)</label>
@@ -773,6 +805,27 @@ export default function Warehouse3DViewer({
                   <option value="FLOOR_BLOCK">ลานวางพื้นเทกอง (Floor Bulk Storage)</option>
                 </select>
               </div>
+
+              {selectedRack.type !== 'CROSS_DOCK' && selectedRack.type !== 'FLOOR_BLOCK' && (
+                <div>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">รูปแบบการวางสินค้า (Loading Mode)</label>
+                  <select
+                    value={selectedRack.palletMode || 'PALLET'}
+                    onChange={e => {
+                      const mode = e.target.value as any;
+                      handleUpdateSelectedRack({
+                        palletMode: mode,
+                        rackDepth: mode === 'NON_PALLET' ? 0.8 : 1.2,
+                        levelHeight: mode === 'NON_PALLET' ? 0.8 : 1.8,
+                      });
+                    }}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  >
+                    <option value="PALLET">วางบนพาเลท (Palletized Racks)</option>
+                    <option value="NON_PALLET">ไม่ออนพาเลท (กล่อง/ชิ้นสินค้า - Shelving)</option>
+                  </select>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -869,6 +922,11 @@ export default function Warehouse3DViewer({
                     {activeBinDetails.rackType === 'FLOOR_BLOCK' && (
                       <span className="px-1.5 py-0.5 rounded bg-[#4cd7f6]/20 text-[#4cd7f6] font-bold text-[9px]">
                         FLOOR BULK
+                      </span>
+                    )}
+                    {activeBinDetails.palletMode === 'NON_PALLET' && (
+                      <span className="px-1.5 py-0.5 rounded bg-[#4cd7f6]/20 text-[#4cd7f6] font-bold text-[9px]">
+                        NON-PALLET (วางกล่อง)
                       </span>
                     )}
                   </span>

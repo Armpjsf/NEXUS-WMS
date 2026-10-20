@@ -39,6 +39,8 @@ export default function WarehouseWizardModal({
   const [storageType, setStorageType] = useState<'SELECTIVE' | 'DOUBLE_DEEP' | 'FLOOR_STACK' | 'SHELVING'>('SELECTIVE');
   const [mheType, setMheType] = useState<'REACH_TRUCK' | 'COUNTERBALANCE' | 'VNA' | 'MANUAL'>('REACH_TRUCK');
   const [levels, setLevels] = useState<number>(4);
+  const [palletMode, setPalletMode] = useState<'PALLET' | 'NON_PALLET'>('PALLET');
+  const [palletsPerBay, setPalletsPerBay] = useState<number>(2);
   const [includeCrossDock, setIncludeCrossDock] = useState(true);
   const [includeFloorBulk, setIncludeFloorBulk] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -53,10 +55,13 @@ export default function WarehouseWizardModal({
     MANUAL: 1.5,
   }[mheType];
 
-  // Rack Depth and Bay Width
-  const rackDepth = storageType === 'SHELVING' ? 0.8 : storageType === 'FLOOR_STACK' ? 1.5 : 1.2;
-  const bayWidth = storageType === 'SHELVING' ? 1.8 : 2.7; // 2.7m fits 2 Euro pallets or 2 standard 1.2m pallets
-  const levelHeight = Math.max(1.4, Math.min(2.2, Math.floor(((heightM - 2) / levels) * 10) / 10));
+  // Rack Depth and Bay Width based on Pallet vs Non-Pallet Mode
+  const isNonPallet = palletMode === 'NON_PALLET' || storageType === 'SHELVING';
+  const rackDepth = isNonPallet ? 0.8 : storageType === 'FLOOR_STACK' ? 1.5 : 1.2;
+  const bayWidth = isNonPallet ? 1.8 : (palletsPerBay === 3 ? 3.6 : palletsPerBay === 1 ? 1.5 : 2.7);
+  const levelHeight = isNonPallet
+    ? Math.max(0.4, Math.min(1.4, Math.floor(((heightM - 1.5) / levels) * 10) / 10))
+    : Math.max(1.2, Math.min(2.6, Math.floor(((heightM - 2) / levels) * 10) / 10));
 
   // Staging area at front (length reserved for staging & packing)
   const stagingLength = Math.max(8, Math.min(12, lengthM * 0.2));
@@ -370,27 +375,108 @@ export default function WarehouseWizardModal({
             </div>
           </div>
 
-          {/* Step 4: Levels & Height */}
+          {/* Step 4: Racking Levels & Pallet vs Non-Pallet Mode */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
-              <Box className="w-4 h-4" /> 4. จำนวนชั้นวางแนวตั้ง (Rack Levels)
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+                <Box className="w-4 h-4" /> 4. จำนวนชั้นวางและรูปแบบการจัดเก็บ (Levels & Loading Mode)
+              </div>
+              
+              {/* Toggle Pallet vs Non-Pallet */}
+              <div className="flex items-center bg-[#12161d] p-1 rounded-xl border border-[#30353d]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPalletMode('PALLET');
+                    if (levels > 6) setLevels(4);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    palletMode === 'PALLET'
+                      ? 'bg-[#facc15] text-[#1b1600]'
+                      : 'text-[#8a92a6] hover:text-[#dee2ec]'
+                  }`}
+                >
+                  วางบนพาเลท (Palletized)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPalletMode('NON_PALLET');
+                    if (levels < 4) setLevels(5);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    palletMode === 'NON_PALLET'
+                      ? 'bg-[#4cd7f6] text-[#09151c]'
+                      : 'text-[#8a92a6] hover:text-[#dee2ec]'
+                  }`}
+                >
+                  ไม่ออนพาเลท (วางกล่อง/ชิ้นสินค้า)
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {[2, 3, 4, 5, 6].map(lvl => (
+
+            {/* Quick Level Preset Buttons + Custom Input */}
+            <div className="flex flex-wrap items-center gap-2">
+              {(palletMode === 'PALLET' ? [2, 3, 4, 5, 6] : [3, 4, 5, 6, 8, 10]).map(lvl => (
                 <button
                   key={lvl}
                   type="button"
                   onClick={() => setLevels(lvl)}
-                  className={`flex-1 py-2.5 rounded-xl border text-xs font-mono font-bold transition-all ${
+                  className={`flex-1 min-w-[70px] py-2.5 rounded-xl border text-xs font-mono font-bold transition-all ${
                     levels === lvl
                       ? 'bg-[#facc15] text-[#1b1600] border-[#facc15] font-black shadow-lg shadow-[#facc15]/20'
                       : 'bg-[#12161d] border-[#30353d] text-[#dee2ec] hover:border-slate-500'
                   }`}
                 >
-                  {lvl} ชั้น ({lvl * 2} พาเลท/ช่อง)
+                  {lvl} ชั้น
+                  <span className="block text-[10px] font-normal opacity-80">
+                    {palletMode === 'PALLET' ? `(${lvl * palletsPerBay} พาเลท/ช่อง)` : `(~${((heightM - 1.5)/lvl).toFixed(1)}m/ชั้น)`}
+                  </span>
                 </button>
               ))}
+
+              {/* Custom Number Input */}
+              <div className="flex items-center gap-1.5 bg-[#12161d] border border-[#30353d] rounded-xl px-3 py-2">
+                <span className="text-[10px] text-[#8a92a6] font-mono">ระบุเอง:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={15}
+                  value={levels}
+                  onChange={e => setLevels(Math.max(1, Math.min(15, Number(e.target.value))))}
+                  className="w-12 bg-transparent text-xs font-mono font-bold text-[#facc15] outline-none text-center"
+                />
+                <span className="text-xs text-[#8a92a6]">ชั้น</span>
+              </div>
             </div>
+
+            {/* Optional Pallets per Bay if in Pallet mode */}
+            {palletMode === 'PALLET' ? (
+              <div className="flex items-center justify-between bg-[#12161d] px-4 py-2.5 rounded-xl border border-[#30353d] text-xs">
+                <span className="text-[#8a92a6]">ความจุพาเลทต่อ 1 ช่วงเสา (Bay):</span>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPalletsPerBay(p)}
+                      className={`px-3 py-1 rounded-lg font-mono font-bold text-xs ${
+                        palletsPerBay === p
+                          ? 'bg-[#facc15] text-[#1b1600]'
+                          : 'bg-[#171c23] text-[#8a92a6] border border-[#30353d]'
+                      }`}
+                    >
+                      {p} พาเลท/ช่วงเสา
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#12161d] px-4 py-2.5 rounded-xl border border-[#4cd7f6]/30 text-xs flex items-center gap-2 text-[#4cd7f6]">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>โหมดไม่ออนพาเลท: ชั้นวางจะถูกปรับความลึกเป็น 0.8m สำหรับวางกล่อง/ชิ้นส่วนชิ้นเล็กเพื่อความสะดวกในการเดินหยิบ</span>
+              </div>
+            )}
           </div>
 
           {/* Step 5: Floor Staging & Cross-Dock Areas */}
