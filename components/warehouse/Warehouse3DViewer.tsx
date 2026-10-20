@@ -30,6 +30,18 @@ import { RackConfig, binCodeFor, DEFAULT_BIN_TEMPLATE, listRackBins } from '@/li
 
 type BinStockEntry = { products: any[]; totalStock: number; velocityClass: string; status?: string };
 
+type CameraState = { rotX: number; rotY: number; dist: number; tx: number; tz: number };
+
+function cameraMaxDist(floorSize: number): number {
+  return Math.max(60, floorSize * 2.2);
+}
+
+function defaultCamera(floorSize: number): CameraState {
+  return { rotX: 0.6, rotY: 0.75, dist: Math.min(cameraMaxDist(floorSize), Math.max(25, floorSize * 1.1)), tx: 0, tz: 0 };
+}
+
+const CAMERA_MIN_DIST = 4;
+
 interface Warehouse3DProps {
   layout: {
     widthM: number;
@@ -74,6 +86,16 @@ export default function Warehouse3DViewer({
   const [activeBinDetails, setActiveBinDetails] = useState<any | null>(null);
   const [selectedRackCode, setSelectedRackCode] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalBins: 0, occupiedBins: 0, totalStock: 0 });
+
+  // Camera orbit state lives outside the scene effect so rebuilding the scene
+  // (stock refresh, edits, selection, parent re-render) never resets the view.
+  const camRef = useRef<CameraState | null>(null);
+  const applyCameraRef = useRef<(() => void) | null>(null);
+  const floorSizeRef = useRef(Math.max(layout.widthM, layout.lengthM));
+  floorSizeRef.current = Math.max(layout.widthM, layout.lengthM);
+  // Latest callback without making it a scene dependency (it's often an inline arrow).
+  const onSelectBinRef = useRef(onSelectBin);
+  onSelectBinRef.current = onSelectBin;
 
   // Map products to bins for fast lookup & visualization
   const binDataMap = useMemo(() => {
@@ -475,6 +497,7 @@ export default function Warehouse3DViewer({
     const mouse = new THREE.Vector2();
 
     const handlePointerMove = (e: MouseEvent) => {
+      if (activePointers.size > 0) return; // dragging: skip hover raycast
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -512,6 +535,7 @@ export default function Warehouse3DViewer({
     };
 
     const handlePointerClick = (e: MouseEvent) => {
+      if (dragDistance > 6) return; // that was a rotate/pan/pinch, not a click
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -535,7 +559,7 @@ export default function Warehouse3DViewer({
           const data = hit.userData;
           if (data?.binCode) {
             setActiveBinDetails(data);
-            if (onSelectBin) onSelectBin(data.binCode, data.binData);
+            onSelectBinRef.current?.(data.binCode, data.binData);
           }
         }
       }
@@ -544,55 +568,107 @@ export default function Warehouse3DViewer({
     renderer.domElement.addEventListener('mousemove', handlePointerMove);
     renderer.domElement.addEventListener('click', handlePointerClick);
 
-    // Simple Orbit / Pan Controls using Mouse Drag
-    let isDragging = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
+    // --- 6. Camera controls (mouse + touch, state kept in camRef) ---
+    //   drag = rotate | right-drag / Shift-drag / two-finger drag = pan | wheel / pinch = zoom
+    const floorSize = Math.max(layout.widthM, layout.lengthM);
+    if (!camRef.current) camRef.current = defaultCamera(floorSize);
+    const cam = camRef.current;
+    const maxDist = cameraMaxDist(floorSize);
 
-    let targetRotationX = 0.55;
-    let targetRotationY = 0.75;
-    let currentDistance = 75;
-
-    const updateCameraPos = () => {
-      camera.position.x = currentDistance * Math.sin(targetRotationY) * Math.cos(targetRotationX);
-      camera.position.y = currentDistance * Math.sin(targetRotationX);
-      camera.position.z = currentDistance * Math.cos(targetRotationY) * Math.cos(targetRotationX);
-      camera.lookAt(0, 3, 0);
+    const applyCamera = () => {
+      cam.dist = Math.max(CAMERA_MIN_DIST, Math.min(maxDist, cam.dist));
+      cam.tx = Math.max(-layout.widthM / 2, Math.min(layout.widthM / 2, cam.tx));
+      cam.tz = Math.max(-layout.lengthM / 2, Math.min(layout.lengthM / 2, cam.tz));
+      camera.position.set(
+        cam.tx + cam.dist * Math.sin(cam.rotY) * Math.cos(cam.rotX),
+        cam.dist * Math.sin(cam.rotX),
+        cam.tz + cam.dist * Math.cos(cam.rotY) * Math.cos(cam.rotX),
+      );
+      camera.lookAt(cam.tx, 1.5, cam.tz);
     };
-    updateCameraPos();
+    applyCamera();
+    applyCameraRef.current = applyCamera;
 
-    const onMouseDown = (e: MouseEvent) => {
-      isDragging = true;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+    const pan = (dx: number, dy: number) => {
+      const k = cam.dist * 0.0016;
+      // screen-right and screen-up expressed on the ground plane
+      const rightX = Math.cos(cam.rotY), rightZ = -Math.sin(cam.rotY);
+      const fwdX = -Math.sin(cam.rotY), fwdZ = -Math.cos(cam.rotY);
+      cam.tx += (-dx * rightX + dy * fwdX) * k;
+      cam.tz += (-dx * rightZ + dy * fwdZ) * k;
     };
 
-    const onMouseUp = () => {
-      isDragging = false;
+    const el = renderer.domElement;
+    el.style.touchAction = 'none'; // we handle pinch/drag instead of the browser
+    const activePointers = new Map<number, { x: number; y: number }>();
+    let dragDistance = 0;
+    let panning = false;
+    let pinchDist = 0;
+    let pinchMid = { x: 0, y: 0 };
+
+    const twoFinger = () => {
+      const [a, b] = Array.from(activePointers.values());
+      return { dist: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
     };
 
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const deltaX = e.clientX - prevMouseX;
-      const deltaY = e.clientY - prevMouseY;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+    const onPointerDown = (e: PointerEvent) => {
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { el.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+      if (activePointers.size === 1) {
+        dragDistance = 0;
+        panning = e.button === 2 || e.shiftKey;
+      } else if (activePointers.size === 2) {
+        const t = twoFinger();
+        pinchDist = t.dist;
+        pinchMid = t.mid;
+      }
+    };
 
-      targetRotationY -= deltaX * 0.008;
-      targetRotationX = Math.max(0.15, Math.min(Math.PI / 2.1, targetRotationX + deltaY * 0.008));
-      updateCameraPos();
+    const onPointerMove = (e: PointerEvent) => {
+      const prev = activePointers.get(e.pointerId);
+      if (!prev) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activePointers.size === 1) {
+        const dx = e.clientX - prev.x;
+        const dy = e.clientY - prev.y;
+        dragDistance += Math.abs(dx) + Math.abs(dy);
+        if (panning) pan(dx, dy);
+        else {
+          cam.rotY -= dx * 0.008;
+          cam.rotX = Math.max(0.12, Math.min(Math.PI / 2.05, cam.rotX + dy * 0.008));
+        }
+      } else if (activePointers.size === 2) {
+        const t = twoFinger();
+        if (pinchDist > 0 && t.dist > 0) cam.dist *= pinchDist / t.dist;
+        pan(t.mid.x - pinchMid.x, t.mid.y - pinchMid.y);
+        pinchDist = t.dist;
+        pinchMid = t.mid;
+        dragDistance += 10;
+      }
+      applyCamera();
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      activePointers.delete(e.pointerId);
+      if (activePointers.size < 2) pinchDist = 0;
+      if (activePointers.size === 1) panning = false; // remaining finger rotates
     };
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      currentDistance = Math.max(20, Math.min(180, currentDistance + e.deltaY * 0.05));
-      updateCameraPos();
+      cam.dist *= Math.exp(e.deltaY * 0.0012);
+      applyCamera();
     };
 
-    renderer.domElement.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('mousemove', onMouseMove);
-    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+    const onContextMenu = (e: MouseEvent) => e.preventDefault();
+
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', onPointerUp);
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('contextmenu', onContextMenu);
 
     // Animation Loop
     let animationFrameId: number;
@@ -616,15 +692,30 @@ export default function Warehouse3DViewer({
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('mousemove', onMouseMove);
-      renderer.domElement.removeEventListener('mousedown', onMouseDown);
-      renderer.domElement.removeEventListener('wheel', onWheel);
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointercancel', onPointerUp);
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('contextmenu', onContextMenu);
+      applyCameraRef.current = null;
       renderer.domElement.removeEventListener('mousemove', handlePointerMove);
       renderer.domElement.removeEventListener('click', handlePointerClick);
       renderer.dispose();
     };
-  }, [layout, heatmapMode, binDataMap, onSelectBin, isEditMode, selectedRackCode]);
+  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackCode]);
+
+  const zoomCamera = (factor: number) => {
+    if (!camRef.current) return;
+    camRef.current.dist *= factor;
+    applyCameraRef.current?.();
+  };
+
+  const resetCamera = () => {
+    // Mutate in place: the scene's controls hold this same object.
+    if (camRef.current) Object.assign(camRef.current, defaultCamera(floorSizeRef.current));
+    applyCameraRef.current?.();
+  };
 
   const occupancyRate = stats.totalBins > 0 ? Math.round((stats.occupiedBins / stats.totalBins) * 100) : 0;
 
@@ -1140,10 +1231,26 @@ export default function Warehouse3DViewer({
         </div>
       )}
 
-      {/* Bottom Right Controls Help */}
-      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 bg-[#171c23]/80 backdrop-blur-md border border-[#30353d] px-3 py-1.5 rounded-xl text-[11px] font-mono text-[#8a92a6] pointer-events-none">
-        <RotateCcw className="w-3.5 h-3.5 text-[#facc15]" />
-        <span>3D Orbit Controls Active</span>
+      {/* Camera controls */}
+      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5">
+        <span className="hidden md:inline bg-[#171c23]/80 backdrop-blur-md border border-[#30353d] px-3 py-1.5 rounded-xl text-[11px] text-[#8a92a6] pointer-events-none">
+          ลากหมุน • คลิกขวา/Shift+ลาก เลื่อน • ล้อเมาส์/2 นิ้ว ซูม
+        </span>
+        {[
+          { icon: ZoomIn, label: 'ซูมเข้า', run: () => zoomCamera(0.75) },
+          { icon: ZoomOut, label: 'ซูมออก', run: () => zoomCamera(1 / 0.75) },
+          { icon: RotateCcw, label: 'รีเซ็ตมุมกล้อง', run: resetCamera },
+        ].map(({ icon: Icon, label, run }) => (
+          <button
+            key={label}
+            onClick={run}
+            title={label}
+            aria-label={label}
+            className="p-2 rounded-xl bg-[#171c23]/90 backdrop-blur-md border border-[#30353d] text-[#facc15] hover:bg-[#252a32]"
+          >
+            <Icon className="w-4 h-4" />
+          </button>
+        ))}
       </div>
     </div>
   );

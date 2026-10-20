@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { MapPin, Sparkles, MousePointerClick } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { MapPin, Sparkles, MousePointerClick, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WarehouseLayout, RackConfig, binCodeFor } from '@/lib/warehouseLayout';
 import { WarehouseMapData, MapBin, MapRack } from '@/lib/warehouseMap';
@@ -73,6 +73,101 @@ export default function Warehouse2DPlan({
     return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
   }, [layout]);
 
+  // Zoom / pan: scale 1 = whole building. Pinch, Ctrl+wheel, buttons; drag pans once zoomed.
+  const MAX_SCALE = 12;
+  const [zoom, setZoom] = useState({ scale: 1, cx: view.x + view.w / 2, cy: view.y + view.h / 2 });
+  useEffect(() => {
+    setZoom({ scale: 1, cx: view.x + view.w / 2, cy: view.y + view.h / 2 });
+  }, [view.x, view.y, view.w, view.h]);
+  const vb = { w: view.w / zoom.scale, h: view.h / zoom.scale, x: 0, y: 0 };
+  vb.x = zoom.cx - vb.w / 2;
+  vb.y = zoom.cy - vb.h / 2;
+
+  const svgRef = useRef<SVGSVGElement>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const dragDistance = useRef(0);
+  const pinch = useRef(0);
+
+  const toSvg = (clientX: number, clientY: number) => {
+    const svg = svgRef.current;
+    const ctm = svg?.getScreenCTM();
+    if (!svg || !ctm) return { x: zoom.cx, y: zoom.cy };
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const r = pt.matrixTransform(ctm.inverse());
+    return { x: r.x, y: r.y };
+  };
+
+  /** Zoom by `factor` keeping the floor point under (clientX, clientY) fixed. */
+  const zoomAt = (factor: number, clientX?: number, clientY?: number) => {
+    setZoom(z => {
+      const scale = Math.max(1, Math.min(MAX_SCALE, z.scale * factor));
+      if (scale === 1) return { scale: 1, cx: view.x + view.w / 2, cy: view.y + view.h / 2 };
+      const f = scale / z.scale;
+      const p = clientX === undefined ? { x: z.cx, y: z.cy } : toSvg(clientX, clientY!);
+      return { scale, cx: p.x + (z.cx - p.x) / f, cy: p.y + (z.cy - p.y) / f };
+    });
+  };
+
+  const panBy = (dxPx: number, dyPx: number) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const unitsPerPx = Math.max(vb.w / Math.max(1, rect.width), vb.h / Math.max(1, rect.height));
+    setZoom(z => ({ ...z, cx: z.cx - dxPx * unitsPerPx, cy: z.cy - dyPx * unitsPerPx }));
+  };
+
+  // Ctrl/⌘ + wheel (and trackpad pinch, which arrives as ctrl+wheel) zooms; plain wheel scrolls the page.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      zoomAt(Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
+    };
+    svg.addEventListener('wheel', onWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', onWheel);
+  });
+
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 1) dragDistance.current = 0;
+    if (pointers.current.size === 2) {
+      const [a, b] = Array.from(pointers.current.values());
+      pinch.current = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    if (pointers.current.size === 2 || zoom.scale > 1) {
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+    }
+  };
+
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const prev = pointers.current.get(e.pointerId);
+    if (!prev) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      const [a, b] = Array.from(pointers.current.values());
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch.current > 0 && d > 0) zoomAt(d / pinch.current, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      pinch.current = d;
+      dragDistance.current += 10;
+    } else if (zoom.scale > 1) {
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      dragDistance.current += Math.abs(dx) + Math.abs(dy);
+      panBy(dx, dy);
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinch.current = 0;
+  };
+
+  const wasDrag = () => dragDistance.current > 6;
+
   const labelSize = Math.max(0.6, Math.min(1.6, Math.max(view.w, view.h) / 60));
   const selected = selectedRackCode ? mapRacks.get(selectedRackCode) : undefined;
   const visibleRacks = map.zones
@@ -85,13 +180,34 @@ export default function Warehouse2DPlan({
       <div className="rounded-2xl border border-[#30353d] bg-[#0f1419] overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#30353d] text-[11px] text-[#8a92a6]">
           <span className="font-bold text-[#d1c6ab]">ผังพื้นคลัง (มุมบน)</span>
-          <span className="font-mono">{layout.widthM} × {layout.lengthM} m • {layout.racks.length} แร็ก</span>
+          <span className="flex items-center gap-2">
+            <span className="font-mono hidden sm:inline">{layout.widthM} × {layout.lengthM} m • {layout.racks.length} แร็ก</span>
+            <span className="flex items-center gap-1">
+              <button onClick={() => zoomAt(1.5)} title="ซูมเข้า" aria-label="ซูมเข้า" className="p-1.5 rounded-lg border border-[#30353d] bg-[#171c23] text-teal-300 hover:bg-[#252a32]">
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => zoomAt(1 / 1.5)} title="ซูมออก" aria-label="ซูมออก" className="p-1.5 rounded-lg border border-[#30353d] bg-[#171c23] text-teal-300 hover:bg-[#252a32]">
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => zoomAt(0)} title="ดูทั้งคลัง" aria-label="ดูทั้งคลัง" className="p-1.5 rounded-lg border border-[#30353d] bg-[#171c23] text-teal-300 hover:bg-[#252a32]">
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <span className="font-mono w-10 text-right">{Math.round(zoom.scale * 100)}%</span>
+            </span>
+          </span>
         </div>
         <svg
-          viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
-          className="w-full h-auto max-h-[560px] block touch-manipulation"
+          ref={svgRef}
+          viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+          className={cn('w-full h-auto max-h-[560px] block select-none', zoom.scale > 1 && 'cursor-grab active:cursor-grabbing')}
+          // Not zoomed: one finger still scrolls the page; pinch comes to us. Zoomed: we own the gesture.
+          style={{ touchAction: zoom.scale > 1 ? 'none' : 'pan-x pan-y', aspectRatio: `${view.w} / ${view.h}` }}
           preserveAspectRatio="xMidYMid meet"
-          onClick={() => onSelectRack(null)}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onClick={() => { if (!wasDrag()) onSelectRack(null); }}
         >
           {/* Building outline + 5 m grid */}
           <defs>
@@ -128,7 +244,7 @@ export default function Warehouse2DPlan({
                 transform={`translate(${r.posX} ${r.posZ}) rotate(${deg})`}
                 opacity={dimmed ? 0.25 : 1}
                 className="cursor-pointer"
-                onClick={e => { e.stopPropagation(); onSelectRack(r.rackCode); }}
+                onClick={e => { e.stopPropagation(); if (!wasDrag()) onSelectRack(r.rackCode); }}
               >
                 <rect
                   x={-len / 2}

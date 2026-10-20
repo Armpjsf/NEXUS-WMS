@@ -627,6 +627,7 @@ function WarehouseMapContent() {
         {/* 3D Digital Twin (also the layout editor) */}
         {viewMode === '3D' && layout && (
           <Warehouse3DViewer
+            key={branchId || 'MAIN'}
             layout={layout}
             products={products}
             binStock={binStock3D}
