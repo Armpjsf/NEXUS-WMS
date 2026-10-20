@@ -259,6 +259,7 @@ export default function Warehouse3DViewer({
 
     // --- 4. Procedural Racking Construction ---
     const binMeshes: THREE.Mesh[] = [];
+    const rackHitBoxes: THREE.Mesh[] = [];
     let countTotalBins = 0;
     let countOccupiedBins = 0;
     let countStock = 0;
@@ -423,6 +424,24 @@ export default function Warehouse3DViewer({
         }
       }
 
+      // Transparent HitBox encompassing the entire rack for 100% reliable 1-click selection
+      const hitBoxGeo = new THREE.BoxGeometry(
+        totalRackLength + 0.4,
+        Math.max(1.5, totalRackHeight + 0.6),
+        rack.rackDepth + 0.6
+      );
+      const hitBoxMat = new THREE.MeshBasicMaterial({
+        color: 0x0ea5e9,
+        transparent: true,
+        opacity: isThisRackSelected ? 0.15 : 0.0,
+        wireframe: isThisRackSelected,
+      });
+      const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+      hitBox.position.set(0, Math.max(1.5, totalRackHeight) / 2, 0);
+      hitBox.userData = { rackCode: rack.rackCode };
+      rackGroup.add(hitBox);
+      rackHitBoxes.push(hitBox);
+
       scene.add(rackGroup);
     });
 
@@ -442,18 +461,34 @@ export default function Warehouse3DViewer({
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(binMeshes);
 
-      if (intersects.length > 0) {
-        const top = intersects[0].object as THREE.Mesh;
-        const code = top.userData?.binCode;
-        if (code) {
-          setHoveredBin(code);
-          container.style.cursor = 'pointer';
+      if (isEditMode) {
+        // In Edit Mode: Raycast against rack hitboxes for effortless rack selection
+        const intersects = raycaster.intersectObjects([...rackHitBoxes, ...binMeshes]);
+        if (intersects.length > 0) {
+          const top = intersects[0].object as THREE.Mesh;
+          const rackCode = top.userData?.rackCode;
+          if (rackCode) {
+            setHoveredBin(`แร็ก: ${rackCode} (คลิกเพื่อแก้ไข)`);
+            container.style.cursor = 'pointer';
+          }
+        } else {
+          setHoveredBin(null);
+          container.style.cursor = 'grab';
         }
       } else {
-        setHoveredBin(null);
-        container.style.cursor = 'grab';
+        const intersects = raycaster.intersectObjects(binMeshes);
+        if (intersects.length > 0) {
+          const top = intersects[0].object as THREE.Mesh;
+          const code = top.userData?.binCode;
+          if (code) {
+            setHoveredBin(code);
+            container.style.cursor = 'pointer';
+          }
+        } else {
+          setHoveredBin(null);
+          container.style.cursor = 'grab';
+        }
       }
     };
 
@@ -463,18 +498,22 @@ export default function Warehouse3DViewer({
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(binMeshes);
 
-      if (intersects.length > 0) {
-        const hit = intersects[0].object as THREE.Mesh;
-        const data = hit.userData;
-        if (isEditMode) {
-          // In Edit Mode: Select Rack for Inspector
-          if (data?.rackCode) {
-            setSelectedRackCode(data.rackCode);
+      if (isEditMode) {
+        // In Edit Mode: Click anywhere on rack or its hitbox to select it
+        const intersects = raycaster.intersectObjects([...rackHitBoxes, ...binMeshes]);
+        if (intersects.length > 0) {
+          const hit = intersects[0].object as THREE.Mesh;
+          const code = hit.userData?.rackCode;
+          if (code) {
+            setSelectedRackCode(code);
           }
-        } else {
-          // In Normal View: Open Bin Stock Drawer
+        }
+      } else {
+        const intersects = raycaster.intersectObjects(binMeshes);
+        if (intersects.length > 0) {
+          const hit = intersects[0].object as THREE.Mesh;
+          const data = hit.userData;
           if (data?.binCode) {
             setActiveBinDetails(data);
             if (onSelectBin) onSelectBin(data.binCode, data.binData);
@@ -631,6 +670,25 @@ export default function Warehouse3DViewer({
               </button>
             )}
 
+            {/* Quick Rack Selector Dropdown */}
+            {layout.racks.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-[#171c23]/90 border border-[#30353d] px-2.5 py-1 rounded-xl shadow-lg">
+                <span className="text-[10px] text-[#8a92a6] font-mono">เลือกแถว:</span>
+                <select
+                  value={selectedRackCode || ''}
+                  onChange={e => setSelectedRackCode(e.target.value || null)}
+                  className="bg-transparent text-xs font-mono font-bold text-[#facc15] outline-none cursor-pointer max-w-[150px]"
+                >
+                  <option value="" className="bg-[#171c23] text-[#8a92a6]">-- เลือกแร็ก ({layout.racks.length} แถว) --</option>
+                  {layout.racks.map(r => (
+                    <option key={r.rackCode} value={r.rackCode} className="bg-[#171c23] text-[#dee2ec]">
+                      {r.rackCode} ({r.type === 'CROSS_DOCK' ? 'X-Dock' : r.type === 'FLOOR_BLOCK' ? 'Floor' : `Zone ${r.zoneCode}`})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={handleAddRack}
               className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#30353d] text-[#dee2ec] hover:border-slate-400 transition-all flex items-center gap-1.5 shadow-lg"
@@ -650,6 +708,19 @@ export default function Warehouse3DViewer({
               className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#4cd7f6]/40 text-[#4cd7f6] hover:bg-[#4cd7f6]/10 transition-all flex items-center gap-1.5 shadow-lg"
             >
               <Plus className="w-3.5 h-3.5 text-[#4cd7f6]" /> ลานวางพื้น (Bulk)
+            </button>
+
+            <button
+              onClick={() => {
+                if (window.confirm('คุณต้องการล้างแร็กทั้งหมดในผังนี้เพื่อเริ่มสร้างใหม่ใช่หรือไม่?')) {
+                  onUpdateLayout?.({ ...layout, racks: [] });
+                  setSelectedRackCode(null);
+                }
+              }}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-red-900/50 text-red-400 hover:bg-red-950/60 transition-all flex items-center gap-1 shadow-lg"
+              title="ลบแร็กทั้งหมดในผังนี้เพื่อเริ่มวางใหม่"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> ล้างผัง
             </button>
 
             {onOpenLabelModal && (
@@ -675,12 +746,37 @@ export default function Warehouse3DViewer({
       </div>
 
       {/* Hover Tooltip HUD */}
-      {hoveredBin && !isEditMode && (
+      {hoveredBin && (
         <div className="absolute bottom-6 left-6 z-20 bg-[#171c23]/95 backdrop-blur-md border border-[#facc15]/50 px-4 py-2.5 rounded-2xl shadow-2xl pointer-events-none animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#facc15]" />
             <span className="font-mono font-bold text-sm text-[#facc15]">{hoveredBin}</span>
-            <span className="text-[10px] text-[#8a92a6] font-mono">คลิกเพื่อดูสินค้า</span>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Mode: Helper Panel when no rack is selected yet */}
+      {isEditMode && !selectedRack && layout.racks.length > 0 && (
+        <div className="absolute top-16 right-4 w-72 z-30 bg-[#171c23]/95 backdrop-blur-md border border-[#30353d] rounded-2xl p-4 shadow-2xl animate-in slide-in-from-right-4 text-xs space-y-3">
+          <div className="flex items-center gap-2 text-[#facc15] font-bold">
+            <Info className="w-4 h-4" /> เลือกแถวแร็กเพื่อแก้ไข
+          </div>
+          <p className="text-[11px] text-[#8a92a6] leading-relaxed">
+            คลิกที่แร็กใดก็ได้ในจอ 3D หรือคลิกเลือกจากรายการด้านล่างเพื่อปรับพิกัด หรือลบแถวแร็ก
+          </p>
+          <div className="pt-2 border-t border-[#30353d] flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
+            {layout.racks.map(r => (
+              <button
+                key={r.rackCode}
+                onClick={() => setSelectedRackCode(r.rackCode)}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg bg-[#12161d] hover:bg-[#252a32] border border-[#30353d] flex items-center justify-between font-mono text-xs text-[#dee2ec] transition-all"
+              >
+                <span className="font-bold">{r.rackCode}</span>
+                <span className="text-[10px] text-[#8a92a6]">
+                  {r.type === 'CROSS_DOCK' ? 'X-Dock' : r.type === 'FLOOR_BLOCK' ? 'Floor' : `${r.levels} ชั้น • ${r.bays} ช่อง`}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       )}
