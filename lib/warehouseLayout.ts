@@ -100,14 +100,39 @@ export function applyBinTemplate(template: string, rack: Pick<RackConfig, 'rackC
       .replace(/\{R\}/gi, rackSegment(rack))
       .replace(/\{A(?:=([A-Z]+))?\}/gi, (_, start?: string) => bayLetter(bay - 1 + (start ? letterIndex(start) : 1)))
       .replace(/\{(B+)(?:=(\d+))?\}/gi, (_, b: string, start?: string) => String(bay - 1 + (start ? parseInt(start, 10) : 1)).padStart(b.length, '0'))
-      .replace(/\{(L+)\}/gi, (_, l: string) => String(level).padStart(l.length, '0')),
+      .replace(/\{(L+)\}/gi, (_, l: string) => String(level).padStart(l.length, '0'))
+      // Shorthand people naturally type: {E} = "first bay is E" (same as {A=E}).
+      .replace(/\{([A-Z]{1,2})\}/gi, (_, start: string) => bayLetter(bay - 1 + letterIndex(start))),
   );
+}
+
+/** First-bay letter + level digits when the template is the simple "{A=X}-{LLL}" shape (else null). */
+export function parseSimpleTemplate(template?: string): { startLetter: string; levelDigits: number } | null {
+  const t = String(template || '').trim();
+  const m = t.match(/^\{(?:A(?:=([A-Z]{1,2}))?|([A-Z]{1,2}))\}-\{(L+)\}$/i);
+  if (!m) return null;
+  const startLetter = (m[1] || m[2] || 'A').toUpperCase();
+  return { startLetter, levelDigits: m[3].length };
+}
+
+/** Build the simple template: first bay letter + level digits → "{A=E}-{LLL}". */
+export function simpleTemplate(startLetter: string, levelDigits: number): string {
+  const letter = String(startLetter || 'A').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2) || 'A';
+  return `{A${letter === 'A' ? '' : `=${letter}`}}-{${'L'.repeat(Math.max(1, Math.min(4, levelDigits)))}}`;
+}
+
+/** Tokens the template uses that we don't understand (shown as a warning in the editor). */
+export function unknownTemplateTokens(template?: string): string[] {
+  const known = /^(RACK|Z|R|A(=[A-Z]+)?|B+(=\d+)?|L+|[A-Z]{1,2})$/i;
+  return Array.from(String(template || '').matchAll(/\{([^}]*)\}/g)).map(m => m[1]).filter(t => !known.test(t));
 }
 
 /** How a bay is called on the floor: its letter when the template uses {A}, else its number. */
 export function bayLabel(rack: Pick<RackConfig, 'binTemplate'>, bay: number): string {
   const m = String(rack.binTemplate || '').match(/\{A(?:=([A-Z]+))?\}/i);
   if (m) return bayLetter(bay - 1 + (m[1] ? letterIndex(m[1]) : 1));
+  const s = String(rack.binTemplate || '').replace(/\{(RACK|Z|R|B+(=\d+)?|L+)\}/gi, '').match(/\{([A-Z]{1,2})\}/i);
+  if (s) return bayLetter(bay - 1 + letterIndex(s[1]));
   const n = String(rack.binTemplate || '').match(/\{B+=(\d+)\}/i);
   return String(bay - 1 + (n ? parseInt(n[1], 10) : 1));
 }
@@ -148,15 +173,17 @@ export function validateLayout(racks: RackConfig[] = []): string[] {
   rackCodes.forEach((n, code) => { if (code && n > 1) errors.push(`รหัสแร็กซ้ำ: ${code}`); });
 
   const seen = new Map<string, string>();
-  const dupBins: string[] = [];
+  const clashes = new Map<string, string[]>(); // "rackA ↔ rackB" → codes
   listLayoutBins(racks).forEach(b => {
     const prev = seen.get(b.binCode);
-    if (prev !== undefined) dupBins.push(`${b.binCode} (${prev} / ${b.rackCode})`);
-    else seen.set(b.binCode, b.rackCode);
+    if (prev === undefined) { seen.set(b.binCode, b.rackCode); return; }
+    const key = prev === b.rackCode ? `แร็ก ${prev}` : `แร็ก ${prev} กับ ${b.rackCode}`;
+    clashes.set(key, [...(clashes.get(key) || []), b.binCode]);
   });
-  if (dupBins.length) {
-    errors.push(`รหัสโลเคชันซ้ำ ${dupBins.length} ช่อง เช่น ${dupBins.slice(0, 3).join(', ')} — ปรับรูปแบบรหัสโลเคชันของแร็กให้ไม่ชนกัน`);
-  }
+  clashes.forEach((codes, key) => {
+    const sample = codes.length > 2 ? `${codes[0]} … ${codes[codes.length - 1]}` : codes.join(', ');
+    errors.push(`${key} ได้รหัสโลเคชันซ้ำกัน ${codes.length} ช่อง (${sample}) — ตั้ง "เสาแรก" ของแต่ละแร็กให้ต่อกัน เช่น A, E, I`);
+  });
   return errors;
 }
 

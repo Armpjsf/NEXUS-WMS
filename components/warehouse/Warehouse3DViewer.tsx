@@ -26,7 +26,15 @@ import {
   Save,
   Sliders,
 } from 'lucide-react';
-import { RackConfig, binCodeFor, DEFAULT_BIN_TEMPLATE, listRackBins } from '@/lib/warehouseLayout';
+import {
+  RackConfig,
+  binCodeFor,
+  DEFAULT_BIN_TEMPLATE,
+  listRackBins,
+  parseSimpleTemplate,
+  simpleTemplate,
+  unknownTemplateTokens,
+} from '@/lib/warehouseLayout';
 
 type BinStockEntry = { products: any[]; totalStock: number; velocityClass: string; status?: string };
 
@@ -300,6 +308,15 @@ export default function Warehouse3DViewer({
     const steelPostMat = new THREE.MeshStandardMaterial({ color: 0x252a32, metalness: 0.8, roughness: 0.3 });
     const beamMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.4 });
     const selectedBeamMat = new THREE.MeshStandardMaterial({ color: 0x4cd7f6, metalness: 0.8, roughness: 0.2, emissive: 0x0ea5e9, emissiveIntensity: 0.3 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0xa0703c, roughness: 0.9, metalness: 0 });
+
+    // Shelf geometry (metres). Level 1 is the lowest beam, just above the floor;
+    // every level is a pair of beams with goods standing ON TOP of them —
+    // on a wooden board (shelving) or a wooden pallet (pallet racking).
+    const FIRST_BEAM_Y = 0.15;
+    const BEAM_H = 0.08;
+    const DECK_T = 0.025;
+    const PALLET_T = 0.12;
 
     layout.racks.forEach((rack, rackIndex) => {
       const isThisRackSelected = isEditMode && selectedRackIdx === rackIndex;
@@ -311,7 +328,9 @@ export default function Warehouse3DViewer({
       rackGroup.rotation.y = rack.rotationY;
 
       const totalRackLength = rack.bays * rack.bayWidth;
-      const totalRackHeight = rack.levels * rack.levelHeight;
+      const isPallet = rack.palletMode !== 'NON_PALLET';
+      const beamY = (lvl: number) => FIRST_BEAM_Y + (lvl - 1) * rack.levelHeight;
+      const totalRackHeight = isFloor ? rack.levels * 1.1 : beamY(rack.levels) + rack.levelHeight;
 
       if (isFloor) {
         // Floor Staging Boundary Pad
@@ -342,7 +361,7 @@ export default function Warehouse3DViewer({
         rackGroup.add(borderLine);
       } else {
         // Vertical Uprights (Posts)
-        const postGeo = new THREE.BoxGeometry(0.12, totalRackHeight + 0.5, 0.12);
+        const postGeo = new THREE.BoxGeometry(0.12, totalRackHeight, 0.12);
         for (let b = 0; b <= rack.bays; b++) {
           const xPos = -totalRackLength / 2 + b * rack.bayWidth;
           // Front upright
@@ -360,28 +379,30 @@ export default function Warehouse3DViewer({
       }
 
       // Horizontal Beams & Individual Bins
-      const beamGeo = new THREE.BoxGeometry(totalRackLength, 0.08, 0.08);
+      const beamGeo = new THREE.BoxGeometry(totalRackLength, BEAM_H, 0.08);
+      const deckGeo = new THREE.BoxGeometry(totalRackLength, DECK_T, rack.rackDepth + 0.04);
 
       for (let lvl = 1; lvl <= rack.levels; lvl++) {
-        const yPos = isFloor ? (lvl * 1.1) : (lvl * rack.levelHeight);
+        const y = beamY(lvl);
+        // Where goods stand on this level
+        const surfaceY = isFloor ? 0.04 : y + BEAM_H / 2 + (isPallet ? 0 : DECK_T);
 
         if (!isFloor) {
           // Front & Back Beams
           const beamFront = new THREE.Mesh(beamGeo, currentBeamMat);
-          beamFront.position.set(0, yPos, rack.rackDepth / 2);
+          beamFront.position.set(0, y, rack.rackDepth / 2);
           rackGroup.add(beamFront);
 
           const beamBack = new THREE.Mesh(beamGeo, currentBeamMat);
-          beamBack.position.set(0, yPos, -rack.rackDepth / 2);
+          beamBack.position.set(0, y, -rack.rackDepth / 2);
           rackGroup.add(beamBack);
 
-          // If non-pallet shelving, add a solid shelf decking board
-          if (rack.palletMode === 'NON_PALLET') {
-            const deckGeo = new THREE.BoxGeometry(totalRackLength, 0.02, rack.rackDepth);
-            const deckMat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.8 });
-            const deck = new THREE.Mesh(deckGeo, deckMat);
-            deck.position.set(0, yPos - 0.04, 0);
+          // Shelving: a wooden board laid across the beams for the whole level
+          if (!isPallet) {
+            const deck = new THREE.Mesh(deckGeo, woodMat);
+            deck.position.set(0, y + BEAM_H / 2 + DECK_T / 2, 0);
             deck.receiveShadow = true;
+            deck.castShadow = true;
             rackGroup.add(deck);
           }
         }
@@ -403,7 +424,9 @@ export default function Warehouse3DViewer({
 
           // Bin Box Geometry
           const boxW = rack.bayWidth * 0.88;
-          const boxH = isFloor ? 1.0 : (rack.levelHeight * 0.75);
+          // Leave head-room under the next beam (and room for the pallet on pallet racks)
+          const clearance = rack.levelHeight - BEAM_H - (isPallet ? PALLET_T : DECK_T);
+          const boxH = isFloor ? 1.0 : Math.max(0.08, Math.min(clearance * 0.85, clearance - 0.05));
           const boxD = rack.rackDepth * 0.88;
 
           const binBoxGeo = new THREE.BoxGeometry(boxW, boxH, boxD);
@@ -435,8 +458,17 @@ export default function Warehouse3DViewer({
             opacity: boxOpacity,
           });
 
+          // Pallet racking: a wooden pallet under each stocked slot
+          const palletLift = !isFloor && isPallet ? PALLET_T : 0;
+          if (palletLift > 0 && hasStock) {
+            const pallet = new THREE.Mesh(new THREE.BoxGeometry(boxW, PALLET_T, boxD), woodMat);
+            pallet.position.set(xPos, surfaceY + PALLET_T / 2, 0);
+            pallet.receiveShadow = true;
+            rackGroup.add(pallet);
+          }
+
           const binMesh = new THREE.Mesh(binBoxGeo, binBoxMat);
-          binMesh.position.set(xPos, isFloor ? (boxH / 2 + 0.04) : (yPos - boxH / 2 + 0.05), 0);
+          binMesh.position.set(xPos, surfaceY + palletLift + boxH / 2, 0);
           binMesh.castShadow = hasStock;
           binMesh.receiveShadow = true;
 
@@ -462,7 +494,7 @@ export default function Warehouse3DViewer({
       // Transparent HitBox encompassing the entire rack for 100% reliable 1-click selection
       const hitBoxGeo = new THREE.BoxGeometry(
         totalRackLength + 0.4,
-        Math.max(1.5, totalRackHeight + 0.6),
+        Math.max(1.5, totalRackHeight + 0.2),
         rack.rackDepth + 0.6
       );
       const hitBoxMat = new THREE.MeshBasicMaterial({
@@ -1017,8 +1049,47 @@ export default function Warehouse3DViewer({
               {/* Bin naming: match the labels on the real racks */}
               <div className="bg-[#12161d] p-3 rounded-xl border border-[#30353d] space-y-2">
                 <label className="text-[10px] font-mono text-[#8a92a6] block uppercase tracking-wider">
-                  รูปแบบรหัสโลเคชัน (ให้ตรงป้ายจริง)
+                  รหัสโลเคชัน (ให้ตรงป้ายจริง)
                 </label>
+                {/* Simple mode: letter per bay, level number counting up — e.g. A-001 … D-011 */}
+                {(() => {
+                  const simple = parseSimpleTemplate(selectedRack.binTemplate);
+                  const startLetter = simple?.startLetter || 'A';
+                  const digits = simple?.levelDigits || 3;
+                  return (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[10px] text-[#8a92a6] block mb-1">เสาแรก (ซ้ายสุด) เป็นตัว</span>
+                        <input
+                          type="text"
+                          value={simple ? startLetter : ''}
+                          onFocus={e => e.target.select()}
+                          placeholder="เช่น A, E"
+                          onChange={e => {
+                            // keep only the newest letter, so typing E over "A" gives E (not AE)
+                            const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(-1);
+                            handleUpdateSelectedRack({ binTemplate: simpleTemplate(letter || 'A', digits) });
+                          }}
+                          className="w-full bg-[#171c23] border border-[#30353d] rounded-lg px-2.5 py-1.5 text-sm font-mono font-black text-[#facc15] uppercase focus:border-[#facc15] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#8a92a6] block mb-1">เลขชั้น (นับจากล่าง)</span>
+                        <select
+                          value={simple ? digits : ''}
+                          onChange={e => handleUpdateSelectedRack({ binTemplate: simpleTemplate(startLetter, Number(e.target.value)) })}
+                          className="w-full bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                        >
+                          {!simple && <option value="">— กำหนดเอง —</option>}
+                          <option value={1}>1, 2, 3</option>
+                          <option value={2}>01, 02, 03</option>
+                          <option value={3}>001, 002, 003</option>
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })()}
+                <span className="text-[10px] text-[#8a92a6] block">หรือกำหนดรูปแบบเอง:</span>
                 <input
                   type="text"
                   value={selectedRack.binTemplate || ''}
@@ -1026,8 +1097,13 @@ export default function Warehouse3DViewer({
                   onChange={e => handleUpdateSelectedRack({ binTemplate: e.target.value })}
                   className="w-full bg-[#171c23] border border-[#30353d] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
                 />
+                {unknownTemplateTokens(selectedRack.binTemplate).length > 0 && (
+                  <p className="text-[10px] text-rose-400">
+                    ไม่รู้จัก {unknownTemplateTokens(selectedRack.binTemplate).map(t => `{${t}}`).join(', ')} — รหัสจะซ้ำกันทุกช่อง
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-1">
-                  {['{A}-{LLL}', '{A=G}-{LLL}', '{Z}-{LLL}.{B}', '{Z}-{R}-{BB}-{LL}'].map(t => (
+                  {['{A}-{LLL}', '{Z}-{LLL}.{B}', '{Z}-{R}-{BB}-{LL}'].map(t => (
                     <button
                       key={t}
                       onClick={() => handleUpdateSelectedRack({ binTemplate: t })}
