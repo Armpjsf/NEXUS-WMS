@@ -30,6 +30,9 @@ import {
   WarehouseBin,
 } from '@/lib/warehouseMap';
 import Warehouse3DViewer from '@/components/warehouse/Warehouse3DViewer';
+import WarehouseWizardModal from '@/components/warehouse/WarehouseWizardModal';
+import WarehouseBatchLabelModal from '@/components/warehouse/WarehouseBatchLabelModal';
+import { toast } from 'react-hot-toast';
 
 export default function WarehouseMapPage() {
   return (
@@ -64,6 +67,78 @@ function WarehouseMapContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBin, setSelectedBin] = useState<WarehouseBin | null>(null);
   const [swapProduct, setSwapProduct] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
+  const [generatedBinsList, setGeneratedBinsList] = useState<string[]>([]);
+
+  // Compute all bin codes for label printing
+  const allBinsList = useMemo(() => {
+    if (generatedBinsList.length > 0) return generatedBinsList;
+    if (!layout3D?.racks) return [];
+    const list: string[] = [];
+    layout3D.racks.forEach((rack: any) => {
+      for (let bay = 1; bay <= (rack.bays || 5); bay++) {
+        for (let lvl = 1; lvl <= (rack.levels || 4); lvl++) {
+          list.push(`${rack.zoneCode}-${String(rack.rackCode).replace(/^[A-Z]-/, '')}-${String(bay).padStart(2, '0')}-${String(lvl).padStart(2, '0')}`.toUpperCase());
+        }
+      }
+    });
+    return list;
+  }, [layout3D, generatedBinsList]);
+
+  // Save current 3D layout to API
+  const handleSaveLayout = async () => {
+    if (!layout3D) return;
+    setIsSavingLayout(true);
+    try {
+      const res = await fetch(getApiUrl('/api/warehouse/layout'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          branchId: branchId || 'MAIN',
+          name: layout3D.name || 'คลังสินค้าหลัก',
+          widthM: layout3D.widthM || 60,
+          lengthM: layout3D.lengthM || 80,
+          heightM: layout3D.heightM || 12,
+          racks: layout3D.racks || [],
+        }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        toast.success('บันทึกผังคลังสินค้า 3D สำเร็จเรียบร้อยแล้ว');
+      } else {
+        toast.error(data?.error || 'ไม่สามารถบันทึกผังคลังได้');
+      }
+    } catch {
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setIsSavingLayout(false);
+    }
+  };
+
+  // Apply Wizard layout
+  const handleApplyWizard = async (newLayout: any, bins: string[]) => {
+    setLayout3D(newLayout);
+    setGeneratedBinsList(bins);
+    setIsSavingLayout(true);
+    try {
+      const res = await fetch(getApiUrl('/api/warehouse/layout'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLayout),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        toast.success(`สร้างผังคลัง 3D สำเร็จ! รวมความจุ ${bins.length.toLocaleString()} โลเคชัน`);
+      }
+    } catch {
+      toast.error('ไม่สามารถบันทึกผังคลังได้');
+    } finally {
+      setIsSavingLayout(false);
+    }
+  };
 
   // Fetch Real Products and Transactions from API / Cache
   const fetchData = async () => {
@@ -419,6 +494,13 @@ function WarehouseMapContent() {
             products={products}
             heatmapMode={heatmapMode === 'VELOCITY' ? 'VELOCITY' : 'STOCK'}
             branchName={layout3D.name || 'คลังสินค้าหลัก'}
+            isEditMode={isEditMode}
+            onToggleEditMode={() => setIsEditMode(!isEditMode)}
+            onOpenWizard={() => setIsWizardOpen(true)}
+            onOpenLabelModal={() => setIsLabelModalOpen(true)}
+            onSaveLayout={handleSaveLayout}
+            isSaving={isSavingLayout}
+            onUpdateLayout={(newLayout) => setLayout3D(newLayout)}
             onSelectBin={(binCode, binData) => {
               // Open modal if bin found
               const foundBin = zones.flatMap(z => z.aisles).flatMap(a => a.racks).flatMap(r => r.bins).find(b => b.binCode === binCode);
@@ -693,6 +775,21 @@ function WarehouseMapContent() {
         </AnimatePresence>
 
         {/* 1-Click Location Swap Modal */}
+        <WarehouseWizardModal
+          isOpen={isWizardOpen}
+          onClose={() => setIsWizardOpen(false)}
+          branchId={branchId || 'MAIN'}
+          branchName={layout3D?.name || 'คลังสินค้าหลัก'}
+          onApplyLayout={handleApplyWizard}
+        />
+
+        <WarehouseBatchLabelModal
+          isOpen={isLabelModalOpen}
+          onClose={() => setIsLabelModalOpen(false)}
+          branchName={layout3D?.name || 'คลังสินค้าหลัก'}
+          bins={allBinsList}
+        />
+
         <LocationSwapModal
           isOpen={!!swapProduct}
           onClose={() => setSwapProduct(null)}

@@ -17,6 +17,14 @@ import {
   X,
   MapPin,
   TrendingUp,
+  Settings2,
+  Wand2,
+  Plus,
+  Trash2,
+  Copy,
+  Printer,
+  Save,
+  Sliders,
 } from 'lucide-react';
 import { RackConfig } from '@/app/api/warehouse/layout/route';
 
@@ -32,6 +40,13 @@ interface Warehouse3DProps {
   selectedBinCode?: string | null;
   onSelectBin?: (binCode: string, binData?: any) => void;
   branchName?: string;
+  isEditMode?: boolean;
+  onToggleEditMode?: () => void;
+  onOpenWizard?: () => void;
+  onOpenLabelModal?: () => void;
+  onSaveLayout?: () => void;
+  isSaving?: boolean;
+  onUpdateLayout?: (newLayout: any) => void;
 }
 
 export default function Warehouse3DViewer({
@@ -41,10 +56,18 @@ export default function Warehouse3DViewer({
   selectedBinCode,
   onSelectBin,
   branchName = 'คลังหลัก',
+  isEditMode = false,
+  onToggleEditMode,
+  onOpenWizard,
+  onOpenLabelModal,
+  onSaveLayout,
+  isSaving = false,
+  onUpdateLayout,
 }: Warehouse3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
   const [activeBinDetails, setActiveBinDetails] = useState<any | null>(null);
+  const [selectedRackCode, setSelectedRackCode] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalBins: 0, occupiedBins: 0, totalStock: 0 });
 
   // Map products to bins for fast lookup & visualization
@@ -63,6 +86,64 @@ export default function Warehouse3DViewer({
 
     return map;
   }, [products]);
+
+  // Selected Rack object for inspector
+  const selectedRack = useMemo(() => {
+    if (!selectedRackCode) return null;
+    return layout.racks.find(r => r.rackCode === selectedRackCode) || null;
+  }, [selectedRackCode, layout.racks]);
+
+  // Rack Mutation Handlers in Edit Mode
+  const handleUpdateSelectedRack = (patch: Partial<RackConfig>) => {
+    if (!selectedRack || !onUpdateLayout) return;
+    const updatedRacks = layout.racks.map(r => {
+      if (r.rackCode === selectedRack.rackCode) {
+        return { ...r, ...patch };
+      }
+      return r;
+    });
+    onUpdateLayout({ ...layout, racks: updatedRacks });
+  };
+
+  const handleAddRack = () => {
+    if (!onUpdateLayout) return;
+    const nextIdx = layout.racks.length + 1;
+    const newRackCode = `A-${String(nextIdx).padStart(2, '0')}-01`;
+    const newRack: RackConfig = {
+      rackCode: newRackCode,
+      zoneCode: 'A',
+      posX: 0,
+      posZ: 0,
+      rotationY: 0,
+      bays: 5,
+      levels: 4,
+      bayWidth: 2.7,
+      levelHeight: 1.8,
+      rackDepth: 1.2,
+      color: '#57ec7f',
+    };
+    onUpdateLayout({ ...layout, racks: [...layout.racks, newRack] });
+    setSelectedRackCode(newRackCode);
+  };
+
+  const handleDuplicateRack = (rack: RackConfig) => {
+    if (!onUpdateLayout) return;
+    const newRackCode = `${rack.rackCode}-COPY`;
+    const duplicatedRack: RackConfig = {
+      ...rack,
+      rackCode: newRackCode,
+      posX: rack.posX + (rack.rackDepth * 2 + 2.8), // Place across an aisle
+    };
+    onUpdateLayout({ ...layout, racks: [...layout.racks, duplicatedRack] });
+    setSelectedRackCode(newRackCode);
+  };
+
+  const handleDeleteRack = (rackCode: string) => {
+    if (!onUpdateLayout) return;
+    const filtered = layout.racks.filter(r => r.rackCode !== rackCode);
+    onUpdateLayout({ ...layout, racks: filtered });
+    setSelectedRackCode(null);
+  };
 
   useEffect(() => {
     const container = mountRef.current;
@@ -102,22 +183,18 @@ export default function Warehouse3DViewer({
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
     dirLight.shadow.camera.near = 10;
-    dirLight.shadow.camera.far = 200;
-    dirLight.shadow.camera.left = -60;
-    dirLight.shadow.camera.right = 60;
-    dirLight.shadow.camera.top = 60;
-    dirLight.shadow.camera.bottom = -60;
+    dirLight.shadow.camera.far = 150;
+    const shadowDist = Math.max(layout.widthM, layout.lengthM) * 0.7;
+    dirLight.shadow.camera.left = -shadowDist;
+    dirLight.shadow.camera.right = shadowDist;
+    dirLight.shadow.camera.top = shadowDist;
+    dirLight.shadow.camera.bottom = -shadowDist;
     scene.add(dirLight);
 
-    // Subtle Industrial Yellow Ceiling Spotlights
-    const spotLight = new THREE.PointLight(0xfacc15, 1.5, 80);
-    spotLight.position.set(0, 25, 0);
-    scene.add(spotLight);
-
-    // --- 3. Warehouse Floor & Grid ---
+    // --- 3. Concrete Floor & Grid ---
     const floorGeo = new THREE.PlaneGeometry(layout.widthM, layout.lengthM);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x12161d,
+      color: 0x12171e,
       roughness: 0.8,
       metalness: 0.2,
     });
@@ -126,13 +203,26 @@ export default function Warehouse3DViewer({
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Floor Grid lines
-    const gridHelper = new THREE.GridHelper(Math.max(layout.widthM, layout.lengthM), 40, 0x30353d, 0x1b2027);
-    gridHelper.position.y = 0.02;
+    // Grid Floor
+    const gridHelper = new THREE.GridHelper(
+      Math.max(layout.widthM, layout.lengthM),
+      Math.max(layout.widthM, layout.lengthM) / 2,
+      0x30353d,
+      0x1b2027
+    );
+    gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
-    // Yellow Floor Walkway Boundaries
-    const aisleMarkerMat = new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.4 });
+    // Staging and Dock Areas (Painted floor marking)
+    const stagingGeo = new THREE.PlaneGeometry(layout.widthM - 4, 8);
+    const stagingMat = new THREE.MeshBasicMaterial({ color: 0x252a32, wireframe: true });
+    const stagingMesh = new THREE.Mesh(stagingGeo, stagingMat);
+    stagingMesh.rotation.x = -Math.PI / 2;
+    stagingMesh.position.set(0, 0.02, layout.lengthM / 2 - 5);
+    scene.add(stagingMesh);
+
+    // Yellow Perimeter Border Line
+    const aisleMarkerMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
     const aisleGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-layout.widthM / 2 + 2, 0.05, -layout.lengthM / 2 + 2),
       new THREE.Vector3(layout.widthM / 2 - 2, 0.05, -layout.lengthM / 2 + 2),
@@ -152,9 +242,12 @@ export default function Warehouse3DViewer({
     // Materials
     const steelPostMat = new THREE.MeshStandardMaterial({ color: 0x252a32, metalness: 0.8, roughness: 0.3 });
     const beamMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.4 });
-    const emptyPalletMat = new THREE.MeshStandardMaterial({ color: 0x30353d, transparent: true, opacity: 0.25 });
+    const selectedBeamMat = new THREE.MeshStandardMaterial({ color: 0x4cd7f6, metalness: 0.8, roughness: 0.2, emissive: 0x0ea5e9, emissiveIntensity: 0.3 });
 
     layout.racks.forEach((rack) => {
+      const isThisRackSelected = isEditMode && selectedRackCode === rack.rackCode;
+      const currentBeamMat = isThisRackSelected ? selectedBeamMat : beamMat;
+
       const rackGroup = new THREE.Group();
       rackGroup.position.set(rack.posX, 0, rack.posZ);
       rackGroup.rotation.y = rack.rotationY;
@@ -186,11 +279,11 @@ export default function Warehouse3DViewer({
         const yPos = lvl * rack.levelHeight;
 
         // Front & Back Beams
-        const beamFront = new THREE.Mesh(beamGeo, beamMat);
+        const beamFront = new THREE.Mesh(beamGeo, currentBeamMat);
         beamFront.position.set(0, yPos, rack.rackDepth / 2);
         rackGroup.add(beamFront);
 
-        const beamBack = new THREE.Mesh(beamGeo, beamMat);
+        const beamBack = new THREE.Mesh(beamGeo, currentBeamMat);
         beamBack.position.set(0, yPos, -rack.rackDepth / 2);
         rackGroup.add(beamBack);
 
@@ -219,7 +312,10 @@ export default function Warehouse3DViewer({
           let boxColor = 0x30353d;
           let boxOpacity = 0.25;
 
-          if (hasStock) {
+          if (isThisRackSelected) {
+            boxColor = 0x0284c7; // Highlight selected rack in editor
+            boxOpacity = 0.7;
+          } else if (hasStock) {
             boxOpacity = 0.9;
             if (heatmapMode === 'STOCK') {
               boxColor = binData.totalStock > 80 ? 0xef4444 : binData.totalStock > 25 ? 0xfacc15 : 0x10b981;
@@ -234,7 +330,7 @@ export default function Warehouse3DViewer({
             color: boxColor,
             roughness: 0.6,
             metalness: 0.2,
-            transparent: !hasStock,
+            transparent: !hasStock && !isThisRackSelected,
             opacity: boxOpacity,
           });
 
@@ -304,9 +400,17 @@ export default function Warehouse3DViewer({
       if (intersects.length > 0) {
         const hit = intersects[0].object as THREE.Mesh;
         const data = hit.userData;
-        if (data?.binCode) {
-          setActiveBinDetails(data);
-          if (onSelectBin) onSelectBin(data.binCode, data.binData);
+        if (isEditMode) {
+          // In Edit Mode: Select Rack for Inspector
+          if (data?.rackCode) {
+            setSelectedRackCode(data.rackCode);
+          }
+        } else {
+          // In Normal View: Open Bin Stock Drawer
+          if (data?.binCode) {
+            setActiveBinDetails(data);
+            if (onSelectBin) onSelectBin(data.binCode, data.binData);
+          }
         }
       }
     };
@@ -318,16 +422,18 @@ export default function Warehouse3DViewer({
     let isDragging = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
-    let spherical = { radius: 75, theta: Math.PI / 4, phi: Math.PI / 3.2 };
 
-    const updateCameraPosition = () => {
-      camera.position.x = spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
-      camera.position.y = spherical.radius * Math.cos(spherical.phi);
-      camera.position.z = spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
-      camera.lookAt(0, 5, 0);
+    let targetRotationX = 0.55;
+    let targetRotationY = 0.75;
+    let currentDistance = 75;
+
+    const updateCameraPos = () => {
+      camera.position.x = currentDistance * Math.sin(targetRotationY) * Math.cos(targetRotationX);
+      camera.position.y = currentDistance * Math.sin(targetRotationX);
+      camera.position.z = currentDistance * Math.cos(targetRotationY) * Math.cos(targetRotationX);
+      camera.lookAt(0, 3, 0);
     };
-
-    updateCameraPosition();
+    updateCameraPos();
 
     const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
@@ -339,33 +445,33 @@ export default function Warehouse3DViewer({
       isDragging = false;
     };
 
-    const onMouseMoveOrbit = (e: MouseEvent) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
       const deltaX = e.clientX - prevMouseX;
       const deltaY = e.clientY - prevMouseY;
       prevMouseX = e.clientX;
       prevMouseY = e.clientY;
 
-      spherical.theta -= deltaX * 0.008;
-      spherical.phi = Math.max(0.15, Math.min(Math.PI / 2 - 0.05, spherical.phi - deltaY * 0.008));
-      updateCameraPosition();
+      targetRotationY -= deltaX * 0.008;
+      targetRotationX = Math.max(0.15, Math.min(Math.PI / 2.1, targetRotationX + deltaY * 0.008));
+      updateCameraPos();
     };
 
-    const onWheelZoom = (e: WheelEvent) => {
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      spherical.radius = Math.max(15, Math.min(160, spherical.radius + e.deltaY * 0.06));
-      updateCameraPosition();
+      currentDistance = Math.max(20, Math.min(180, currentDistance + e.deltaY * 0.05));
+      updateCameraPos();
     };
 
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('mousemove', onMouseMoveOrbit);
-    renderer.domElement.addEventListener('wheel', onWheelZoom, { passive: false });
+    window.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
 
-    // --- 6. Animation Loop ---
-    let animId: number;
+    // Animation Loop
+    let animationFrameId: number;
     const animate = () => {
-      animId = requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
       renderer.render(scene, camera);
     };
     animate();
@@ -382,17 +488,17 @@ export default function Warehouse3DViewer({
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(animId);
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
+      renderer.domElement.removeEventListener('mousedown', onMouseDown);
+      renderer.domElement.removeEventListener('wheel', onWheel);
       renderer.domElement.removeEventListener('mousemove', handlePointerMove);
       renderer.domElement.removeEventListener('click', handlePointerClick);
-      renderer.domElement.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('mousemove', onMouseMoveOrbit);
-      renderer.domElement.removeEventListener('wheel', onWheelZoom);
-      window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [layout, binDataMap, heatmapMode, onSelectBin]);
+  }, [layout, heatmapMode, binDataMap, onSelectBin, isEditMode, selectedRackCode]);
 
   const occupancyRate = stats.totalBins > 0 ? Math.round((stats.occupiedBins / stats.totalBins) * 100) : 0;
 
@@ -407,7 +513,7 @@ export default function Warehouse3DViewer({
           <div className="w-3 h-3 rounded-full bg-[#57ec7f] animate-pulse" />
           <div>
             <h4 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider">
-              {branchName} • 3D DIGITAL TWIN
+              {branchName} • 3D DIGITAL TWIN {isEditMode && <span className="text-[#facc15] ml-1">[โหมดแก้ไข]</span>}
             </h4>
             <p className="text-[10px] text-[#8a92a6] font-mono">
               มิติ {layout.widthM}m × {layout.lengthM}m • แร็ก {layout.racks.length} แถว
@@ -430,8 +536,64 @@ export default function Warehouse3DViewer({
         </div>
       </div>
 
+      {/* Top Right Floating Toolbar: Edit Mode & Actions */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        {onToggleEditMode && (
+          <button
+            onClick={onToggleEditMode}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg ${
+              isEditMode
+                ? 'bg-[#facc15] text-[#1b1600] font-black shadow-[#facc15]/20 border border-[#facc15]'
+                : 'bg-[#171c23]/90 text-[#dee2ec] border border-[#30353d] hover:border-slate-500'
+            }`}
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            {isEditMode ? 'เสร็จสิ้นการแก้ไข' : 'ปรับแต่งผังคลัง'}
+          </button>
+        )}
+
+        {isEditMode && (
+          <>
+            {onOpenWizard && (
+              <button
+                onClick={onOpenWizard}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#facc15]/50 text-[#facc15] hover:bg-[#facc15]/10 transition-all flex items-center gap-1.5 shadow-lg"
+              >
+                <Wand2 className="w-3.5 h-3.5" /> Wizard คลังใหม่
+              </button>
+            )}
+
+            <button
+              onClick={handleAddRack}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#30353d] text-[#dee2ec] hover:border-slate-400 transition-all flex items-center gap-1.5 shadow-lg"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#57ec7f]" /> เพิ่มแร็ก
+            </button>
+
+            {onOpenLabelModal && (
+              <button
+                onClick={onOpenLabelModal}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-[#30353d] text-[#dee2ec] hover:border-slate-400 transition-all flex items-center gap-1.5 shadow-lg"
+              >
+                <Printer className="w-3.5 h-3.5 text-[#4cd7f6]" /> พิมพ์บาร์โค้ด
+              </button>
+            )}
+
+            {onSaveLayout && (
+              <button
+                onClick={onSaveLayout}
+                disabled={isSaving}
+                className="px-4 py-1.5 rounded-xl text-xs font-black bg-[#57ec7f] text-[#09150c] hover:bg-[#72f595] transition-all flex items-center gap-1.5 shadow-lg shadow-[#57ec7f]/20 disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" /> {isSaving ? 'กำลังบันทึก...' : 'บันทึกผัง'}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Hover Tooltip HUD */}
-      {hoveredBin && (
+      {hoveredBin && !isEditMode && (
         <div className="absolute bottom-6 left-6 z-20 bg-[#171c23]/95 backdrop-blur-md border border-[#facc15]/50 px-4 py-2.5 rounded-2xl shadow-2xl pointer-events-none animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#facc15]" />
@@ -441,8 +603,140 @@ export default function Warehouse3DViewer({
         </div>
       )}
 
-      {/* Selected Bin Side Drawer */}
-      {activeBinDetails && (
+      {/* Edit Mode: Rack Inspector Panel */}
+      {isEditMode && selectedRack && (
+        <div className="absolute top-16 right-4 bottom-4 w-80 z-30 bg-[#171c23]/95 backdrop-blur-md border border-[#30353d] rounded-2xl p-4 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right-4">
+          <div className="space-y-4 overflow-y-auto pr-1">
+            <div className="flex items-center justify-between border-b border-[#30353d] pb-2">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-[#facc15]" />
+                <h3 className="font-mono font-bold text-sm text-[#dee2ec]">
+                  แก้ไขแร็ก: {selectedRack.rackCode}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedRackCode(null)}
+                className="p-1 rounded-lg text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Properties Inputs */}
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">รหัสแร็ก (Rack Code)</label>
+                <input
+                  type="text"
+                  value={selectedRack.rackCode}
+                  onChange={e => handleUpdateSelectedRack({ rackCode: e.target.value })}
+                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">โซน (Zone)</label>
+                  <select
+                    value={selectedRack.zoneCode}
+                    onChange={e => handleUpdateSelectedRack({ zoneCode: e.target.value })}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  >
+                    {['A', 'B', 'C', 'D'].map(z => (
+                      <option key={z} value={z}>Zone {z}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">จำนวนชั้น (Levels)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={selectedRack.levels}
+                    onChange={e => handleUpdateSelectedRack({ levels: Number(e.target.value) })}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ช่วงเสา (Bays)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={selectedRack.bays}
+                    onChange={e => handleUpdateSelectedRack({ bays: Number(e.target.value) })}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ความสูงชั้น (m)</label>
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={1.0}
+                    max={3.5}
+                    value={selectedRack.levelHeight}
+                    onChange={e => handleUpdateSelectedRack({ levelHeight: Number(e.target.value) })}
+                    className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Coordinates X, Z */}
+              <div className="bg-[#12161d] p-3 rounded-xl border border-[#30353d] space-y-2">
+                <span className="text-[10px] font-mono text-[#8a92a6] block uppercase tracking-wider">
+                  พิกัดตำแหน่ง (Coordinates)
+                </span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-[#8a92a6]">แกน X (ซ้าย-ขวา):</span>
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={selectedRack.posX}
+                    onChange={e => handleUpdateSelectedRack({ posX: Number(e.target.value) })}
+                    className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1 text-right font-mono font-bold text-[#dee2ec]"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-[#8a92a6]">แกน Z (หน้า-หลัง):</span>
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={selectedRack.posZ}
+                    onChange={e => handleUpdateSelectedRack({ posZ: Number(e.target.value) })}
+                    className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1 text-right font-mono font-bold text-[#dee2ec]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="pt-3 border-t border-[#30353d] space-y-2">
+            <button
+              onClick={() => handleDuplicateRack(selectedRack)}
+              className="w-full py-2 rounded-xl bg-[#252a32] border border-[#30353d] text-xs font-bold text-[#dee2ec] hover:border-slate-400 transition-all flex items-center justify-center gap-1.5"
+            >
+              <Copy className="w-3.5 h-3.5 text-[#4cd7f6]" /> คัดลอกแถวแร็กคู่ขนาน (Duplicate)
+            </button>
+            <button
+              onClick={() => handleDeleteRack(selectedRack.rackCode)}
+              className="w-full py-2 rounded-xl bg-red-950/40 border border-red-800/50 text-xs font-bold text-red-400 hover:bg-red-900/50 transition-all flex items-center justify-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> ลบแร็กแถวนี้
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Normal Mode: Selected Bin Side Drawer */}
+      {!isEditMode && activeBinDetails && (
         <div className="absolute top-4 right-4 bottom-4 w-80 z-30 bg-[#171c23]/95 backdrop-blur-md border border-[#30353d] rounded-2xl p-4 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right-4">
           <div>
             <div className="flex items-center justify-between border-b border-[#30353d] pb-3 mb-3">
