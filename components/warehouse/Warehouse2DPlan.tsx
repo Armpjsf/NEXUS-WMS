@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, Sparkles, MousePointerClick, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { WarehouseLayout, RackConfig, binCodeFor, bayLabel } from '@/lib/warehouseLayout';
+import { WarehouseLayout, RackConfig, bayLabel, slotState } from '@/lib/warehouseLayout';
 import { WarehouseMapData, MapBin, MapRack } from '@/lib/warehouseMap';
 
 type Heatmap = 'STOCK' | 'VELOCITY';
@@ -384,14 +384,14 @@ function RackElevation({
               {bays.map(bay => {
                 const bin = byKey.get(`${bay}-${level}`);
                 if (!bin) {
-                  // Slot switched off (merged bay / no bin here)
-                  const merged = binCodeFor(rack, bay, level) === null;
+                  // Slot merged into the one below, or switched off
+                  const merged = slotState(rack, bay, level) === 'merged-into-below';
                   return (
                     <div
                       key={bay}
                       className="rounded-xl border border-dashed border-[#252a32] min-h-[64px] flex items-center justify-center text-[10px] text-[#4b5363]"
                     >
-                      {merged ? 'รวมช่อง' : '—'}
+                      {merged ? '↓ รวมกับชั้นล่าง' : 'ไม่มีช่อง'}
                     </div>
                   );
                 }

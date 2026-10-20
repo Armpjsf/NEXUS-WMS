@@ -35,6 +35,7 @@ import {
   simpleTemplate,
   unknownTemplateTokens,
 } from '@/lib/warehouseLayout';
+import RackSlotEditor from '@/components/warehouse/RackSlotEditor';
 
 type BinStockEntry = { products: any[]; totalStock: number; velocityClass: string; status?: string };
 
@@ -49,6 +50,9 @@ function defaultCamera(floorSize: number): CameraState {
 }
 
 const CAMERA_MIN_DIST = 4;
+
+// Stable default so a missing `products` prop doesn't rebuild the scene every render.
+const NO_PRODUCTS: any[] = [];
 
 interface Warehouse3DProps {
   layout: {
@@ -77,7 +81,7 @@ interface Warehouse3DProps {
 
 export default function Warehouse3DViewer({
   layout,
-  products = [],
+  products = NO_PRODUCTS,
   binStock,
   heatmapMode = 'STOCK',
   selectedBinCode,
@@ -541,11 +545,10 @@ export default function Warehouse3DViewer({
       scene.add(rackGroup);
     });
 
-    setStats({
-      totalBins: countTotalBins,
-      occupiedBins: countOccupiedBins,
-      totalStock: countStock,
-    });
+    setStats(prev =>
+      prev.totalBins === countTotalBins && prev.occupiedBins === countOccupiedBins && prev.totalStock === countStock
+        ? prev
+        : { totalBins: countTotalBins, occupiedBins: countOccupiedBins, totalStock: countStock });
 
     // --- 5. Mouse Raycasting (Interaction) ---
     const raycaster = new THREE.Raycaster();
@@ -1166,18 +1169,27 @@ export default function Warehouse3DViewer({
                     return bins.length > 3 ? `${sample.join(', ')} … ${bins[bins.length - 1].binCode} (${bins.length} ช่อง)` : sample.join(', ');
                   })()}
                 </div>
-                {selectedRack.binOverrides && Object.keys(selectedRack.binOverrides).length > 0 && (
-                  <div className="flex items-center justify-between text-[10px] text-amber-300">
-                    <span>ช่องพิเศษ/รวมช่อง {Object.keys(selectedRack.binOverrides).length} ช่อง</span>
-                    <button
-                      onClick={() => handleUpdateSelectedRack({ binOverrides: {} })}
-                      className="underline hover:text-amber-200"
-                    >
-                      ล้าง
-                    </button>
-                  </div>
-                )}
               </div>
+
+              {/* Slot-by-slot: merge / split / rename / switch off */}
+              {selectedRack.type !== 'CROSS_DOCK' && selectedRack.type !== 'FLOOR_BLOCK' && (
+                <div className="bg-[#12161d] p-3 rounded-xl border border-[#30353d] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-[#8a92a6] uppercase tracking-wider">ช่องในแร็ก (แยก/รวมทีละช่อง)</span>
+                    {selectedRack.binOverrides && Object.keys(selectedRack.binOverrides).length > 0 && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm('ล้างการรวมช่อง/รหัสพิเศษทั้งหมดของแร็กนี้?')) handleUpdateSelectedRack({ binOverrides: {} });
+                        }}
+                        className="text-[10px] text-amber-300 underline hover:text-amber-200"
+                      >
+                        ล้างทั้งหมด
+                      </button>
+                    )}
+                  </div>
+                  <RackSlotEditor rack={selectedRack} onChange={binOverrides => handleUpdateSelectedRack({ binOverrides })} />
+                </div>
+              )}
 
               {/* Coordinates X, Z */}
               <div className="bg-[#12161d] p-3 rounded-xl border border-[#30353d] space-y-2">

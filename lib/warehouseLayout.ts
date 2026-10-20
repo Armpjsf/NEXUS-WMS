@@ -157,6 +157,93 @@ export function listRackBins(rack: RackConfig): LayoutBin[] {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Per-slot editing: merge a slot with the level above, split it back, give it
+// a custom code, or switch it off. All of it lives in rack.binOverrides:
+//   override "<bay>-<level>" = code  → this slot uses that code
+//   override = ""                    → no bin here: either absorbed by the slot
+//                                       below (merged) or switched off
+// ---------------------------------------------------------------------------
+
+export type SlotState = 'normal' | 'custom' | 'merged-into-below' | 'off';
+
+function ov(rack: RackConfig, bay: number, level: number): string | undefined {
+  return rack.binOverrides?.[overrideKey(bay, level)];
+}
+
+/** What a slot is, telling a merged-away slot apart from one that was switched off. */
+export function slotState(rack: RackConfig, bay: number, level: number): SlotState {
+  const v = ov(rack, bay, level);
+  if (v === undefined) return 'normal';
+  if (v.trim()) return 'custom';
+  // "" — merged if the run of "" below it ends on a slot with its own code
+  // (a merge always gives the bottom slot a code like "C-001-2"); else switched off.
+  for (let l = level - 1; l >= 1; l--) {
+    const below = ov(rack, bay, l);
+    if (below === undefined) return 'off';
+    if (below.trim()) return 'merged-into-below';
+  }
+  return 'off';
+}
+
+/** The base (bottom) and top level of the merged slot that (bay, level) belongs to. */
+export function slotSpan(rack: RackConfig, bay: number, level: number): { base: number; top: number } {
+  let base = level;
+  if (slotState(rack, bay, level) === 'merged-into-below') {
+    while (base > 1 && slotState(rack, bay, base) === 'merged-into-below') base--;
+  }
+  let top = base;
+  while (top < rack.levels && slotState(rack, bay, top + 1) === 'merged-into-below') top++;
+  return { base, top };
+}
+
+function withOverrides(rack: RackConfig, edit: (o: Record<string, string>) => void): RackConfig {
+  const o = { ...(rack.binOverrides || {}) };
+  edit(o);
+  return { ...rack, binOverrides: o };
+}
+
+/** Merge the slot (and anything already merged into it) with the slot above, e.g. C-001 + C-002 → "C-001-2". */
+export function mergeSlotUp(rack: RackConfig, bay: number, level: number): RackConfig {
+  const { base, top } = slotSpan(rack, bay, level);
+  if (top >= rack.levels) return rack;
+  // the slot above may itself be a merged slot — take all of it
+  const aboveTop = slotSpan(rack, bay, top + 1).top;
+  const baseCode = applyBinTemplate(rack.binTemplate || DEFAULT_BIN_TEMPLATE, rack, bay, base);
+  return withOverrides(rack, o => {
+    o[overrideKey(bay, base)] = `${baseCode}-${aboveTop}`;
+    for (let l = base + 1; l <= aboveTop; l++) o[overrideKey(bay, l)] = '';
+  });
+}
+
+/** Undo a merge / custom code / switch-off: every slot of the span goes back to its template code. */
+export function splitSlot(rack: RackConfig, bay: number, level: number): RackConfig {
+  const { base, top } = slotSpan(rack, bay, level);
+  return withOverrides(rack, o => {
+    for (let l = base; l <= top; l++) delete o[overrideKey(bay, l)];
+  });
+}
+
+/** Give the slot (the base of its span) a custom code; blank = back to the template code. */
+export function setSlotCode(rack: RackConfig, bay: number, level: number, code: string): RackConfig {
+  const { base, top } = slotSpan(rack, bay, level);
+  const c = normalizeBinCode(code);
+  return withOverrides(rack, o => {
+    if (c) o[overrideKey(bay, base)] = c;
+    else if (top === base) delete o[overrideKey(bay, base)];
+    else o[overrideKey(bay, base)] = `${applyBinTemplate(rack.binTemplate || DEFAULT_BIN_TEMPLATE, rack, bay, base)}-${top}`;
+  });
+}
+
+/** Switch a slot off (no bin there, e.g. blocked by a column) or back on. */
+export function toggleSlotOff(rack: RackConfig, bay: number, level: number): RackConfig {
+  const state = slotState(rack, bay, level);
+  if (state === 'off') return withOverrides(rack, o => { delete o[overrideKey(bay, level)]; });
+  const split = splitSlot(rack, bay, level);
+  const { base } = slotSpan(rack, bay, level);
+  return withOverrides(split, o => { o[overrideKey(bay, base)] = ''; });
+}
+
 export function listLayoutBins(racks: RackConfig[] = []): LayoutBin[] {
   return racks.flatMap(listRackBins);
 }
