@@ -84,7 +84,8 @@ export default function Warehouse3DViewer({
   const mountRef = useRef<HTMLDivElement>(null);
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
   const [activeBinDetails, setActiveBinDetails] = useState<any | null>(null);
-  const [selectedRackCode, setSelectedRackCode] = useState<string | null>(null);
+  // Selected rack by POSITION, not code: the code itself is editable (and may be blank or clash while typing).
+  const [selectedRackIdx, setSelectedRackIdx] = useState<number | null>(null);
   const [stats, setStats] = useState({ totalBins: 0, occupiedBins: 0, totalStock: 0 });
 
   // Camera orbit state lives outside the scene effect so rebuilding the scene
@@ -117,22 +118,15 @@ export default function Warehouse3DViewer({
 
   // Selected Rack object for inspector
   const selectedRack = useMemo(() => {
-    if (!selectedRackCode) return null;
-    return layout.racks.find(r => r.rackCode === selectedRackCode) || null;
-  }, [selectedRackCode, layout.racks]);
+    if (selectedRackIdx === null) return null;
+    return layout.racks[selectedRackIdx] || null;
+  }, [selectedRackIdx, layout.racks]);
 
   // Rack Mutation Handlers in Edit Mode
   const handleUpdateSelectedRack = (patch: Partial<RackConfig>) => {
     if (!selectedRack || !onUpdateLayout) return;
-    const updatedRacks = layout.racks.map(r => {
-      if (r.rackCode === selectedRack.rackCode) {
-        return { ...r, ...patch };
-      }
-      return r;
-    });
+    const updatedRacks = layout.racks.map((r, i) => (i === selectedRackIdx ? { ...r, ...patch } : r));
     onUpdateLayout({ ...layout, racks: updatedRacks });
-    // Keep the inspector on this rack while its code is being typed
-    if (patch.rackCode !== undefined) setSelectedRackCode(patch.rackCode);
   };
 
   const uniqueRackCode = (base: string) => {
@@ -163,7 +157,7 @@ export default function Warehouse3DViewer({
       type: 'RACK',
     };
     onUpdateLayout({ ...layout, racks: [...layout.racks, newRack] });
-    setSelectedRackCode(newRackCode);
+    setSelectedRackIdx(layout.racks.length);
   };
 
   const handleAddFloorBlock = (blockType: 'CROSS_DOCK' | 'FLOOR_BLOCK') => {
@@ -186,7 +180,7 @@ export default function Warehouse3DViewer({
       type: blockType,
     };
     onUpdateLayout({ ...layout, racks: [...layout.racks, newBlock] });
-    setSelectedRackCode(newCode);
+    setSelectedRackIdx(layout.racks.length);
   };
 
   const handleDuplicateRack = (rack: RackConfig) => {
@@ -198,14 +192,13 @@ export default function Warehouse3DViewer({
       posX: rack.posX + (rack.rackDepth * 2 + 2.8), // Place across an aisle
     };
     onUpdateLayout({ ...layout, racks: [...layout.racks, duplicatedRack] });
-    setSelectedRackCode(newRackCode);
+    setSelectedRackIdx(layout.racks.length);
   };
 
-  const handleDeleteRack = (rackCode: string) => {
+  const handleDeleteRack = (index: number) => {
     if (!onUpdateLayout) return;
-    const filtered = layout.racks.filter(r => r.rackCode !== rackCode);
-    onUpdateLayout({ ...layout, racks: filtered });
-    setSelectedRackCode(null);
+    onUpdateLayout({ ...layout, racks: layout.racks.filter((_, i) => i !== index) });
+    setSelectedRackIdx(null);
   };
 
   useEffect(() => {
@@ -308,8 +301,8 @@ export default function Warehouse3DViewer({
     const beamMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.4 });
     const selectedBeamMat = new THREE.MeshStandardMaterial({ color: 0x4cd7f6, metalness: 0.8, roughness: 0.2, emissive: 0x0ea5e9, emissiveIntensity: 0.3 });
 
-    layout.racks.forEach((rack) => {
-      const isThisRackSelected = isEditMode && selectedRackCode === rack.rackCode;
+    layout.racks.forEach((rack, rackIndex) => {
+      const isThisRackSelected = isEditMode && selectedRackIdx === rackIndex;
       const currentBeamMat = isThisRackSelected ? selectedBeamMat : beamMat;
       const isFloor = rack.type === 'CROSS_DOCK' || rack.type === 'FLOOR_BLOCK';
 
@@ -451,6 +444,7 @@ export default function Warehouse3DViewer({
           binMesh.userData = {
             binCode,
             rackCode: rack.rackCode,
+            rackIndex,
             zone: rack.zoneCode,
             bay,
             level: lvl,
@@ -479,7 +473,7 @@ export default function Warehouse3DViewer({
       });
       const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
       hitBox.position.set(0, Math.max(1.5, totalRackHeight) / 2, 0);
-      hitBox.userData = { rackCode: rack.rackCode };
+      hitBox.userData = { rackCode: rack.rackCode, rackIndex };
       rackGroup.add(hitBox);
       rackHitBoxes.push(hitBox);
 
@@ -547,10 +541,8 @@ export default function Warehouse3DViewer({
         const intersects = raycaster.intersectObjects([...rackHitBoxes, ...binMeshes]);
         if (intersects.length > 0) {
           const hit = intersects[0].object as THREE.Mesh;
-          const code = hit.userData?.rackCode;
-          if (code) {
-            setSelectedRackCode(code);
-          }
+          const idx = hit.userData?.rackIndex;
+          if (typeof idx === 'number') setSelectedRackIdx(idx);
         }
       } else {
         const intersects = raycaster.intersectObjects(binMeshes);
@@ -703,7 +695,7 @@ export default function Warehouse3DViewer({
       renderer.domElement.removeEventListener('click', handlePointerClick);
       renderer.dispose();
     };
-  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackCode]);
+  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackIdx]);
 
   const zoomCamera = (factor: number) => {
     if (!camRef.current) return;
@@ -785,14 +777,14 @@ export default function Warehouse3DViewer({
               <div className="flex items-center gap-1.5 bg-[#171c23]/90 border border-[#30353d] px-2.5 py-1 rounded-xl shadow-lg">
                 <span className="text-[10px] text-[#8a92a6] font-mono">เลือกแถว:</span>
                 <select
-                  value={selectedRackCode || ''}
-                  onChange={e => setSelectedRackCode(e.target.value || null)}
+                  value={selectedRackIdx === null ? '' : String(selectedRackIdx)}
+                  onChange={e => setSelectedRackIdx(e.target.value === '' ? null : Number(e.target.value))}
                   className="bg-transparent text-xs font-mono font-bold text-[#facc15] outline-none cursor-pointer max-w-[150px]"
                 >
                   <option value="" className="bg-[#171c23] text-[#8a92a6]">-- เลือกแร็ก ({layout.racks.length} แถว) --</option>
-                  {layout.racks.map(r => (
-                    <option key={r.rackCode} value={r.rackCode} className="bg-[#171c23] text-[#dee2ec]">
-                      {r.rackCode} ({r.type === 'CROSS_DOCK' ? 'X-Dock' : r.type === 'FLOOR_BLOCK' ? 'Floor' : `Zone ${r.zoneCode}`})
+                  {layout.racks.map((r, i) => (
+                    <option key={i} value={String(i)} className="bg-[#171c23] text-[#dee2ec]">
+                      {r.rackCode || '(ไม่มีรหัส)'} ({r.type === 'CROSS_DOCK' ? 'X-Dock' : r.type === 'FLOOR_BLOCK' ? 'Floor' : `Zone ${r.zoneCode}`})
                     </option>
                   ))}
                 </select>
@@ -824,7 +816,7 @@ export default function Warehouse3DViewer({
               onClick={() => {
                 if (window.confirm('คุณต้องการล้างแร็กทั้งหมดในผังนี้เพื่อเริ่มสร้างใหม่ใช่หรือไม่?')) {
                   onUpdateLayout?.({ ...layout, racks: [] });
-                  setSelectedRackCode(null);
+                  setSelectedRackIdx(null);
                 }
               }}
               className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#171c23]/90 border border-red-900/50 text-red-400 hover:bg-red-950/60 transition-all flex items-center gap-1 shadow-lg"
@@ -875,13 +867,13 @@ export default function Warehouse3DViewer({
             คลิกที่แร็กใดก็ได้ในจอ 3D หรือคลิกเลือกจากรายการด้านล่างเพื่อปรับพิกัด หรือลบแถวแร็ก
           </p>
           <div className="pt-2 border-t border-[#30353d] flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
-            {layout.racks.map(r => (
+            {layout.racks.map((r, i) => (
               <button
-                key={r.rackCode}
-                onClick={() => setSelectedRackCode(r.rackCode)}
+                key={i}
+                onClick={() => setSelectedRackIdx(i)}
                 className="w-full text-left px-2.5 py-1.5 rounded-lg bg-[#12161d] hover:bg-[#252a32] border border-[#30353d] flex items-center justify-between font-mono text-xs text-[#dee2ec] transition-all"
               >
-                <span className="font-bold">{r.rackCode}</span>
+                <span className="font-bold">{r.rackCode || '(ไม่มีรหัส)'}</span>
                 <span className="text-[10px] text-[#8a92a6]">
                   {r.type === 'CROSS_DOCK' ? 'X-Dock' : r.type === 'FLOOR_BLOCK' ? 'Floor' : `${r.levels} ชั้น • ${r.bays} ช่อง`}
                 </span>
@@ -899,11 +891,11 @@ export default function Warehouse3DViewer({
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#facc15]" />
                 <h3 className="font-mono font-bold text-sm text-[#dee2ec]">
-                  แก้ไขแร็ก: {selectedRack.rackCode}
+                  แก้ไขแร็ก: {selectedRack.rackCode || '(ยังไม่ตั้งรหัส)'}
                 </h3>
               </div>
               <button
-                onClick={() => setSelectedRackCode(null)}
+                onClick={() => setSelectedRackIdx(null)}
                 className="p-1 rounded-lg text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32]"
               >
                 <X className="w-4 h-4" />
@@ -917,7 +909,8 @@ export default function Warehouse3DViewer({
                 <input
                   type="text"
                   value={selectedRack.rackCode}
-                  onChange={e => handleUpdateSelectedRack({ rackCode: e.target.value })}
+                  placeholder="เช่น A-D"
+                  onChange={e => handleUpdateSelectedRack({ rackCode: e.target.value.toUpperCase() })}
                   className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
                 />
               </div>
@@ -1137,7 +1130,7 @@ export default function Warehouse3DViewer({
               <Copy className="w-3.5 h-3.5 text-[#4cd7f6]" /> คัดลอกแถวแร็กคู่ขนาน (Duplicate)
             </button>
             <button
-              onClick={() => handleDeleteRack(selectedRack.rackCode)}
+              onClick={() => handleDeleteRack(selectedRackIdx!)}
               className="w-full py-2 rounded-xl bg-red-950/40 border border-red-800/50 text-xs font-bold text-red-400 hover:bg-red-900/50 transition-all flex items-center justify-center gap-1.5"
             >
               <Trash2 className="w-3.5 h-3.5" /> ลบแร็กแถวนี้
