@@ -11,6 +11,8 @@
 --
 -- Idempotent: safe to re-run. Run by hand in the Supabase SQL Editor.
 
+-- Some databases got warehouse_racks before rack_type was added to 20261020.
+alter table warehouse_racks add column if not exists rack_type     varchar(32) not null default 'RACK';
 alter table warehouse_racks add column if not exists pallet_mode   varchar(16) not null default 'PALLET';
 alter table warehouse_racks add column if not exists bin_template  varchar(64);
 alter table warehouse_racks add column if not exists bin_overrides jsonb not null default '{}'::jsonb;

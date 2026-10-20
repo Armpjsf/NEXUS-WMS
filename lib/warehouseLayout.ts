@@ -11,7 +11,9 @@
  * labels already stuck on its real racks:
  *   {Z}    zone code               {R}   rack code without the "ZONE-" prefix
  *   {RACK} full rack code          {B…}  bay number, zero-padded to the B count
- *   {L…}   level number, padded    e.g. "{Z}-{BBB}" → A-003, "{Z}-{BBB}.{L}" → M-001.2
+ *   {L…}   level number, padded    {A}   bay as a letter: 1→A, 2→B … 27→AA
+ *   A start can follow "=": {A=G} makes bay 1 "G", {BBB=12} makes bay 1 "012"
+ *   e.g. "{A}-{LLL}" → A-001…A-011 up each bay, then B-001…; "{Z}-{BBB}.{L}" → M-001.2
  * binOverrides["bay-level"] replaces one bin's code ("" = no bin there, e.g.
  * the second bay of a merged "A-001-2").
  */
@@ -72,6 +74,23 @@ export function overrideKey(bay: number, level: number): string {
   return `${bay}-${level}`;
 }
 
+/** 1 → A, 26 → Z, 27 → AA (spreadsheet-column style). */
+export function bayLetter(n: number): string {
+  let out = '';
+  let x = Math.max(1, Math.floor(n));
+  while (x > 0) {
+    const r = (x - 1) % 26;
+    out = String.fromCharCode(65 + r) + out;
+    x = Math.floor((x - 1) / 26);
+  }
+  return out;
+}
+
+/** Inverse of bayLetter: A → 1, AA → 27. */
+export function letterIndex(letters: string): number {
+  return letters.toUpperCase().split('').reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0);
+}
+
 export function applyBinTemplate(template: string, rack: Pick<RackConfig, 'rackCode' | 'zoneCode'>, bay: number, level: number): string {
   const tpl = (template || DEFAULT_BIN_TEMPLATE).trim() || DEFAULT_BIN_TEMPLATE;
   return normalizeBinCode(
@@ -79,9 +98,18 @@ export function applyBinTemplate(template: string, rack: Pick<RackConfig, 'rackC
       .replace(/\{RACK\}/gi, String(rack.rackCode || ''))
       .replace(/\{Z\}/gi, String(rack.zoneCode || ''))
       .replace(/\{R\}/gi, rackSegment(rack))
-      .replace(/\{(B+)\}/gi, (_, b: string) => String(bay).padStart(b.length, '0'))
+      .replace(/\{A(?:=([A-Z]+))?\}/gi, (_, start?: string) => bayLetter(bay - 1 + (start ? letterIndex(start) : 1)))
+      .replace(/\{(B+)(?:=(\d+))?\}/gi, (_, b: string, start?: string) => String(bay - 1 + (start ? parseInt(start, 10) : 1)).padStart(b.length, '0'))
       .replace(/\{(L+)\}/gi, (_, l: string) => String(level).padStart(l.length, '0')),
   );
+}
+
+/** How a bay is called on the floor: its letter when the template uses {A}, else its number. */
+export function bayLabel(rack: Pick<RackConfig, 'binTemplate'>, bay: number): string {
+  const m = String(rack.binTemplate || '').match(/\{A(?:=([A-Z]+))?\}/i);
+  if (m) return bayLetter(bay - 1 + (m[1] ? letterIndex(m[1]) : 1));
+  const n = String(rack.binTemplate || '').match(/\{B+=(\d+)\}/i);
+  return String(bay - 1 + (n ? parseInt(n[1], 10) : 1));
 }
 
 /** Bin code for one slot, or null when the slot is switched off by an override. */
@@ -144,24 +172,30 @@ export function zoneColor(zoneCode: string, index?: number): string {
 /**
  * Build a starting layout from the bin codes the branch already uses (stock
  * rows / product locations), so the map matches the real warehouse without
- * drawing every rack by hand. Understands "A-003", "M-001.2" (bay.level) and
- * merged bays "A-001-2". Codes it can't read come back in `unmatched`.
+ * drawing every rack by hand. Codes it can't read come back in `unmatched`.
+ *
+ * Convention (as labelled in the real racks): the LETTER is the bay between two
+ * uprights and the NUMBER is the level counting upward —
+ *   A-001 … A-011 = bay A bottom→top, then B-001 … in the next bay.
+ * Consecutive letters (A, B, C …) become the bays of one rack row with template
+ * "{A}-{LLL}". "A-001-2" = levels 1–2 of bay A merged into one slot.
+ * "M-001.3" = level 1 of M, position 3 across the shelf → rack M, "{Z}-{LLL}.{B}".
+ * Split a long row afterwards by lowering Bays and starting the next row at
+ * the right letter, e.g. "{A=G}-{LLL}".
  */
 export function inferLayoutFromBinCodes(
   codes: string[],
   base?: Partial<WarehouseLayout>,
 ): { layout: WarehouseLayout; matched: number; unmatched: string[] } {
   type Group = {
-    zone: string;
-    sep: '-' | '';
-    bayDigits: number;
-    maxBay: number;
+    letter: string;
+    sep: string;
+    digits: number;
     maxLevel: number;
-    hasLevel: boolean;
-    overrides: Record<string, string>;
-    plain: { bay: number; code: string }[]; // codes without ".level" in a group that has levels
+    maxPos: number;                    // >1 only for "M-001.3"-style codes
+    overrides: Record<string, string>; // keyed by "<pos>-<level>" inside the group
     codes: string[];
-    bays: Set<number>;
+    levels: Set<number>;
   };
   const groups = new Map<string, Group>();
   const unmatched: string[] = [];
@@ -171,79 +205,134 @@ export function inferLayoutFromBinCodes(
     .filter(c => c && c !== 'UNASSIGNED' && c !== '-' && c !== 'NONE');
 
   for (const code of uniq) {
-    // ZONE[-]BAY[.LEVEL][-MERGED_TO_BAY]
+    // LETTER[-]LEVEL[.POSITION][-MERGED_TO_LEVEL]
     const m = code.match(/^([A-Z]+)(-?)(\d+)(?:\.(\d+))?(?:-(\d+))?$/);
     if (!m) { unmatched.push(code); continue; }
-    const [, zone, sep, bayStr, levelStr, mergeStr] = m;
-    const bay = parseInt(bayStr, 10);
-    const level = levelStr ? parseInt(levelStr, 10) : 1;
-    if (!bay || !level || bay > 200) { unmatched.push(code); continue; }
+    const [, letter, sep, levelStr, posStr, mergeStr] = m;
+    const level = parseInt(levelStr, 10);
+    const pos = posStr ? parseInt(posStr, 10) : 1;
+    if (!level || !pos || level > 200 || pos > 50) { unmatched.push(code); continue; }
 
-    const g = groups.get(zone) || {
-      zone, sep: sep as '-' | '', bayDigits: bayStr.length, maxBay: 0, maxLevel: 1, hasLevel: false, overrides: {}, plain: [], codes: [], bays: new Set<number>(),
+    const g = groups.get(letter) || {
+      letter, sep, digits: levelStr.length, maxLevel: 0, maxPos: 1, overrides: {}, codes: [], levels: new Set<number>(),
     };
-    g.bayDigits = Math.max(g.bayDigits, bayStr.length);
-    g.hasLevel = g.hasLevel || !!levelStr;
-    g.maxLevel = Math.max(g.maxLevel, level);
+    g.digits = Math.max(g.digits, levelStr.length);
+    g.maxPos = Math.max(g.maxPos, pos);
     g.codes.push(code);
-    g.bays.add(bay);
-    if (!levelStr && !mergeStr) g.plain.push({ bay, code });
-    let lastBay = bay;
+    g.levels.add(level);
+    let top = level;
     if (mergeStr) {
-      // "A-001-2" = bays 1..2 merged into one bin labelled A-001-2
       const to = parseInt(mergeStr, 10);
-      if (to > bay && to - bay < 20) {
-        lastBay = to;
-        g.overrides[overrideKey(bay, level)] = code;
-        for (let b = bay + 1; b <= to; b++) g.overrides[overrideKey(b, level)] = '';
-      } else {
-        g.overrides[overrideKey(bay, level)] = code;
+      g.overrides[overrideKey(pos, level)] = code;
+      if (to > level && to - level < 20) {
+        top = to;
+        for (let l = level + 1; l <= to; l++) g.overrides[overrideKey(pos, l)] = '';
       }
+    } else if (!posStr) {
+      // plain "M-002" in a group that also has "M-001.1": pin it to position 1
+      g.overrides[overrideKey(1, level)] ??= code;
     }
-    g.maxBay = Math.max(g.maxBay, lastBay);
-    groups.set(zone, g);
+    g.maxLevel = Math.max(g.maxLevel, top);
+    groups.set(letter, g);
   }
 
-  // A zone whose few codes jump to a high bay number ("Z99") is almost
-  // certainly not a rack row — don't draw a 100-bay rack for it.
-  const sorted = Array.from(groups.values())
+  // A letter whose few codes jump to a high number ("Z99") is almost certainly
+  // not a rack bay — don't draw a 99-level column for it.
+  const usable = Array.from(groups.values())
     .filter(g => {
-      const sparse = g.maxBay > 30 && g.bays.size / g.maxBay < 0.2;
+      const sparse = g.maxLevel > 30 && g.levels.size / g.maxLevel < 0.2;
       if (sparse) unmatched.push(...g.codes);
       else matched += g.codes.length;
       return !sparse;
     })
-    .sort((a, b) => a.zone.localeCompare(b.zone));
-  const racks: RackConfig[] = [];
-  const bayWidth = 1.5;
-  const rackDepth = 0.8;
-  const aisle = 3;
-  // Racks back-to-back in pairs with an aisle between pairs, laid out front to back.
-  let z = 0;
-  sorted.forEach((g, i) => {
-    // "M-002" next to "M-001.1": keep the plain code on level 1 of that bay.
-    if (g.hasLevel) g.plain.forEach(({ bay, code }) => {
-      if (g.overrides[overrideKey(bay, 1)] === undefined) g.overrides[overrideKey(bay, 1)] = code;
+    .sort((a, b) => letterIndex(a.letter) - letterIndex(b.letter) || a.letter.localeCompare(b.letter));
+
+  // Drop the "pin to position 1" overrides that match what the template makes anyway.
+  const cleanOverrides = (ov: Record<string, string>, make: (pos: number, level: number) => string) => {
+    const out: Record<string, string> = {};
+    Object.entries(ov).forEach(([k, v]) => {
+      const [p, l] = k.split('-').map(Number);
+      if (v === '' || v !== make(p, l)) out[k] = v;
     });
-    const template = `{Z}${g.sep}{${'B'.repeat(g.bayDigits)}}${g.hasLevel ? '.{L}' : ''}`;
-    racks.push({
-      rackCode: g.zone,
-      zoneCode: g.zone,
+    return out;
+  };
+
+  type Draft = Omit<RackConfig, 'posX' | 'posZ' | 'rotationY' | 'color' | 'type' | 'bayWidth' | 'rackDepth'>;
+  const drafts: Draft[] = [];
+
+  // 1) "M-001.3" style: one rack per letter, positions across, levels up.
+  usable.filter(g => g.maxPos > 1).forEach(g => {
+    const tpl = `{Z}${g.sep}{${'L'.repeat(g.digits)}}.{B}`;
+    const rack = { rackCode: g.letter, zoneCode: g.letter } as RackConfig;
+    drafts.push({
+      rackCode: g.letter,
+      zoneCode: g.letter,
+      bays: g.maxPos,
+      levels: g.maxLevel,
+      levelHeight: 0,
+      binTemplate: tpl,
+      binOverrides: cleanOverrides(g.overrides, (p, l) => applyBinTemplate(tpl, rack, p, l)),
+    });
+  });
+
+  // 2) Plain letters: runs of consecutive letters (same separator/digits) = bays of one row.
+  const plain = usable.filter(g => g.maxPos === 1);
+  let run: Group[] = [];
+  const flush = () => {
+    if (run.length === 0) return;
+    const first = run[0];
+    const digits = Math.max(...run.map(g => g.digits));
+    const tpl = `{A${first.letter === 'A' ? '' : `=${first.letter}`}}${first.sep}{${'L'.repeat(digits)}}`;
+    const code = run.length === 1 ? first.letter : `${first.letter}-${run[run.length - 1].letter}`;
+    const rack = { rackCode: code, zoneCode: first.letter } as RackConfig;
+    const overrides: Record<string, string> = {};
+    run.forEach((g, i) => {
+      Object.entries(g.overrides).forEach(([k, v]) => {
+        const level = Number(k.split('-')[1]);
+        overrides[overrideKey(i + 1, level)] = v;
+      });
+    });
+    drafts.push({
+      rackCode: code,
+      zoneCode: first.letter,
+      bays: run.length,
+      levels: Math.max(...run.map(g => g.maxLevel)),
+      levelHeight: 0,
+      binTemplate: tpl,
+      binOverrides: cleanOverrides(overrides, (b, l) => applyBinTemplate(tpl, rack, b, l)),
+    });
+    run = [];
+  };
+  plain.forEach(g => {
+    const prev = run[run.length - 1];
+    const contiguous = prev && letterIndex(g.letter) === letterIndex(prev.letter) + 1 && g.sep === prev.sep;
+    if (!contiguous) flush();
+    run.push(g);
+  });
+  flush();
+
+  drafts.sort((a, b) => letterIndex(a.zoneCode) - letterIndex(b.zoneCode));
+
+  // Lay rows out front to back, back-to-back in pairs with an aisle between pairs.
+  const bayWidth = 1.2;
+  const rackDepth = 0.6;
+  const aisle = 3;
+  let z = 0;
+  const racks: RackConfig[] = drafts.map((d, i) => {
+    const rack: RackConfig = {
+      ...d,
       posX: 0,
       posZ: z,
       rotationY: 0,
-      bays: g.maxBay,
-      levels: g.hasLevel ? g.maxLevel : 1,
       bayWidth,
-      levelHeight: g.hasLevel ? 0.6 : 1.2,
+      levelHeight: Number(Math.min(1.2, Math.max(0.3, 4.5 / Math.max(1, d.levels))).toFixed(2)),
       rackDepth,
-      color: zoneColor(g.zone, i),
+      color: zoneColor(d.zoneCode, i),
       type: 'RACK',
       palletMode: 'NON_PALLET',
-      binTemplate: template,
-      binOverrides: g.overrides,
-    });
+    };
     z += i % 2 === 0 ? rackDepth : rackDepth + aisle;
+    return rack;
   });
 
   // Centre on the floor and size the building around the racks.

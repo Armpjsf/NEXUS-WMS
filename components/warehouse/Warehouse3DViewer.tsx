@@ -1034,7 +1034,7 @@ export default function Warehouse3DViewer({
                   className="w-full bg-[#171c23] border border-[#30353d] rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
                 />
                 <div className="flex flex-wrap gap-1">
-                  {['{Z}-{R}-{BB}-{LL}', '{Z}-{BBB}', '{Z}-{BBB}.{L}', '{RACK}-{BB}{L}'].map(t => (
+                  {['{A}-{LLL}', '{A=G}-{LLL}', '{Z}-{LLL}.{B}', '{Z}-{R}-{BB}-{LL}'].map(t => (
                     <button
                       key={t}
                       onClick={() => handleUpdateSelectedRack({ binTemplate: t })}
@@ -1045,7 +1045,7 @@ export default function Warehouse3DViewer({
                   ))}
                 </div>
                 <p className="text-[10px] text-[#8a92a6] leading-relaxed">
-                  {'{Z}'} โซน • {'{R}'} รหัสแร็กไม่รวมโซน • {'{RACK}'} รหัสแร็กเต็ม • {'{B}'} ช่อง • {'{L}'} ชั้น (ใส่ B/L หลายตัว = เติม 0 นำหน้า)
+                  {'{A}'} ช่วงเสาเป็นตัวอักษร (A, B, C…) • {'{L}'} ชั้นนับจากล่าง • {'{B}'} ช่วงเสาเป็นเลข • {'{Z}'} โซน • {'{RACK}'} รหัสแร็ก • ใส่ L/B หลายตัว = เติม 0 นำหน้า • เริ่มที่ตัวอื่นใส่ = เช่น {'{A=G}'} หรือ {'{BBB=12}'}
                 </p>
                 <div className="text-[10px] font-mono text-[#57ec7f] break-all">
                   ตัวอย่าง: {(() => {

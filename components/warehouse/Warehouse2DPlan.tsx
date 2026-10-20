@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, Sparkles, MousePointerClick, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { WarehouseLayout, RackConfig, binCodeFor } from '@/lib/warehouseLayout';
+import { WarehouseLayout, RackConfig, binCodeFor, bayLabel } from '@/lib/warehouseLayout';
 import { WarehouseMapData, MapBin, MapRack } from '@/lib/warehouseMap';
 
 type Heatmap = 'STOCK' | 'VELOCITY';
@@ -434,7 +434,7 @@ function RackElevation({
           ))}
           <div />
           {bays.map(bay => (
-            <div key={bay} className="text-center text-[10px] font-mono text-[#8a92a6]">ช่อง {bay}</div>
+            <div key={bay} className="text-center text-[10px] font-mono text-[#8a92a6]">ช่วงเสา {bayLabel(rack, bay)}</div>
           ))}
         </div>
       </div>
