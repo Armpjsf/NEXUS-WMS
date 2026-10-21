@@ -140,6 +140,7 @@ export default function Warehouse3DViewer({
     if (selectedRackIdx === null) return null;
     return layout.racks[selectedRackIdx] || null;
   }, [selectedRackIdx, layout.racks]);
+  const isFloorType = selectedRack?.type === 'FLOOR_BLOCK' || selectedRack?.type === 'CROSS_DOCK';
 
   // Rack Mutation Handlers in Edit Mode
   const handleUpdateSelectedRack = (patch: Partial<RackConfig>) => {
@@ -349,7 +350,10 @@ export default function Warehouse3DViewer({
       const totalRackLength = rack.bays * rack.bayWidth;
       const isPallet = rack.palletMode !== 'NON_PALLET';
       const beamY = (lvl: number) => FIRST_BEAM_Y + (lvl - 1) * rack.levelHeight;
-      const totalRackHeight = isFloor ? rack.levels * 1.1 : beamY(rack.levels) + rack.levelHeight;
+      // Floor block / cross-dock: no beams — each "level" is a layer stacked on the floor
+      // (M-001 at the bottom, M-002 on top of it …) so every layer is visible and clickable.
+      const layerH = Math.max(0.2, Number(rack.levelHeight) || 0.5);
+      const totalRackHeight = isFloor ? rack.levels * layerH : beamY(rack.levels) + rack.levelHeight;
 
       if (isFloor) {
         // Floor Staging Boundary Pad
@@ -404,7 +408,7 @@ export default function Warehouse3DViewer({
       for (let lvl = 1; lvl <= rack.levels; lvl++) {
         const y = beamY(lvl);
         // Where goods stand on this level
-        const surfaceY = isFloor ? 0.04 : y + BEAM_H / 2 + (isPallet ? 0 : DECK_T);
+        const surfaceY = isFloor ? 0.04 + (lvl - 1) * layerH : y + BEAM_H / 2 + (isPallet ? 0 : DECK_T);
 
         if (!isFloor) {
           // Front & Back Beams
@@ -445,7 +449,7 @@ export default function Warehouse3DViewer({
           const boxW = rack.bayWidth * 0.88;
           // Leave head-room under the next beam (and room for the pallet on pallet racks)
           const clearance = rack.levelHeight - BEAM_H - (isPallet ? PALLET_T : DECK_T);
-          const boxH = isFloor ? 1.0 : Math.max(0.08, Math.min(clearance * 0.85, clearance - 0.05));
+          const boxH = isFloor ? layerH * 0.92 : Math.max(0.08, Math.min(clearance * 0.85, clearance - 0.05));
           const boxD = rack.rackDepth * 0.88;
 
           const binBoxGeo = new THREE.BoxGeometry(boxW, boxH, boxD);
@@ -1058,7 +1062,9 @@ export default function Warehouse3DViewer({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">จำนวนชั้น (Levels)</label>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">
+                    {isFloorType ? 'จำนวนชั้นที่วางซ้อน' : 'จำนวนชั้น (Levels)'}
+                  </label>
                   <input
                     type="number"
                     min={1}
@@ -1072,7 +1078,9 @@ export default function Warehouse3DViewer({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ช่วงเสา (Bays)</label>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">
+                    {isFloorType ? 'จำนวนกองบนพื้น (เรียงตามยาว)' : 'ช่วงเสา (Bays)'}
+                  </label>
                   <input
                     type="number"
                     min={1}
@@ -1084,7 +1092,9 @@ export default function Warehouse3DViewer({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">ความสูงชั้น (m)</label>
+                  <label className="text-[10px] font-mono text-[#8a92a6] block mb-1">
+                    {isFloorType ? 'สูงต่อชั้นที่ซ้อน (m)' : 'ความสูงชั้น (m)'}
+                  </label>
                   <input
                     type="number"
                     step={0.1}
@@ -1232,7 +1242,7 @@ export default function Warehouse3DViewer({
                   </select>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono text-[#8a92a6]">กว้างต่อช่อง (m):</span>
+                  <span className="font-mono text-[#8a92a6]">{isFloorType ? 'กว้างต่อกอง (m):' : 'กว้างต่อช่อง (m):'}</span>
                   <input
                     type="number"
                     step={0.1}
