@@ -121,6 +121,24 @@ export function simpleTemplate(startLetter: string, levelDigits: number): string
   return `{A${letter === 'A' ? '' : `=${letter}`}}-{${'L'.repeat(Math.max(1, Math.min(4, levelDigits)))}}`;
 }
 
+/**
+ * Code format for a NEW rack added next to existing ones: continue the letter
+ * sequence after the last bay already used by any simple "{A}-{LLL}" rack
+ * (A-D taken → start at E), so a copied/added rack never reuses their codes.
+ * Racks not using the letter format keep `base` as is (their codes include the
+ * rack code, which is unique anyway).
+ */
+export function nextFreeTemplate(racks: RackConfig[], base?: string): string | undefined {
+  const fmt = parseSimpleTemplate(base);
+  if (!fmt) return base;
+  let lastUsed = 0;
+  racks.forEach(r => {
+    const s = parseSimpleTemplate(r.binTemplate);
+    if (s) lastUsed = Math.max(lastUsed, letterIndex(s.startLetter) + Math.max(1, Math.floor(r.bays || 1)) - 1);
+  });
+  return simpleTemplate(bayLetter(lastUsed + 1), fmt.levelDigits);
+}
+
 /** Tokens the template uses that we don't understand (shown as a warning in the editor). */
 export function unknownTemplateTokens(template?: string): string[] {
   const known = /^(RACK|Z|R|A(=[A-Z]+)?|B+(=\d+)?|L+|[A-Z]{1,2})$/i;

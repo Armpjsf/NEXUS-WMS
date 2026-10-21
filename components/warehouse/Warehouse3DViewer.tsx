@@ -32,6 +32,7 @@ import {
   DEFAULT_BIN_TEMPLATE,
   listRackBins,
   parseSimpleTemplate,
+  nextFreeTemplate,
   simpleTemplate,
   unknownTemplateTokens,
 } from '@/lib/warehouseLayout';
@@ -162,7 +163,8 @@ export default function Warehouse3DViewer({
     const newRack: RackConfig = {
       rackCode: newRackCode,
       zoneCode: zone,
-      binTemplate: selectedRack?.binTemplate,
+      // same code format as the selected rack, continuing at the next free bay letter
+      binTemplate: nextFreeTemplate(layout.racks, selectedRack?.binTemplate),
       posX: 0,
       posZ: 0,
       rotationY: 0,
@@ -208,6 +210,9 @@ export default function Warehouse3DViewer({
       ...rack,
       rackCode: newRackCode,
       posX: rack.posX + (rack.rackDepth * 2 + 2.8), // Place across an aisle
+      // a copy must not reuse the original's location codes (save would be rejected)
+      binTemplate: nextFreeTemplate(layout.racks, rack.binTemplate),
+      binOverrides: undefined,
     };
     onUpdateLayout({ ...layout, racks: [...layout.racks, duplicatedRack] });
     setSelectedRackIdx(layout.racks.length);
