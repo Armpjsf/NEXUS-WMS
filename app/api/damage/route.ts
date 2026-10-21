@@ -22,12 +22,13 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { date, product_name, quantity, unit, reason, notes, reported_by } = body;
+    const location = String(body.location || '').trim().toUpperCase();
 
     if (!product_name || !quantity || !reason) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const { error } = await supabase.from('damage_records').insert({
+    const row: Record<string, any> = {
       org_id: await getCurrentOrgId(),
       report_date: date || new Date().toISOString().split('T')[0],
       product_name,
@@ -37,7 +38,15 @@ export async function POST(req: Request) {
       notes: notes || '',
       reported_by: reported_by || 'System',
       status: 'รอดำเนินการ',
-    });
+    };
+    // bin the goods were taken from (column from 20261022_damage_location.sql)
+    if (location) row.location = location;
+    let { error } = await supabase.from('damage_records').insert(row);
+    if (error && location && /location/i.test(error.message || '')) {
+      // SQL not run yet: keep the record, just without the bin
+      delete row.location;
+      ({ error } = await supabase.from('damage_records').insert(row));
+    }
 
     if (error) {
       console.error('Supabase add damage Error:', error);
@@ -163,6 +172,8 @@ export async function PUT(req: Request) {
 
         try {
           await binConsume(orgId, resolvedSku, dmgQty, {
+            // the bin chosen when reporting wins; blank = automatic FEFO/FIFO
+            preferBin: existing.location || undefined,
             docRef: 'DMG-' + targetId,
             party: existing.reason,
           });

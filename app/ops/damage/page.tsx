@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 interface DamageRecord {
   date: string;
@@ -31,6 +32,7 @@ export default function DamagePage() {
   const [formData, setFormData] = useState({
       date: new Date().toISOString().split('T')[0],
       product_name: '',
+      location: '', // bin the damaged goods come from ('' = automatic FEFO/FIFO on approval)
       quantity: 0,
       unit: '',
       reason: 'Production Defect', // Default internal value
@@ -77,7 +79,7 @@ export default function DamagePage() {
               alert(t('success_inbound') || "Recorded"); // Reuse success message or generic
               setShowForm(false);
               fetchRecords();
-              setFormData({ ...formData, product_name: '', quantity: 0, notes: '' });
+              setFormData({ ...formData, product_name: '', quantity: 0, notes: '', location: '' });
           } else {
               alert("Error: " + res.statusText);
           }
@@ -216,7 +218,7 @@ export default function DamagePage() {
                         value={formData.product_name}
                         onChange={e => {
                             const p = products.find(prod => prod.name === e.target.value);
-                            setFormData({...formData, product_name: e.target.value, unit: p?.unit || 'pcs'});
+                            setFormData({...formData, product_name: e.target.value, unit: p?.unit || 'pcs', location: ''});
                         }}
                         className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                       >
@@ -226,6 +228,21 @@ export default function DamagePage() {
                           ))}
                       </select>
                   </div>
+                  {formData.product_name && (() => {
+                      const p = products.find(prod => prod.name === formData.product_name);
+                      return (
+                        <div className="md:col-span-2 p-3 bg-[#1b2027] border border-[#30353d] rounded-xl">
+                          <BinQuickSelect
+                            sku={p?.sku || p?.id || formData.product_name}
+                            selectedBin={formData.location}
+                            onSelectBin={bin => setFormData({ ...formData, location: bin })}
+                            mode="picking"
+                            theme="dark"
+                            label="ของเสียหยิบจากช่องไหน (ไม่เลือก = ระบบเลือกตาม FEFO/FIFO ตอนอนุมัติ):"
+                          />
+                        </div>
+                      );
+                  })()}
                   <div>
                       <label className="block text-[#8a92a6] mb-2">{t('qty')}</label>
                       <input 

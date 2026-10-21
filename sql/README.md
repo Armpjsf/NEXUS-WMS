@@ -44,6 +44,7 @@ missing, and names the file below that creates it.
 | `20260925_cost_ratelimit_memberships.sql` | Real cost (`products.cost_price`, `stock_transactions.unit_cost`), shared login rate limit (`wms_rate_hit`), multi-org membership (`org_memberships`) |
 | `20261020_3d_warehouse_layout.sql` | Branch warehouse layouts (`warehouse_layouts`, `warehouse_racks`) for the 2D/3D map |
 | `20261021_warehouse_bins_from_layout.sql` | Rack bin-naming template / overrides / pallet mode; layout save writes its bins into `warehouse_locations` (branch, rack, bay, level, active) |
+| `20261022_damage_location.sql` | `damage_records.location` — damage approval cuts stock from the chosen bin |
 
 `20260924_doc_sequences.sql` prints `NOTICE` lines when it skips an index
 because of duplicate existing data — fix those rows and re-run it.
