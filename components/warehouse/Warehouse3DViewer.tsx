@@ -467,7 +467,7 @@ export default function Warehouse3DViewer({
             if (heatmapMode === 'STOCK') {
               boxColor = binData.status === 'LOW_STOCK' ? 0xf59e0b : 0x10b981;
             } else if (heatmapMode === 'VELOCITY') {
-              boxColor = binData.velocityClass === 'A' ? 0xef4444 : binData.velocityClass === 'B' ? 0xf59e0b : binData.velocityClass === 'C' ? 0x3b82f6 : 0x64748b;
+              boxColor = binData.velocityClass === 'A' ? 0xef4444 : binData.velocityClass === 'B' ? 0xf59e0b : binData.velocityClass === 'C' ? 0x3b82f6 : 0xa855f7; // D = no sales (violet, not the grey of an empty slot)
             } else {
               boxColor = 0xd97706; // Wooden cardboard pallet
             }

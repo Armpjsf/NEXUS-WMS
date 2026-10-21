@@ -625,7 +625,8 @@ function WarehouseMapContent() {
               <Legend color="bg-red-500" label="Class A หยิบบ่อยมาก" />
               <Legend color="bg-amber-500" label="Class B" />
               <Legend color="bg-blue-500" label="Class C" />
-              <Legend color="bg-slate-600" label="D / ว่าง" />
+              <Legend color="bg-purple-500" label="Class D ไม่มียอดจ่าย" />
+              <Legend color="bg-slate-600" label="ช่องว่าง" />
             </>
           )}
         </div>

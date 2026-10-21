@@ -20,7 +20,8 @@ interface Props {
 }
 
 const STOCK_FILL = { NORMAL: '#10b981', LOW_STOCK: '#f59e0b', EMPTY: '#334155' } as const;
-const CLASS_FILL = { A: '#ef4444', B: '#f59e0b', C: '#3b82f6', D: '#475569' } as const;
+// D = stocked but no sales: violet, so it isn't mistaken for an empty (slate) slot
+const CLASS_FILL = { A: '#ef4444', B: '#f59e0b', C: '#3b82f6', D: '#a855f7' } as const;
 
 function binFill(bin: MapBin, mode: Heatmap): string {
   if (mode === 'VELOCITY') return bin.totalStock > 0 ? CLASS_FILL[bin.velocityClass] : STOCK_FILL.EMPTY;
