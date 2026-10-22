@@ -78,6 +78,8 @@ interface Warehouse3DProps {
   onUpdateLayout?: (newLayout: any) => void;
   /** Bin codes matching the page search: lit up, the rest dimmed, camera flies to the first. */
   highlightBinCodes?: Set<string>;
+  /** 'ALL' or a zone code: other zones are faded (not clickable) and the camera moves to this one. */
+  zoneFilter?: string;
 }
 
 export default function Warehouse3DViewer({
@@ -96,6 +98,7 @@ export default function Warehouse3DViewer({
   isSaving = false,
   onUpdateLayout,
   highlightBinCodes,
+  zoneFilter = 'ALL',
 }: Warehouse3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
@@ -114,6 +117,7 @@ export default function Warehouse3DViewer({
   // Search highlight: depend on a stable string, not the Set's identity.
   const highlightKey = useMemo(() => Array.from(highlightBinCodes || []).sort().join('|'), [highlightBinCodes]);
   const focusedKeyRef = useRef('');
+  const focusedZoneRef = useRef('ALL');
   const onSelectBinRef = useRef(onSelectBin);
   onSelectBinRef.current = onSelectBin;
 
@@ -316,6 +320,7 @@ export default function Warehouse3DViewer({
     const highlight = new Set(highlightKey ? highlightKey.split('|') : []);
     const hasHighlight = highlight.size > 0;
     let firstHit: THREE.Mesh | null = null;
+    const zoneCenter = { x: 0, z: 0, n: 0 };
 
     // --- 4. Procedural Racking Construction ---
     const binMeshes: THREE.Mesh[] = [];
@@ -342,6 +347,8 @@ export default function Warehouse3DViewer({
       const isThisRackSelected = isEditMode && selectedRackIdx === rackIndex;
       const currentBeamMat = isThisRackSelected ? selectedBeamMat : beamMat;
       const isFloor = rack.type === 'CROSS_DOCK' || rack.type === 'FLOOR_BLOCK';
+      // editing shows every rack; otherwise racks outside the chosen zone are faded
+      const outOfZone = !isEditMode && zoneFilter !== 'ALL' && rack.zoneCode !== zoneFilter;
 
       const rackGroup = new THREE.Group();
       rackGroup.position.set(rack.posX, 0, rack.posZ);
@@ -524,7 +531,7 @@ export default function Warehouse3DViewer({
           };
 
           rackGroup.add(binMesh);
-          binMeshes.push(binMesh);
+          if (!outOfZone) binMeshes.push(binMesh);
           if (isHit && !firstHit) firstHit = binMesh;
         }
       }
@@ -550,6 +557,23 @@ export default function Warehouse3DViewer({
       hitBox.userData = { rackCode: rack.rackCode, rackIndex };
       rackGroup.add(hitBox);
       rackHitBoxes.push(hitBox);
+
+      // Zone filter: fade every part of racks outside the chosen zone
+      if (outOfZone) {
+        rackGroup.traverse(obj => {
+          const mesh = obj as THREE.Mesh;
+          if (!mesh.material || Array.isArray(mesh.material)) return;
+          const m = (mesh.material as THREE.Material).clone();
+          m.transparent = true;
+          m.opacity = Math.min(m.opacity ?? 1, 0.1);
+          m.depthWrite = false;
+          mesh.material = m;
+        });
+      } else if (zoneFilter !== 'ALL') {
+        zoneCenter.x += rack.posX;
+        zoneCenter.z += rack.posZ;
+        zoneCenter.n += 1;
+      }
 
       scene.add(rackGroup);
     });
@@ -656,6 +680,22 @@ export default function Warehouse3DViewer({
 
     // New search → fly the camera to the first matching slot (once per search, so
     // the user can still orbit around it afterwards).
+    // New zone picked (and no search running) → move the camera over that zone, once.
+    if (zoneFilter !== focusedZoneRef.current) {
+      focusedZoneRef.current = zoneFilter;
+      if (!hasHighlight && !isEditMode) {
+        if (zoneFilter !== 'ALL' && zoneCenter.n > 0) {
+          cam.tx = zoneCenter.x / zoneCenter.n;
+          cam.tz = zoneCenter.z / zoneCenter.n;
+          cam.dist = Math.min(cam.dist, Math.max(14, floorSize * 0.6));
+        } else if (zoneFilter === 'ALL') {
+          cam.tx = 0;
+          cam.tz = 0;
+        }
+        applyCamera();
+      }
+    }
+
     if (!hasHighlight) focusedKeyRef.current = '';
     else if (firstHit && focusedKeyRef.current !== highlightKey) {
       focusedKeyRef.current = highlightKey;
@@ -782,7 +822,7 @@ export default function Warehouse3DViewer({
       renderer.domElement.removeEventListener('click', handlePointerClick);
       renderer.dispose();
     };
-  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackIdx, highlightKey]);
+  }, [layout, heatmapMode, binDataMap, isEditMode, selectedRackIdx, highlightKey, zoneFilter]);
 
   const zoomCamera = (factor: number) => {
     if (!camRef.current) return;

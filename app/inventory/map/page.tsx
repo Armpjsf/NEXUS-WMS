@@ -666,6 +666,7 @@ function WarehouseMapContent() {
             products={products}
             binStock={binStock3D}
             highlightBinCodes={matchingBinCodes}
+            zoneFilter={zoneFilter}
             heatmapMode={heatmapMode === 'VELOCITY' ? 'VELOCITY' : 'STOCK'}
             branchName={layout.name || 'คลังสินค้า'}
             isEditMode={isEditMode}
