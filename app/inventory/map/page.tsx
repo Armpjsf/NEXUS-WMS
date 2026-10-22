@@ -324,6 +324,17 @@ function WarehouseMapContent() {
   };
 
   const rackCount = layout?.racks.length || 0;
+  // "3 ชั้นวาง • 3 ลานวางพื้น" reads better than "6 แร็ก" (floor areas are racks in the layout)
+  const rackSummary = (() => {
+    const racks = layout?.racks || [];
+    const count = (t: string) => racks.filter(r => (r.type || 'RACK') === t).length;
+    const parts = [
+      [count('RACK'), 'ชั้นวาง'],
+      [count('FLOOR_BLOCK'), 'ลานวางพื้น'],
+      [count('CROSS_DOCK'), 'ลาน Cross-Dock'],
+    ].filter(([n]) => Number(n) > 0).map(([n, label]) => `${n} ${label}`);
+    return parts.length ? parts.join(' • ') : 'ยังไม่มีแร็ก';
+  })();
 
   return (
     <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-[#1b2027]">
@@ -465,9 +476,8 @@ function WarehouseMapContent() {
             </div>
             <div>
               <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">โครงสร้างผัง</span>
-              <span className="text-lg font-black text-blue-600 font-mono">
-                {zones.length} โซน • {stats.totalRacks} แร็ก
-              </span>
+              <span className="text-lg font-black text-blue-600 font-mono">{zones.length} โซน</span>
+              <span className="text-[11px] text-blue-500 block font-bold">{rackSummary}</span>
               <span className="text-[10px] text-amber-500 block font-bold">
                 {stats.lowStockBins > 0 ? `${stats.lowStockBins} ช่องสต็อกต่ำ` : ' '}
               </span>
