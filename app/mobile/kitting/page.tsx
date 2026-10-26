@@ -99,8 +99,8 @@ export default function MobileKittingPage() {
 
       {/* Assemble sheet */}
       {active && (
-        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center" onClick={() => setActive(null)}>
-          <div className="w-full bg-white rounded-t-3xl shadow-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end sm:items-center justify-center overflow-y-auto p-0 sm:p-4" onClick={() => setActive(null)}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 pb-28 sm:pb-5 space-y-4 max-h-[85dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
             <div>
               <h2 className="font-bold text-slate-900">{active.kitName}</h2>
               <p className="font-mono text-xs text-emerald-600">{active.kitSku}</p>
@@ -120,8 +120,15 @@ export default function MobileKittingPage() {
               <label className="text-xs font-bold text-slate-500">จำนวนชุดที่ประกอบ</label>
               <div className="flex items-center gap-2 mt-1.5">
                 <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 text-xl active:scale-95">−</button>
-                <input type="number" value={qty} min={1} inputMode="numeric" onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 h-12 text-center bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold outline-none focus:border-emerald-500" />
+                <input
+                  type="number"
+                  value={qty}
+                  min={1}
+                  inputMode="numeric"
+                  onFocus={e => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
+                  onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="flex-1 h-12 text-center bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold outline-none focus:border-emerald-500"
+                />
                 <button onClick={() => setQty(q => q + 1)} className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 text-xl active:scale-95">+</button>
               </div>
               <p className="text-[11px] text-slate-400 mt-1.5">* ระบบจะตัดชิ้นส่วนตามสูตร × {qty} และเพิ่มสต็อกชุดสินค้า</p>

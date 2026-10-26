@@ -114,8 +114,8 @@ export default function MobileLpnPage() {
 
       {/* LPN detail / move sheet */}
       {active && (
-        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center" onClick={() => setActive(null)}>
-          <div className="w-full bg-white rounded-t-3xl shadow-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end sm:items-center justify-center overflow-y-auto p-0 sm:p-4" onClick={() => setActive(null)}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 pb-28 sm:pb-5 space-y-4 max-h-[85dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <span className="font-mono font-bold text-slate-900 text-lg">{active.lpnNumber}</span>
               <span className="text-xs font-mono text-slate-500 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{active.locationCode || '-'}</span>
@@ -130,8 +130,14 @@ export default function MobileLpnPage() {
               <label className="text-xs font-bold text-slate-500">ย้ายไปพิกัดใหม่</label>
               <div className="relative mt-1.5">
                 <ScanLine className="w-5 h-5 text-teal-500 absolute left-3 top-3.5" />
-                <input value={newLoc} onChange={e => setNewLoc(e.target.value)} autoFocus placeholder="สแกน / กรอกพิกัดปลายทาง"
-                  className="w-full pl-10 pr-3 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-base font-bold text-slate-900 outline-none focus:border-teal-500" />
+                <input
+                  value={newLoc}
+                  onChange={e => setNewLoc(e.target.value)}
+                  onFocus={e => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
+                  autoFocus
+                  placeholder="สแกน / กรอกพิกัดปลายทาง"
+                  className="w-full pl-10 pr-3 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-base font-bold text-slate-900 outline-none focus:border-teal-500"
+                />
               </div>
             </div>
             <div className="flex gap-2">

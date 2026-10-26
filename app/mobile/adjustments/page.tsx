@@ -116,11 +116,18 @@ export default function MobileAdjustmentsPage() {
 
       {/* Reject reason sheet */}
       {rejecting && (
-        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end justify-center" onClick={() => setRejecting(null)}>
-          <div className="w-full bg-white rounded-t-3xl shadow-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-3" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end sm:items-center justify-center overflow-y-auto p-0 sm:p-4" onClick={() => setRejecting(null)}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 pb-28 sm:pb-5 space-y-3 max-h-[85dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
             <h2 className="font-bold text-slate-900">เหตุผลที่ปฏิเสธ</h2>
-            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} autoFocus
-              placeholder="ระบุเหตุผล..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-rose-400" />
+            <textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              onFocus={e => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
+              rows={3}
+              autoFocus
+              placeholder="ระบุเหตุผล..."
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-rose-400"
+            />
             <div className="flex gap-2">
               <button onClick={() => setRejecting(null)} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">ยกเลิก</button>
               <button onClick={() => decide(rejecting, 'REJECT', reason)} disabled={!reason.trim() || busyId != null}

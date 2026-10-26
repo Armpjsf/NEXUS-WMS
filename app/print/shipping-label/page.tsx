@@ -21,6 +21,9 @@ interface Order {
   totalQty: number;
   totalAmount: number;
   createdAt: string;
+  weightKg?: number;
+  boxCount?: number;
+  notes?: string;
 }
 
 interface Org {
@@ -30,7 +33,12 @@ interface Org {
 }
 
 function ShippingLabelDoc() {
-  const id = useSearchParams().get('id');
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
+  const qWeight = searchParams.get('weight');
+  const qBox = searchParams.get('box');
+  const qBoxCount = searchParams.get('boxCount');
+
   const [order, setOrder] = useState<Order | null>(null);
   const [org, setOrg] = useState<Org>({ name: 'WMS 360 PRO', brandingLogo: '', brandingColor: '#0ea5e9' });
   const [loading, setLoading] = useState(true);
@@ -58,6 +66,12 @@ function ShippingLabelDoc() {
   const postalCode = postalMatch ? postalMatch[0] : '';
   const carrierName = (order.carrier || 'STANDARD DELIVERY').toUpperCase();
   const tracking = order.trackingNo || order.orderNo;
+
+  // Package Specifications
+  const boxMatch = (order.notes || '').match(/\[Box:([^\]]+)\]/);
+  const boxSize = qBox || (boxMatch ? boxMatch[1] : '');
+  const weightVal = qWeight ? parseFloat(qWeight) : (order.weightKg || 0);
+  const totalBoxes = qBoxCount ? parseInt(qBoxCount, 10) : (order.boxCount || 1);
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white p-4 print:p-0 flex flex-col items-center">
@@ -143,6 +157,22 @@ function ShippingLabelDoc() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Package Specifications: Weight, Box Size, Box Count */}
+        <div className="grid grid-cols-3 border-b-2 border-black py-1.5 px-2 bg-slate-50 text-center font-mono">
+          <div>
+            <div className="text-[9px] font-sans font-bold text-slate-500 uppercase">น้ำหนัก (WT)</div>
+            <div className="text-xs font-black text-black">{weightVal > 0 ? `${weightVal.toFixed(2)} KG` : '-'}</div>
+          </div>
+          <div className="border-x border-slate-300">
+            <div className="text-[9px] font-sans font-bold text-slate-500 uppercase">ขนาดกล่อง (BOX)</div>
+            <div className="text-xs font-black text-black">{boxSize ? `กล่อง ${boxSize}` : 'กล่องมาตรฐาน'}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-sans font-bold text-slate-500 uppercase">จำนวน (PKGS)</div>
+            <div className="text-xs font-black text-black">{totalBoxes} กล่อง</div>
           </div>
         </div>
 

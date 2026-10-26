@@ -274,6 +274,15 @@ header.sticky.top-0 > div.absolute.top-0.left-0.right-0 {
   padding-bottom: var(--safe-bottom);
 }
 
+/* Mobile Virtual Keyboard & Input Scroll Hardening
+   Prevents on-screen keyboard from covering active inputs / textareas across all mobile screens */
+@media (max-width: 768px) {
+  input, textarea, select {
+    scroll-margin-bottom: 35dvh;
+    scroll-margin-top: 15dvh;
+  }
+}
+
 /* ============================================================
    Stitch Tactical Industrial Accent Remap (Local Theme)
    เปลี่ยน Accent หลักจาก Blue เป็น Tactical Yellow #facc15

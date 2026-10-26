@@ -195,8 +195,8 @@ export default function MobileOutboundPage() {
 
       {/* Product picker sheet */}
       {picker && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={() => setPicker(false)}>
-          <div className="bg-white w-full max-w-lg max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center overflow-y-auto p-0 sm:p-4" onClick={() => setPicker(false)}>
+          <div className="bg-white w-full max-w-lg max-h-[85dvh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <h3 className="font-bold text-slate-900">เลือกสินค้า</h3>
               <button onClick={() => setPicker(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><X className="w-5 h-5" /></button>
@@ -206,8 +206,14 @@ export default function MobileOutboundPage() {
             <div className="p-3 border-b border-slate-100">
               <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3 py-2.5">
                 <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาชื่อ/หมวดสินค้า"
-                  className="w-full bg-transparent text-sm outline-none" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onFocus={e => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
+                  placeholder="ค้นหาชื่อ/หมวดสินค้า"
+                  className="w-full bg-transparent text-sm outline-none"
+                />
               </div>
             </div>
 

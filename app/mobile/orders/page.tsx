@@ -787,9 +787,10 @@ function MobilePackingModal({
   const [boxCount, setBoxCount] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleCommitPack = async () => {
+  const handleCommitPack = async (andPrint: boolean = false) => {
     setSubmitting(true);
     try {
+      const parsedWeight = parseFloat(weightKg) || 0.5;
       const res = await fetch(getApiUrl('/api/orders'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -797,13 +798,20 @@ function MobilePackingModal({
           id: order.id,
           status: 'PACKED',
           boxCount,
-          weightKg: parseFloat(weightKg) || 0.5,
+          weightKg: parsedWeight,
           notes: `${order.notes || ''} [Box:${selectedBox}]`.trim(),
         }),
       });
 
       if (!res.ok) throw new Error('บันทึกการแพ็กไม่สำเร็จ');
-      toast.success(`แพ็กออเดอร์ ${order.orderNo} สำเร็จ! ย้ายไปสถานีรอส่งมอบ`);
+
+      if (andPrint) {
+        const printUrl = `/print/shipping-label?id=${order.id}&weight=${parsedWeight}&box=${selectedBox}&boxCount=${boxCount}`;
+        window.open(printUrl, '_blank');
+        toast.success(`แพ็กออเดอร์ ${order.orderNo} สำเร็จ และเปิดพิมพ์ฉลากแล้ว!`);
+      } else {
+        toast.success(`แพ็กออเดอร์ ${order.orderNo} สำเร็จ! ย้ายไปสถานีรอส่งมอบ`);
+      }
       onDone();
     } catch (e) {
       toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการบันทึก');
@@ -894,32 +902,47 @@ function MobilePackingModal({
           </div>
         </div>
 
-        {/* Print Shipping Label Link */}
+        {/* Print Shipping Label Link (Auto-saves draft & prints) */}
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
           <div className="text-xs">
-            <span className="font-bold text-slate-900 block">พิมพ์ใบปะหน้าพัสดุ</span>
-            <span className="text-[10px] text-slate-500">ขนาด 4x6 นิ้ว หรือ A4</span>
+            <span className="font-bold text-slate-900 block">พิมพ์ใบปะหน้าพัสดุ (4x6 / A4)</span>
+            <span className="text-[10px] text-slate-500">บันทึกขนาด & น้ำหนักทันทีก่อนพิมพ์</span>
           </div>
-          <a
-            href={`/print/shipping-label?id=${order.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-slate-200"
+          <button
+            type="button"
+            onClick={() => handleCommitPack(true)}
+            disabled={submitting}
+            className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-blue-200 active:scale-95 transition-all"
           >
             <Printer className="w-4 h-4 text-blue-600" />
             <span>พิมพ์ฉลาก</span>
-          </a>
+          </button>
         </div>
 
-        {/* Submit Commit Pack */}
-        <button
-          onClick={handleCommitPack}
-          disabled={submitting}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 active:scale-[0.98] transition-all"
-        >
-          {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-          <span>ยืนยันแพ็กกล่องเสร็จสิ้น (PACKED)</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="space-y-2 pt-1">
+          {/* Primary Warehouse SOP: Pack & Print in one go */}
+          <button
+            type="button"
+            onClick={() => handleCommitPack(true)}
+            disabled={submitting}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 active:scale-[0.98] transition-all"
+          >
+            {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Printer className="w-5 h-5" />}
+            <span>บันทึกแพ็กกล่อง & พิมพ์ฉลาก (PACK & PRINT)</span>
+          </button>
+
+          {/* Secondary: Pack Only (without print) */}
+          <button
+            type="button"
+            onClick={() => handleCommitPack(false)}
+            disabled={submitting}
+            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          >
+            <CheckCircle2 className="w-4 h-4 text-slate-500" />
+            <span>บันทึกแพ็กเสร็จสิ้น (ไม่พิมพ์ฉลาก)</span>
+          </button>
+        </div>
       </div>
     </div>
   );

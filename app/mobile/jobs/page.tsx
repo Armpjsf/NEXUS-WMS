@@ -135,8 +135,8 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 overflow-y-auto p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 pb-28 sm:pb-5 space-y-4 max-h-[85dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black text-slate-900">{driverJob ? 'งานส่งโดยคนขับ' : 'มอบของให้ลูกค้า (รับที่คลัง)'}</h2>
           <button onClick={onClose} className="p-2 text-slate-400"><X className="w-5 h-5" /></button>
@@ -161,8 +161,14 @@ function PodSheet({ order, onClose, onDone }: { order: Order; onClose: () => voi
           </>
         ) : (
           <>
-            <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="ชื่อผู้มารับ / หมายเหตุ" rows={2}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium outline-none focus:border-cyan-500 resize-none" />
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              onFocus={e => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
+              placeholder="ชื่อผู้มารับ / หมายเหตุ"
+              rows={2}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium outline-none focus:border-cyan-500 resize-none"
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setSigOpen(true)} disabled={busy === 'sig'}
