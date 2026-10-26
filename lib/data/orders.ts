@@ -450,6 +450,7 @@ export async function updateOrder(
   id: string,
   patch: Partial<{
     status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string; vehicleType: string;
+    vehiclePlate: string; driverName: string; sendToTms: boolean;
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
     destinations: DeliveryDestination[]; qcSignatures: QCSignatures;
@@ -468,6 +469,14 @@ export async function updateOrder(
   }
   if (patch.carrier !== undefined) row.carrier = patch.carrier;
   if (patch.vehicleType !== undefined) row.vehicle_type = patch.vehicleType;
+  if (patch.vehiclePlate !== undefined) {
+    row.vehicle_plate = patch.vehiclePlate;
+    row.notes = `${row.notes || current.notes || ''} [Plate: ${patch.vehiclePlate}]`.trim();
+  }
+  if (patch.driverName !== undefined) {
+    row.driver_name = patch.driverName;
+    row.notes = `${row.notes || current.notes || ''} [Driver: ${patch.driverName}]`.trim();
+  }
   if (patch.trackingNo !== undefined) row.tracking_no = patch.trackingNo;
   if (patch.boxCount !== undefined) row.box_count = patch.boxCount;
   if (patch.weightKg !== undefined) row.weight_kg = patch.weightKg;
@@ -556,12 +565,17 @@ export async function updateOrder(
   }
   const mapped = mapOrder(data);
 
-  // Hand the shipment to the TMS (ePOD) delivery system when the order first
-  // reaches SHIPPED and is handled by the company's internal delivery fleet.
-  // 3PL express carriers (Flash, Kerry, etc.) are skipped.
-  if (movingToShipped && isTmsEnabled() && isCompanyFleetCarrier(mapped.carrier)) {
+  // Hand the shipment to the TMS (ePOD) delivery system when the order reaches SHIPPED
+  // or when explicitly requested, and is handled by the company's internal delivery fleet.
+  const needsTmsJob = (movingToShipped || Boolean((patch as any).sendToTms) || (!mapped.tmsJobId && (patch.status === 'SHIPPED' || mapped.status === 'SHIPPED'))) &&
+    isTmsEnabled() &&
+    isCompanyFleetCarrier(mapped.carrier);
+
+  if (needsTmsJob && !mapped.tmsJobId) {
     const r = await createTmsDeliveryJob(mapped);
     if (r.ok && r.jobId) {
+      mapped.tmsJobId = r.jobId;
+      mapped.tmsStatus = 'New';
       console.log(`[tms] delivery job ${r.jobId} created for order ${mapped.orderNo}`);
       try {
         const updateTmsPayload: Record<string, any> = {

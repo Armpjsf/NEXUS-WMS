@@ -56,6 +56,11 @@ interface Order {
   boxCount?: number;
   weightKg?: number;
   deliveryMode?: 'DELIVERY' | 'SELF_PICKUP';
+  tmsJobId?: string;
+  tmsStatus?: string;
+  vehiclePlate?: string;
+  driverName?: string;
+  vehicleType?: string;
 }
 
 interface Carrier {
@@ -167,6 +172,28 @@ export default function MobileOrdersPage() {
     setSearchQuery(code.trim());
     toast.error(`ไม่พบออเดอร์ที่ตรงกับรหัส "${code}"`);
   }, [orders]);
+
+  const handleRetryTms = async (order: Order) => {
+    const t = toast.loading('กำลังส่งงานเข้า TMS...');
+    try {
+      const res = await fetch(getApiUrl('/api/orders'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          status: 'SHIPPED',
+          carrier: order.carrier || 'รถขนส่งของบริษัท (จัดส่งเอง)',
+          sendToTms: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'ส่งงานเข้า TMS ไม่สำเร็จ');
+      toast.success(`ส่งงาน ${order.orderNo} เข้า TMS เรียบร้อย!`, { id: t });
+      loadData();
+    } catch (e) {
+      toast.error(errorMessage(e) || 'ไม่สามารถส่งเข้า TMS ได้', { id: t });
+    }
+  };
 
   usePdaScanner({
     onScan: handleMainBarcodeScan,
@@ -367,11 +394,29 @@ export default function MobileOrdersPage() {
 
               {/* Tracking info if already packed/shipped */}
               {order.trackingNo && (
-                <div className="flex items-center justify-between text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg">
-                  <span className="flex items-center gap-1.5">
-                    <Truck className="w-3.5 h-3.5 text-amber-600" />
-                    {order.carrier || 'ขนส่ง'}: {order.trackingNo}
+                <div className="flex items-center justify-between gap-2 text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Truck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="truncate">{order.carrier || 'ขนส่ง'}: {order.trackingNo}</span>
                   </span>
+                  {order.tmsJobId ? (
+                    <a
+                      href={`https://tms-e-pod.vercel.app/track/${order.tmsJobId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform font-sans"
+                    >
+                      TMS: {order.tmsJobId} ↗
+                    </a>
+                  ) : (/บริษัท|จัดส่งเอง|fleet/i.test(order.carrier || '') && order.status === 'SHIPPED') ? (
+                    <button
+                      type="button"
+                      onClick={() => handleRetryTms(order)}
+                      className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform flex items-center gap-1 font-sans"
+                    >
+                      <span>⚡ ส่งเข้า TMS</span>
+                    </button>
+                  ) : null}
                 </div>
               )}
 
@@ -948,9 +993,16 @@ function MobilePackingModal({
   );
 }
 
+interface FleetVehicle {
+  id: string;
+  plate: string;
+  driverName: string;
+  vehicleType: string;
+}
+
 /**
  * Mobile Dispatch Modal:
- * Worker selects courier and scans Tracking No. barcode directly at the dock.
+ * Worker selects courier, assigns company vehicle & driver for TMS, and scans Tracking No. barcode.
  */
 function MobileDispatchModal({
   order,
@@ -965,9 +1017,46 @@ function MobileDispatchModal({
 }) {
   const isPickup = order.deliveryMode === 'SELF_PICKUP';
   const [carrier, setCarrier] = useState(order.carrier || (carriers[0]?.name || 'Flash Express'));
-  const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
+  const isFleet = /บริษัท|จัดส่งเอง|fleet/i.test(carrier);
+
+  const [vehicles, setVehicles] = useState<FleetVehicle[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState(order.vehiclePlate || '');
+  const [driverName, setDriverName] = useState(order.driverName || '');
+  const [vehicleType, setVehicleType] = useState(order.vehicleType || '4-Wheel');
+  const [shipAddress, setShipAddress] = useState(order.shipAddress || '');
+  const [trackingNo, setTrackingNo] = useState(order.trackingNo || (isFleet ? order.orderNo : ''));
   const [submitting, setSubmitting] = useState(false);
   const [scanCamOpen, setScanCamOpen] = useState(false);
+
+  useEffect(() => {
+    fetch(getApiUrl('/api/fleet-vehicles?active=1'), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.vehicles && Array.isArray(d.vehicles) && d.vehicles.length > 0) {
+          setVehicles(d.vehicles);
+          // Auto-select first matching or default vehicle if not set
+          if (!order.vehiclePlate && d.vehicles[0]) {
+            const v = d.vehicles[0];
+            setSelectedVehicleId(v.id);
+            setVehiclePlate(v.plate);
+            setDriverName(v.driverName || '');
+            setVehicleType(v.vehicleType || '4-Wheel');
+          }
+        }
+      })
+      .catch(() => {});
+  }, [order.vehiclePlate]);
+
+  const handleSelectVehicle = (id: string) => {
+    setSelectedVehicleId(id);
+    const v = vehicles.find(x => x.id === id);
+    if (v) {
+      setVehiclePlate(v.plate);
+      setDriverName(v.driverName || '');
+      setVehicleType(v.vehicleType || '4-Wheel');
+    }
+  };
 
   const handleScanTracking = (code: string) => {
     const clean = code.trim();
@@ -986,14 +1075,18 @@ function MobileDispatchModal({
   });
 
   const handleCommitDispatch = async () => {
-    // Self-pickup: the customer collects at the counter — no carrier/tracking.
-    if (!isPickup && !trackingNo.trim()) {
+    // 3PL courier must have a tracking number
+    if (!isPickup && !isFleet && !trackingNo.trim()) {
       toast.error('กรุณาระบุหรือสแกนเลขพัสดุ (Tracking No.)');
       return;
     }
 
     setSubmitting(true);
     try {
+      const finalTracking = isFleet
+        ? (trackingNo.trim() || order.orderNo)
+        : trackingNo.trim();
+
       const res = await fetch(getApiUrl('/api/orders'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1001,12 +1094,21 @@ function MobileDispatchModal({
           id: order.id,
           status: 'SHIPPED',
           carrier: isPickup ? 'ลูกค้ารับเอง' : carrier,
-          trackingNo: isPickup ? '' : trackingNo.trim(),
+          trackingNo: isPickup ? '' : finalTracking,
+          vehiclePlate: isFleet ? vehiclePlate.trim() : undefined,
+          driverName: isFleet ? driverName.trim() : undefined,
+          vehicleType: isFleet ? vehicleType : undefined,
+          shipAddress: isFleet && shipAddress.trim() ? shipAddress.trim() : undefined,
+          sendToTms: isFleet,
         }),
       });
 
       if (!res.ok) throw new Error('บันทึกส่งมอบไม่สำเร็จ');
-      toast.success(isPickup ? `ส่งมอบ ${order.orderNo} ให้ลูกค้ารับเองแล้ว!` : `ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
+      if (isFleet) {
+        toast.success(`ส่งมอบ ${order.orderNo} ให้รถบริษัท (${vehiclePlate || 'จัดส่งเอง'}) และสร้างงานเข้า TMS เรียบร้อย!`);
+      } else {
+        toast.success(isPickup ? `ส่งมอบ ${order.orderNo} ให้ลูกค้ารับเองแล้ว!` : `ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
+      }
       onDone();
     } catch (e) {
       toast.error(errorMessage(e) || 'เกิดข้อผิดพลาด');
@@ -1040,7 +1142,13 @@ function MobileDispatchModal({
           <label className="text-xs text-slate-500 block mb-1.5 font-semibold">ผู้ให้บริการขนส่ง (Carrier)</label>
           <select
             value={carrier}
-            onChange={e => setCarrier(e.target.value)}
+            onChange={e => {
+              const val = e.target.value;
+              setCarrier(val);
+              if (/บริษัท|จัดส่งเอง|fleet/i.test(val) && !trackingNo) {
+                setTrackingNo(order.orderNo);
+              }
+            }}
             className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm focus:outline-none focus:border-amber-500"
           >
             {carriers.length > 0 ? (
@@ -1049,22 +1157,105 @@ function MobileDispatchModal({
               ))
             ) : (
               <>
+                <option value="รถขนส่งของบริษัท (จัดส่งเอง)">รถขนส่งของบริษัท (จัดส่งเอง)</option>
                 <option value="Flash Express">Flash Express</option>
                 <option value="Kerry Express">Kerry Express (KEX)</option>
                 <option value="J&T Express">J&T Express</option>
                 <option value="Thailand Post">ไปรษณีย์ไทย (EMS)</option>
                 <option value="SPX Express">SPX Express (Shopee)</option>
                 <option value="Lazada Logistics">Lazada Logistics (LEX)</option>
-                <option value="รถบริษัทส่งเอง">รถบริษัทส่งเอง (Own Fleet)</option>
               </>
             )}
           </select>
         </div>
 
+        {/* Company Fleet TMS Vehicle & Driver Section */}
+        {isFleet && (
+          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-blue-900 flex items-center gap-1.5">
+                <Truck className="w-4 h-4 text-blue-600" /> มอบหมายรถและคนขับ (เชื่อมต่อ TMS)
+              </span>
+              <span className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded-full">TMS Auto-Job</span>
+            </div>
+
+            {/* Vehicle Selector */}
+            <div>
+              <label className="text-xs text-blue-900 block mb-1 font-bold">เลือกรถในระบบ (ทะเบียนรถ)</label>
+              {vehicles.length > 0 ? (
+                <select
+                  value={selectedVehicleId}
+                  onChange={e => handleSelectVehicle(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500 mb-1.5"
+                >
+                  <option value="">-- เลือกรถในระบบ หรือกรอกด้านล่าง --</option>
+                  {vehicles.map(v => (
+                    <option key={v.id} value={v.id}>
+                      {v.plate} ({v.driverName ? `${v.driverName} - ` : ''}{v.vehicleType || '4 ล้อ'})
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <input
+                type="text"
+                value={vehiclePlate}
+                onChange={e => setVehiclePlate(e.target.value)}
+                placeholder="ระบุทะเบียนรถ เช่น 1กข-9999 สุราษฎร์ธานี"
+                className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Driver Name & Vehicle Type */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-blue-900 block mb-1 font-bold">ชื่อคนขับ</label>
+                <input
+                  type="text"
+                  value={driverName}
+                  onChange={e => setDriverName(e.target.value)}
+                  placeholder="ระบุชื่อคนขับรถ..."
+                  className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-blue-900 block mb-1 font-bold">ประเภทรถ</label>
+                <select
+                  value={vehicleType}
+                  onChange={e => setVehicleType(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+                >
+                  <option value="4-Wheel">กระบะ 4 ล้อ</option>
+                  <option value="6-Wheel">บรรทุก 6 ล้อ</option>
+                  <option value="10-Wheel">บรรทุก 10 ล้อ</option>
+                  <option value="Trailer">เทรลเลอร์</option>
+                  <option value="Motorcycle">มอเตอร์ไซค์</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Destination Address (Critical for TMS navigation) */}
+            <div>
+              <label className="text-xs text-blue-900 block mb-1 font-bold flex items-center justify-between">
+                <span>ที่อยู่จัดส่งปลายทาง (ส่งพิกัดให้คนขับ)</span>
+                {!shipAddress.trim() && (
+                  <span className="text-[10px] text-amber-600 font-bold">⚠️ ยังไม่มีที่อยู่</span>
+                )}
+              </label>
+              <textarea
+                value={shipAddress}
+                onChange={e => setShipAddress(e.target.value)}
+                placeholder="กรอกที่อยู่ปลายทางสำหรับคนขับนำทางในแอป TMS..."
+                rows={2}
+                className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-medium text-xs focus:outline-none focus:border-blue-500 resize-none"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Tracking Number Input + Scan */}
         <div>
           <label className="text-xs text-slate-500 block mb-1.5 font-semibold">
-            เลขพัสดุ (Tracking No.)
+            {isFleet ? 'เลขที่พัสดุ / รหัสงาน (Tracking / Job)' : 'เลขพัสดุ (Tracking No.)'}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -1072,7 +1263,7 @@ function MobileDispatchModal({
               value={trackingNo}
               onChange={e => setTrackingNo(e.target.value)}
               onFocus={(e) => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
-              placeholder="สแกนหรือพิมพ์เลขพัสดุ..."
+              placeholder={isFleet ? `เช่น ${order.orderNo}` : 'สแกนหรือพิมพ์เลขพัสดุ...'}
               className="flex-1 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-amber-600 font-black text-sm focus:outline-none focus:border-amber-500"
             />
             <button
@@ -1084,7 +1275,9 @@ function MobileDispatchModal({
             </button>
           </div>
           <p className="text-[10px] text-slate-500 mt-1">
-            • กดปุ่มกล้อง หรือใช้ปืนยิงบาร์โค้ดสแกนเลขจากใบปะหน้า Flash/Kerry ได้ทันที
+            {isFleet
+              ? '• รถบริษัท: ระบบจะใช้เลขออเดอร์สร้างงานใน TMS อัตโนมัติ (หรือจะยิงเลขบาร์โค้ดก็ได้)'
+              : '• ขนส่งเอกชน: กดปุ่มกล้อง หรือใช้ปืนยิงบาร์โค้ดสแกนเลขจากใบปะหน้า Flash/Kerry'}
           </p>
         </div>
         </>)}
@@ -1096,7 +1289,7 @@ function MobileDispatchModal({
           className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 active:scale-[0.98] transition-all"
         >
           {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
-          <span>{isPickup ? 'ยืนยันลูกค้ารับสินค้าแล้ว' : 'ยืนยันส่งมอบให้ขนส่ง (SHIPPED)'}</span>
+          <span>{isPickup ? 'ยืนยันลูกค้ารับสินค้าแล้ว' : isFleet ? 'ยืนยันส่งมอบ & สร้างงานเข้า TMS' : 'ยืนยันส่งมอบให้ขนส่ง (SHIPPED)'}</span>
         </button>
       </div>
 

@@ -98,11 +98,12 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
     return { ok: false, skipped: true, error: 'not-company-fleet' };
   }
 
-  // TMS requires a delivery address; skip quietly if the order has none.
-  if (!order.shipAddress || !order.shipAddress.trim()) {
-    console.warn(`[tms] order ${order.orderNo} has no ship address — skipping TMS job`);
-    return { ok: false, skipped: true, error: 'no-address' };
-  }
+  // TMS requires a delivery address; use fallback if order has no explicit address so job creation is never blocked
+  const effectiveAddress = (
+    order.shipAddress?.trim() ||
+    (order.destinations && order.destinations[0]?.address?.trim()) ||
+    `จัดส่งลูกค้า ${order.customerName || order.orderNo} (ปลายทางตามเอกสารส่งมอบ)`
+  );
 
   try {
     const url = process.env.TMS_API_URL as string;
@@ -155,9 +156,11 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
     }));
 
     const hasMultipleDrops = Array.isArray(order.destinations) && order.destinations.length > 1;
-    const deliveryAddress = hasMultipleDrops
-      ? order.destinations!.map(d => `[ดรอป ${d.drop}] ${d.name} (${d.phone}): ${d.address}`).join(' | ')
-      : (order.shipAddress || '').trim();
+    const deliveryAddress = (
+      hasMultipleDrops
+        ? order.destinations!.map(d => `[ดรอป ${d.drop}] ${d.name} (${d.phone}): ${d.address}`).join(' | ')
+        : (order.shipAddress || '')
+    ).trim() || effectiveAddress;
 
     const payload: Record<string, unknown> = {
       customer_id: order.customerName || order.orderNo,
