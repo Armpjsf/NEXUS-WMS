@@ -153,7 +153,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
 
   useEffect(() => {
     if (order) {
-      setClientName(order.qcSignatures?.clientName || order.customerName || '');
+      setClientName(order.qcSignatures?.clientName || (order as any).driverName || 'คนขับรถขนส่ง');
       setStaffName(order.qcSignatures?.staffName || 'เจ้าหน้าที่ QC');
       setExistingClientSig(order.qcSignatures?.clientSignature || null);
       setExistingStaffSig(order.qcSignatures?.staffSignature || null);
@@ -225,7 +225,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
     }
 
     setSaving(true);
-    const loadToast = toast.loading('กำลังบันทึกการตรวจรับมอบ...');
+    const loadToast = toast.loading('กำลังบันทึกการตรวจปล่อยสินค้า...');
     try {
       const qcSignatures: QCSignatures = {
         clientSignature: clientDataUrl || undefined,
@@ -248,7 +248,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
 
-      toast.success('บันทึกการตรวจรับมอบและลายเซ็น 2 ฝ่ายเรียบร้อย', { id: loadToast });
+      toast.success('บันทึกการตรวจปล่อยและลงนาม 2 ฝ่ายเรียบร้อย', { id: loadToast });
       onSaveSuccess();
       onClose();
 
@@ -277,11 +277,11 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
               <ClipboardCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight">ใบตรวจรับมอบสินค้า (QC Handover Slip)</h2>
+              <h2 className="text-lg font-black tracking-tight">ใบตรวจปล่อยสินค้าและส่งมอบขึ้นรถ (Dispatch Handover)</h2>
               <div className="text-xs text-teal-100 font-mono flex items-center gap-2 mt-0.5">
                 <span>ออเดอร์: {order.orderNo}</span>
                 <span>•</span>
-                <span>ลูกค้า: {order.customerName}</span>
+                <span>ลูกค้าปลายทาง: {order.customerName}</span>
               </div>
             </div>
           </div>
@@ -298,7 +298,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
             <div className="flex justify-between items-center mb-3">
               <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> รายการสินค้าที่ตรวจรับมอบ ({order.items.length} รายการ)
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> รายการสินค้าที่ตรวจปล่อย ({order.items.length} รายการ)
               </span>
               <span className="text-xs font-black text-slate-800 bg-white px-3 py-1 rounded-xl border border-slate-200">
                 รวมทั้งหมด <span className="text-emerald-600 font-mono text-sm font-black">{order.totalQty}</span> ชิ้น
@@ -311,7 +311,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                     <th className="py-2 px-3 w-8">#</th>
                     <th className="py-2 px-3">รหัสสินค้า</th>
                     <th className="py-2 px-3">ชื่อสินค้า</th>
-                    <th className="py-2 px-3 text-right">จำนวนตรวจรับ</th>
+                    <th className="py-2 px-3 text-right">จำนวนตรวจปล่อย</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -404,47 +404,12 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Pad 1: Customer (Sender) */}
+              {/* Pad 1: Warehouse QC Staff (Dispatcher) */}
               <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between space-y-3">
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="text-xs font-black text-slate-800">1. ลายเซ็นพนักงานลูกค้า</span>
-                    <div className="text-[11px] text-slate-500">(ผู้ส่งมอบสินค้า)</div>
-                  </div>
-                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
-                    ฝั่งลูกค้า
-                  </span>
-                </div>
-
-                <CanvasPad
-                  sigRef={clientSigRef}
-                  onClear={() => clientSigRef.current?.clear()}
-                  placeholder="เซ็นชื่อที่นี่ (ผู้ส่งมอบ)"
-                  hasExisting={Boolean(existingClientSig)}
-                  existingUrl={existingClientSig || undefined}
-                  onResetExisting={() => setExistingClientSig(null)}
-                />
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    ชื่อ-นามสกุล ผู้ส่งมอบ (ลูกค้า)
-                  </label>
-                  <input
-                    type="text"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="เช่น คุณวิชัย / ตัวแทนลูกค้า"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Pad 2: Warehouse QC Staff (Receiver) */}
-              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between space-y-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-xs font-black text-slate-800">2. ลายเซ็นเจ้าหน้าที่คลัง</span>
-                    <div className="text-[11px] text-slate-500">(ผู้ตรวจรับมอบสินค้า QC)</div>
+                    <span className="text-xs font-black text-slate-800">1. ผู้ตรวจจ่ายสินค้า</span>
+                    <div className="text-[11px] text-slate-500">(เจ้าหน้าที่คลัง / QC)</div>
                   </div>
                   <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
                     ฝั่งคลัง QC
@@ -454,7 +419,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                 <CanvasPad
                   sigRef={staffSigRef}
                   onClear={() => staffSigRef.current?.clear()}
-                  placeholder="เซ็นชื่อที่นี่ (ผู้ตรวจรับ)"
+                  placeholder="เซ็นชื่อที่นี่ (เจ้าหน้าที่คลัง / QC)"
                   hasExisting={Boolean(existingStaffSig)}
                   existingUrl={existingStaffSig || undefined}
                   onResetExisting={() => setExistingStaffSig(null)}
@@ -462,7 +427,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    ชื่อ-นามสกุล ผู้ตรวจรับ (QC คลังเรา)
+                    ชื่อ-นามสกุล เจ้าหน้าที่คลัง (ผู้ตรวจจ่าย)
                   </label>
                   <input
                     type="text"
@@ -470,6 +435,41 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                     onChange={(e) => setStaffName(e.target.value)}
                     placeholder="เช่น เจ้าหน้าที่ QC พรชัย"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Pad 2: Driver / Carrier Receiver */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-xs font-black text-slate-800">2. ผู้ตรวจรับสินค้าขึ้นรถ</span>
+                    <div className="text-[11px] text-slate-500">(คนขับรถขนส่ง / ตัวแทนรับของ)</div>
+                  </div>
+                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
+                    ฝั่งคนขับรถขนส่ง
+                  </span>
+                </div>
+
+                <CanvasPad
+                  sigRef={clientSigRef}
+                  onClear={() => clientSigRef.current?.clear()}
+                  placeholder="เซ็นชื่อที่นี่ (คนขับรถ / ผู้รับมอบ)"
+                  hasExisting={Boolean(existingClientSig)}
+                  existingUrl={existingClientSig || undefined}
+                  onResetExisting={() => setExistingClientSig(null)}
+                />
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                    ชื่อ-นามสกุล คนขับรถ / ผู้รับมอบสินค้า
+                  </label>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="เช่น นายเอ (คนขับ) หรือ ทะเบียน กก-4321"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-amber-500 bg-white"
                   />
                 </div>
               </div>
@@ -494,7 +494,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-all active:scale-95"
             >
               <Printer className="w-4 h-4 text-emerald-400" />
-              <span>บันทึก & พิมพ์ใบตรวจรับ</span>
+              <span>บันทึก & พิมพ์ใบตรวจปล่อย</span>
             </button>
             <button
               type="button"

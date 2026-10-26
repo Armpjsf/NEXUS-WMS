@@ -97,20 +97,20 @@ function QCHandoverSlip() {
 
   return (
     <DocumentShell
-      docType="ใบตรวจรับมอบสินค้า"
-      docTypeEn="QC & HANDOVER SLIP"
+      docType="ใบตรวจปล่อยสินค้าและส่งมอบขึ้นรถ"
+      docTypeEn="QC & DISPATCH HANDOVER SLIP"
       docNo={order.orderNo}
-      printLabel="พิมพ์ใบตรวจรับมอบ (PDF)"
+      printLabel="พิมพ์ใบตรวจปล่อยสินค้า (PDF)"
       meta={[
-        { label: 'วันที่-เวลาตรวจรับ', value: dateStr },
-        { label: 'จุดรับสินค้า', value: order.pickupName || order.customerName || '-' },
+        { label: 'วันที่-เวลาตรวจปล่อย', value: dateStr },
+        { label: 'ลูกค้าปลายทาง', value: order.pickupName || order.customerName || '-' },
         ...(order.phone ? [{ label: 'เบอร์โทรศัพท์', value: order.phone }] : []),
       ]}
     >
       {/* Customer Header Info */}
       <div className="mb-6 rounded-xl bg-slate-50 border border-slate-200/80 p-4">
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-          จุดรับสินค้า
+          ลูกค้าปลายทาง
         </div>
         <div className="font-black text-base text-slate-900">{order.pickupName || order.customerName || '-'}</div>
         {order.pickupAddress && <div className="text-sm text-slate-600">{order.pickupAddress}</div>}
@@ -121,7 +121,7 @@ function QCHandoverSlip() {
       <div className="mb-8">
         <div className="text-xs font-black uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>รายการสินค้าที่ตรวจรับมอบ ({order.items.length} รายการ)</span>
+          <span>รายการสินค้าที่ตรวจปล่อย ({order.items.length} รายการ)</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -130,7 +130,7 @@ function QCHandoverSlip() {
                 <th className="py-2.5 px-3 font-bold w-12 text-center">ลำดับ</th>
                 <th className="py-2.5 px-3 font-bold w-36">รหัสสินค้า (SKU)</th>
                 <th className="py-2.5 px-3 font-bold">ชื่อรายการสินค้า</th>
-                <th className="py-2.5 px-3 font-bold text-right w-28">จำนวนตรวจรับ</th>
+                <th className="py-2.5 px-3 font-bold text-right w-28">จำนวนตรวจปล่อย</th>
               </tr>
             </thead>
             <tbody>
@@ -148,7 +148,7 @@ function QCHandoverSlip() {
             <tfoot>
               <tr className="border-t-2 border-slate-200 font-black bg-slate-50/80">
                 <td colSpan={3} className="py-3 px-3 text-right text-slate-700">
-                  รวมจำนวนสินค้าที่ตรวจรับมอบทั้งสิ้น:
+                  รวมจำนวนสินค้าที่ตรวจปล่อยทั้งสิ้น:
                 </td>
                 <td className="py-3 px-3 text-right font-mono text-emerald-700 text-base">
                   {order.totalQty.toLocaleString()} ชิ้น
@@ -189,16 +189,16 @@ function QCHandoverSlip() {
         </div>
 
         <div className="grid grid-cols-2 gap-8">
-          {/* Customer Signature (Sender) */}
+          {/* Warehouse QC Signature (Dispatcher) */}
           <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center justify-between min-h-[160px]">
             <div className="text-xs font-bold text-slate-500 uppercase text-center mb-1">
-              ผู้ส่งมอบสินค้า (ตัวแทนลูกค้า)
+              ผู้ตรวจจ่ายสินค้า (เจ้าหน้าที่คลัง / QC)
             </div>
             <div className="h-20 flex items-center justify-center w-full my-1">
-              {(order.qcSignatures?.customerStaffSignature || order.qcSignatures?.clientSignature) ? (
+              {(order.qcSignatures?.staffSignature || order.qcSignatures?.checkerSignature) ? (
                 <img
-                  src={order.qcSignatures.customerStaffSignature || order.qcSignatures.clientSignature}
-                  alt="ลายเซ็นผู้ส่งมอบ"
+                  src={order.qcSignatures.staffSignature || order.qcSignatures.checkerSignature}
+                  alt="ลายเซ็นผู้ตรวจจ่ายสินค้า"
                   className="max-h-16 max-w-[90%] object-contain"
                 />
               ) : (
@@ -207,7 +207,7 @@ function QCHandoverSlip() {
             </div>
             <div className="text-center w-full border-t border-slate-200 pt-2">
               <div className="font-bold text-slate-800 text-xs">
-                ( เจ้าหน้าที่คลัง )
+                ( {order.qcSignatures?.staffName || order.qcSignatures?.checkerName || 'เจ้าหน้าที่คลัง / QC'} )
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 วันที่: {dateStr}
@@ -215,16 +215,16 @@ function QCHandoverSlip() {
             </div>
           </div>
 
-          {/* Warehouse Staff Signature (Receiver QC) */}
+          {/* Driver / Carrier Signature (Receiver) */}
           <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center justify-between min-h-[160px]">
             <div className="text-xs font-bold text-slate-500 uppercase text-center mb-1">
-              ผู้ตรวจรับมอบสินค้า
+              ผู้ตรวจรับสินค้าขึ้นรถ (คนขับรถ / ตัวแทนขนส่ง)
             </div>
             <div className="h-20 flex items-center justify-center w-full my-1">
-              {(order.qcSignatures?.checkerSignature || order.qcSignatures?.staffSignature) ? (
+              {(order.qcSignatures?.clientSignature || order.qcSignatures?.customerStaffSignature) ? (
                 <img
-                  src={order.qcSignatures.checkerSignature || order.qcSignatures.staffSignature}
-                  alt="ลายเซ็นผู้ตรวจรับ"
+                  src={order.qcSignatures.clientSignature || order.qcSignatures.customerStaffSignature}
+                  alt="ลายเซ็นผู้ตรวจรับสินค้าขึ้นรถ"
                   className="max-h-16 max-w-[90%] object-contain"
                 />
               ) : (
@@ -233,7 +233,7 @@ function QCHandoverSlip() {
             </div>
             <div className="text-center w-full border-t border-slate-200 pt-2">
               <div className="font-bold text-slate-800 text-xs">
-                ( เจ้าหน้าที่เช็คเกอร์ )
+                ( {order.qcSignatures?.clientName || order.qcSignatures?.customerStaffName || 'คนขับรถ / ผู้รับมอบสินค้า'} )
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 วันที่: {dateStr}

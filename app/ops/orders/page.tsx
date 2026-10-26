@@ -468,7 +468,7 @@ export default function OrdersPage() {
                         className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
                         <FileText className="w-4 h-4" />
                       </a>
-                      <a href={`/print/qc-handover?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจรับมอบสินค้า (QC Handover Slip)"
+                      <a href={`/print/qc-handover?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจปล่อยสินค้าและส่งมอบ (Dispatch Handover)"
                         className="p-2 rounded-xl text-[#8a92a6] hover:text-teal-600 hover:bg-teal-500/10 transition-colors">
                         <ShieldCheck className="w-4 h-4 text-teal-600" />
                       </a>
@@ -477,7 +477,7 @@ export default function OrdersPage() {
                       {(o.status === 'PICKED' || o.status === 'PACKED' || o.qcSignatures?.clientSignature || o.qcSignatures?.staffSignature) && (
                         <button
                           onClick={() => setQcOrder(o)}
-                          title="ตรวจรับมอบสินค้าพร้อมเซ็นชื่อ 2 ฝ่าย (ลูกค้า + QC คลัง)"
+                          title="ตรวจปล่อยสินค้าพร้อมลงนาม 2 ฝ่าย (QC คลัง + คนขับรถ)"
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-xs active:scale-95 ${
                             o.qcSignatures?.clientSignature
                               ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 border-emerald-300'
@@ -485,7 +485,7 @@ export default function OrdersPage() {
                           }`}
                         >
                           <UserCheck className="w-3.5 h-3.5 text-teal-600" />
-                          <span>{o.qcSignatures?.clientSignature ? 'QC เซ็นแล้ว' : 'ตรวจรับ QC (เซ็นชื่อ)'}</span>
+                          <span>{(o.qcSignatures?.clientSignature || o.qcSignatures?.staffSignature) ? 'ตรวจปล่อยแล้ว' : 'ตรวจปล่อย QC (ลงนาม)'}</span>
                         </button>
                       )}
 
