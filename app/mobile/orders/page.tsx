@@ -61,6 +61,7 @@ interface Order {
   vehiclePlate?: string;
   driverName?: string;
   vehicleType?: string;
+  dockBay?: string;
 }
 
 interface Carrier {
@@ -391,6 +392,22 @@ export default function MobileOrdersPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Dock Bay and Vehicle Tag */}
+              {(order.dockBay || order.vehiclePlate) && (
+                <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                  {order.dockBay && (
+                    <span className="font-bold px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
+                      ⚓ ท่า: {order.dockBay}
+                    </span>
+                  )}
+                  {order.vehiclePlate && (
+                    <span className="font-bold px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300">
+                      🚛 รถ: {order.vehiclePlate} {order.driverName ? `(${order.driverName})` : ''}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Tracking info if already packed/shipped */}
               {order.trackingNo && (
@@ -1024,6 +1041,7 @@ function MobileDispatchModal({
   const [vehiclePlate, setVehiclePlate] = useState(order.vehiclePlate || '');
   const [driverName, setDriverName] = useState(order.driverName || '');
   const [vehicleType, setVehicleType] = useState(order.vehicleType || '4-Wheel');
+  const [dockBay, setDockBay] = useState(order.dockBay || '');
   const [shipAddress, setShipAddress] = useState(order.shipAddress || '');
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || (isFleet ? order.orderNo : ''));
   const [submitting, setSubmitting] = useState(false);
@@ -1098,6 +1116,7 @@ function MobileDispatchModal({
           vehiclePlate: isFleet ? vehiclePlate.trim() : undefined,
           driverName: isFleet ? driverName.trim() : undefined,
           vehicleType: isFleet ? vehicleType : undefined,
+          dockBay: dockBay || undefined,
           shipAddress: isFleet && shipAddress.trim() ? shipAddress.trim() : undefined,
           sendToTms: isFleet,
         }),
@@ -1135,6 +1154,27 @@ function MobileDispatchModal({
             🏭 ลูกค้ารับเอง — ไม่ต้องเลือกขนส่ง/เลขพัสดุ กดยืนยันเมื่อส่งมอบให้ลูกค้าแล้ว
           </div>
         )}
+
+        {/* Dock Bay Selector */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+            ⚓ ท่าเทียบ / จุดวางพักรอขึ้นรถ (Dock Bay)
+          </label>
+          <select
+            value={dockBay}
+            onChange={e => setDockBay(e.target.value)}
+            className="w-full bg-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-amber-900 border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            <option value="">-- ไม่ระบุ Dock (จัดส่งทั่วไป) --</option>
+            <option value="BAY-01">BAY-01 (Inbound / จุดรับเข้า)</option>
+            <option value="BAY-02">BAY-02 (Outbound / ท่าโหลดสายใต้)</option>
+            <option value="BAY-03">BAY-03 (Outbound / ท่าโหลดทั่วไป)</option>
+            <option value="DOCK-01">DOCK-01 (ท่าโหลด 1)</option>
+            <option value="DOCK-02">DOCK-02 (ท่าโหลด 2)</option>
+            <option value="STAGING-A">STAGING-A (ลานพักรอโหลด A)</option>
+            <option value="STAGING-B">STAGING-B (ลานพักรอโหลด B)</option>
+          </select>
+        </div>
 
         {/* Courier Select */}
         {!isPickup && (<>

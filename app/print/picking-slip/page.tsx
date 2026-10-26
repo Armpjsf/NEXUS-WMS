@@ -8,7 +8,7 @@ import SignatureSlot from '@/components/print/SignatureSlot';
 interface Line { sku: string; name: string; qty: number; location?: string; lotNos?: string[]; }
 interface Order {
   orderNo: string; refNo?: string; branchCode?: string; customerName: string; status: string; priority: string;
-  items: Line[]; totalQty: number; createdAt: string;
+  items: Line[]; totalQty: number; createdAt: string; dockBay?: string; vehiclePlate?: string; driverName?: string; notes?: string;
 }
 
 function PickingSlipDoc() {
@@ -26,6 +26,18 @@ function PickingSlipDoc() {
   if (!order) return <div className="min-h-screen grid place-items-center text-slate-500">ไม่พบออเดอร์</div>;
 
   const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+  const dockBay = order.dockBay || (() => {
+    const m = String(order.notes || '').match(/\[(?:Dock|Bay):\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
+  const vehiclePlate = order.vehiclePlate || (() => {
+    const m = String(order.notes || '').match(/\[Plate:\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
+  const driverName = order.driverName || (() => {
+    const m = String(order.notes || '').match(/\[Driver:\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
   // Sort by bin location for an efficient pick path
   const items = [...order.items].sort((a, b) => (a.location || '').localeCompare(b.location || ''));
 
@@ -36,6 +48,8 @@ function PickingSlipDoc() {
         { label: 'ลูกค้า', value: order.customerName || '-' },
         ...(order.refNo ? [{ label: 'อ้างอิง/PO', value: <span className="font-mono">{order.refNo}</span> }] : []),
         ...(order.branchCode ? [{ label: 'สาขา', value: order.branchCode }] : []),
+        ...(dockBay ? [{ label: 'ท่าเทียบ/จุดวางพัก (Dock)', value: <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">{dockBay}</span> }] : []),
+        ...(vehiclePlate ? [{ label: 'เที่ยวรถ/คันรถ', value: <span className="font-mono font-bold">{vehiclePlate} {driverName ? `(${driverName})` : ''}</span> }] : []),
         ...(order.priority === 'URGENT' ? [{ label: 'ความสำคัญ', value: 'ด่วน' }] : []),
       ]}>
       <div className="overflow-x-auto">

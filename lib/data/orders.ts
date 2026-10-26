@@ -98,6 +98,7 @@ export interface OutboundOrder {
   pickupAddress?: string;
   pickupLat?: number | null;
   pickupLon?: number | null;
+  dockBay?: string;
 }
 
 export function stripQcMetaFromNotes(notes: string): string {
@@ -137,6 +138,13 @@ function mapOrder(r: any): OutboundOrder {
     if (vm) vehicleType = vm[1].trim();
   }
   // Assigned company vehicle (plate) + driver, from column or notes fallback.
+  // Extract Dock / Staging bay from column or notes
+  let dockBay = r.dock_bay || '';
+  if (!dockBay && r.notes) {
+    const dm = String(r.notes).match(/\[(?:Dock|Bay):\s*([^\]]+)\]/i);
+    if (dm) dockBay = dm[1].trim();
+  }
+
   let vehiclePlate = r.vehicle_plate || '';
   if (!vehiclePlate && r.notes) {
     const pm = String(r.notes).match(/\[Plate:\s*([^\]]+)\]/i);
@@ -236,6 +244,7 @@ function mapOrder(r: any): OutboundOrder {
     pickupAddress: pickup.address || undefined,
     pickupLat: pickup.lat ?? null,
     pickupLon: pickup.lon ?? null,
+    dockBay: dockBay || '',
   };
 }
 
@@ -344,6 +353,9 @@ export async function createOrder(input: {
   if (input.qcSignatures) {
     initialNotes = `${initialNotes} <!--QC_SIGS:${JSON.stringify(input.qcSignatures)}-->`.trim();
   }
+  if ((input as any).dockBay) {
+    initialNotes = `${initialNotes} [Dock: ${(input as any).dockBay.trim()}]`.trim();
+  }
   if (input.pickupName || input.pickupLat != null) {
     const pickupMeta = { name: input.pickupName || '', address: input.pickupAddress || '', lat: input.pickupLat ?? null, lon: input.pickupLon ?? null };
     initialNotes = `${initialNotes} <!--PICKUP:${JSON.stringify(pickupMeta)}-->`.trim();
@@ -450,7 +462,7 @@ export async function updateOrder(
   id: string,
   patch: Partial<{
     status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string; vehicleType: string;
-    vehiclePlate: string; driverName: string; sendToTms: boolean;
+    vehiclePlate: string; driverName: string; dockBay: string; sendToTms: boolean;
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
     destinations: DeliveryDestination[]; qcSignatures: QCSignatures;
@@ -469,6 +481,14 @@ export async function updateOrder(
   }
   if (patch.carrier !== undefined) row.carrier = patch.carrier;
   if (patch.vehicleType !== undefined) row.vehicle_type = patch.vehicleType;
+  if (patch.dockBay !== undefined) {
+    let n = row.notes || current.notes || '';
+    n = n.replace(/\[(?:Dock|Bay):\s*[^\]]+\]/gi, '').trim();
+    if (patch.dockBay) {
+      n = `${n} [Dock: ${patch.dockBay}]`.trim();
+    }
+    row.notes = n;
+  }
   if (patch.vehiclePlate !== undefined) {
     row.vehicle_plate = patch.vehiclePlate;
     row.notes = `${row.notes || current.notes || ''} [Plate: ${patch.vehiclePlate}]`.trim();

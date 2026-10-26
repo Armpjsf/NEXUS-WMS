@@ -24,6 +24,9 @@ interface Order {
   weightKg?: number;
   boxCount?: number;
   notes?: string;
+  dockBay?: string;
+  vehiclePlate?: string;
+  driverName?: string;
 }
 
 interface Org {
@@ -66,6 +69,19 @@ function ShippingLabelDoc() {
   const postalCode = postalMatch ? postalMatch[0] : '';
   const carrierName = (order.carrier || 'STANDARD DELIVERY').toUpperCase();
   const tracking = order.trackingNo || order.orderNo;
+
+  const dockBay = order.dockBay || (() => {
+    const m = String(order.notes || '').match(/\[(?:Dock|Bay):\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
+  const vehiclePlate = order.vehiclePlate || (() => {
+    const m = String(order.notes || '').match(/\[Plate:\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
+  const driverName = order.driverName || (() => {
+    const m = String(order.notes || '').match(/\[Driver:\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
 
   // Package Specifications
   const boxMatch = (order.notes || '').match(/\[Box:([^\]]+)\]/);
@@ -132,6 +148,23 @@ function ShippingLabelDoc() {
             />
           </div>
         </div>
+
+        {/* Loading Dock & Vehicle Dispatch Header */}
+        {(dockBay || vehiclePlate) && (
+          <div className="bg-black text-white px-2.5 py-1.5 my-1.5 flex justify-between items-center text-xs font-mono font-black border-2 border-black rounded">
+            <div className="flex items-center gap-1.5">
+              <span className="bg-amber-400 text-black px-1.5 py-0.5 rounded text-[10px] uppercase font-black">DOCK</span>
+              <span className="text-sm tracking-wide text-amber-300 font-black">{dockBay || 'STAGE'}</span>
+            </div>
+            {vehiclePlate && (
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400 font-normal">คันรถ:</span>
+                <span className="text-white font-bold">{vehiclePlate}</span>
+                {driverName && <span className="text-slate-300 font-normal">({driverName})</span>}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Sender & Recipient Section */}
         <div className="border-b-2 border-black py-2.5 space-y-2 text-xs">

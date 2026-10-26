@@ -46,6 +46,10 @@ interface Order {
   priority: string; items: Line[]; totalQty: number; totalAmount: number; freightCost?: number; refNo?: string; deliveryMode?: 'DELIVERY' | 'SELF_PICKUP';
   carrier: string; trackingNo: string; createdAt: string; shipAddress: string; phone: string;
   vehicleType?: string;
+  dockBay?: string;
+  vehiclePlate?: string;
+  driverName?: string;
+  notes?: string;
   podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
   tmsJobId?: string; tmsStatus?: string; tmsSyncedAt?: string | null; branchCode?: string;
   destinations?: DeliveryDestination[];
@@ -375,6 +379,16 @@ export default function OrdersPage() {
                             )}
                           </span>
                         )}
+                        {o.dockBay && (
+                          <span className="text-amber-800 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/15 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/30">
+                            ⚓ ท่า: {o.dockBay}
+                          </span>
+                        )}
+                        {o.vehiclePlate && (
+                          <span className="text-emerald-800 font-bold ml-2 inline-flex items-center gap-1 bg-emerald-500/15 px-2 py-0.5 rounded text-xs ring-1 ring-emerald-500/30">
+                            🚛 {o.vehiclePlate} {o.driverName ? `(${o.driverName})` : ''}
+                          </span>
+                        )}
                         {o.vehicleType && (
                           <span className="text-amber-900 font-semibold ml-2 inline-flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/30">
                             🚗 {o.vehicleType}
@@ -603,9 +617,30 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
   const defaultCarrier = carriers.find(c => c.isDefault)?.name || carriers[0]?.name || 'Flash Express';
   const [carrier, setCarrier] = useState(order.carrier || defaultCarrier);
   const [vehicleType, setVehicleType] = useState(order.vehicleType || '4-Wheel');
+  const [dockBay, setDockBay] = useState(order.dockBay || '');
+  const [vehiclePlate, setVehiclePlate] = useState(order.vehiclePlate || '');
+  const [driverName, setDriverName] = useState(order.driverName || '');
+  const [sendToTms, setSendToTms] = useState(true);
+  const [vehicles, setVehicles] = useState<any[]>([]);
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
   const [submitting, setSubmitting] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/fleet-vehicles?active=1')
+      .then(r => r.json())
+      .then(d => {
+        if (d.vehicles && Array.isArray(d.vehicles)) {
+          setVehicles(d.vehicles);
+          if (!order.vehiclePlate && d.vehicles[0]) {
+            setVehiclePlate(d.vehicles[0].plateNumber || '');
+            setDriverName(d.vehicles[0].assignedDriverName || '');
+            if (d.vehicles[0].vehicleType) setVehicleType(d.vehicles[0].vehicleType);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [order.vehiclePlate]);
 
   const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
 
@@ -627,7 +662,11 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
           status: 'SHIPPED',
           carrier,
           vehicleType: isCompanyFleet ? vehicleType : undefined,
-          trackingNo: trackingNo.trim(),
+          vehiclePlate: isCompanyFleet ? vehiclePlate.trim() : undefined,
+          driverName: isCompanyFleet ? driverName.trim() : undefined,
+          dockBay: dockBay || undefined,
+          sendToTms: isCompanyFleet ? sendToTms : false,
+          trackingNo: trackingNo.trim() || (isCompanyFleet ? order.orderNo : ''),
         }),
       });
       const json = await res.json();
@@ -674,8 +713,77 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
             </select>
           </div>
 
+          {/* Dock Bay Selection */}
+          <div>
+            <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">
+              ⚓ ท่าเทียบ / จุดวางพักรอขึ้นรถ (Dock Bay / Staging)
+            </label>
+            <select
+              value={dockBay}
+              onChange={(e) => setDockBay(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-bold text-sm bg-[#171c23] text-amber-400"
+            >
+              <option value="">-- ไม่ระบุ Dock (จัดส่งทั่วไป) --</option>
+              <option value="BAY-01">BAY-01 (Inbound / จุดรับเข้า)</option>
+              <option value="BAY-02">BAY-02 (Outbound / ท่าโหลดสายใต้)</option>
+              <option value="BAY-03">BAY-03 (Outbound / ท่าโหลดทั่วไป)</option>
+              <option value="DOCK-01">DOCK-01 (ท่าโหลด 1)</option>
+              <option value="DOCK-02">DOCK-02 (ท่าโหลด 2)</option>
+              <option value="STAGING-A">STAGING-A (ลานพักรอโหลด A)</option>
+              <option value="STAGING-B">STAGING-B (ลานพักรอโหลด B)</option>
+            </select>
+          </div>
+
           {isCompanyFleet && (
             <div className="space-y-3 p-3.5 bg-indigo-500/10/80 border border-indigo-500/20 rounded-2xl">
+              {vehicles.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">
+                    🚛 เลือกรถขนส่งในบริษัท (Fleet)
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const v = vehicles.find(x => x.id === e.target.value);
+                      if (v) {
+                        setVehiclePlate(v.plateNumber || '');
+                        setDriverName(v.assignedDriverName || '');
+                        if (v.vehicleType) setVehicleType(v.vehicleType);
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 font-bold text-sm bg-[#171c23] text-indigo-950"
+                  >
+                    {vehicles.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.plateNumber} {v.assignedDriverName ? `- ${v.assignedDriverName}` : ''} ({v.vehicleType || '4-Wheel'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">ทะเบียนรถ *</label>
+                  <input
+                    type="text"
+                    value={vehiclePlate}
+                    onChange={(e) => setVehiclePlate(e.target.value)}
+                    placeholder="เช่น กก-4321"
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 text-xs font-mono font-bold bg-[#171c23] text-[#dee2ec]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">คนขับรถ *</label>
+                  <input
+                    type="text"
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value)}
+                    placeholder="เช่น นายเอ"
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 text-xs font-bold bg-[#171c23] text-[#dee2ec]"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">
                   🚗 ประเภทรถขนส่ง (TMS Vehicle Type) *
