@@ -12,8 +12,20 @@
 import type { OutboundOrder } from './data/orders';
 import { errorMessage } from '@/lib/errors';
 
+const DEFAULT_TMS_API_URL = 'https://tms-e-pod.vercel.app/api/external/v1/jobs';
+const DEFAULT_TMS_API_KEY = 'wms_29d785e94f0943c5518f129f210768459d018af20f9e0d2a';
+
+export function getTmsApiUrl(): string {
+  return process.env.TMS_API_URL || DEFAULT_TMS_API_URL;
+}
+
+export function getTmsApiKey(): string {
+  return process.env.TMS_API_KEY || DEFAULT_TMS_API_KEY;
+}
+
 export function isTmsEnabled(): boolean {
-  return Boolean(process.env.TMS_API_URL && process.env.TMS_API_KEY);
+  if (process.env.TMS_DISABLED === 'true') return false;
+  return Boolean(getTmsApiUrl() && getTmsApiKey());
 }
 
 // Resolve which TMS branch (Jobs_Main.Branch_ID) a shipped order belongs to.
@@ -106,7 +118,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
   );
 
   try {
-    const url = process.env.TMS_API_URL as string;
+    const url = getTmsApiUrl();
 
     // Derive TMS Job ID directly from WMS Order Number (ORD-2026-8008 -> JOB-2026-8008)
     const targetJobId = order.orderNo.startsWith('ORD-')
@@ -218,7 +230,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.TMS_API_KEY}`,
+        Authorization: `Bearer ${getTmsApiKey()}`,
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
@@ -259,7 +271,7 @@ export async function appendTmsJobItems(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.TMS_API_KEY}`,
+        Authorization: `Bearer ${getTmsApiKey()}`,
       },
       body: JSON.stringify({ items, wms_order_no: wmsOrderNo }),
       signal: controller.signal,
@@ -283,7 +295,7 @@ export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: stri
   if (!target.jobId && !target.orderNo) return { ok: false, error: 'missing target' };
 
   try {
-    const baseUrl = process.env.TMS_API_URL as string;
+    const baseUrl = getTmsApiUrl();
     const url = new URL(baseUrl);
     if (target.jobId) url.searchParams.set('job_id', target.jobId);
     else if (target.orderNo) url.searchParams.set('wms_order_no', target.orderNo);
@@ -294,7 +306,7 @@ export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: stri
     const res = await fetch(url.toString(), {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${process.env.TMS_API_KEY}`,
+        Authorization: `Bearer ${getTmsApiKey()}`,
       },
       signal: controller.signal,
       cache: 'no-store',
