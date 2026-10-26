@@ -599,8 +599,8 @@ function MobileQcModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-lg max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5">
+    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 w-full max-w-lg max-h-[85dvh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5">
         {/* Modal Header */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
           <div>
@@ -658,6 +658,7 @@ function MobileQcModal({
                 type="text"
                 value={quickInput}
                 onChange={e => setQuickInput(e.target.value)}
+                onFocus={(e) => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
                 placeholder="สแกน หรือ พิมพ์ SKU แล้วกด Enter..."
                 className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-500 font-mono focus:outline-none focus:border-teal-500 font-bold"
               />
@@ -811,9 +812,16 @@ function MobilePackingModal({
     }
   };
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const target = e.currentTarget;
+    setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+  };
+
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 pb-36 sm:pb-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 max-h-[85dvh] overflow-y-auto overscroll-contain">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-blue-100 text-blue-600 border border-blue-200">
@@ -864,8 +872,10 @@ function MobilePackingModal({
             <label className="text-xs text-slate-500 block mb-1 font-bold">น้ำหนักรวม (กก.)</label>
             <input
               type="number"
+              inputMode="decimal"
               step="0.01"
               value={weightKg}
+              onFocus={handleInputFocus}
               onChange={e => setWeightKg(e.target.value)}
               className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono text-sm focus:outline-none focus:border-blue-500 font-bold"
             />
@@ -874,8 +884,10 @@ function MobilePackingModal({
             <label className="text-xs text-slate-500 block mb-1 font-bold">จำนวนกล่อง (ชิ้น)</label>
             <input
               type="number"
+              inputMode="numeric"
               min="1"
               value={boxCount}
+              onFocus={handleInputFocus}
               onChange={e => setBoxCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
               className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono text-sm focus:outline-none focus:border-blue-500 font-bold"
             />
@@ -981,8 +993,8 @@ function MobileDispatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5">
+    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 pb-36 sm:pb-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 max-h-[85dvh] overflow-y-auto overscroll-contain">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-amber-600" />
@@ -1036,6 +1048,7 @@ function MobileDispatchModal({
               type="text"
               value={trackingNo}
               onChange={e => setTrackingNo(e.target.value)}
+              onFocus={(e) => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
               placeholder="สแกนหรือพิมพ์เลขพัสดุ..."
               className="flex-1 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-amber-600 font-black text-sm focus:outline-none focus:border-amber-500"
             />
