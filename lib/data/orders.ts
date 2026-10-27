@@ -194,9 +194,9 @@ function mapOrder(r: any): OutboundOrder {
       try { qcSignatures = JSON.parse(sm[1]); } catch (_) {}
     }
   }
-  if (!qcSignatures && (r.pod_signature || r.qc_client_signature)) {
+  if (!qcSignatures && (r.qc_client_signature || r.qc_staff_signature)) {
     qcSignatures = {
-      clientSignature: r.qc_client_signature || r.pod_signature || '',
+      clientSignature: r.qc_client_signature || '',
       staffSignature: r.qc_staff_signature || '',
       signedAt: r.picked_at || r.updated_at,
     };
@@ -759,8 +759,7 @@ export async function closeOrderFromTmsPod(input: {
   if (input.receiverName) podNotesParts.push(`ผู้รับ: ${input.receiverName}`);
   if (input.driverName) podNotesParts.push(`คนขับ: ${input.driverName}`);
   if (input.vehiclePlate) podNotesParts.push(`ทะเบียน: ${input.vehiclePlate}`);
-  if (input.notes) podNotesParts.push(input.notes);
-  const podNoteStr = podNotesParts.join(' | ') || 'ส่งมอบสำเร็จผ่านระบบ TMS ePOD';
+  const podNoteStr = podNotesParts.join(' · ') || 'ส่งมอบสำเร็จผ่านระบบ TMS ePOD';
 
   const deliveredAt = input.deliveryDate ? new Date(input.deliveryDate).toISOString() : new Date().toISOString();
   const photoUrl = (input.photoUrls && input.photoUrls.length > 0)

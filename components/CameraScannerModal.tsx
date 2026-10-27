@@ -68,8 +68,17 @@ export default function CameraScannerModal({
     // Belt-and-suspenders: a rapid camera stream must never crash the whole app,
     // so swallow any error from the handlers here.
     try {
-      const cleanCode = (decodedText || '').trim();
+      let cleanCode = (decodedText || '').trim();
       if (!cleanCode) return;
+      if (/^https?:\/\//i.test(cleanCode)) {
+        try {
+          const u = new URL(cleanCode);
+          const orderParam = u.searchParams.get('order') || u.searchParams.get('id');
+          const trackMatch = u.pathname.match(/\/track\/([^/?#]+)/i);
+          if (orderParam) cleanCode = decodeURIComponent(orderParam).trim();
+          else if (trackMatch?.[1]) cleanCode = decodeURIComponent(trackMatch[1]).trim();
+        } catch {}
+      }
 
       // Ref-based dedup: skip the same code within 1.5s, and hard-throttle ANY
       // scan to at most one per 700ms so continuous mode can't flood.

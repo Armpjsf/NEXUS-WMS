@@ -96,7 +96,7 @@ function DeliveryNote() {
       {/* Signatures — sign on the phone (optional) or print to sign on paper */}
       <div className="grid grid-cols-2 gap-10 mt-14 text-sm">
         <SignatureSlot docType="delivery-note" docId={order.orderNo} role="receiver"
-          label={`ผู้รับสินค้า${order.podNote ? ` · ${order.podNote}` : ''}`}
+          label="ผู้รับสินค้า"
           signerName={order.customerName} initialDataUrl={order.podSignature} />
         <SignatureSlot docType="delivery-note" docId={order.orderNo} role="sender" label="ผู้ส่งสินค้า" />
       </div>

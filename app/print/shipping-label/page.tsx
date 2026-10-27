@@ -69,6 +69,12 @@ function ShippingLabelDoc() {
   const postalCode = postalMatch ? postalMatch[0] : '';
   const carrierName = (order.carrier || 'STANDARD DELIVERY').toUpperCase();
   const tracking = order.trackingNo || order.orderNo;
+  const tmsBaseUrl = (process.env.NEXT_PUBLIC_TMS_URL || 'https://nexus-tms-six.vercel.app').replace(/\/$/, '');
+  const tmsJobId = (order as any).tmsJobId || (() => {
+    const m = String(order.notes || '').match(/\[TMS Job:\s*([^\]]+)\]/i);
+    return m ? m[1].trim() : '';
+  })();
+  const qrTrackingUrl = `${tmsBaseUrl}/track/${encodeURIComponent(tmsJobId || tracking)}`;
 
   const dockBay = order.dockBay || (() => {
     const m = String(order.notes || '').match(/\[(?:Dock|Bay):\s*([^\]]+)\]/i);
@@ -230,11 +236,21 @@ function ShippingLabelDoc() {
 
         {/* Bottom Bar: QR Code, COD, Signatures */}
         <div className="pt-2 flex justify-between items-end text-xs">
-          <div className="flex items-center gap-2">
-            <QRCodeSVG value={tracking} size={42} />
-            <div className="text-[10px] text-slate-500 leading-tight">
-              <div>สแกนตรวจสอบพัสดุ</div>
-              <div className="font-mono font-bold text-black">{new Date(order.createdAt).toLocaleDateString('th-TH')}</div>
+          <div className="flex items-center gap-2.5">
+            <a
+              href={qrTrackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="เปิดหน้าติดตามสถานะพัสดุและข้อมูลผู้รับ"
+              className="shrink-0"
+            >
+              <QRCodeSVG value={qrTrackingUrl} size={46} level="M" />
+            </a>
+            <div className="text-[10px] text-slate-600 leading-tight">
+              <div className="font-bold text-black">สแกนติดตามสถานะ / ข้อมูลผู้รับ</div>
+              <div className="font-mono text-[9px] text-slate-500">
+                {tmsJobId || tracking} · {new Date(order.createdAt).toLocaleDateString('th-TH')}
+              </div>
             </div>
           </div>
 

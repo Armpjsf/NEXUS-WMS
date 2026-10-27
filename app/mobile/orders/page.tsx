@@ -16,11 +16,13 @@ import {
   Printer,
   ShieldCheck,
   PackagePlus,
+  PenLine,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MobileAddItemsModal, { MobileAddItemsOrder } from '@/components/orders/MobileAddItemsModal';
 import MobileNav from '@/components/MobileNav';
 import CameraScannerModal from '@/components/CameraScannerModal';
+import SignatureModal from '@/components/SignatureModal';
 import { usePdaScanner, playScannerAudio } from '@/hooks/usePdaScanner';
 import { triggerHaptic } from '@/lib/voiceAssistant';
 import { getApiUrl } from '@/lib/config';
@@ -597,6 +599,8 @@ function MobileQcModal({
   const [submitting, setSubmitting] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [quickInput, setQuickInput] = useState('');
+  const [qcStaffSig, setQcStaffSig] = useState<string>('');
+  const [sigOpen, setSigOpen] = useState(false);
 
   const handleScanItem = (barcode: string) => {
     const q = extractScannedSku(barcode).toLowerCase(); // QR labels encode {name:SKU}
@@ -647,6 +651,13 @@ function MobileQcModal({
         body: JSON.stringify({
           id: order.id,
           notes: updatedNotes,
+          ...(qcStaffSig ? {
+            qcSignatures: {
+              staffSignature: qcStaffSig,
+              staffName: 'เจ้าหน้าที่คลัง / QC',
+              signedAt: new Date().toISOString(),
+            },
+          } : {}),
         }),
       });
 
@@ -784,7 +795,35 @@ function MobileQcModal({
         </div>
 
         {/* Submit QC Pass */}
-        <div className="p-4 border-t border-slate-200 shrink-0 bg-white">
+        <div className="p-4 border-t border-slate-200 shrink-0 bg-white space-y-2.5">
+          {/* Optional QC Staff Signature */}
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {qcStaffSig ? (
+                <img src={qcStaffSig} alt="ลายเซ็น QC" className="h-9 w-16 object-contain bg-white border border-emerald-200 rounded px-1 shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600 shrink-0">
+                  <PenLine className="w-4 h-4" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-slate-800 truncate">
+                  {qcStaffSig ? '✓ ลงลายเซ็นผู้ตรวจปล่อย QC แล้ว' : 'ลายเซ็นเจ้าหน้าที่ QC (ไม่บังคับ)'}
+                </div>
+                <div className="text-[10px] text-slate-500 truncate">
+                  {qcStaffSig ? 'จะแสดงในใบตรวจปล่อยสินค้า (QC Slip)' : 'หากไม่เซ็น ระบบใช้ตราประทับบาร์โค้ดดิจิทัลแทน'}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSigOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold shrink-0 active:scale-95"
+            >
+              {qcStaffSig ? 'เซ็นใหม่' : 'เซ็นชื่อ'}
+            </button>
+          </div>
+
           <button
             onClick={handleApproveQc}
             disabled={submitting || !allItemsVerified}
@@ -815,6 +854,16 @@ function MobileQcModal({
         title="สแกนตรวจ QC สินค้า"
         description="ส่องกล้องไปที่บาร์โค้ดสินค้าเพื่อตรวจนับทีละชิ้น"
         continuous={true}
+      />
+
+      <SignatureModal
+        isOpen={sigOpen}
+        docNum={`ผู้ตรวจปล่อย QC · ${order.orderNo}`}
+        onClose={() => setSigOpen(false)}
+        onSave={async (url) => {
+          setQcStaffSig(url);
+          setSigOpen(false);
+        }}
       />
     </div>
   );
