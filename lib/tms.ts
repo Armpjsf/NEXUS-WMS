@@ -12,7 +12,7 @@
 import type { OutboundOrder } from './data/orders';
 import { errorMessage } from '@/lib/errors';
 
-const DEFAULT_TMS_API_URL = 'https://tms-e-pod.vercel.app/api/external/v1/jobs';
+const DEFAULT_TMS_API_URL = 'https://nexus-tms-six.vercel.app/api/external/v1/jobs';
 const DEFAULT_TMS_API_KEY = 'wms_29d785e94f0943c5518f129f210768459d018af20f9e0d2a';
 
 export function getTmsApiUrl(): string {
@@ -80,7 +80,7 @@ export interface TmsJobStatusResult {
 }
 
 export function getTmsTrackingUrl(jobId: string): string {
-  const base = (process.env.TMS_APP_URL || 'https://tms-e-pod.vercel.app').replace(/\/+$/, '');
+  const base = (process.env.TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_APP_URL || 'https://nexus-tms-six.vercel.app').replace(/\/+$/, '');
   return `${base}/track/${encodeURIComponent(jobId)}`;
 }
 

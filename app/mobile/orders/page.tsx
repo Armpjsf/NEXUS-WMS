@@ -418,7 +418,7 @@ export default function MobileOrdersPage() {
                   </span>
                   {order.tmsJobId ? (
                     <a
-                      href={`https://tms-e-pod.vercel.app/track/${order.tmsJobId}`}
+                      href={`https://nexus-tms-six.vercel.app/track/${order.tmsJobId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform font-sans"

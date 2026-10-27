@@ -202,11 +202,11 @@ export default function OrdersPage() {
 
   const getTrackingUrl = (carrierName: string, trackingNo: string, tmsJobId?: string) => {
     if (tmsJobId) {
-      return `https://tms-e-pod.vercel.app/track/${encodeURIComponent(tmsJobId)}`;
+      return `https://nexus-tms-six.vercel.app/track/${encodeURIComponent(tmsJobId)}`;
     }
     if (!carrierName || !trackingNo) return null;
     if (trackingNo.startsWith('JOB-') || carrierName.includes('บริษัท') || carrierName.includes('OWN_FLEET')) {
-      return `https://tms-e-pod.vercel.app/track/${encodeURIComponent(trackingNo.trim())}`;
+      return `https://nexus-tms-six.vercel.app/track/${encodeURIComponent(trackingNo.trim())}`;
     }
     const c = carriers.find(item => item.name.toLowerCase().includes(carrierName.toLowerCase()) || carrierName.toLowerCase().includes(item.name.toLowerCase()));
     if (c?.trackingUrlTemplate) {
@@ -418,7 +418,7 @@ export default function OrdersPage() {
                             <RefreshCw className={`w-4 h-4 ${syncingId === o.id ? 'animate-spin text-indigo-600' : ''}`} />
                           </button>
                           <a
-                            href={`https://tms-e-pod.vercel.app/track/${encodeURIComponent(tmsId)}`}
+                            href={`https://nexus-tms-six.vercel.app/track/${encodeURIComponent(tmsId)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="เปิดดูแผนที่สดติดตามรถขนส่ง (TMS Live Tracking)"
@@ -1483,7 +1483,7 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
         <div className="px-6 py-4 border-t border-[#30353d] flex items-center justify-between bg-[#1b2027]">
           {tmsId ? (
             <a
-              href={`https://tms-e-pod.vercel.app/track/${encodeURIComponent(tmsId)}`}
+              href={`https://nexus-tms-six.vercel.app/track/${encodeURIComponent(tmsId)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"
