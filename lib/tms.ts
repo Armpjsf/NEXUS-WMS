@@ -58,6 +58,14 @@ export interface TmsResult {
   error?: string;
 }
 
+export interface TmsIncidentItem {
+  category: string;
+  description: string | null;
+  status: string;
+  image_url: string | null;
+  reported_at: string;
+}
+
 export interface TmsJobStatusResult {
   ok: boolean;
   job?: {
@@ -75,6 +83,8 @@ export interface TmsJobStatusResult {
     receiverName?: string | null;
     trackingUrl?: string;
     wmsOrderNo?: string;
+    hasIncidents?: boolean;
+    incidents?: TmsIncidentItem[];
   };
   error?: string;
 }
@@ -341,6 +351,8 @@ export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: stri
         receiverName: j.receiver_name || null,
         trackingUrl: j.tracking_url || getTmsTrackingUrl(String(j.job_id)),
         wmsOrderNo: j.wms_order_no,
+        hasIncidents: Boolean(j.has_incidents),
+        incidents: Array.isArray(j.incidents) ? j.incidents : [],
       },
     };
   } catch (e) {
