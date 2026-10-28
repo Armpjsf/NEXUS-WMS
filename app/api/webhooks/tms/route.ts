@@ -57,8 +57,37 @@ export async function POST(request: Request) {
 
     console.log(`[WMS Webhook] Received ${event} for TMS Job ${safeJobId} (WMS: ${wms_order_no || 'n/a'}) - Status: ${status} (Incidents: ${has_incidents ? 'YES' : 'NO'})`);
 
-    // If job is completed/delivered with POD proofs -> Auto close the order
+    // If job is completed/delivered with POD proofs -> Auto close the order(s)
     if (is_completed || event === 'job.completed' || ['Completed', 'Delivered'].includes(status)) {
+      const orderNumbers = wms_order_no
+        ? String(wms_order_no).split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+
+      if (orderNumbers.length > 1) {
+        // Multi-drop consolidated trip completion
+        for (const orderNo of orderNumbers) {
+          await closeOrderFromTmsPod({
+            orderNo,
+            tmsJobId: safeJobId || undefined,
+            signatureUrl: signature_url,
+            photoUrls: Array.isArray(photo_urls) ? photo_urls : [],
+            deliveryDate: delivery_date,
+            receiverName: receiver_name,
+            driverName: driver_name,
+            vehiclePlate: vehicle_plate,
+            notes: notes || undefined,
+            hasIncidents: Boolean(has_incidents || (Array.isArray(incidents) && incidents.length > 0)),
+            incidents: Array.isArray(incidents) ? incidents : undefined,
+          });
+        }
+        return NextResponse.json({
+          success: true,
+          action: 'TRIP_DELIVERED',
+          orders_count: orderNumbers.length,
+          message: `Consolidated trip ${safeJobId} completed for ${orderNumbers.length} orders`,
+        });
+      }
+
       const closeRes = await closeOrderFromTmsPod({
         orderNo: wms_order_no || undefined,
         tmsJobId: safeJobId || undefined,

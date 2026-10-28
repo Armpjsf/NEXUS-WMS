@@ -965,3 +965,86 @@ export async function getPendingFulfillment(): Promise<{ pending_tasks: any[] }>
   }
   return { pending_tasks: tasks };
 }
+
+// Consolidates multiple WMS orders into a single delivery trip (Multi-Drop Manifest)
+// Works 100% standalone for paper/WMS run sheets, and handshakes with TMS if enabled.
+export async function createDeliveryTrip(input: {
+  orderIds: string[];
+  tripId?: string;
+  driverName?: string;
+  vehiclePlate?: string;
+  vehicleType?: string;
+  dockBay?: string;
+  sendToTms?: boolean;
+}): Promise<{ ok: boolean; tripId?: string; orderCount?: number; trackingUrl?: string; error?: string }> {
+  if (!Array.isArray(input.orderIds) || input.orderIds.length === 0) {
+    return { ok: false, error: 'กรุณาเลือกออเดอร์อย่างน้อย 1 รายการ' };
+  }
+
+  const admin = getServiceSupabase();
+  const { data: rows, error: fetchErr } = await admin
+    .from('outbound_orders')
+    .select('*')
+    .in('id', input.orderIds);
+
+  if (fetchErr || !rows || rows.length === 0) {
+    return { ok: false, error: 'ไม่พบออเดอร์ที่เลือก' };
+  }
+
+  // Generate Trip ID if not provided: TRIP-YYMMDD-NNN
+  const now = new Date();
+  const dateStr = now.toISOString().slice(2, 10).replace(/-/g, '');
+  const randNum = String(Math.floor(100 + Math.random() * 900));
+  const tripId = input.tripId?.trim() || `TRIP-${dateStr}-${randNum}`;
+
+  const mappedOrders = rows.map(mapOrder);
+  const totalDrops = mappedOrders.length;
+
+  // 1. Update each order in WMS with Trip and Drop sequence metadata
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const dropIndex = i + 1;
+    const existingNotes = String(row.notes || '');
+    const cleanNotes = existingNotes.replace(/\[Trip:.*?\]/g, '').replace(/\[Drop:.*?\]/g, '').trim();
+    const updatedNotes = `${cleanNotes} [Trip: ${tripId}] [Drop: ${dropIndex}/${totalDrops}]`.trim();
+
+    const updatePatch: Record<string, any> = {
+      status: 'SHIPPED',
+      shipped_at: now.toISOString(),
+      tms_job_id: tripId,
+      tms_status: 'In Transit',
+      tms_synced_at: now.toISOString(),
+      notes: updatedNotes,
+      updated_at: now.toISOString(),
+    };
+    if (input.driverName) updatePatch.driver_name = input.driverName;
+    if (input.vehiclePlate) updatePatch.vehicle_plate = input.vehiclePlate;
+    if (input.vehicleType) updatePatch.vehicle_type = input.vehicleType;
+    if (input.dockBay) updatePatch.dock_bay = input.dockBay;
+
+    await admin.from('outbound_orders').update(updatePatch).eq('id', row.id);
+  }
+
+  // 2. If Send to TMS is requested and enabled, create consolidated multi-drop in TMS
+  let tmsTrackingUrl: string | undefined;
+  if (input.sendToTms !== false) {
+    try {
+      const { createTmsConsolidatedTripJob } = await import('@/lib/tms');
+      const tmsRes = await createTmsConsolidatedTripJob({
+        tripId,
+        driverName: input.driverName,
+        vehiclePlate: input.vehiclePlate,
+        vehicleType: input.vehicleType,
+        branchCode: rows[0]?.branch_code || 'URT',
+        orders: mappedOrders,
+      });
+      if (tmsRes.ok && tmsRes.trackingUrl) {
+        tmsTrackingUrl = tmsRes.trackingUrl;
+      }
+    } catch (tmsErr) {
+      console.warn('[orders] createDeliveryTrip TMS dispatch warning:', tmsErr);
+    }
+  }
+
+  return { ok: true, tripId, orderCount: rows.length, trackingUrl: tmsTrackingUrl };
+}

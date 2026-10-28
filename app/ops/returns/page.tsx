@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Undo2, Plus, X, Search, Trash2, ArrowLeft, ArrowRight, PackageCheck, Ban, FileText } from 'lucide-react';
+import { Undo2, Plus, X, Search, Trash2, ArrowLeft, ArrowRight, PackageCheck, Ban, FileText, ScanBarcode } from 'lucide-react';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { errorMessage } from '@/lib/errors';
 
@@ -76,9 +76,18 @@ export default function ReturnsPage() {
             </h1>
             <p className="text-[#d1c6ab] font-medium mt-1">ขอคืน → อนุมัติ → รับของคืน → คืนสต็อก / ทิ้ง</p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition-all">
-            <Plus className="w-5 h-5" /> สร้างใบคืน
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/ops/returns/scan"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-black shadow-lg shadow-amber-500/20 active:scale-95 transition-all text-sm"
+            >
+              <ScanBarcode className="w-5 h-5" />
+              <span>สแกนตรวจรับของคืน (Quarantine Scan)</span>
+            </Link>
+            <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition-all text-sm">
+              <Plus className="w-5 h-5" /> สร้างใบคืน
+            </button>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-[#30353d] bg-[#171c23] backdrop-blur overflow-hidden">

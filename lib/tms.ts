@@ -263,6 +263,89 @@ export async function createTmsDeliveryJob(order: OutboundOrder): Promise<TmsRes
   }
 }
 
+/**
+ * Creates a single consolidated Multi-Drop Trip Job in TMS from multiple WMS orders.
+ * Fault-tolerant: if TMS is disabled or fails, returns gracefully so WMS continues operating.
+ */
+export async function createTmsConsolidatedTripJob(params: {
+  tripId: string;
+  driverName?: string;
+  vehiclePlate?: string;
+  vehicleType?: string;
+  pickupAddress?: string;
+  branchCode?: string;
+  orders: OutboundOrder[];
+}): Promise<TmsResult> {
+  if (!isTmsEnabled()) {
+    return { ok: true, skipped: true, jobId: params.tripId };
+  }
+
+  try {
+    const url = getTmsApiUrl();
+    const stops = params.orders.map((o, idx) => ({
+      stop_number: idx + 1,
+      drop: idx + 1,
+      name: o.customerName || `ลูกค้าจุดที่ ${idx + 1}`,
+      recipient_name: o.customerName || `ลูกค้าจุดที่ ${idx + 1}`,
+      phone: o.phone || '',
+      address: o.shipAddress || 'ไม่ระบุที่อยู่',
+      notes: `[WMS: ${o.orderNo}] สินค้า ${o.items?.length || 0} รายการ (${o.totalQty} ชิ้น)`,
+    }));
+
+    const allItemsSummary = params.orders.map(o => `${o.orderNo} (${o.totalQty} ชิ้น)`).join(', ');
+    const totalWeight = params.orders.reduce((sum, o) => sum + (Number(o.weightKg) || 0), 0);
+
+    const payload: Record<string, unknown> = {
+      job_id: params.tripId,
+      tracking_no: params.tripId,
+      customer_id: 'Multi-Drop Consolidated Delivery',
+      customer_name: `ทริปจัดส่งรวม ${params.orders.length} จุด`,
+      pickup_address: params.pickupAddress || `คลังสินค้าสาขา ${params.branchCode || 'URT'}`,
+      delivery_address: stops.map(s => `[จุดที่ ${s.stop_number}] ${s.name}: ${s.address}`).join(' | '),
+      cargo_type: `ทริปจัดส่งรวม ${params.orders.length} ออเดอร์ (${allItemsSummary.substring(0, 50)})`,
+      vehicle_type: params.vehicleType || '4-Wheel',
+      ...(params.vehiclePlate ? { vehicle_plate: params.vehiclePlate } : {}),
+      ...(params.driverName ? { driver_name: params.driverName } : {}),
+      ...(totalWeight > 0 ? { weight_kg: totalWeight } : {}),
+      wms_order_no: params.orders.map(o => o.orderNo).join(','),
+      notes: `ทริปจัดส่งรวม WMS: ${params.orders.map(o => `[WMS: ${o.orderNo}]`).join(' ')}`,
+      stops,
+      total_drop: stops.length,
+      branch_id: params.branchCode || 'URT',
+    };
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getTmsApiKey()}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      console.error(`[tms] create consolidated trip job failed for ${params.tripId}: HTTP ${res.status} ${txt}`);
+      return { ok: false, error: `HTTP ${res.status}` };
+    }
+
+    const data: any = await res.json().catch(() => ({}));
+    const jobId = data?.job_id != null ? String(data.job_id) : params.tripId;
+    return {
+      ok: true,
+      jobId,
+      trackingUrl: data?.tracking_url || getTmsTrackingUrl(jobId),
+    };
+  } catch (e) {
+    console.error(`[tms] create consolidated trip job error for ${params.tripId}:`, errorMessage(e) || e);
+    return { ok: false, error: errorMessage(e) || 'error' };
+  }
+}
+
 // เพิ่มสินค้าเข้างาน TMS ที่สร้างไปแล้ว (ลูกค้าเพิ่มของหลังเช็คเกอร์สร้างงาน). Never throws.
 export interface TmsAppendItem { code?: string; label?: string; qty?: number; drop?: number; }
 export async function appendTmsJobItems(

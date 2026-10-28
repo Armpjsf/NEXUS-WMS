@@ -91,9 +91,18 @@ export default function OrdersPage() {
   const [viewPodOrder, setViewPodOrder] = useState<Order | null>(null);
   const [qcOrder, setQcOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [showCreateTrip, setShowCreateTrip] = useState(false);
+  const [createdTripId, setCreatedTripId] = useState<string | null>(null);
   const { data: session } = useSession();
   const isManagement = ['Super Admin', 'Admin', 'Manager'].includes(session?.user?.role || '');
   const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  const toggleSelectOrder = (id: string) => {
+    setSelectedOrderIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   // PDA Scanner for Order lookup
   usePdaScanner({
@@ -296,6 +305,34 @@ export default function OrdersPage() {
           </div>
         </div>
 
+        {/* Trip Creation Banner */}
+        {createdTripId && (
+          <div className="p-4 rounded-2xl bg-indigo-950/70 border border-indigo-500/50 text-indigo-200 flex items-center justify-between flex-wrap gap-3 shadow-lg">
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <CheckCircle2 className="w-5 h-5 text-indigo-400" />
+              <span>จัดทริปจัดส่งสำเร็จ: <b className="font-mono text-white text-sm">{createdTripId}</b></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={`/print/manifest?trip=${encodeURIComponent(createdTripId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-md transition-colors"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>พิมพ์ใบกำกับทริป (Manifest Run Sheet)</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <button
+                onClick={() => setCreatedTripId(null)}
+                className="text-xs text-indigo-300 hover:text-white px-2 py-1"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Delivery mode filter: ส่งขนส่ง vs ลูกค้ารับเอง */}
         <div className="flex gap-2 flex-wrap">
           {([
@@ -375,6 +412,30 @@ export default function OrdersPage() {
             </div>
           ) : (
             <div className="divide-y divide-[#30353d]">
+              {/* Select All Bar */}
+              <div className="px-5 py-2.5 bg-[#1b2027]/70 flex items-center justify-between text-xs text-[#8a92a6] border-b border-[#30353d]">
+                <label className="flex items-center gap-2 cursor-pointer font-bold hover:text-white transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedOrderIds.length === filtered.length}
+                    onChange={() => {
+                      if (selectedOrderIds.length === filtered.length) {
+                        setSelectedOrderIds([]);
+                      } else {
+                        setSelectedOrderIds(filtered.map(o => o.id));
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-[#30353d] bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
+                  />
+                  <span>เลือกทั้งหมด ({filtered.length} ออเดอร์)</span>
+                </label>
+                {selectedOrderIds.length > 0 && (
+                  <span className="text-indigo-400 font-bold">
+                    เลือกอยู่ {selectedOrderIds.length} รายการ (พร้อมจัดทริป)
+                  </span>
+                )}
+              </div>
+
               {filtered.map((o) => {
                 const trackUrl = getTrackingUrl(o.carrier, o.trackingNo, o.tmsJobId);
                 const hasTmsJob = Boolean(o.tmsJobId || (o.trackingNo && o.trackingNo.startsWith('JOB-')));
@@ -383,17 +444,25 @@ export default function OrdersPage() {
 
                 return (
                   <div key={o.id} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-[#1b2027] transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-bold text-[#dee2ec]">{o.orderNo}</span>
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${STATUS_STYLE[o.status]}`}>{STATUS_TH[o.status]}</span>
-                        {o.channel !== 'MANUAL' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#252a32] text-[#8a92a6]">{o.channel}</span>}
-                        {o.priority === 'URGENT' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600">ด่วน</span>}
-                        {o.branchCode && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 ring-1 ring-indigo-500/30">สาขา: {o.branchCode}</span>}
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${o.deliveryMode === 'SELF_PICKUP' ? 'bg-orange-500/10 text-orange-600 ring-orange-500/30' : 'bg-cyan-500/10 text-cyan-700 ring-cyan-500/30'}`}>
-                          {o.deliveryMode === 'SELF_PICKUP' ? '🏭 รับเอง' : '🚚 ส่งขนส่ง'}
-                        </span>
-                      </div>
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.includes(o.id)}
+                        onChange={() => toggleSelectOrder(o.id)}
+                        className="mt-1 w-4 h-4 rounded border-[#30353d] bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer shrink-0"
+                        title="เลือกสำหรับจัดทริปรวมส่ง"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-[#dee2ec]">{o.orderNo}</span>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${STATUS_STYLE[o.status]}`}>{STATUS_TH[o.status]}</span>
+                          {o.channel !== 'MANUAL' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#252a32] text-[#8a92a6]">{o.channel}</span>}
+                          {o.priority === 'URGENT' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600">ด่วน</span>}
+                          {o.branchCode && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 ring-1 ring-indigo-500/30">สาขา: {o.branchCode}</span>}
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${o.deliveryMode === 'SELF_PICKUP' ? 'bg-orange-500/10 text-orange-600 ring-orange-500/30' : 'bg-cyan-500/10 text-cyan-700 ring-cyan-500/30'}`}>
+                            {o.deliveryMode === 'SELF_PICKUP' ? '🏭 รับเอง' : '🚚 ส่งขนส่ง'}
+                          </span>
+                        </div>
                       <div className="text-sm text-[#8a92a6] mt-1 truncate">
                         <span className="font-semibold text-[#d1c6ab]">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น
                         {o.freightCost ? <span className="text-amber-700"> · ค่าขนส่ง ฿{o.freightCost.toLocaleString()}</span> : null}
@@ -444,7 +513,8 @@ export default function OrdersPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
                       {/* TMS Sync & Live Tracking Actions */}
                       {hasTmsJob && (
                         <>
@@ -588,6 +658,46 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
+
+      {/* Floating Batch Trip Action Bar */}
+      {selectedOrderIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#171c23]/95 border border-indigo-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 backdrop-blur-md">
+          <div className="text-xs">
+            <span className="font-bold text-white">เลือกอยู่ {selectedOrderIds.length} ออเดอร์</span>
+            <p className="text-[#8a92a6] text-[11px]">พร้อมจัดรวมเป็น 1 ทริปส่ง (Multi-Drop)</p>
+          </div>
+          <button
+            onClick={() => setShowCreateTrip(true)}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all"
+          >
+            <Truck className="w-4 h-4" />
+            <span>จัดทริปรวมส่ง (Multi-Drop Manifest)</span>
+          </button>
+          <button
+            onClick={() => setSelectedOrderIds([])}
+            className="text-xs text-[#8a92a6] hover:text-white underline cursor-pointer"
+          >
+            ยกเลิกเลือก
+          </button>
+        </div>
+      )}
+
+      {/* Create Delivery Trip Modal */}
+      <AnimatePresence>
+        {showCreateTrip && (
+          <CreateTripModal
+            selectedOrders={orders.filter(o => selectedOrderIds.includes(o.id))}
+            carriers={carriers}
+            onClose={() => setShowCreateTrip(false)}
+            onDone={(tripId) => {
+              setShowCreateTrip(false);
+              setSelectedOrderIds([]);
+              setCreatedTripId(tripId);
+              load();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Dispatch / Shipping Modal */}
       <AnimatePresence>
@@ -1671,6 +1781,229 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CreateTripModal({
+  selectedOrders,
+  carriers,
+  onClose,
+  onDone,
+}: {
+  selectedOrders: Order[];
+  carriers: Carrier[];
+  onClose: () => void;
+  onDone: (tripId: string) => void;
+}) {
+  const [orders, setOrders] = useState<Order[]>(selectedOrders);
+  const [driverName, setDriverName] = useState(orders[0]?.driverName || '');
+  const [vehiclePlate, setVehiclePlate] = useState(orders[0]?.vehiclePlate || '');
+  const [vehicleType, setVehicleType] = useState(orders[0]?.vehicleType || '4-Wheel');
+  const [dockBay, setDockBay] = useState(orders[0]?.dockBay || 'BAY-01');
+  const [sendToTms, setSendToTms] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const moveOrder = (index: number, direction: 'UP' | 'DOWN') => {
+    const targetIdx = direction === 'UP' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= orders.length) return;
+    const newArr = [...orders];
+    const temp = newArr[index];
+    newArr[index] = newArr[targetIdx];
+    newArr[targetIdx] = temp;
+    setOrders(newArr);
+  };
+
+  const handleSubmit = async () => {
+    if (!driverName.trim() || !vehiclePlate.trim()) {
+      toast.error('กรุณาระบุชื่อคนขับและทะเบียนรถ');
+      return;
+    }
+    setSubmitting(true);
+    const t = toast.loading('กำลังสร้างทริปจัดส่งรวม...');
+    try {
+      const res = await fetch('/api/orders/trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderIds: orders.map(o => o.id),
+          driverName: driverName.trim(),
+          vehiclePlate: vehiclePlate.trim(),
+          vehicleType,
+          dockBay,
+          sendToTms,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'สร้างทริปไม่สำเร็จ');
+      toast.success(json.message || `สร้างทริป ${json.tripId} สำเร็จ`, { id: t });
+      onDone(json.tripId);
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการสร้างทริป', { id: t });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4" onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-[#171c23] border border-[#30353d] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 bg-gradient-to-r from-indigo-600 to-blue-700 text-white flex justify-between items-center">
+          <div className="font-black text-lg flex items-center gap-2">
+            <Truck className="w-6 h-6 text-indigo-200" />
+            <span>จัดทริปส่งสินค้ารวม (Multi-Drop Trip Manifest)</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
+          {/* Dispatcher Form */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#1b2027] p-4 rounded-2xl border border-[#30353d]">
+            <div>
+              <label className="block text-[#d1c6ab] font-bold mb-1">👤 ชื่อพนักงานขับรถ *</label>
+              <input
+                type="text"
+                value={driverName}
+                onChange={e => setDriverName(e.target.value)}
+                placeholder="เช่น สมชาย หรือ คนขับบริษัท"
+                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[#d1c6ab] font-bold mb-1">🚚 ทะเบียนรถ *</label>
+              <input
+                type="text"
+                value={vehiclePlate}
+                onChange={e => setVehiclePlate(e.target.value)}
+                placeholder="เช่น กก-4321 หรือ 70-1234"
+                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[#d1c6ab] font-bold mb-1">🚗 ประเภทรถ</label>
+              <select
+                value={vehicleType}
+                onChange={e => setVehicleType(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+              >
+                <option value="4-Wheel">กระบะ 4 ล้อ (4-Wheel)</option>
+                <option value="6-Wheel">รถบรรทุก 6 ล้อ (6-Wheel)</option>
+                <option value="10-Wheel">รถบรรทุก 10 ล้อ (10-Wheel)</option>
+                <option value="Motorcycle">มอเตอร์ไซค์ (Motorcycle)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[#d1c6ab] font-bold mb-1">⚓ ท่าโหลดสินค้า (Dock Bay)</label>
+              <input
+                type="text"
+                value={dockBay}
+                onChange={e => setDockBay(e.target.value)}
+                placeholder="เช่น BAY-01 หรือ BAY-02"
+                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* TMS Integration Toggle */}
+          <div className="bg-[#1b2027] p-4 rounded-2xl border border-[#30353d] flex items-center justify-between">
+            <div>
+              <b className="text-white text-sm">🌐 ส่งงานเข้าแอปคนขับ NEXUS-TMS</b>
+              <p className="text-[#8a92a6] text-[11px] mt-0.5">
+                สร้างงาน Multi-Drop ใน TMS ให้คนขับเห็นจุดส่งตามลำดับ (ปิดสวิตช์นี้ได้หากใช้งาน WMS แบบ Standalone)
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendToTms}
+                onChange={e => setSendToTms(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+
+          {/* Stops List (Re-orderable) */}
+          <div className="space-y-2">
+            <div className="text-[#d1c6ab] font-bold uppercase tracking-wider flex justify-between items-center">
+              <span>ลำดับจุดส่งสินค้าในทริปนี้ ({orders.length} จุดแวะ):</span>
+              <span className="text-[11px] text-[#8a92a6]">กดลูกศรขึ้น/ลง เพื่อสลับลำดับจุดส่ง</span>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {orders.map((o, idx) => (
+                <div
+                  key={o.id}
+                  className="bg-[#1b2027] p-3 rounded-2xl border border-[#30353d] flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black grid place-items-center text-xs shrink-0">
+                      #{idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-white truncate">
+                        <span className="font-mono text-indigo-300">{o.orderNo}</span> · {o.customerName}
+                      </div>
+                      <div className="text-[11px] text-[#8a92a6] truncate">
+                        📍 {o.shipAddress || 'ไม่ระบุที่อยู่'} ({o.totalQty} ชิ้น)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => moveOrder(idx, 'UP')}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white"
+                      title="เลื่อนขึ้น"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === orders.length - 1}
+                      onClick={() => moveOrder(idx, 'DOWN')}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white"
+                      title="เลื่อนลง"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-[#30353d] flex items-center justify-between bg-[#1b2027]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-[#30353d] text-[#d1c6ab] text-xs font-bold hover:bg-[#171c23]"
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-black shadow-lg shadow-indigo-600/25 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
+            <span>ยืนยันจัดทริปส่ง ({orders.length} ออเดอร์)</span>
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }
