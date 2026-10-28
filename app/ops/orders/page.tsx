@@ -142,6 +142,28 @@ export default function OrdersPage() {
     }
   };
 
+  const syncAllTms = async () => {
+    const activeTmsOrders = orders.filter(o => (o.tmsJobId || o.trackingNo?.startsWith('JOB-')) && o.status !== 'CANCELLED');
+    if (activeTmsOrders.length === 0) {
+      toast('ไม่มีออเดอร์ที่มีรหัสงาน TMS ให้ซิงค์');
+      return;
+    }
+    const t = toast.loading(`กำลังซิงค์สถานะ TMS สำหรับ ${activeTmsOrders.length} ออเดอร์...`);
+    try {
+      const res = await fetch('/api/orders/sync-tms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: activeTmsOrders.map(o => o.id) }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'ซิงค์ไม่สำเร็จ');
+      toast.success(json.message || 'ซิงค์ข้อมูล TMS สำเร็จครบถ้วน', { id: t });
+      load();
+    } catch (e) {
+      toast.error(errorMessage(e) || 'เกิดข้อผิดพลาดในการซิงค์', { id: t });
+    }
+  };
+
   const advance = async (o: Order) => {
     const idx = FLOW.indexOf(o.status);
     if (idx < 0 || idx >= FLOW.length - 1) return;
@@ -233,6 +255,14 @@ export default function OrdersPage() {
             <p className="text-[#d1c6ab] font-medium mt-1">ครบ loop: เบิก → หยิบ → แพ็ก → จัดส่ง (พร้อมเลขพัสดุ) → ส่งถึง (POD)</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={syncAllTms}
+              title="ตรวจสอบและซิงค์สถานะงานขนส่งทั้งหมดจากระบบ TMS อัตโนมัติ"
+              className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 active:scale-95 transition-all"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>ซิงค์สถานะ TMS</span>
+            </button>
             <button
               onClick={() => {
                 if (filtered.length === 0) {
@@ -401,6 +431,11 @@ export default function OrdersPage() {
                             {o.tmsStatus && (
                               <span className="bg-indigo-500/20 text-indigo-800 px-1.5 py-0.2 rounded text-[10px] font-bold">{o.tmsStatus}</span>
                             )}
+                          </span>
+                        )}
+                        {o.podNote && o.podNote.includes('⚠️') && (
+                          <span className="text-amber-300 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/20 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/40">
+                            ⚠️ แจ้งชำรุด/ปัญหาขนส่ง
                           </span>
                         )}
                       </div>
@@ -1403,7 +1438,21 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
               <div><b>ลูกค้า:</b> {order.customerName} {order.phone ? `(${order.phone})` : ''}</div>
               {order.shipAddress && <div><b>ที่อยู่ส่งมอบ:</b> {order.shipAddress}</div>}
               {order.deliveredAt && <div><b>วันเวลาส่งมอบ:</b> {new Date(order.deliveredAt).toLocaleString('th-TH')}</div>}
-              {order.podNote && <div className="text-[#d1c6ab] bg-[#171c23] p-2 rounded-xl border border-[#30353d] font-medium"><b>บันทึก:</b> {order.podNote}</div>}
+              {(order.driverName || order.vehiclePlate) && (
+                <div className="flex items-center gap-2 pt-1">
+                  {order.driverName && <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700">👤 คนขับ: {order.driverName}</span>}
+                  {order.vehiclePlate && <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700">🚚 ทะเบียน: {order.vehiclePlate}</span>}
+                </div>
+              )}
+              {order.podNote && (
+                <div className={`p-3 rounded-xl border font-medium mt-2 text-xs leading-relaxed ${
+                  order.podNote.includes('⚠️')
+                    ? 'bg-amber-950/40 border-amber-600/40 text-amber-200'
+                    : 'bg-[#171c23] border-[#30353d] text-[#d1c6ab]'
+                }`}>
+                  <b>บันทึกหลักฐาน POD:</b> {order.podNote}
+                </div>
+              )}
             </div>
           </div>
 

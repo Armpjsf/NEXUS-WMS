@@ -12,6 +12,21 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
+    // Support batch sync
+    if (Array.isArray(body.orderIds) && body.orderIds.length > 0) {
+      const results = await Promise.all(
+        body.orderIds.map((id: string) => syncOrderWithTms(id).catch(err => ({ ok: false, message: errorMessage(err) })))
+      );
+      const successCount = results.filter(r => r.ok).length;
+      return NextResponse.json({
+        success: true,
+        count: results.length,
+        successCount,
+        message: `ซิงค์สถานะ TMS สำเร็จ ${successCount}/${results.length} รายการ`,
+      });
+    }
+
     const orderId = body.orderId || body.id;
 
     if (!orderId) {

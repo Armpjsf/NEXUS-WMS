@@ -726,6 +726,8 @@ export async function addItemsToOrder(
 export const addOrderItems = addItemsToOrder;
 
 // Close WMS order automatically upon receiving POD from TMS Webhook
+import type { TmsIncidentItem } from '@/lib/tms';
+
 export async function closeOrderFromTmsPod(input: {
   orderNo?: string;
   tmsJobId?: string;
@@ -736,6 +738,8 @@ export async function closeOrderFromTmsPod(input: {
   driverName?: string | null;
   vehiclePlate?: string | null;
   notes?: string;
+  hasIncidents?: boolean;
+  incidents?: TmsIncidentItem[];
 }): Promise<{ ok: boolean; order?: OutboundOrder; error?: string }> {
   const admin = getServiceSupabase();
   // org-scope-ok: TMS callback (no session) — order_no / tms_job_id are globally unique
@@ -759,6 +763,12 @@ export async function closeOrderFromTmsPod(input: {
   if (input.receiverName) podNotesParts.push(`ผู้รับ: ${input.receiverName}`);
   if (input.driverName) podNotesParts.push(`คนขับ: ${input.driverName}`);
   if (input.vehiclePlate) podNotesParts.push(`ทะเบียน: ${input.vehiclePlate}`);
+  if (input.incidents && input.incidents.length > 0) {
+    const incSummaries = input.incidents
+      .map(i => `${i.category || 'ปัญหาขนส่ง'}${i.description ? `: ${i.description}` : ''}`)
+      .join(' | ');
+    podNotesParts.push(`⚠️ แจ้งปัญหาขนส่ง/ชำรุด: ${incSummaries}`);
+  }
   const podNoteStr = podNotesParts.join(' · ') || 'ส่งมอบสำเร็จผ่านระบบ TMS ePOD';
 
   const deliveredAt = input.deliveryDate ? new Date(input.deliveryDate).toISOString() : new Date().toISOString();
@@ -776,6 +786,9 @@ export async function closeOrderFromTmsPod(input: {
     tms_synced_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+  if (input.driverName) updateData.driver_name = input.driverName;
+  if (input.vehiclePlate) updateData.vehicle_plate = input.vehiclePlate;
+  if (input.tmsJobId) updateData.tms_job_id = input.tmsJobId;
 
   // Try updating with tms columns
   // org-scope-ok: orderRow.id resolved by the TMS lookup above
@@ -839,41 +852,62 @@ export async function syncOrderWithTms(orderId: string): Promise<{ ok: boolean; 
 
   const job = tmsRes.job;
 
+  // Combine delivery photos with incident photos if any
+  const combinedPhotos = [...(job.photoUrls || [])];
+  if (job.incidents) {
+    for (const inc of job.incidents) {
+      if (inc.image_url && !combinedPhotos.includes(inc.image_url)) {
+        combinedPhotos.push(inc.image_url);
+      }
+    }
+  }
+
   // If completed in TMS, auto-close WMS order with full POD
   if (job.isCompleted) {
     const closeRes = await closeOrderFromTmsPod({
       orderNo: current.orderNo,
       tmsJobId: job.jobId,
       signatureUrl: job.signatureUrl,
-      photoUrls: job.photoUrls,
+      photoUrls: combinedPhotos,
       deliveryDate: job.deliveryDate,
       receiverName: job.receiverName,
       driverName: job.driverName,
       vehiclePlate: job.vehiclePlate,
+      hasIncidents: job.hasIncidents,
+      incidents: job.incidents,
     });
     if (closeRes.ok && closeRes.order) {
-      return { ok: true, order: closeRes.order, message: 'อัปเดตเป็นจัดส่งสำเร็จ (DELIVERED) พร้อมหลักฐาน POD เรียบร้อย' };
+      return {
+        ok: true,
+        order: closeRes.order,
+        message: job.hasIncidents
+          ? `อัปเดตเป็นจัดส่งสำเร็จ แต่ตรวจพบการแจ้งปัญหาขนส่ง (${job.incidents?.length || 1} รายการ)`
+          : 'อัปเดตเป็นจัดส่งสำเร็จ (DELIVERED) พร้อมหลักฐาน POD เรียบร้อย'
+      };
     }
   }
 
   // Update status and tracking info
   const patch: any = {
-    tmsJobId: job.jobId,
-    tmsStatus: job.status,
+    tms_status: job.status,
+    tms_job_id: job.jobId,
+    tms_synced_at: new Date().toISOString(),
   };
-  if (!current.trackingNo && job.jobId) {
-    patch.trackingNo = job.jobId;
+  if (job.driverName) patch.driver_name = job.driverName;
+  if (job.vehiclePlate) patch.vehicle_plate = job.vehiclePlate;
+
+  if (job.hasIncidents && job.incidents && job.incidents.length > 0) {
+    const incSummaries = job.incidents
+      .map(i => `${i.category || 'ปัญหาขนส่ง'}${i.description ? `: ${i.description}` : ''}`)
+      .join(' | ');
+    patch.pod_note = `⚠️ ตรวจพบปัญหาขนส่งระหว่างทาง: ${incSummaries}`;
   }
 
   // Try saving tms_status to db
   try {
     const admin = getServiceSupabase();
     // org-scope-ok: current.id is the order just pushed to TMS
-    await admin.from('outbound_orders').update({
-      tms_status: job.status,
-      tms_job_id: job.jobId,
-      tms_synced_at: new Date().toISOString(),
-    }).eq('id', current.id);
+    await admin.from('outbound_orders').update(patch).eq('id', current.id);
   } catch {
     /* ignore */
   }
