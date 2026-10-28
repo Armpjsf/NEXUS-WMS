@@ -434,9 +434,13 @@ export default function OrdersPage() {
                           </span>
                         )}
                         {o.podNote && o.podNote.includes('⚠️') && (
-                          <span className="text-amber-300 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/20 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/40">
-                            ⚠️ แจ้งชำรุด/ปัญหาขนส่ง
-                          </span>
+                          <Link
+                            href="/ops/returns"
+                            className="text-amber-300 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/20 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/40 hover:bg-amber-500/30 transition-colors"
+                            title="คลิกเพื่อไปที่หน้าใบคืนสินค้า (RMA) / พื้นที่กักกัน"
+                          >
+                            <span>⚠️ แจ้งชำรุด/ปัญหาขนส่ง (เปิด RMA)</span>
+                          </Link>
                         )}
                       </div>
                     </div>
@@ -1450,7 +1454,19 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
                     ? 'bg-amber-950/40 border-amber-600/40 text-amber-200'
                     : 'bg-[#171c23] border-[#30353d] text-[#d1c6ab]'
                 }`}>
-                  <b>บันทึกหลักฐาน POD:</b> {order.podNote}
+                  <div><b>บันทึกหลักฐาน POD:</b> {order.podNote}</div>
+                  {order.podNote.includes('⚠️') && (
+                    <div className="mt-2 pt-2 border-t border-amber-600/30 flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[11px] text-amber-300">ระบบเชื่อมโยงใบคืนสินค้า (RMA/Quarantine) อัตโนมัติแล้ว</span>
+                      <a
+                        href="/ops/returns"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold text-[11px] hover:bg-amber-700 transition-colors shadow-sm"
+                      >
+                        <span>ไปที่จัดการของคืน (RMA)</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

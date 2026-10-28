@@ -106,3 +106,50 @@ export async function updateReturn(
   if (error) { console.error('[returns] update error:', error); return null; }
   return mapRma(data);
 }
+
+// Ensures an RMA / Reverse Logistics quarantine record exists when damage is reported from TMS
+export async function ensureRmaForDamagedOrder(input: {
+  orderNo: string;
+  customerName?: string;
+  reason?: string;
+  items?: RmaLine[];
+  notes?: string;
+  createdBy?: string;
+  orgId?: string;
+}): Promise<{ ok: boolean; rma?: ReturnOrder; alreadyExists?: boolean; error?: string }> {
+  const admin = getServiceSupabase();
+  const orgId = input.orgId || await getCurrentOrgId();
+
+  // Check if RMA already exists for this order
+  const { data: existing } = await admin
+    .from('return_orders')
+    .select('*')
+    .eq('order_no', input.orderNo)
+    .maybeSingle();
+
+  if (existing) {
+    return { ok: true, rma: mapRma(existing), alreadyExists: true };
+  }
+
+  const rmaNo = await nextRmaNo();
+  const items = (input.items || []).map((l) => ({ sku: l.sku, name: l.name, qty: Number(l.qty) || 0 }));
+  const { data, error } = await admin.from('return_orders').insert({
+    org_id: orgId,
+    rma_no: rmaNo,
+    order_no: input.orderNo,
+    customer_name: input.customerName || '',
+    reason: input.reason || 'แจ้งสินค้าชำรุดระหว่างขนส่ง (TMS Damage Incident)',
+    status: 'REQUESTED',
+    disposition: 'QUARANTINE',
+    items_json: items,
+    created_by: input.createdBy || 'TMS ePOD Bot',
+    notes: input.notes || '',
+  }).select().single();
+
+  if (error) {
+    console.error('[returns] ensureRmaForDamagedOrder error:', error);
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, rma: mapRma(data), alreadyExists: false };
+}

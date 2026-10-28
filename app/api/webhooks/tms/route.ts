@@ -42,6 +42,8 @@ export async function POST(request: Request) {
       driver_name,
       vehicle_plate,
       notes,
+      has_incidents,
+      incidents,
     } = payload;
 
     if (!job_id && !wms_order_no) {
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid job_id' }, { status: 400 });
     }
 
-    console.log(`[WMS Webhook] Received ${event} for TMS Job ${safeJobId} (WMS: ${wms_order_no || 'n/a'}) - Status: ${status}`);
+    console.log(`[WMS Webhook] Received ${event} for TMS Job ${safeJobId} (WMS: ${wms_order_no || 'n/a'}) - Status: ${status} (Incidents: ${has_incidents ? 'YES' : 'NO'})`);
 
     // If job is completed/delivered with POD proofs -> Auto close the order
     if (is_completed || event === 'job.completed' || ['Completed', 'Delivered'].includes(status)) {
@@ -67,6 +69,8 @@ export async function POST(request: Request) {
         driverName: driver_name,
         vehiclePlate: vehicle_plate,
         notes: notes || undefined,
+        hasIncidents: Boolean(has_incidents || (Array.isArray(incidents) && incidents.length > 0)),
+        incidents: Array.isArray(incidents) ? incidents : undefined,
       });
 
       if (!closeRes.ok) {
@@ -78,17 +82,28 @@ export async function POST(request: Request) {
         success: true,
         action: 'ORDER_DELIVERED',
         order_no: closeRes.order?.orderNo,
+        has_incidents: closeRes.order?.podNote?.includes('⚠️'),
         message: 'Order updated to DELIVERED with Proof of Delivery',
       });
     }
 
-    // Intermediate status update (e.g. In Transit, Picked Up)
+    // Intermediate status update (e.g. In Transit, Picked Up, Damage Reported)
     const admin = getServiceSupabase();
     // org-scope-ok: TMS webhook (TMS_WEBHOOK_SECRET) addresses orders by global-unique order_no / tms_job_id
-    let query = admin.from('outbound_orders').update({
+    const patchData: Record<string, any> = {
       tms_status: status,
       tms_synced_at: new Date().toISOString(),
-    });
+    };
+    if (driver_name) patchData.driver_name = driver_name;
+    if (vehicle_plate) patchData.vehicle_plate = vehicle_plate;
+    if (has_incidents && Array.isArray(incidents) && incidents.length > 0) {
+      const incSummaries = incidents
+        .map((i: any) => `${i.category || 'ปัญหาขนส่ง'}${i.description ? `: ${i.description}` : ''}`)
+        .join(' | ');
+      patchData.pod_note = `⚠️ ตรวจพบปัญหาขนส่งระหว่างทาง: ${incSummaries}`;
+    }
+
+    let query = admin.from('outbound_orders').update(patchData);
 
     if (wms_order_no) {
       query = query.eq('order_no', wms_order_no);

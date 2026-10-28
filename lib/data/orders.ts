@@ -834,6 +834,28 @@ export async function closeOrderFromTmsPod(input: {
     /* ignore audit log failure */
   }
 
+  // Auto-create Reverse Logistics RMA / Quarantine ticket if damage was reported
+  if (input.hasIncidents && input.incidents && input.incidents.length > 0) {
+    try {
+      const { ensureRmaForDamagedOrder } = await import('@/lib/data/returns');
+      const incSummaries = input.incidents
+        .map(i => `${i.category || 'ปัญหาขนส่ง'}${i.description ? `: ${i.description}` : ''}`)
+        .join(' | ');
+
+      const orderItems = Array.isArray(orderRow.items_json) ? orderRow.items_json : [];
+      await ensureRmaForDamagedOrder({
+        orderNo: orderRow.order_no,
+        customerName: orderRow.customer_name,
+        reason: `แจ้งชำรุด/ปัญหาขนส่ง: ${incSummaries}`,
+        items: orderItems.map((it: any) => ({ sku: it.sku, name: it.name, qty: it.qty })),
+        notes: `สร้างอัตโนมัติจากรายงานปัญหาคนขับ TMS (คนขับ: ${input.driverName || '-'}, ทะเบียน: ${input.vehiclePlate || '-'})`,
+        orgId: orderRow.org_id,
+      });
+    } catch (e) {
+      console.warn('[orders] Failed to auto-create RMA for damaged order:', e);
+    }
+  }
+
   return { ok: true, order: mapOrder(updated) };
 }
 
