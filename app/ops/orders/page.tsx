@@ -782,8 +782,8 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
         if (d.vehicles && Array.isArray(d.vehicles)) {
           setVehicles(d.vehicles);
           if (!order.vehiclePlate && d.vehicles[0]) {
-            setVehiclePlate(d.vehicles[0].plateNumber || '');
-            setDriverName(d.vehicles[0].assignedDriverName || '');
+            setVehiclePlate(d.vehicles[0].plate || d.vehicles[0].plateNumber || '');
+            setDriverName(d.vehicles[0].driverName || d.vehicles[0].assignedDriverName || '');
             if (d.vehicles[0].vehicleType) setVehicleType(d.vehicles[0].vehicleType);
           }
         }
@@ -894,16 +894,16 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                     onChange={(e) => {
                       const v = vehicles.find(x => x.id === e.target.value);
                       if (v) {
-                        setVehiclePlate(v.plateNumber || '');
-                        setDriverName(v.assignedDriverName || '');
+                        setVehiclePlate(v.plate || v.plateNumber || '');
+                        setDriverName(v.driverName || v.assignedDriverName || '');
                         if (v.vehicleType) setVehicleType(v.vehicleType);
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 font-bold text-sm bg-[#171c23] text-indigo-950"
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 font-bold text-sm bg-[#171c23] text-indigo-300"
                   >
                     {vehicles.map(v => (
                       <option key={v.id} value={v.id}>
-                        {v.plateNumber} {v.assignedDriverName ? `- ${v.assignedDriverName}` : ''} ({v.vehicleType || '4-Wheel'})
+                        {v.plate || v.plateNumber} {(v.driverName || v.assignedDriverName) ? `- ${v.driverName || v.assignedDriverName}` : ''} ({v.vehicleType || '4-Wheel'}) {v.statusLabel ? `[${v.statusLabel}]` : ''}
                       </option>
                     ))}
                   </select>
@@ -1803,6 +1803,26 @@ function CreateTripModal({
   const [dockBay, setDockBay] = useState(orders[0]?.dockBay || 'BAY-01');
   const [sendToTms, setSendToTms] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+
+  useEffect(() => {
+    fetch('/api/fleet-vehicles')
+      .then(r => r.json())
+      .then(d => {
+        if (d.vehicles && Array.isArray(d.vehicles)) {
+          setVehicles(d.vehicles);
+          if (!driverName && !vehiclePlate && d.vehicles[0]) {
+            const first = d.vehicles.find((v: any) => v.isAvailable) || d.vehicles[0];
+            setSelectedVehicleId(first.id);
+            setVehiclePlate(first.plate || first.plateNumber || '');
+            setDriverName(first.driverName || first.assignedDriverName || '');
+            if (first.vehicleType) setVehicleType(first.vehicleType);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const moveOrder = (index: number, direction: 'UP' | 'DOWN') => {
     const targetIdx = direction === 'UP' ? index - 1 : index + 1;
@@ -1868,6 +1888,33 @@ function CreateTripModal({
         <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
           {/* Dispatcher Form */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#1b2027] p-4 rounded-2xl border border-[#30353d]">
+            {vehicles.length > 0 && (
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block text-[#d1c6ab] font-bold mb-1">
+                  🚛 เลือกรถจากกองยาน (TMS / Fleet Sync)
+                </label>
+                <select
+                  value={selectedVehicleId}
+                  onChange={(e) => {
+                    setSelectedVehicleId(e.target.value);
+                    const v = vehicles.find((x: any) => x.id === e.target.value);
+                    if (v) {
+                      setVehiclePlate(v.plate || v.plateNumber || '');
+                      setDriverName(v.driverName || v.assignedDriverName || '');
+                      if (v.vehicleType) setVehicleType(v.vehicleType);
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-indigo-500/40 text-indigo-300 font-bold focus:border-indigo-500 focus:outline-none"
+                >
+                  <option value="">-- ระบุข้อมูลเอง หรือเลือกจากรายการด้านล่าง --</option>
+                  {vehicles.map((v: any) => (
+                    <option key={v.id} value={v.id}>
+                      {v.plate || v.plateNumber} {(v.driverName || v.assignedDriverName) ? `- ${v.driverName || v.assignedDriverName}` : ''} ({v.vehicleType || '4-Wheel'}) {v.statusLabel ? `[${v.statusLabel}]` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-[#d1c6ab] font-bold mb-1">👤 ชื่อพนักงานขับรถ *</label>
               <input

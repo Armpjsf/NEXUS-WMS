@@ -444,3 +444,42 @@ export async function fetchTmsJobStatus(target: { jobId?: string; orderNo?: stri
   }
 }
 
+export interface TmsFleetDriver {
+  driver_id: string;
+  driver_name: string;
+  phone?: string | null;
+  vehicle_plate?: string | null;
+  vehicle_type?: string;
+  branch_id?: string | null;
+  is_available: boolean;
+  current_status?: string;
+}
+
+/**
+ * Fetches live active fleet drivers and vehicles from TMS API.
+ * Returns driver availability and assigned vehicle plates.
+ */
+export async function fetchTmsFleet(branchId?: string): Promise<{ ok: boolean; fleet?: TmsFleetDriver[]; error?: string }> {
+  if (!isTmsEnabled()) return { ok: false, error: 'TMS disabled' };
+  try {
+    const base = getTmsApiUrl().replace(/\/jobs\/?$/, '/fleet');
+    const url = branchId ? `${base}?branch_id=${encodeURIComponent(branchId)}` : base;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${getTmsApiKey()}`,
+      },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
+
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const data = await res.json();
+    return { ok: true, fleet: data.fleet || [] };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Network error' };
+  }
+}
+

@@ -1,6 +1,6 @@
 'use client';
 
-import { PackagePlus, PackageMinus, RefreshCw, Boxes, ShoppingCart, Activity, Users, ClipboardList, DollarSign } from 'lucide-react';
+import { PackagePlus, PackageMinus, RefreshCw, Boxes, ShoppingCart, Activity, Users, ClipboardList, DollarSign, Banknote, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OpsPage() {
@@ -51,6 +51,44 @@ export default function OpsPage() {
                </div>
            </Link>
 
+           {/* COD & Freight Settlement Card */}
+           <Link href="/ops/cod-reconcile" className="group relative overflow-hidden bg-slate-900/50 border border-amber-500/30 rounded-3xl p-8 hover:bg-slate-800/80 transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-amber-500/10">
+               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                    <Banknote className="w-48 h-48" />
+               </div>
+               <div className="relative z-10 flex flex-col h-full justify-between">
+                   <div>
+                       <div className="p-4 bg-amber-500/10 w-fit rounded-2xl mb-6 border border-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
+                           <Banknote className="w-8 h-8 text-amber-400" />
+                       </div>
+                       <h2 className="text-2xl font-bold text-white mb-2">3. กระทบยอดเงินสด COD & ค่าขนส่ง</h2>
+                       <p className="text-[#8a92a6]">รับเงินนำส่งจากคนขับหลังปิดทริป กระทบยอดเงินสด/สแกน QR ตรวจสอบส่วนต่างค้างชำระ และออกใบสำคัญรับเงินอัตโนมัติ</p>
+                   </div>
+                   <div className="mt-8 flex items-center text-amber-400 font-medium group-hover:translate-x-2 transition-transform">
+                       เปิดหน้ากระทบยอดเงินสด &rarr;
+                   </div>
+               </div>
+           </Link>
+
+           {/* Reverse Logistics & Quarantine Card */}
+           <Link href="/ops/returns" className="group relative overflow-hidden bg-slate-900/50 border border-rose-500/30 rounded-3xl p-8 hover:bg-slate-800/80 transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-rose-500/10">
+               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                    <RotateCcw className="w-48 h-48" />
+               </div>
+               <div className="relative z-10 flex flex-col h-full justify-between">
+                   <div>
+                       <div className="p-4 bg-rose-500/10 w-fit rounded-2xl mb-6 border border-rose-500/20 group-hover:bg-rose-500/20 transition-colors">
+                           <RotateCcw className="w-8 h-8 text-rose-400" />
+                       </div>
+                       <h2 className="text-2xl font-bold text-white mb-2">4. คืนสินค้า & กักกัน (Reverse Logistics)</h2>
+                       <p className="text-[#8a92a6]">สแกนรับสินค้าตีกลับ/ชำรุดเข้าพิกัดกักกัน QUARANTINE ตรวจสอบสภาพ ตัดสินใจนำกลับเข้าสต็อก เคลม หรือทำลาย</p>
+                   </div>
+                   <div className="mt-8 flex items-center text-rose-400 font-medium group-hover:translate-x-2 transition-transform">
+                       จัดการคืนสินค้า & RMA &rarr;
+                   </div>
+               </div>
+           </Link>
+
            {/* Wave Picking Card */}
            <Link href="/ops/wave-picking" className="group relative overflow-hidden bg-slate-900/50 border border-slate-800 rounded-3xl p-8 hover:bg-slate-800/80 transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-indigo-500/10">
                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
@@ -61,7 +99,7 @@ export default function OpsPage() {
                        <div className="p-4 bg-indigo-500/10 w-fit rounded-2xl mb-6 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
                            <Boxes className="w-8 h-8 text-indigo-400" />
                        </div>
-                       <h2 className="text-2xl font-bold text-white mb-2">3. หยิบสินค้ารวม (Wave Picking)</h2>
+                       <h2 className="text-2xl font-bold text-white mb-2">5. หยิบสินค้ารวม (Wave Picking)</h2>
                        <p className="text-[#8a92a6]">รวมหลายออเดอร์แล้วเดินหยิบรอบเดียวตามลำดับพิกัด S-Shape พร้อมระบบเสียงภาษาไทยนำทาง</p>
                    </div>
                    <div className="mt-8 flex items-center text-indigo-400 font-medium group-hover:translate-x-2 transition-transform">
@@ -80,7 +118,7 @@ export default function OpsPage() {
                        <div className="p-4 bg-rose-500/10 w-fit rounded-2xl mb-6 border border-rose-500/20 group-hover:bg-rose-500/20 transition-colors">
                            <PackageMinus className="w-8 h-8 text-rose-500" />
                        </div>
-                       <h2 className="text-2xl font-bold text-white mb-2">4. เบิกจ่ายตรง / ภายใน (Direct Issue)</h2>
+                       <h2 className="text-2xl font-bold text-white mb-2">6. เบิกจ่ายตรง / ภายใน (Direct Issue)</h2>
                        <p className="text-[#8a92a6]">ตัดสต็อกทันทีโดยไม่ต้องผ่านออเดอร์ลูกค้า เช่น เบิกวัสดุสิ้นเปลือง กล่อง เทป หรือเบิกสินค้าตัวอย่าง Sample</p>
                    </div>
                    <div className="mt-8 flex items-center text-rose-400 font-medium group-hover:translate-x-2 transition-transform">
@@ -95,7 +133,7 @@ export default function OpsPage() {
                    <RefreshCw className="w-6 h-6 text-amber-400" />
                </div>
                <div>
-                   <h3 className="text-lg font-bold text-white">5. Cycle Count (ตรวจนับสต็อกตามรอบ)</h3>
+                   <h3 className="text-lg font-bold text-white">7. Cycle Count (ตรวจนับสต็อกตามรอบ)</h3>
                    <p className="text-[#8a92a6] text-sm">ตรวจนับสินค้าจริงตาม Zone/Shelf เทียบยอดกับระบบ เพื่อตรวจจับผลต่าง (Variance) และสินค้าสูญหาย</p>
                </div>
            </Link>

@@ -10,8 +10,32 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const activeOnly = new URL(request.url).searchParams.get('active') === '1';
+
+    // If TMS is enabled, fetch live fleet from TMS with real-time availability
+    const { isTmsEnabled, fetchTmsFleet } = await import('@/lib/tms');
+    if (isTmsEnabled()) {
+      try {
+        const tmsRes = await fetchTmsFleet();
+        if (tmsRes.ok && Array.isArray(tmsRes.fleet) && tmsRes.fleet.length > 0) {
+          const liveVehicles = tmsRes.fleet.map(d => ({
+            id: `tms-${d.driver_id}`,
+            plate: d.vehicle_plate || 'ไม่ระบุทะเบียน',
+            driverName: d.driver_name,
+            vehicleType: d.vehicle_type || '4-Wheel',
+            active: d.is_available,
+            isLiveTms: true,
+            statusLabel: d.current_status || (d.is_available ? 'ว่าง / พร้อมวิ่ง' : 'กำลังวิ่งงาน'),
+          }));
+          return NextResponse.json({ vehicles: liveVehicles, source: 'TMS' });
+        }
+      } catch (tmsErr) {
+        console.warn('[fleet-vehicles] TMS live fetch fallback to local:', tmsErr);
+      }
+    }
+
+    // Standalone fallback: WMS internal fleet_vehicles table
     const vehicles = await getVehicles(activeOnly);
-    return NextResponse.json({ vehicles });
+    return NextResponse.json({ vehicles, source: 'LOCAL' });
   } catch (e) {
     return NextResponse.json({ error: errorMessage(e) }, { status: 500 });
   }
