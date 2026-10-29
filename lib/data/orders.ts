@@ -431,26 +431,62 @@ export async function createOrder(input: {
 }
 
 // Deduct stock + log OUT transactions for every line (called on SHIPPED).
+// Double-entry immutable ledger tracking: records discrete movements per bin + lot.
 async function commitStockOut(order: OutboundOrder, orgId: string) {
   const admin = getServiceSupabase();
   for (const line of order.items) {
     const { data: prod } = await admin.from('products').select('stock, name, location, price').eq('org_id', orgId).eq('sku', line.sku).maybeSingle();
+    let consumeRes: any = null;
     if (prod) {
       // deduct across bins (prefers the picked line.location); products.stock reconciled inside.
       // C1: tag the lot movement with the order + customer for traceability.
-      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location, docRef: order.orderNo, party: order.customerName });
+      consumeRes = await binConsume(orgId, line.sku, line.qty, { preferBin: line.location, docRef: order.orderNo, party: order.customerName });
     }
-    await admin.from('stock_transactions').insert({
-      org_id: orgId,
-      type: 'OUT',
-      sku: line.sku,
-      product_name: line.name || prod?.name || line.sku,
-      qty: line.qty,
-      unit_price: line.price || Number(prod?.price || 0),
-      doc_ref: order.orderNo,
-      location: line.location || prod?.location || '',
-      user_name: order.createdBy || 'Warehouse',
-    });
+
+    if (consumeRes && Array.isArray(consumeRes.taken) && consumeRes.taken.length > 0) {
+      for (const t of consumeRes.taken) {
+        if (Number(t.quantity) <= 0) continue;
+        await admin.from('stock_transactions').insert({
+          org_id: orgId,
+          type: 'OUT',
+          sku: line.sku,
+          product_name: line.name || prod?.name || line.sku,
+          qty: Number(t.quantity),
+          unit_price: line.price || Number(prod?.price || 0),
+          doc_ref: order.orderNo,
+          location: t.binCode || line.location || prod?.location || '',
+          batch_no: t.lotNo || null,
+          user_name: order.createdBy || 'Warehouse',
+          notes: t.lotNo ? `Strict FEFO deduction from lot ${t.lotNo} @ ${t.binCode}` : `Deduction from bin ${t.binCode}`,
+        });
+      }
+      if (consumeRes.shortfall > 0) {
+        await admin.from('stock_transactions').insert({
+          org_id: orgId,
+          type: 'OUT',
+          sku: line.sku,
+          product_name: line.name || prod?.name || line.sku,
+          qty: Number(consumeRes.shortfall),
+          unit_price: line.price || Number(prod?.price || 0),
+          doc_ref: order.orderNo,
+          location: 'SHORTAGE',
+          user_name: order.createdBy || 'Warehouse',
+          notes: `[SHORTAGE] Incomplete stock allocation: missing ${consumeRes.shortfall} units`,
+        });
+      }
+    } else {
+      await admin.from('stock_transactions').insert({
+        org_id: orgId,
+        type: 'OUT',
+        sku: line.sku,
+        product_name: line.name || prod?.name || line.sku,
+        qty: line.qty,
+        unit_price: line.price || Number(prod?.price || 0),
+        doc_ref: order.orderNo,
+        location: line.location || prod?.location || '',
+        user_name: order.createdBy || 'Warehouse',
+      });
+    }
   }
 }
 
@@ -687,14 +723,29 @@ export async function addItemsToOrder(
       // ของนอกคลัง (cross-dock / custom ที่ไม่มีใน products) = ไม่แตะสต็อก ไม่ลง OUT
       // ของขึ้นรถแบบเช็คผ่าน ไม่ได้เบิกจากคลัง จึงไม่สร้างรายการเคลื่อนไหวหลอกๆ
       if (!prod) continue;
-      await binConsume(orgId, line.sku, line.qty, { preferBin: line.location, docRef: order.orderNo, party: order.customerName });
-      await admin.from('stock_transactions').insert({
-        org_id: orgId, type: 'OUT', sku: line.sku,
-        product_name: line.name || prod.name || line.sku, qty: line.qty,
-        unit_price: line.price || Number(prod.price || 0),
-        doc_ref: order.orderNo, location: line.location || prod.location || '',
-        user_name: actor || order.createdBy || 'Warehouse',
-      });
+      const consumeRes = await binConsume(orgId, line.sku, line.qty, { preferBin: line.location, docRef: order.orderNo, party: order.customerName });
+      if (consumeRes && Array.isArray(consumeRes.taken) && consumeRes.taken.length > 0) {
+        for (const t of consumeRes.taken) {
+          if (Number(t.quantity) <= 0) continue;
+          await admin.from('stock_transactions').insert({
+            org_id: orgId, type: 'OUT', sku: line.sku,
+            product_name: line.name || prod.name || line.sku, qty: Number(t.quantity),
+            unit_price: line.price || Number(prod.price || 0),
+            doc_ref: order.orderNo, location: t.binCode || line.location || prod.location || '',
+            batch_no: t.lotNo || null,
+            user_name: actor || order.createdBy || 'Warehouse',
+            notes: t.lotNo ? `Strict FEFO deduction from lot ${t.lotNo} @ ${t.binCode}` : `Deduction from bin ${t.binCode}`,
+          });
+        }
+      } else {
+        await admin.from('stock_transactions').insert({
+          org_id: orgId, type: 'OUT', sku: line.sku,
+          product_name: line.name || prod.name || line.sku, qty: line.qty,
+          unit_price: line.price || Number(prod.price || 0),
+          doc_ref: order.orderNo, location: line.location || prod.location || '',
+          user_name: actor || order.createdBy || 'Warehouse',
+        });
+      }
     }
   } else {
     try {

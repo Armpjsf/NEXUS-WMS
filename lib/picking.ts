@@ -3,6 +3,8 @@
  * Zero-Cost algorithmic optimization for picker traveling distance reduction.
  */
 
+import { planFefoAllocations, getExpiryRisk } from './fefo';
+
 export interface ParsedLocation {
   zone: string;
   aisle: number;
@@ -30,6 +32,14 @@ export interface PickWaveItem {
   category?: string;
   unit?: string;
   notes?: string;
+  // --- Strict FEFO Attributes ---
+  lotNumber?: string;
+  lotId?: string;
+  expDate?: string;
+  daysToExpiry?: number;
+  expiryRisk?: 'EXPIRED' | 'CRITICAL' | 'WARNING' | 'HEALTHY';
+  scannedLot?: string;
+  isFefoLocked?: boolean;
 }
 
 export interface PickingWave {
@@ -233,4 +243,108 @@ export function calculateWaveStats(items: PickWaveItem[]) {
     progressPercent,
     isCompleted: pickedItemsCount === totalItems && totalItems > 0,
   };
+}
+
+/**
+ * Build strict FEFO Wave Items from raw order lines and available lot bins.
+ * Items are split per lot according to expiration date (earliest first),
+ * preventing picking of expired or newer lots.
+ */
+
+/**
+ * Build strict FEFO Wave Items from raw order lines and available lot bins.
+ * Items are split per lot according to expiration date (earliest first),
+ * preventing picking of expired or newer lots.
+ */
+export function buildFefoPickWaveItems(
+  rawLines: Array<{
+    id: string;
+    sku: string;
+    productName: string;
+    requestedQty: number;
+    location?: string;
+    barcode?: string;
+    orderDocNum?: string;
+    orderId?: string;
+    customerName?: string;
+    category?: string;
+    unit?: string;
+  }>,
+  fefoBinsBySku: Record<string, Array<{
+    lotId: string;
+    lotNumber: string;
+    expDate?: string;
+    locationCode: string;
+    qtyAvailable: number;
+    status: string;
+  }>>
+): PickWaveItem[] {
+  const expandedItems: any[] = [];
+
+  for (const line of rawLines) {
+    const availableLots = fefoBinsBySku[line.sku] || [];
+
+    if (availableLots.length > 0) {
+      const plan = planFefoAllocations(line.sku, line.requestedQty, availableLots);
+      let subIdx = 1;
+
+      for (const alloc of plan.allocations) {
+        const { days, risk } = getExpiryRisk(alloc.expDate);
+        expandedItems.push({
+          id: `${line.id}-lot${subIdx++}`,
+          sku: line.sku,
+          productName: line.productName,
+          barcode: line.barcode,
+          requestedQty: alloc.allocatedQty,
+          pickedQty: 0,
+          location: alloc.locationCode || line.location || 'Unassigned',
+          status: risk === 'EXPIRED' ? 'SHORTAGE' : 'PENDING',
+          orderDocNum: line.orderDocNum,
+          orderId: line.orderId,
+          customerName: line.customerName,
+          category: line.category,
+          unit: line.unit,
+          lotNumber: alloc.lotNumber,
+          lotId: alloc.lotId,
+          expDate: alloc.expDate,
+          daysToExpiry: days,
+          expiryRisk: risk,
+          isFefoLocked: true,
+        });
+      }
+
+      if (plan.shortageQty > 0) {
+        expandedItems.push({
+          id: `${line.id}-shortage`,
+          sku: line.sku,
+          productName: line.productName,
+          barcode: line.barcode,
+          requestedQty: plan.shortageQty,
+          pickedQty: 0,
+          location: line.location || 'Unassigned',
+          status: 'SHORTAGE',
+          orderDocNum: line.orderDocNum,
+          orderId: line.orderId,
+          customerName: line.customerName,
+          category: line.category,
+          unit: line.unit,
+          notes: 'FEFO Shortage: ไม่พบล็อตที่ใช้งานได้เพียงพอ',
+          isFefoLocked: true,
+        });
+      }
+    } else {
+      // No lots tracked for this SKU -> normal unlotted pick
+      expandedItems.push({
+        ...line,
+        pickedQty: 0,
+        location: line.location || 'Unassigned',
+        status: 'PENDING',
+        expiryRisk: 'HEALTHY',
+        isFefoLocked: false,
+      });
+    }
+  }
+
+  // Run S-Shape warehouse routing on all items
+  return calculateSShapePickPath(expandedItems) as PickWaveItem[];
 }

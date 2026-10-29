@@ -34,6 +34,7 @@ import {
   PickWaveItem,
   PickingWave,
   parseLocation,
+  buildFefoPickWaveItems,
 } from '@/lib/picking';
 import { speakPickInstruction, speakThai, triggerHaptic, speakScanSuccess, speakScanMismatch } from '@/lib/voiceAssistant';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
@@ -258,8 +259,23 @@ export default function WavePickingPage() {
       };
     });
 
-    // Apply S-Shape Optimization
-    const optimizedItems = calculateSShapePickPath(rawItems) as PickWaveItem[];
+    // Fetch Strict FEFO Lot Bins from API
+    let fefoBinsBySku: Record<string, any[]> = {};
+    try {
+      const distinctSkus = Array.from(new Set(rawItems.map(r => r.sku)));
+      const fefoRes = await fetch(getApiUrl(`/api/lots/fefo-bins?skus=${encodeURIComponent(distinctSkus.join(','))}`));
+      if (fefoRes.ok) {
+        const fefoJson = await fefoRes.json();
+        if (fefoJson.success && fefoJson.data) {
+          fefoBinsBySku = fefoJson.data;
+        }
+      }
+    } catch (e) {
+      console.warn('FEFO bins fetch fallback:', e);
+    }
+
+    // Apply Strict FEFO Allocation & S-Shape Optimization
+    const optimizedItems = buildFefoPickWaveItems(rawItems, fefoBinsBySku);
 
     const wave: PickingWave = {
       id: `wave-${Date.now()}`,
@@ -340,6 +356,13 @@ export default function WavePickingPage() {
   // Quick Pick Action with Voice Progression
   const handlePickItem = (itemId: string, qtyToPick?: number) => {
     if (!activeWave) return;
+    const target = activeWave.items.find(x => x.id === itemId);
+    if (target && target.expiryRisk === 'EXPIRED') {
+      toast.error('❌ กฎ FEFO ล็อก: ไม่อนุญาตให้หยิบสินค้าล็อตที่หมดอายุแล้วเด็ดขาด!');
+      triggerHaptic('error');
+      if (voiceEnabled) speakThai('ห้ามหยิบ สินค้าล็อตนี้หมดอายุแล้ว');
+      return;
+    }
 
     setActiveWave(prev => {
       if (!prev) return null;
@@ -823,6 +846,30 @@ export default function WavePickingPage() {
                       </span>
                     </div>
 
+                    {/* Strict FEFO Lot & Expiry Badges */}
+                    {nextTargetItem.lotNumber && nextTargetItem.lotNumber !== 'UNASSIGNED' && (
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 border border-blue-400/40 rounded-lg text-blue-300 font-mono text-xs sm:text-sm font-bold">
+                          <span>🔒 กฎ FEFO ล็อต:</span>
+                          <span className="text-white underline">{nextTargetItem.lotNumber}</span>
+                        </div>
+                        {nextTargetItem.expDate && (
+                          <div className={cn(
+                            "inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-mono font-bold border",
+                            nextTargetItem.expiryRisk === 'CRITICAL' ? "bg-rose-500/20 border-rose-500/50 text-rose-300 animate-pulse" :
+                            nextTargetItem.expiryRisk === 'WARNING' ? "bg-amber-500/20 border-amber-500/50 text-amber-300" :
+                            "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                          )}>
+                            <span>วันหมดอายุ:</span>
+                            <span>{nextTargetItem.expDate.slice(0, 10)}</span>
+                            {nextTargetItem.daysToExpiry !== undefined && (
+                              <span>({nextTargetItem.daysToExpiry > 0 ? `เหลือ ${nextTargetItem.daysToExpiry} วัน` : 'หมดอายุแล้ว!'})</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Multi-bin Quick Select / Alternate Bins */}
                     <div className="pt-2 max-w-xl">
                       <BinQuickSelect
@@ -1030,6 +1077,23 @@ export default function WavePickingPage() {
                         <td className="py-3 px-4 font-medium">
                           <div className="font-bold">{item.productName}</div>
                           <div className="text-xs opacity-60 font-mono">{item.sku}</div>
+                          {item.lotNumber && item.lotNumber !== 'UNASSIGNED' && (
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono">
+                                Lot: {item.lotNumber}
+                              </span>
+                              {item.expDate && (
+                                <span className={cn(
+                                  "text-[10px] px-1.5 py-0.5 rounded font-mono font-bold border",
+                                  item.expiryRisk === 'CRITICAL' ? "bg-rose-500/20 border-rose-500/30 text-rose-300" :
+                                  item.expiryRisk === 'WARNING' ? "bg-amber-500/20 border-amber-500/30 text-amber-300" :
+                                  "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                                )}>
+                                  EXP: {item.expDate.slice(0, 10)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-xs font-mono opacity-80">
                           {item.orderDocNum || '-'}

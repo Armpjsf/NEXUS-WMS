@@ -28,7 +28,8 @@ import {
   calculateWaveStats, 
   PickWaveItem, 
   PickingWave, 
-  parseLocation 
+  parseLocation,
+  buildFefoPickWaveItems,
 } from '@/lib/picking';
 import {
   speakPickInstruction,
@@ -143,8 +144,23 @@ export default function MobilePickingPage() {
       return;
     }
 
-    // Optimize travel path with S-Shape warehouse routing
-    const sortedItems = calculateSShapePickPath(rawItems);
+    // Fetch Strict FEFO Lot Bins from API
+    let fefoBinsBySku: Record<string, any[]> = {};
+    try {
+      const distinctSkus = Array.from(new Set(rawItems.map(r => r.sku)));
+      const fefoRes = await fetch(getApiUrl(`/api/lots/fefo-bins?skus=${encodeURIComponent(distinctSkus.join(','))}`));
+      if (fefoRes.ok) {
+        const fefoJson = await fefoRes.json();
+        if (fefoJson.success && fefoJson.data) {
+          fefoBinsBySku = fefoJson.data;
+        }
+      }
+    } catch (e) {
+      console.warn('FEFO bins fetch fallback:', e);
+    }
+
+    // Optimize travel path with Strict FEFO allocation & S-Shape warehouse routing
+    const sortedItems = buildFefoPickWaveItems(rawItems, fefoBinsBySku);
     const wave: PickingWave = {
       id: `wave-${Date.now()}`,
       waveNumber: generateWaveNumber(),
@@ -243,6 +259,12 @@ export default function MobilePickingPage() {
   // Handle Pick Confirmation
   const confirmPickItem = (item: PickWaveItem) => {
     if (!activeWave) return;
+    if (item.expiryRisk === 'EXPIRED') {
+      toast.error('❌ กฎ FEFO ล็อก: ไม่อนุญาตให้หยิบสินค้าล็อตที่หมดอายุแล้วเด็ดขาด!');
+      triggerHaptic('error');
+      if (voiceEnabled) speakThai('ห้ามหยิบ สินค้าล็อตนี้หมดอายุแล้ว');
+      return;
+    }
 
     playScannerAudio('success');
     triggerHaptic('success');
@@ -536,6 +558,28 @@ export default function MobilePickingPage() {
                   </span>
                 </div>
 
+                {/* Strict FEFO Lot & Expiry Badges */}
+                {currentTarget.lotNumber && currentTarget.lotNumber !== 'UNASSIGNED' && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 font-mono text-xs font-bold">
+                      <span>🔒 กฎ FEFO ล็อต:</span>
+                      <span className="font-black underline">{currentTarget.lotNumber}</span>
+                    </div>
+                    {currentTarget.expDate && (
+                      <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-mono font-bold border ${
+                        currentTarget.expiryRisk === 'CRITICAL' ? 'bg-rose-100 border-rose-300 text-rose-800 animate-pulse' :
+                        currentTarget.expiryRisk === 'WARNING' ? 'bg-amber-100 border-amber-300 text-amber-800' :
+                        'bg-emerald-100 border-emerald-300 text-emerald-800'
+                      }`}>
+                        <span>EXP: {currentTarget.expDate.slice(0, 10)}</span>
+                        {currentTarget.daysToExpiry !== undefined && (
+                          <span>({currentTarget.daysToExpiry > 0 ? `เหลือ ${currentTarget.daysToExpiry} วัน` : 'หมดอายุ!'})</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Alternate Bins with Stock */}
                 <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-200">
                   <BinQuickSelect
@@ -653,7 +697,19 @@ export default function MobilePickingPage() {
                       </div>
                       <div>
                         <p className="truncate max-w-[180px]">{it.productName}</p>
-                        <span className="text-[10px] font-mono text-slate-500">{it.location}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono text-slate-500">{it.location}</span>
+                          {it.lotNumber && it.lotNumber !== 'UNASSIGNED' && (
+                            <span className="text-[9px] px-1 rounded bg-blue-100 text-blue-700 font-mono font-bold">
+                              L:{it.lotNumber}
+                            </span>
+                          )}
+                          {it.expDate && (
+                            <span className="text-[9px] text-slate-500 font-mono">
+                              EXP:{it.expDate.slice(0, 10)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <span className="font-mono font-bold">

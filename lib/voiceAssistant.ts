@@ -204,6 +204,8 @@ export function speakPickInstruction(item: {
   requestedQty: number;
   location: string;
   unit?: string;
+  lotNumber?: string;
+  expiryRisk?: string;
 }) {
   const locSpoken = item.location
     .replace(/A/g, 'เอ ')
@@ -212,7 +214,13 @@ export function speakPickInstruction(item: {
     .replace(/D/g, 'ดี ')
     .replace(/-/g, ' ');
 
-  const text = `จุดที่ ${item.pickSequence} หยิบ ${item.productName} ${item.requestedQty} ${item.unit || 'ชิ้น'} ที่พิกัด ${locSpoken}`;
+  let text = `จุดที่ ${item.pickSequence} หยิบ ${item.productName} ${item.requestedQty} ${item.unit || 'ชิ้น'} ที่พิกัด ${locSpoken}`;
+  if (item.lotNumber && item.lotNumber !== 'UNASSIGNED') {
+    text += ` ล็อต ${item.lotNumber}`;
+  }
+  if (item.expiryRisk === 'CRITICAL') {
+    text += ` ระวัง ล็อตนี้ใกล้หมดอายุ`;
+  }
   speakThai(text);
 }
 
