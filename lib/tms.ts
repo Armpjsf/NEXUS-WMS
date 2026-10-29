@@ -356,7 +356,7 @@ export async function appendTmsJobItems(
   if (!isTmsEnabled()) return { ok: false, skipped: true, error: 'disabled' };
   if (!jobId || !items?.length) return { ok: false, error: 'no-items' };
   try {
-    const base = (process.env.TMS_API_URL as string).replace(/\/+$/, '');
+    const base = getTmsApiUrl().replace(/\/+$/, '');
     const url = `${base}/${encodeURIComponent(jobId)}/items`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
