@@ -668,7 +668,7 @@ export default function OrdersPage() {
           </div>
           <button
             onClick={() => setShowCreateTrip(true)}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all"
+            className="px-5 py-2.5 rounded-xl bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] font-black text-xs flex items-center gap-2 shadow-lg shadow-[#facc15]/20 active:scale-95 transition-all"
           >
             <Truck className="w-4 h-4" />
             <span>จัดทริปรวมส่ง (Multi-Drop Manifest)</span>
@@ -1875,9 +1875,9 @@ function CreateTripModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-indigo-600 to-blue-700 text-white flex justify-between items-center">
+        <div className="px-6 py-5 bg-[#1b2027] border-b border-[#30353d] text-white flex justify-between items-center">
           <div className="font-black text-lg flex items-center gap-2">
-            <Truck className="w-6 h-6 text-indigo-200" />
+            <Truck className="w-6 h-6 text-[#facc15]" />
             <span>จัดทริปส่งสินค้ารวม (Multi-Drop Trip Manifest)</span>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
@@ -2044,7 +2044,7 @@ function CreateTripModal({
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-black shadow-lg shadow-indigo-600/25 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2.5 rounded-xl bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] text-xs font-black shadow-lg shadow-[#facc15]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
           >
             {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
             <span>ยืนยันจัดทริปส่ง ({orders.length} ออเดอร์)</span>
