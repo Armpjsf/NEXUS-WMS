@@ -8,6 +8,7 @@ import {
   Search,
   RefreshCw,
   Box,
+  Boxes,
   Layers,
   Sparkles,
   AlertTriangle,

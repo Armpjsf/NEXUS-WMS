@@ -182,6 +182,7 @@ export default function Sidebar() {
       items: [
         { label: t('menu_inventory'), href: '/inventory', icon: Box, tone: 'teal', viewerAllowed: true },
         { label: '2D Warehouse Map', href: '/inventory/map', icon: LayoutGrid, tone: 'teal', viewerAllowed: true },
+        { label: '3D Process Simulator', href: '/inventory/process-3d', icon: Boxes, tone: 'amber', viewerAllowed: true },
         { label: t('menu_stock_card'), href: '/inventory/stock-card', icon: ClipboardList, tone: 'blue', viewerAllowed: true },
         { label: t('menu_transactions'), href: '/inventory/transactions', icon: History, tone: 'cyan' },
         { label: t('print_labels'), href: '/inventory/print-labels', icon: Tags, tone: 'amber' },
