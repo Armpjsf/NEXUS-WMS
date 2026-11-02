@@ -24,6 +24,8 @@ import {
   Truck,
   ArrowRight,
   ShoppingBag,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@/lib/config';
@@ -571,7 +573,7 @@ export function getBinWorldCoordinates(
 }
 
 // Flat Floor Stencil Mesh
-function createFloorDecalMesh(station: ProcessStation): THREE.Mesh {
+function createFloorDecalMesh(station: ProcessStation, theme: 'light' | 'dark'): THREE.Mesh {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 256;
@@ -579,9 +581,11 @@ function createFloorDecalMesh(station: ProcessStation): THREE.Mesh {
 
   ctx.clearRect(0, 0, 512, 256);
 
+  const isLight = theme === 'light';
+
   // Background pad
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-  ctx.strokeStyle = '#0284c7';
+  ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.94)' : 'rgba(15, 23, 42, 0.88)';
+  ctx.strokeStyle = isLight ? '#0284c7' : '#38bdf8';
   ctx.lineWidth = 6;
   drawRoundRect(ctx, 8, 8, 496, 240, 28);
   ctx.fill();
@@ -600,22 +604,22 @@ function createFloorDecalMesh(station: ProcessStation): THREE.Mesh {
   ctx.fillText(String(station.stepNumber), 70, 78);
 
   // Title
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = isLight ? '#0f172a' : '#ffffff';
   ctx.font = 'bold 36px sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText(station.titleTh, 130, 65);
 
   // Subtitle
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = isLight ? '#475569' : '#94a3b8';
   ctx.font = 'bold 24px sans-serif';
   ctx.fillText(station.subtitle, 130, 115);
 
   // Bottom Area Strip
-  ctx.fillStyle = 'rgba(2, 132, 199, 0.25)';
+  ctx.fillStyle = isLight ? 'rgba(2, 132, 199, 0.12)' : 'rgba(2, 132, 199, 0.25)';
   drawRoundRect(ctx, 24, 160, 464, 64, 16);
   ctx.fill();
 
-  ctx.fillStyle = '#38bdf8';
+  ctx.fillStyle = '#0284c7';
   ctx.font = 'bold 22px monospace';
   ctx.fillText(`📍 ${station.area}`, 42, 200);
 
@@ -640,7 +644,7 @@ function createFloorDecalMesh(station: ProcessStation): THREE.Mesh {
 }
 
 // Single active floating callout sprite
-function updateActiveCalloutSprite(sprite: THREE.Sprite, station: ProcessStation) {
+function updateActiveCalloutSprite(sprite: THREE.Sprite, station: ProcessStation, theme: 'light' | 'dark' = 'light') {
   const canvas = document.createElement('canvas');
   canvas.width = 440;
   canvas.height = 110;
@@ -648,10 +652,10 @@ function updateActiveCalloutSprite(sprite: THREE.Sprite, station: ProcessStation
 
   ctx.clearRect(0, 0, 440, 110);
 
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 12;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+  ctx.shadowBlur = 10;
 
-  ctx.fillStyle = '#fbbf24';
+  ctx.fillStyle = '#f59e0b';
   ctx.strokeStyle = '#fef08a';
   ctx.lineWidth = 4;
   drawRoundRect(ctx, 8, 8, 424, 94, 20);
@@ -853,13 +857,22 @@ function stepWorkerTowards(
   }
 }
 
-export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { branchId?: string }) {
+export default function WarehouseProcessSimulator3D({
+  branchId = 'URT',
+  defaultTheme = 'light',
+}: {
+  branchId?: string;
+  defaultTheme?: 'light' | 'dark';
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [isPlayingTour, setIsPlayingTour] = useState(false);
   const [tourSpeed, setTourSpeed] = useState<1 | 2 | 5>(1);
   const [activeTab, setActiveTab] = useState<'sop' | 'live' | 'quiz'>('sop');
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Light / Dark Theme Support (defaults to light for WMS 360)
+  const [theme, setTheme] = useState<'light' | 'dark'>(defaultTheme);
 
   // Camera Mode: OVERVIEW keeps bird's eye view without jumping! FOCUS zooms into station.
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'FOCUS'>('OVERVIEW');
@@ -1137,7 +1150,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       const t = threeRef.current;
       const targetStation = stations[nextIdx];
 
-      updateActiveCalloutSprite(t.activeCalloutSprite, targetStation);
+      updateActiveCalloutSprite(t.activeCalloutSprite, targetStation, theme);
 
       t.stationPins.forEach((pin, i) => {
         const isAct = i === nextIdx;
@@ -1168,7 +1181,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         duration: 900,
       };
     },
-    [stations, viewMode, playChime]
+    [stations, viewMode, playChime, theme]
   );
 
   // Camera presets
@@ -1271,10 +1284,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 560;
 
+    const isLight = theme === 'light';
+
     // 1. Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0e17);
-    scene.fog = new THREE.FogExp2(0x0a0e17, 0.015);
+    const bgColor = isLight ? 0xf1f5f9 : 0x0f172a;
+    scene.background = new THREE.Color(bgColor);
+    scene.fog = new THREE.FogExp2(bgColor, isLight ? 0.007 : 0.012);
 
     // 2. Camera & Orbit Parameters
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 300);
@@ -1308,16 +1324,22 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = isLight ? 1.25 : 1.15;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 4. Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    // 4. BRIGHT INDUSTRIAL WAREHOUSE LIGHTING RIG (แก้ไขปัญหาแสงมืด)
+    // A. Ambient Light
+    const ambientLight = new THREE.AmbientLight(0xffffff, isLight ? 1.25 : 0.95);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.35);
-    sunLight.position.set(24, 40, 24);
+    // B. Hemisphere Sky/Ground Bounce (ป้องกันเงามืดสนิท)
+    const hemiLight = new THREE.HemisphereLight(0xffffff, isLight ? 0x94a3b8 : 0x334155, isLight ? 0.85 : 0.6);
+    scene.add(hemiLight);
+
+    // C. Sun / High-Bay Directional Light
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, isLight ? 1.9 : 1.5);
+    sunLight.position.set(24, 45, 24);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
@@ -1330,16 +1352,28 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     sunLight.shadow.camera.bottom = -shadowBound;
     scene.add(sunLight);
 
-    const blueFill = new THREE.DirectionalLight(0x38bdf8, 0.45);
-    blueFill.position.set(-24, 20, -24);
-    scene.add(blueFill);
+    // D. Fill Light (Opposite Angle)
+    const fillLight = new THREE.DirectionalLight(0xe0f2fe, isLight ? 0.85 : 0.55);
+    fillLight.position.set(-24, 25, -24);
+    scene.add(fillLight);
 
-    // 5. Floor & Guidance Markings
+    // E. High-Bay Ceiling Industrial Spot Lights (โคมไฟส่องสว่างประจำช่องทางเดิน)
+    const createHighBayLight = (x: number, y: number, z: number) => {
+      const p = new THREE.PointLight(0xffffff, isLight ? 1.2 : 0.9, 45, 1.2);
+      p.position.set(x, y, z);
+      scene.add(p);
+    };
+    createHighBayLight(0, 14, -6); // Racks zone
+    createHighBayLight(0, 14, 6);  // Conveyor zone
+    createHighBayLight(-floorWidth / 3, 13, 10); // Inbound dock
+    createHighBayLight(floorWidth / 3, 13, 10);  // Outbound dock
+
+    // 5. Floor & Markings
     const floorGeo = new THREE.PlaneGeometry(floorWidth, floorLength);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.82,
-      metalness: 0.15,
+      color: isLight ? 0xe2e8f0 : 0x1e293b,
+      roughness: isLight ? 0.65 : 0.75,
+      metalness: isLight ? 0.1 : 0.15,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -1349,14 +1383,14 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     const gridHelper = new THREE.GridHelper(
       Math.max(floorWidth, floorLength),
       Math.round(Math.max(floorWidth, floorLength) / 2),
-      0x1e293b,
-      0x0f172a
+      isLight ? 0x94a3b8 : 0x475569,
+      isLight ? 0xcbd5e1 : 0x334155
     );
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
     // Perimeter boundary line
-    const borderMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
+    const borderMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 });
     const borderGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-floorWidth / 2 + 1.5, 0.04, -floorLength / 2 + 1.5),
       new THREE.Vector3(floorWidth / 2 - 1.5, 0.04, -floorLength / 2 + 1.5),
@@ -1368,7 +1402,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     scene.add(perimeterLine);
 
     // Yellow Pedestrian Safety Walkways (Hatched Floor Decals)
-    const walkwayMat = new THREE.MeshBasicMaterial({ color: 0xeab308, transparent: true, opacity: 0.35 });
+    const walkwayMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: isLight ? 0.5 : 0.35 });
     const makeWalkway = (x: number, z: number, w: number, l: number) => {
       const g = new THREE.PlaneGeometry(w, l);
       const m = new THREE.Mesh(g, walkwayMat);
@@ -1377,15 +1411,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       scene.add(m);
     };
 
-    // Cross Aisle Walkway connecting in & out
     makeWalkway(0, 0, floorWidth - 8, 2.2);
-    // Forklift / Conveyor Feeding Lane
     makeWalkway(0, 6.5, 24, 2.0);
-    // Inbound Lane
     makeWalkway(-floorWidth / 2 + 8, 8, 2.0, 14);
 
     // 6. Walls & Dock Doors
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a2233, roughness: 0.85 });
+    const wallColor = isLight ? 0x94a3b8 : 0x334155;
+    const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.8 });
     const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorWidth, 8, 0.8), wallMat);
     backWall.position.set(0, 4, -floorLength / 2);
     backWall.receiveShadow = true;
@@ -1453,12 +1485,17 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981);
 
     // 8. Racks & Per-Slot Bin Stock
-    const steelPostMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
-    const beamMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.4 });
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.85 });
-    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.6 });
-    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
-    const emptySlotMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, transparent: true, opacity: 0.35 });
+    const steelPostMat = new THREE.MeshStandardMaterial({ color: isLight ? 0x334155 : 0x1e293b, metalness: 0.75, roughness: 0.3 });
+    const beamMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.5, roughness: 0.4 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.85 });
+    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.55 });
+    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.55 });
+    const emptySlotMat = new THREE.MeshStandardMaterial({
+      color: isLight ? 0x94a3b8 : 0x475569,
+      roughness: 0.5,
+      transparent: true,
+      opacity: isLight ? 0.3 : 0.35,
+    });
 
     const rawRacks = layout?.racks || [];
 
@@ -1475,7 +1512,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       if (isFloor) {
         const padGeo = new THREE.PlaneGeometry(totalRackLength, rack.rackDepth || 3);
         const padMat = new THREE.MeshStandardMaterial({
-          color: rack.type === 'CROSS_DOCK' ? 0x241d08 : 0x0f1c24,
+          color: rack.type === 'CROSS_DOCK' ? (isLight ? 0xfef3c7 : 0x241d08) : (isLight ? 0xe0f2fe : 0x0f1c24),
           roughness: 0.9,
         });
         const padMesh = new THREE.Mesh(padGeo, padMat);
@@ -1562,7 +1599,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     if (rawRacks.length > 0) {
       rawRacks.forEach(buildFullRack);
     } else {
-      // Fallback realistic racks if layout is loading
       buildFullRack({
         rackCode: 'LEFT A-D',
         zoneCode: 'A',
@@ -1604,13 +1640,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       });
     }
 
-    // Dynamic Shelf Highlight Box (Pulsing halo on the active order's bin)
+    // Dynamic Shelf Highlight Box
     const highlightGeo = new THREE.BoxGeometry(2.5, 1.2, 2.0);
     const highlightMat = new THREE.MeshBasicMaterial({
       color: 0xf59e0b,
       wireframe: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
     });
     const shelfHighlightBox = new THREE.Mesh(highlightGeo, highlightMat);
     shelfHighlightBox.position.set(orderBinCoordinates.shelfPos[0], orderBinCoordinates.shelfPos[1], orderBinCoordinates.shelfPos[2]);
@@ -1618,22 +1654,22 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
     // 9. Central Control Tower Desk (Station 4)
     const deskGroup = new THREE.Group();
-    const deskMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+    const deskMat = new THREE.MeshStandardMaterial({ color: isLight ? 0x475569 : 0x334155, roughness: 0.5 });
     const desk = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.9, 1.4), deskMat);
     desk.position.set(stations[3].coords[0], 0.45, stations[3].coords[2]);
     desk.castShadow = true;
     deskGroup.add(desk);
 
-    const screenMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const screenMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
     const screen = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 0.08), screenMat);
     screen.position.set(stations[3].coords[0], 1.25, stations[3].coords[2] + 0.3);
     deskGroup.add(screen);
     scene.add(deskGroup);
 
-    // 10. High-Fidelity Conveyor System with 35 Rotating Rollers (Stations 6, 7, 8, 9)
+    // 10. High-Fidelity Conveyor System with 35 Rotating Metallic Rollers (Stations 6, 7, 8, 9)
     const conveyorZ = 6.5;
-    const conveyorFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
-    const rollerMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+    const conveyorFrameMat = new THREE.MeshStandardMaterial({ color: isLight ? 0x475569 : 0x1e293b, metalness: 0.85, roughness: 0.3 });
+    const rollerMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.15 });
 
     const rail1 = new THREE.Mesh(new THREE.BoxGeometry(22, 0.12, 0.08), conveyorFrameMat);
     rail1.position.set(5.5, 0.9, conveyorZ - 0.55);
@@ -1664,7 +1700,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
     // Sorter Slide Chute at Conveyor End
     const chuteGeo = new THREE.BoxGeometry(3.5, 0.1, 1.2);
-    const chuteMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.4 });
+    const chuteMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.4 });
     const chute = new THREE.Mesh(chuteGeo, chuteMat);
     chute.rotation.z = -0.4;
     chute.position.set(17.2, 0.5, conveyorZ - 1.2);
@@ -1687,14 +1723,14 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     const stationBeacons: THREE.Mesh[] = [];
 
     stations.forEach((s, idx) => {
-      const floorDecal = createFloorDecalMesh(s);
+      const floorDecal = createFloorDecalMesh(s, theme);
       scene.add(floorDecal);
 
       const pinGroup = new THREE.Group();
       pinGroup.position.set(s.coords[0], 0, s.coords[2]);
       pinGroup.userData = { stationId: s.id };
 
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8), new THREE.MeshBasicMaterial({ color: 0x0284c7 }));
       pole.position.y = 0.9;
       pinGroup.add(pole);
 
@@ -1714,7 +1750,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       stationPins.push(pinGroup);
 
       const beaconMat = new THREE.MeshBasicMaterial({
-        color: idx === currentStepIdx ? 0xf59e0b : 0x38bdf8,
+        color: idx === currentStepIdx ? 0xf59e0b : 0x0284c7,
         side: THREE.DoubleSide,
         transparent: true,
         opacity: idx === currentStepIdx ? 0.8 : 0.25,
@@ -1729,7 +1765,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     // Single Active Floating Callout
     const dummySpriteMat = new THREE.SpriteMaterial({ transparent: true, depthTest: false });
     const activeCalloutSprite = new THREE.Sprite(dummySpriteMat);
-    updateActiveCalloutSprite(activeCalloutSprite, stations[currentStepIdx] || stations[0]);
+    updateActiveCalloutSprite(activeCalloutSprite, stations[currentStepIdx] || stations[0], theme);
     scene.add(activeCalloutSprite);
 
     // 12. 5 PERMANENT STATIONED PERSONNEL (คนประจำตำแหน่ง 5 จุด)
@@ -1860,7 +1896,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     halo.position.y = -0.32;
     outboundParcelGroup.add(halo);
 
-    // Outbound parcel starts ON THE RACK SHELF in the real bin location!
     outboundParcelGroup.position.set(orderBinCoordinates.shelfPos[0], orderBinCoordinates.shelfPos[1], orderBinCoordinates.shelfPos[2]);
     scene.add(outboundParcelGroup);
 
@@ -1939,7 +1974,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           applyCamera();
         }
 
-        // Active Step Index
         const st = currentStepIdx;
 
         // Rotating Conveyor Rollers
@@ -1961,7 +1995,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         // STEP 1 - 3: INBOUND LOGISTICS (Dock 1 -> QC -> Storage Shelf)
         // -------------------------------------------------------------
         if (st === 0) {
-          // Step 1: Receiving at Dock 1
           stepWorkerTowards(inboundHandler, stations[0].coords[0], stations[0].coords[2], 0.08);
           palletJackMesh.position.x = inboundHandler.root.position.x;
           palletJackMesh.position.z = inboundHandler.root.position.z + 0.8;
@@ -1970,7 +2003,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           inboundPalletGroup.visible = true;
           inboundPalletGroup.position.set(stations[0].coords[0], 0.15, stations[0].coords[2] + 0.8);
         } else if (st === 1) {
-          // Step 2: Inbound Handler walks pulling pallet jack to QC Table
           stepWorkerTowards(inboundHandler, stations[1].coords[0], stations[1].coords[2] + 1.2, 0.07);
           palletJackMesh.position.x = inboundHandler.root.position.x;
           palletJackMesh.position.z = inboundHandler.root.position.z + 0.8;
@@ -1979,18 +2011,15 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           inboundPalletGroup.visible = true;
           inboundPalletGroup.position.set(palletJackMesh.position.x, 0.15, palletJackMesh.position.z);
         } else if (st === 2) {
-          // Step 3: Forklift drives from QC to Storage Rack & Lifts
           const targetX = stations[2].coords[0];
           const targetZ = stations[2].coords[2] + 2.5;
           forkliftGroup.position.x = THREE.MathUtils.lerp(forkliftGroup.position.x, targetX, 0.05);
           forkliftGroup.position.z = THREE.MathUtils.lerp(forkliftGroup.position.z, targetZ, 0.05);
 
-          // Raise forks
           forkliftCarriage.position.y = THREE.MathUtils.lerp(forkliftCarriage.position.y, 1.4, 0.05);
           inboundPalletGroup.visible = true;
           inboundPalletGroup.position.set(forkliftGroup.position.x, 0.15 + forkliftCarriage.position.y, forkliftGroup.position.z - 0.8);
         } else {
-          // After Step 3: Putaway is stored in rack
           inboundPalletGroup.position.set(stations[2].coords[0], stations[2].coords[1], stations[2].coords[2]);
           forkliftCarriage.position.y = THREE.MathUtils.lerp(forkliftCarriage.position.y, 0, 0.05);
           forkliftGroup.position.x = THREE.MathUtils.lerp(forkliftGroup.position.x, stations[1].coords[0] + 4, 0.03);
@@ -2001,7 +2030,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         // STEP 4 - 10: OUTBOUND ORDER FULFILLMENT (Rack Bin -> Truck Dock 4)
         // -------------------------------------------------------------
         if (st < 3) {
-          // Parcel sits quietly in its bin on the shelf
           outboundParcelGroup.position.set(
             orderBinCoordinates.shelfPos[0],
             orderBinCoordinates.shelfPos[1],
@@ -2011,24 +2039,20 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           orderPicker.root.position.set(0, 0, 0);
           pickCartMesh.position.set(0, 0, 0.8);
         } else if (st === 3) {
-          // Step 4: Wave Planning (Order assigned to rack bin)
           outboundParcelGroup.position.set(
             orderBinCoordinates.shelfPos[0],
             orderBinCoordinates.shelfPos[1] + Math.sin(elapsed * 4) * 0.06,
             orderBinCoordinates.shelfPos[2]
           );
           outboundParcelGroup.rotation.y = elapsed * 0.8;
-          // Picker prepares at aisle crossway
           stepWorkerTowards(orderPicker, orderBinCoordinates.aislePos[0], orderBinCoordinates.aislePos[2] + 4, 0.08);
           pickCartMesh.position.set(orderPicker.root.position.x, 0, orderPicker.root.position.z + 0.8);
           pickCartMesh.rotation.y = orderPicker.root.rotation.y;
         } else if (st === 4) {
-          // Step 5: Order Picker walks directly to the EXACT BIN AISLE COORDINATE
           stepWorkerTowards(orderPicker, orderBinCoordinates.aislePos[0], orderBinCoordinates.aislePos[2], 0.08);
           pickCartMesh.position.set(orderPicker.root.position.x, 0, orderPicker.root.position.z + 0.8);
           pickCartMesh.rotation.y = orderPicker.root.rotation.y;
 
-          // Box is picked and sits on the cart
           outboundParcelGroup.position.set(
             pickCartMesh.position.x,
             0.85 + Math.sin(elapsed * 3) * 0.04,
@@ -2036,39 +2060,32 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           );
           outboundParcelGroup.rotation.y = elapsed * 0.6;
         } else if (st === 5) {
-          // Step 6: Picker walks cart to Conveyor Infeed (-4, 6.5)
           stepWorkerTowards(orderPicker, stations[5].coords[0] - 1.2, stations[5].coords[2] + 1.2, 0.08);
           pickCartMesh.position.set(orderPicker.root.position.x, 0, orderPicker.root.position.z + 0.8);
           pickCartMesh.rotation.y = orderPicker.root.rotation.y;
 
-          // Box is placed onto the Conveyor Rollers!
           outboundParcelGroup.position.x = THREE.MathUtils.lerp(outboundParcelGroup.position.x, stations[5].coords[0], 0.08);
           outboundParcelGroup.position.y = THREE.MathUtils.lerp(outboundParcelGroup.position.y, 1.25, 0.08);
           outboundParcelGroup.position.z = THREE.MathUtils.lerp(outboundParcelGroup.position.z, conveyorZ, 0.08);
           outboundParcelGroup.rotation.y = 0;
         } else if (st === 6) {
-          // Step 7: Packing (Box glides along conveyor to Packing Station #03)
           outboundParcelGroup.position.x = THREE.MathUtils.lerp(outboundParcelGroup.position.x, stations[6].coords[0], 0.06);
           outboundParcelGroup.position.y = 1.25;
           outboundParcelGroup.position.z = conveyorZ;
           outboundParcelGroup.rotation.y = 0;
         } else if (st === 7) {
-          // Step 8: Weigh & Label (Box glides along conveyor onto Digital Scale)
           outboundParcelGroup.position.x = THREE.MathUtils.lerp(outboundParcelGroup.position.x, stations[7].coords[0], 0.06);
           outboundParcelGroup.position.y = 1.25;
           outboundParcelGroup.position.z = conveyorZ;
           outboundParcelGroup.rotation.y = 0;
         } else if (st === 8) {
-          // Step 9: Sorter Chute (Box slides down into the dispatch sorting chute)
           outboundParcelGroup.position.x = THREE.MathUtils.lerp(outboundParcelGroup.position.x, 16.5, 0.06);
           outboundParcelGroup.position.y = THREE.MathUtils.lerp(outboundParcelGroup.position.y, 0.55, 0.06);
           outboundParcelGroup.position.z = THREE.MathUtils.lerp(outboundParcelGroup.position.z, conveyorZ - 2.2, 0.06);
           outboundParcelGroup.rotation.y = 0.5;
 
-          // Outbound Loader prepares at the base of the chute
           stepWorkerTowards(outboundLoader, 16.8, conveyorZ - 2.2, 0.07);
         } else if (st === 9) {
-          // Step 10: Dispatch (Loader picks up box and walks into Outbound Truck at Dock 4)
           stepWorkerTowards(outboundLoader, stations[9].coords[0] - 1.2, dockZ, 0.08);
           outboundParcelGroup.position.set(
             outboundLoader.root.position.x,
@@ -2077,10 +2094,8 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           );
         }
 
-        // Active Callout floating breath
         activeCalloutSprite.position.y = 2.8 + Math.sin(elapsed * 2.5) * 0.08;
 
-        // Active Beacon Ring pulse
         stationBeacons.forEach((beacon, i) => {
           if (i === currentStepIdx) {
             beacon.scale.setScalar(1 + Math.sin(elapsed * 4) * 0.22);
@@ -2088,7 +2103,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             (beacon.material as THREE.MeshBasicMaterial).opacity = 0.85;
           } else {
             beacon.scale.setScalar(1.0);
-            (beacon.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8);
+            (beacon.material as THREE.MeshBasicMaterial).color.setHex(0x0284c7);
             (beacon.material as THREE.MeshBasicMaterial).opacity = 0.3;
           }
         });
@@ -2098,7 +2113,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     animate();
 
-    // Resize handler
     const handleResize = () => {
       if (!containerRef.current || !threeRef.current) return;
       const w = containerRef.current.clientWidth;
@@ -2109,7 +2123,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     window.addEventListener('resize', handleResize);
 
-    // Interactive Click on 3D Station Pins
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -2136,7 +2149,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     container.addEventListener('click', handleClick);
 
-    // Camera Controls: Drag to Orbit / Pan, Wheel to Zoom
     const el = renderer.domElement;
     el.style.touchAction = 'none';
 
@@ -2222,7 +2234,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       renderer.dispose();
       threeRef.current = null;
     };
-  }, [floorWidth, floorLength, stations, layout, binDataMap, isAutoRotate, tourSpeed, currentStepIdx, orderBinCoordinates, goToStation]);
+  }, [floorWidth, floorLength, stations, layout, binDataMap, isAutoRotate, tourSpeed, currentStepIdx, orderBinCoordinates, theme, goToStation]);
 
   // Quiz submission handler
   const handleAnswerQuiz = (idx: number) => {
@@ -2238,52 +2250,86 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     }
   };
 
+  const isLight = theme === 'light';
+
   return (
-    <div className="flex flex-col xl:flex-row gap-4 h-[calc(100vh-140px)] min-h-[720px] select-none text-slate-100">
+    <div
+      className={cn(
+        'flex flex-col xl:flex-row gap-4 h-[calc(100vh-140px)] min-h-[720px] select-none transition-colors duration-200',
+        isLight ? 'text-slate-800' : 'text-slate-100'
+      )}
+    >
       {/* 1. LEFT COCKPIT: SOP Guide, Live Orders & Interactive Quiz */}
-      <div className="w-full xl:w-[460px] flex flex-col bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-5 shadow-2xl overflow-hidden order-2 xl:order-1">
+      <div
+        className={cn(
+          'w-full xl:w-[460px] flex flex-col backdrop-blur-xl border rounded-3xl p-5 shadow-xl overflow-hidden order-2 xl:order-1 transition-colors duration-200',
+          isLight
+            ? 'bg-white/95 border-slate-200 shadow-slate-200/50'
+            : 'bg-slate-900/90 border-slate-800 shadow-2xl'
+        )}
+      >
         {/* Step Indicator Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+        <div className={cn('flex items-center justify-between border-b pb-3 mb-3', isLight ? 'border-slate-200' : 'border-slate-800')}>
           <div className="flex items-center gap-2.5">
             <span
               className={cn(
                 'w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs border',
                 currentStation.phase === 'INBOUND'
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/40'
-                  : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                  ? 'bg-blue-500/15 text-blue-600 border-blue-500/30'
+                  : 'bg-amber-500/15 text-amber-600 border-amber-500/30'
               )}
             >
               {currentStation.stepNumber}
             </span>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                <span className={cn('text-[10px] font-bold uppercase tracking-widest block', isLight ? 'text-slate-500' : 'text-slate-400')}>
                   ขั้นตอนที่ {currentStation.stepNumber} / 10
                 </span>
                 <span
                   className={cn(
                     'px-1.5 py-0.2 rounded text-[9px] font-black uppercase',
-                    currentStation.phase === 'INBOUND' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'
+                    currentStation.phase === 'INBOUND'
+                      ? 'bg-blue-500/15 text-blue-700'
+                      : 'bg-emerald-500/15 text-emerald-700'
                   )}
                 >
                   {currentStation.phase === 'INBOUND' ? '📥 ขาเข้า' : '📦 ขาออก'}
                 </span>
               </div>
-              <h2 className="text-base font-black text-white">{currentStation.titleTh}</h2>
+              <h2 className={cn('text-base font-black', isLight ? 'text-slate-900' : 'text-white')}>{currentStation.titleTh}</h2>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
+          <span
+            className={cn(
+              'px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border',
+              isLight
+                ? 'bg-slate-100 text-slate-700 border-slate-200'
+                : 'bg-slate-800 text-slate-300 border-slate-700'
+            )}
+          >
             {currentStation.area}
           </span>
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-3 gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 mb-3">
+        <div
+          className={cn(
+            'grid grid-cols-3 gap-1 p-1 rounded-xl border mb-3',
+            isLight ? 'bg-slate-100/90 border-slate-200' : 'bg-slate-950/60 border-slate-800/80'
+          )}
+        >
           <button
             onClick={() => setActiveTab('sop')}
             className={cn(
               'py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5',
-              activeTab === 'sop' ? 'bg-amber-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
+              activeTab === 'sop'
+                ? isLight
+                  ? 'bg-white text-slate-900 shadow-sm font-black border border-slate-200/80'
+                  : 'bg-amber-500 text-slate-950 shadow-md font-black'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400 hover:text-white'
             )}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -2293,7 +2339,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             onClick={() => setActiveTab('live')}
             className={cn(
               'py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5',
-              activeTab === 'live' ? 'bg-amber-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
+              activeTab === 'live'
+                ? isLight
+                  ? 'bg-white text-slate-900 shadow-sm font-black border border-slate-200/80'
+                  : 'bg-amber-500 text-slate-950 shadow-md font-black'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400 hover:text-white'
             )}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -2303,13 +2355,19 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             onClick={() => setActiveTab('quiz')}
             className={cn(
               'py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 relative',
-              activeTab === 'quiz' ? 'bg-amber-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
+              activeTab === 'quiz'
+                ? isLight
+                  ? 'bg-white text-slate-900 shadow-sm font-black border border-slate-200/80'
+                  : 'bg-amber-500 text-slate-950 shadow-md font-black'
+                : isLight
+                ? 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-400 hover:text-white'
             )}
           >
             <HelpCircle className="w-3.5 h-3.5" />
             Quiz ทดสอบ
             {answeredCount > 0 && (
-              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 bg-emerald-500 text-slate-950 rounded-full text-[9px] font-black">
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 bg-emerald-500 text-white rounded-full text-[9px] font-black">
                 {quizScore}
               </span>
             )}
@@ -2321,33 +2379,59 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           {activeTab === 'sop' && (
             <div className="space-y-3">
               {/* Description */}
-              <div className="p-3.5 rounded-2xl bg-slate-950/40 border border-slate-800/60 text-slate-300 leading-relaxed">
-                <span className="font-bold text-amber-400 block mb-1">มาตรฐานการปฏิบัติงาน & การส่งต่องาน:</span>
+              <div
+                className={cn(
+                  'p-3.5 rounded-2xl border leading-relaxed',
+                  isLight
+                    ? 'bg-slate-50 border-slate-200 text-slate-700'
+                    : 'bg-slate-950/40 border-slate-800/60 text-slate-300'
+                )}
+              >
+                <span className={cn('font-bold block mb-1', isLight ? 'text-amber-600' : 'text-amber-400')}>
+                  มาตรฐานการปฏิบัติงาน & การส่งต่องาน:
+                </span>
                 {currentStation.description}
               </div>
 
               {/* Key Terminology */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                <span className={cn('text-[10px] font-bold uppercase tracking-wider block mb-1.5', isLight ? 'text-slate-500' : 'text-slate-400')}>
                   คำศัพท์ประจำสถานี (Key Terms):
                 </span>
                 <div className="grid grid-cols-1 gap-1.5">
                   {currentStation.keyTerms.map((k, idx) => (
-                    <div key={idx} className="p-2 rounded-xl bg-slate-800/50 border border-slate-700/60 flex items-start gap-2">
-                      <span className="font-mono font-black text-amber-400 shrink-0 text-[11px]">{k.term}:</span>
-                      <span className="text-slate-300 text-[11px]">{k.meaning}</span>
+                    <div
+                      key={idx}
+                      className={cn(
+                        'p-2 rounded-xl border flex items-start gap-2',
+                        isLight
+                          ? 'bg-white border-slate-200 shadow-sm'
+                          : 'bg-slate-800/50 border-slate-700/60'
+                      )}
+                    >
+                      <span className={cn('font-mono font-black shrink-0 text-[11px]', isLight ? 'text-amber-600' : 'text-amber-400')}>
+                        {k.term}:
+                      </span>
+                      <span className={cn('text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>{k.meaning}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* QC Checklist */}
-              <div className="p-3 rounded-2xl bg-emerald-950/25 border border-emerald-500/30 text-emerald-200">
-                <div className="flex items-center gap-1.5 font-black text-emerald-400 mb-1.5">
+              <div
+                className={cn(
+                  'p-3 rounded-2xl border',
+                  isLight
+                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                    : 'bg-emerald-950/25 border-emerald-500/30 text-emerald-200'
+                )}
+              >
+                <div className="flex items-center gap-1.5 font-black text-emerald-600 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>QC Inspection Checklist (เกณฑ์คุณภาพ)</span>
                 </div>
-                <ul className="space-y-1 pl-4 list-disc marker:text-emerald-500 text-[11px] text-emerald-100/90">
+                <ul className={cn('space-y-1 pl-4 list-disc marker:text-emerald-500 text-[11px]', isLight ? 'text-emerald-800' : 'text-emerald-100/90')}>
                   {currentStation.qcChecklist.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -2355,12 +2439,19 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
               </div>
 
               {/* Safety Rules */}
-              <div className="p-3 rounded-2xl bg-rose-950/25 border border-rose-500/30 text-rose-200">
-                <div className="flex items-center gap-1.5 font-black text-rose-400 mb-1.5">
+              <div
+                className={cn(
+                  'p-3 rounded-2xl border',
+                  isLight
+                    ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                    : 'bg-rose-950/25 border-rose-500/30 text-rose-200'
+                )}
+              >
+                <div className="flex items-center gap-1.5 font-black text-rose-600 mb-1.5">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>Safety Precautions (ความปลอดภัย)</span>
                 </div>
-                <ul className="space-y-1 pl-4 list-disc marker:text-rose-500 text-[11px] text-rose-100/90">
+                <ul className={cn('space-y-1 pl-4 list-disc marker:text-rose-500 text-[11px]', isLight ? 'text-rose-800' : 'text-rose-100/90')}>
                   {currentStation.safetyRules.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -2372,13 +2463,20 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           {activeTab === 'live' && (
             <div className="space-y-3.5">
               {/* Active Outbound Orders Selector */}
-              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-amber-500/30">
+              <div
+                className={cn(
+                  'p-3.5 rounded-2xl border',
+                  isLight
+                    ? 'bg-white border-amber-300/80 shadow-sm shadow-amber-500/5'
+                    : 'bg-slate-950/60 border-amber-500/30'
+                )}
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 font-black text-amber-400 text-xs">
+                  <div className={cn('flex items-center gap-1.5 font-black text-xs', isLight ? 'text-amber-700' : 'text-amber-400')}>
                     <ShoppingBag className="w-4 h-4" />
                     <span>คำสั่งเบิกจ่ายจริง (Live Orders)</span>
                   </div>
-                  <span className="text-[10px] text-slate-400">คลิกเพื่อจำลองเส้นทาง</span>
+                  <span className={cn('text-[10px]', isLight ? 'text-slate-500' : 'text-slate-400')}>คลิกเพื่อจำลองเส้นทาง</span>
                 </div>
                 <div className="space-y-2">
                   {DEFAULT_ACTIVE_ORDERS.map((ord) => {
@@ -2390,19 +2488,25 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                         className={cn(
                           'w-full text-left p-2.5 rounded-xl border transition-all flex flex-col gap-1',
                           isSelected
-                            ? 'bg-amber-500/20 border-amber-400 shadow-md ring-1 ring-amber-400/40'
+                            ? isLight
+                              ? 'bg-amber-50/80 border-amber-400 shadow-sm ring-1 ring-amber-400/50'
+                              : 'bg-amber-500/20 border-amber-400 shadow-md ring-1 ring-amber-400/40'
+                            : isLight
+                            ? 'bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-slate-100/70'
                             : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-mono font-black text-white text-xs">{ord.orderId}</span>
+                          <span className={cn('font-mono font-black text-xs', isLight ? 'text-slate-900' : 'text-white')}>{ord.orderId}</span>
                           <span
                             className={cn(
                               'px-1.5 py-0.2 rounded text-[9px] font-black',
                               ord.priority === 'EXPRESS'
-                                ? 'bg-rose-500/20 text-rose-300'
+                                ? 'bg-rose-500/15 text-rose-600'
                                 : ord.priority === 'URGENT'
-                                ? 'bg-amber-500/20 text-amber-300'
+                                ? 'bg-amber-500/15 text-amber-600'
+                                : isLight
+                                ? 'bg-slate-200 text-slate-700'
                                 : 'bg-slate-700 text-slate-300'
                             )}
                           >
@@ -2410,12 +2514,19 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-300 font-bold truncate max-w-[210px]">{ord.skuName}</span>
-                          <span className="font-mono font-black text-amber-400 px-1.5 py-0.2 bg-amber-500/10 rounded">
+                          <span className={cn('font-bold truncate max-w-[210px]', isLight ? 'text-slate-800' : 'text-slate-300')}>
+                            {ord.skuName}
+                          </span>
+                          <span
+                            className={cn(
+                              'font-mono font-black px-1.5 py-0.2 rounded',
+                              isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/10 text-amber-400'
+                            )}
+                          >
                             [{ord.binCode}]
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                        <div className={cn('flex items-center justify-between text-[10px] pt-0.5', isLight ? 'text-slate-500' : 'text-slate-400')}>
                           <span>ปลายทาง: {ord.destination}</span>
                           <span className="font-mono">{ord.qty} แผ่น ({ord.weightKg} kg)</span>
                         </div>
@@ -2427,36 +2538,49 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
               {/* Station Queue & Throughput */}
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">คิวงานรอดำเนินการ</span>
+                <div className={cn('p-3.5 rounded-2xl border', isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800')}>
+                  <span className={cn('text-[10px] font-bold uppercase tracking-wider block', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    คิวงานรอดำเนินการ
+                  </span>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-2xl font-black font-mono text-amber-400">{currentStation.liveMetrics.queueCount}</span>
-                    <span className="text-xs text-slate-400">รายการ</span>
+                    <span className={cn('text-2xl font-black font-mono', isLight ? 'text-amber-600' : 'text-amber-400')}>
+                      {currentStation.liveMetrics.queueCount}
+                    </span>
+                    <span className={cn('text-xs', isLight ? 'text-slate-500' : 'text-slate-400')}>รายการ</span>
                   </div>
-                  <span className="text-[10px] text-emerald-400 font-bold mt-1 block">สถานะ: {currentStation.liveMetrics.status}</span>
+                  <span className="text-[10px] text-emerald-600 font-bold mt-1 block">สถานะ: {currentStation.liveMetrics.status}</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Throughput รายชั่วโมง</span>
+                <div className={cn('p-3.5 rounded-2xl border', isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800')}>
+                  <span className={cn('text-[10px] font-bold uppercase tracking-wider block', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    Throughput รายชั่วโมง
+                  </span>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-2xl font-black font-mono text-cyan-400">{currentStation.liveMetrics.hourlyThroughput}</span>
-                    <span className="text-xs text-slate-400">ชิ้น/ชม.</span>
+                    <span className={cn('text-2xl font-black font-mono', isLight ? 'text-cyan-700' : 'text-cyan-400')}>
+                      {currentStation.liveMetrics.hourlyThroughput}
+                    </span>
+                    <span className={cn('text-xs', isLight ? 'text-slate-500' : 'text-slate-400')}>ชิ้น/ชม.</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1 block">กำลังการผลิตปัจจุบัน</span>
+                  <span className={cn('text-[10px] mt-1 block', isLight ? 'text-slate-500' : 'text-slate-400')}>กำลังการผลิตปัจจุบัน</span>
                 </div>
               </div>
 
               {/* Target KPI Strip */}
-              <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/80">
+              <div className={cn('p-3 rounded-2xl border', isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/60 border-slate-700/80')}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-bold text-white text-xs">{currentStation.kpi.label}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span className={cn('font-bold text-xs', isLight ? 'text-slate-900' : 'text-white')}>{currentStation.kpi.label}</span>
+                  <span
+                    className={cn(
+                      'px-2 py-0.5 rounded text-[10px] font-black border',
+                      isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    )}
+                  >
                     เป้าหมาย: {currentStation.kpi.target}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black font-mono text-white">{currentStation.kpi.current}</span>
-                  <span className="text-xs text-slate-400">{currentStation.kpi.unit}</span>
+                  <span className={cn('text-2xl font-black font-mono', isLight ? 'text-slate-900' : 'text-white')}>{currentStation.kpi.current}</span>
+                  <span className={cn('text-xs', isLight ? 'text-slate-500' : 'text-slate-400')}>{currentStation.kpi.unit}</span>
                 </div>
               </div>
             </div>
@@ -2464,30 +2588,42 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
           {activeTab === 'quiz' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+              <div
+                className={cn(
+                  'flex items-center justify-between p-3 rounded-2xl border',
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+                )}
+              >
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold block">คะแนนการทดสอบ SOP</span>
-                  <span className="text-xl font-black text-amber-400 font-mono">{quizScore} / 100</span>
+                  <span className={cn('text-[10px] font-bold block', isLight ? 'text-slate-500' : 'text-slate-400')}>คะแนนการทดสอบ SOP</span>
+                  <span className={cn('text-xl font-black font-mono', isLight ? 'text-amber-600' : 'text-amber-400')}>{quizScore} / 100</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 font-bold block">ทำแล้ว</span>
-                  <span className="text-xs text-slate-200 font-bold">{answeredCount} จาก 10 ข้อ</span>
+                  <span className={cn('text-[10px] font-bold block', isLight ? 'text-slate-500' : 'text-slate-400')}>ทำแล้ว</span>
+                  <span className={cn('text-xs font-bold', isLight ? 'text-slate-700' : 'text-slate-200')}>{answeredCount} จาก 10 ข้อ</span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-950/50 border border-slate-800/80 space-y-3">
+              <div
+                className={cn(
+                  'p-4 rounded-2xl border space-y-3',
+                  isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-950/50 border-slate-800/80'
+                )}
+              >
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-black">
                     คำถามข้อที่ {currentStation.stepNumber}
                   </span>
                 </div>
-                <p className="text-slate-100 font-bold leading-relaxed">{currentStation.quiz.question}</p>
+                <p className={cn('font-bold leading-relaxed', isLight ? 'text-slate-900' : 'text-slate-100')}>{currentStation.quiz.question}</p>
 
                 <div className="space-y-2 pt-2">
                   {currentStation.quiz.options.map((opt, i) => {
                     const isSelected = selectedQuizAnswer === i;
                     const isCorrect = i === currentStation.quiz.correctIndex;
-                    let btnStyle = 'bg-slate-800/60 hover:bg-slate-800 text-slate-200 border-slate-700/60';
+                    let btnStyle = isLight
+                      ? 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                      : 'bg-slate-800/60 hover:bg-slate-800 text-slate-200 border-slate-700/60';
 
                     if (selectedQuizAnswer !== null) {
                       if (isCorrect) {
@@ -2495,7 +2631,9 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                       } else if (isSelected) {
                         btnStyle = 'bg-rose-600 text-white font-bold border-rose-500';
                       } else {
-                        btnStyle = 'bg-slate-900/40 text-slate-500 border-slate-800';
+                        btnStyle = isLight
+                          ? 'bg-slate-100 text-slate-400 border-slate-200'
+                          : 'bg-slate-900/40 text-slate-500 border-slate-800';
                       }
                     }
 
@@ -2509,7 +2647,12 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                           btnStyle
                         )}
                       >
-                        <span className="w-5 h-5 rounded-full bg-slate-900/60 border border-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                        <span
+                          className={cn(
+                            'w-5 h-5 rounded-full border flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5',
+                            isLight ? 'bg-white border-slate-300' : 'bg-slate-900/60 border-slate-600'
+                          )}
+                        >
                           {String.fromCharCode(65 + i)}
                         </span>
                         <span>{opt}</span>
@@ -2525,7 +2668,11 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                     className={cn(
                       'p-3 rounded-xl text-xs leading-relaxed border mt-3',
                       selectedQuizAnswer === currentStation.quiz.correctIndex
-                        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                        ? isLight
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                          : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                        : isLight
+                        ? 'bg-rose-50 border-rose-300 text-rose-900'
                         : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
                     )}
                   >
@@ -2541,11 +2688,16 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         </div>
 
         {/* Cockpit Bottom Navigation Bar */}
-        <div className="flex items-center justify-between border-t border-slate-800 pt-3 mt-3">
+        <div className={cn('flex items-center justify-between border-t pt-3 mt-3', isLight ? 'border-slate-200' : 'border-slate-800')}>
           <button
             onClick={() => goToStation(currentStepIdx - 1, viewMode === 'FOCUS')}
             disabled={currentStepIdx === 0}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+            className={cn(
+              'px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all disabled:opacity-30 border',
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+            )}
           >
             <ChevronLeft className="w-4 h-4" /> ก่อนหน้า
           </button>
@@ -2559,7 +2711,11 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                   i === currentStepIdx
                     ? 'bg-amber-500 text-slate-950 shadow-md scale-110 font-black'
                     : s.phase === 'INBOUND'
-                    ? 'bg-blue-950/80 text-blue-300 hover:bg-blue-900 border border-blue-900'
+                    ? isLight
+                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200'
+                      : 'bg-blue-950/80 text-blue-300 hover:bg-blue-900 border border-blue-900'
+                    : isLight
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
                     : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                 )}
                 title={`สถานี ${s.stepNumber}: ${s.titleTh}`}
@@ -2579,42 +2735,85 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       </div>
 
       {/* 2. RIGHT 3D VIEWPORT: Three.js Virtual Warehouse Canvas */}
-      <div className="flex-1 relative bg-[#0a0e17] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col order-1 xl:order-2 h-[520px] xl:h-auto">
+      <div
+        className={cn(
+          'flex-1 relative rounded-3xl border overflow-hidden shadow-2xl flex flex-col order-1 xl:order-2 h-[520px] xl:h-auto transition-colors duration-200',
+          isLight ? 'bg-[#f1f5f9] border-slate-200 shadow-slate-200/50' : 'bg-[#0a0e17] border-slate-800'
+        )}
+      >
         <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-        {/* TOP FLOATING TOOLBAR: Camera View Mode & Warehouse Info */}
+        {/* TOP FLOATING TOOLBAR: Theme, Camera View Mode & Warehouse Info */}
         <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
           {/* Branch & Selected Order Badge */}
-          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 pointer-events-auto">
-            <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+          <div
+            className={cn(
+              'backdrop-blur-md border px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 pointer-events-auto transition-colors duration-200',
+              isLight
+                ? 'bg-white/95 border-slate-200/90 text-slate-800 shadow-slate-200/50'
+                : 'bg-slate-900/90 border-slate-700/80 text-white shadow-xl'
+            )}
+          >
+            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-white">{layout?.name || `คลังสาขา ${branchId}`}</span>
-                <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded text-[9px] font-mono font-bold">
+                <span className={cn('text-xs font-black', isLight ? 'text-slate-900' : 'text-white')}>
+                  {layout?.name || `คลังสาขา ${branchId}`}
+                </span>
+                <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-600 border border-amber-500/40 rounded text-[9px] font-mono font-bold">
                   {branchId}
                 </span>
-                <span className="text-[10px] text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
                   📦 พิกัดออเดอร์: [{selectedOrder.binCode}]
                 </span>
               </div>
             </div>
             <button
               onClick={loadWarehouseData}
-              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors ml-1"
+              className={cn(
+                'p-1 rounded-lg transition-colors ml-1',
+                isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+              )}
               title="รีเฟรชข้อมูลผังและสต็อกจริง"
             >
-              <RefreshCw className={cn('w-3.5 h-3.5', loadingLayout && 'animate-spin text-amber-400')} />
+              <RefreshCw className={cn('w-3.5 h-3.5', loadingLayout && 'animate-spin text-amber-500')} />
             </button>
           </div>
 
-          {/* Camera View Mode Toggles */}
-          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1.5 rounded-2xl shadow-xl flex items-center gap-1 pointer-events-auto">
+          {/* Controls: Theme Toggle & Camera View Modes */}
+          <div
+            className={cn(
+              'backdrop-blur-md border p-1.5 rounded-2xl shadow-xl flex items-center gap-1 pointer-events-auto transition-colors duration-200',
+              isLight
+                ? 'bg-white/95 border-slate-200/90 text-slate-800 shadow-slate-200/50'
+                : 'bg-slate-900/90 border-slate-700/80 text-white shadow-xl'
+            )}
+          >
+            {/* Theme Toggle Button (สลับสว่าง / มืด) */}
+            <button
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              className={cn(
+                'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all border',
+                theme === 'light'
+                  ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                  : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+              )}
+              title="สลับธีม สว่าง (Daylight) / มืด (Night Tactical)"
+            >
+              {theme === 'light' ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-indigo-400" />}
+              <span>{theme === 'light' ? 'สว่าง' : 'มืด'}</span>
+            </button>
+
+            <div className={cn('w-px h-5 mx-0.5', isLight ? 'bg-slate-200' : 'bg-slate-700')} />
+
             <button
               onClick={setCameraOverview}
               className={cn(
                 'px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all',
                 viewMode === 'OVERVIEW'
                   ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                  : isLight
+                  ? 'text-slate-700 hover:bg-slate-100'
                   : 'text-slate-300 hover:bg-slate-800'
               )}
               title="ดูภาพกว้างทั้งคลัง (ไม่ซูมเข้าเมื่อเปลี่ยนขั้นตอน)"
@@ -2628,6 +2827,8 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                 'px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all',
                 viewMode === 'FOCUS'
                   ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                  : isLight
+                  ? 'text-slate-700 hover:bg-slate-100'
                   : 'text-slate-300 hover:bg-slate-800'
               )}
               title="ซูมโฟกัสสถานีปัจจุบัน"
@@ -2639,7 +2840,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
               onClick={() => setShowActiveLabel(!showActiveLabel)}
               className={cn(
                 'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all',
-                showActiveLabel ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-500 hover:bg-slate-800'
+                showActiveLabel
+                  ? isLight
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : isLight
+                  ? 'text-slate-500 hover:bg-slate-100'
+                  : 'text-slate-500 hover:bg-slate-800'
               )}
               title="เปิด/ปิดป้ายชื่อลอยในอากาศ"
             >
@@ -2650,7 +2857,11 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
               onClick={() => setIsAutoRotate(!isAutoRotate)}
               className={cn(
                 'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all',
-                isAutoRotate ? 'bg-indigo-600 text-white font-black' : 'text-slate-400 hover:bg-slate-800'
+                isAutoRotate
+                  ? 'bg-indigo-600 text-white font-black'
+                  : isLight
+                  ? 'text-slate-600 hover:bg-slate-100'
+                  : 'text-slate-400 hover:bg-slate-800'
               )}
               title="หมุนรอบ 360 องศาต่อเนื่อง"
             >
@@ -2659,7 +2870,10 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             </button>
             <button
               onClick={resetCamera}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className={cn(
+                'p-1.5 rounded-xl transition-colors',
+                isLight ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              )}
               title="รีเซ็ตมุมกล้อง"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -2670,33 +2884,53 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         {/* BOTTOM FLOATING CONTROLS: Active Station Pill & Tour Playback */}
         <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
           {/* Active Station Pill with Handover Subtitle */}
-          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2.5 pointer-events-auto">
+          <div
+            className={cn(
+              'backdrop-blur-md border px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2.5 pointer-events-auto transition-colors duration-200',
+              isLight
+                ? 'bg-white/95 border-slate-200/90 text-slate-800 shadow-slate-200/50'
+                : 'bg-slate-900/90 border-slate-700/80 text-white shadow-xl'
+            )}
+          >
             <span
               className={cn(
                 'w-2.5 h-2.5 rounded-full animate-ping',
-                currentStation.phase === 'INBOUND' ? 'bg-blue-400' : 'bg-amber-400'
+                currentStation.phase === 'INBOUND' ? 'bg-blue-500' : 'bg-amber-500'
               )}
             />
             <div>
               <span
                 className={cn(
                   'text-xs font-black block',
-                  currentStation.phase === 'INBOUND' ? 'text-blue-400' : 'text-amber-400'
+                  currentStation.phase === 'INBOUND'
+                    ? isLight ? 'text-blue-700' : 'text-blue-400'
+                    : isLight ? 'text-amber-700' : 'text-amber-400'
                 )}
               >
                 สถานี {currentStation.stepNumber}: {currentStation.titleTh} ({currentStation.phase === 'INBOUND' ? 'ขาเข้ารับสินค้า' : 'ขาออกส่งมอบ'})
               </span>
-              <span className="text-[10px] text-slate-300 block">{currentStation.subtitle}</span>
+              <span className={cn('text-[10px] block', isLight ? 'text-slate-600 font-medium' : 'text-slate-300')}>{currentStation.subtitle}</span>
             </div>
           </div>
 
           {/* Tour Play/Pause, Speed & Sound Controls */}
-          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1.5 rounded-2xl shadow-xl flex items-center gap-2 pointer-events-auto">
+          <div
+            className={cn(
+              'backdrop-blur-md border p-1.5 rounded-2xl shadow-xl flex items-center gap-2 pointer-events-auto transition-colors duration-200',
+              isLight
+                ? 'bg-white/95 border-slate-200/90 text-slate-800 shadow-slate-200/50'
+                : 'bg-slate-900/90 border-slate-700/80 text-white shadow-xl'
+            )}
+          >
             <button
               onClick={() => setIsPlayingTour(!isPlayingTour)}
               className={cn(
                 'px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all',
-                isPlayingTour ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 hover:bg-slate-700 text-white'
+                isPlayingTour
+                  ? 'bg-amber-500 text-slate-950 font-black'
+                  : isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                  : 'bg-slate-800 hover:bg-slate-700 text-white'
               )}
             >
               {isPlayingTour ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
@@ -2704,14 +2938,23 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             </button>
 
             {/* Speed Selector */}
-            <div className="flex items-center gap-0.5 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">
+            <div
+              className={cn(
+                'flex items-center gap-0.5 p-0.5 rounded-xl border',
+                isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950/80 border-slate-800'
+              )}
+            >
               {([1, 2, 5] as const).map((spd) => (
                 <button
                   key={spd}
                   onClick={() => setTourSpeed(spd)}
                   className={cn(
                     'px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all',
-                    tourSpeed === spd ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                    tourSpeed === spd
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : isLight
+                      ? 'text-slate-500 hover:text-slate-900'
+                      : 'text-slate-400 hover:text-white'
                   )}
                 >
                   {spd}x
@@ -2722,10 +2965,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             {/* Sound Toggle */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              className={cn(
+                'p-1.5 rounded-xl transition-colors',
+                isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+              )}
               title={soundEnabled ? 'ปิดเสียงเอฟเฟกต์' : 'เปิดเสียงเอฟเฟกต์'}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-500" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
             </button>
           </div>
         </div>
