@@ -12,26 +12,20 @@ import {
   ChevronLeft,
   CheckCircle2,
   AlertTriangle,
-  Info,
-  Sparkles,
-  TrendingUp,
-  Activity,
-  Layers,
-  Award,
   BookOpen,
-  ArrowRight,
-  Eye,
   Maximize2,
   Compass,
-  Boxes,
+  Activity,
   HelpCircle,
-  ShieldCheck,
-  Zap,
+  Eye,
+  Layers,
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';
-import { RackConfig, WarehouseLayout } from '@/lib/warehouseLayout';
+import { RackConfig, WarehouseLayout, binCodeFor } from '@/lib/warehouseLayout';
 
 export type ProcessStation = {
   id: number;
@@ -64,10 +58,10 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     id: 1,
     stepNumber: 1,
     titleTh: '1. รับสินค้าเข้า (Inbound)',
-    titleEn: 'Inbound Receiving & Unloading',
+    titleEn: 'Inbound Receiving & Unload',
     subtitle: 'ตรวจรับตู้สินค้าและเทียบเอกสาร ASN',
     area: 'Dock 01 - Inbound Staging',
-    description: 'เทียบรถบรรทุกเข้าช่องโหลด (Dock Leveler) ตรวจนับจำนวนกล่อง/พาเลท เทียบกับใบกำกับส่งของ (Delivery Note) และ ASN ในระบบ WMS พร้อมออกรหัส LPN (License Plate Number) ประจำพาเลท',
+    description: 'เทียบรถบรรทุกเข้าช่องโหลด (Dock Leveler) พนักงานใช้แฮนด์พาเลทขนถ่ายพาเลทสินค้าลงจากท้ายรถ ตรวจนับจำนวนกล่องเทียบกับใบกำกับส่งของ (Delivery Note) และ ASN พร้อมติดรหัส LPN',
     keyTerms: [
       { term: 'ASN', meaning: 'Advanced Shipping Notice (เอกสารแจ้งส่งสินค้าล่วงหน้า)' },
       { term: 'LPN', meaning: 'License Plate Number (รหัสบาร์โค้ดประจำพาเลท)' },
@@ -99,10 +93,10 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     id: 2,
     stepNumber: 2,
     titleTh: '2. ตรวจรับคุณภาพ (QC)',
-    titleEn: 'Quality Control & Handover',
-    subtitle: 'สุ่มตรวจความสมบูรณ์และวันหมดอายุ',
-    area: 'Station QC - Inbound Gate',
-    description: 'นำตัวอย่างเข้าสถานี QC เพื่อตรวจสอบตามเกณฑ์สุ่ม AQL ตรวจเช็คบาร์โค้ด SKU, ล็อตการผลิต (Lot Number) และวันหมดอายุ (Expiry Date) ให้มีอายุคงเหลือ (Shelf-life) ตามข้อตกลงของลูกค้า',
+    titleEn: 'Quality Gate & Inspection',
+    subtitle: 'พนักงานส่งต่อสินค้าเข้าโต๊ะตรวจ QC',
+    area: 'Station QC - Inspection Gate',
+    description: 'พนักงานลากพาเลทสินค้าจากจุดดรอปหน้าท่าเทียบ ส่งต่อเข้าสถานีตรวจ QC ทำการสุ่มตรวจตามเกณฑ์ AQL เช็คบาร์โค้ด SKU ล็อตผลิต และวันหมดอายุ (Shelf-life)',
     keyTerms: [
       { term: 'AQL', meaning: 'Acceptable Quality Limit (เกณฑ์มาตรฐานสุ่มตรวจ)' },
       { term: 'Shelf-life', meaning: 'อายุการเก็บรักษาขั้นต่ำของสินค้า' },
@@ -111,7 +105,7 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     qcChecklist: [
       'ตรวจสอบวันหมดอายุ (Expiry Date) ต้องคงเหลือไม่น้อยกว่า 75% ของอายุสินค้า',
       'ทดสอบยิงสแกนบาร์โค้ด SKU ระดับชิ้น/กล่อง ต้องอ่านได้รวดเร็วคมชัด',
-      'ติดป้ายสติ๊กเกอร์สถานะ "QC PASSED" สีเขียวก่อนปล่อยเข้าโซนจัดเก็บ',
+      'ติดป้ายสติ๊กเกอร์สถานะ "QC PASSED" สีเขียวก่อนส่งต่อให้โฟล์กลิฟต์',
     ],
     safetyRules: [
       'ใช้คัตเตอร์เซฟตี้ที่มีระบบดึงใบมีดกลับอัตโนมัติเมื่อกรีดเทปกล่อง',
@@ -134,10 +128,10 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     id: 3,
     stepNumber: 3,
     titleTh: '3. จัดเก็บเข้าชั้น (Putaway)',
-    titleEn: 'Directed Putaway to Racks',
-    subtitle: 'โฟล์กลิฟต์ยกพาเลทเข้าแร็คตามพิกัดชี้แนะ',
+    titleEn: 'Forklift Directed Putaway',
+    subtitle: 'โฟล์กลิฟต์ยกพาเลทจาก QC เข้าแร็ค',
     area: 'Racks - Storage Bins',
-    description: 'ระบบ WMS คำนวณพิกัดจัดเก็บที่เหมาะสมที่สุด (Directed Putaway) ตามมิติสินค้า อัตราหมุนเวียน (ABC Slotting) และน้ำหนัก รถโฟล์กลิฟต์สแกนพิกัดช่อง (Bin Barcode) เพื่อยืนยันว่าเก็บตรงตามตำแหน่งจริง',
+    description: 'รถโฟล์กลิฟต์รับพาเลทที่ผ่าน QC ขับเข้าสู่ช่องทางเดินแร็คตามพิกัดที่ WMS ชี้แนะ (Directed Putaway) ยกงาขึ้นวางพาเลทเข้าช่องจัดเก็บ และสแกนบาร์โค้ดช่อง (Location Bin) ยืนยัน',
     keyTerms: [
       { term: 'Directed Putaway', meaning: 'การระบุพิกัดจัดเก็บอัตโนมัติตามอัลกอริทึม WMS' },
       { term: 'ABC Slotting', meaning: 'การจัดวางสินค้าตามความถี่ในการเบิก (A = หยิบเร็วสุด)' },
@@ -150,7 +144,7 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     ],
     safetyRules: [
       'ความเร็วรถโฟล์กลิฟต์ในช่องทางเดินห้ามเกิน 8 กม./ชม.',
-      'ห้ามเดินเท้าตัดหน้ารถโฟล์กลิฟต์ขณะที่เสายกกำลังทำงาน',
+      'ห้ามคนเดินเท้าตัดหน้ารถโฟล์กลิฟต์ขณะที่เสายกกำลังทำงาน',
     ],
     kpi: { label: 'ความแม่นยำพิกัดจัดเก็บ', target: '100%', current: '99.9', unit: '%' },
     quiz: {
@@ -169,10 +163,10 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     id: 4,
     stepNumber: 4,
     titleTh: '4. ปล่อยรอบคำสั่งซื้อ (Wave)',
-    titleEn: 'Wave Release & Order Grouping',
-    subtitle: 'รวมคำสั่งซื้อเพื่อประสิทธิภาพการหยิบสูงสุด',
+    titleEn: 'Wave Release & Dispatching',
+    subtitle: 'ศูนย์ควบคุมปล่อยคำสั่งเบิกจ่าย',
     area: 'Control Tower - Operation Hub',
-    description: 'Control Tower วางแผนจัดกลุ่มคำสั่งซื้อ (Wave Management) ตามรอบเวลาขนส่ง เส้นทางเดินรถ (Route) หรือประเภทสินค้า เพื่อลดระยะทางและเวลาในการเดินหยิบของพนักงาน',
+    description: 'Control Tower วิเคราะห์รอบคำสั่งซื้อและเส้นทางเดินรถ ปล่อยคลื่นคำสั่งซื้อ (Wave Release) ส่งสัญญาณงานไปยังเครื่อง PDA ของพนักงานหยิบประจำโซน เพื่อเตรียมการหยิบตามลำดับตัดรอบ (Cut-off Time)',
     keyTerms: [
       { term: 'Wave Management', meaning: 'การจัดกลุ่มใบสั่งซื้อเพื่อปล่อยงานเป็นรอบอย่างมีประสิทธิภาพ' },
       { term: 'Cut-off Time', meaning: 'เวลาปิดรับออเดอร์ของแต่ละรอบขนส่ง' },
@@ -201,11 +195,11 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
   {
     id: 5,
     stepNumber: 5,
-    titleTh: '5. หยิบสินค้า (Picking)',
-    titleEn: 'Batch & Zone Picking',
-    subtitle: 'หยิบตามระบบเดินแบบลดระยะทาง (Shortest Path)',
+    titleTh: '5. พนักงานหยิบสินค้า (Picking)',
+    titleEn: 'Batch Picking to Cart',
+    subtitle: 'พนักงานเดินหยิบใส่รถเข็นเบิกจ่าย',
     area: 'Aisle Storage - Pick Face',
-    description: 'พนักงานหยิบสินค้าตาม Pick List ในแอปมือถือ PDA พร้อมสแกนบาร์โค้ด SKU และบาร์โค้ดช่องเก็บ เพื่อหยิบสินค้าตามมาตรฐาน FEFO (First-Expired, First-Out)',
+    description: 'พนักงานเข็นรถเข็นเบิกจ่าย (Pick Cart) เดินเข้าตามช่องทางเดิน หยิบสินค้าจากชั้นวางตามกฎ FEFO (First-Expired, First-Out) ยิงสแกน SKU และจำนวน นำสินค้าลงตระกร้าแยกออเดอร์บนรถเข็น',
     keyTerms: [
       { term: 'FEFO', meaning: 'First-Expired, First-Out (สินค้าที่หมดอายุก่อน ต้องหยิบก่อนเสมอ)' },
       { term: 'Pick Cart', meaning: 'รถเข็นแยกช่องบรรจุสินค้าสำหรับ Batch Picking' },
@@ -235,11 +229,11 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
   {
     id: 6,
     stepNumber: 6,
-    titleTh: '6. ลำเลียงขึ้นสายพาน (Conveyor)',
-    titleEn: 'Conveyor Induction & Flow',
-    subtitle: 'ส่งต่อสินค้าอัตโนมัติเข้าสู่สถานีตรวจสอบและแพ็ค',
-    area: 'Main Line - Motorized Conveyor',
-    description: 'นำกล่องสินค้า/ตะกร้าที่หยิบเสร็จวางขึ้นสายพานลำเลียง (Roller Conveyor) ตัวเซนเซอร์จะอ่านบาร์โค้ดและส่งต่อความเร็วอย่างต่อเนื่องไปยังสถานีแพ็คกิ้ง',
+    titleTh: '6. ส่งขึ้นสายพาน (Conveyor Feed)',
+    titleEn: 'Conveyor Induction & Feed',
+    subtitle: 'พนักงานเข็นของมาป้อนขึ้นสายพานลำเลียง',
+    area: 'Conveyor Feed - Main Line',
+    description: 'พนักงานเข็นรถเข็นจากโซนหยิบ มายังหัวสายพานลำเลียง (Conveyor Induction) ยกกล่อง/ตะกร้าป้อนขึ้นบนลูกกลิ้งมอเตอร์ เพื่อลำเลียงส่งต่อไปยังสถานีบรรจุหีบห่ออย่างต่อเนื่อง',
     keyTerms: [
       { term: 'Conveyor Induction', meaning: 'จุดป้อนกล่องพัสดุขึ้นสู่ระบบสายพานลำเลียง' },
       { term: 'Zone Accumulation', meaning: 'ระบบหยุดพักกล่องอัตโนมัติเพื่อป้องกันกล่องชนกระแทก' },
@@ -270,9 +264,9 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     stepNumber: 7,
     titleTh: '7. บรรจุกล่อง & ตรวจสอบ (Packing)',
     titleEn: 'Packing, Cushioning & Audit',
-    subtitle: 'แพ็คสินค้าลงกล่องพัสดุและตรวจสอบซ้ำ (Order Audit)',
+    subtitle: 'พนักงานรับกล่องจากสายพานเข้าโต๊ะแพ็ค',
     area: 'Packing Station #03',
-    description: 'พนักงานสถานีแพ็ค สแกนบาร์โค้ดสินค้าทีละชิ้น ระบบยืนยันครบถ้วนถูกต้อง ใส่แผ่นกันกระแทก (Air Pillow/Bubble) และปิดผนึกเทปกาวนิรภัย WMS',
+    description: 'กล่องเลื่อนมาตามสายพานถึงโต๊ะแพ็ค พนักงานยกกล่องลงมาตรวจสอบรายการสินค้า (Order Audit) ใส่แผ่นกันกระแทก (Air Cushion) และปิดผนึกเทปกาวนิรภัย WMS อย่างแน่นหนา',
     keyTerms: [
       { term: 'Order Audit', meaning: 'การสแกนตรวจเช็คจำนวนและความถูกต้องของสินค้าครบ 100% ก่อนปิดกล่อง' },
       { term: 'Dunnage', meaning: 'วัสดุกันกระแทกเพื่อปกป้องสินค้าระหว่างการขนส่ง' },
@@ -305,9 +299,9 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     stepNumber: 8,
     titleTh: '8. ชั่งน้ำหนัก & ติดฉลาก (Label)',
     titleEn: 'Weigh, Volumetric & Shipping Label',
-    subtitle: 'คำนวณน้ำหนัก ขนาดกล่อง และพิมพ์ใบปะหน้าพัสดุ',
-    area: 'Station Weigh & Print - Auto Scale',
-    description: 'พัสดุผ่านแท่นชั่งน้ำหนักดิจิทัลและกล้องวัดขนาดลูกบาศก์ (Dimensioner) เพื่อคำนวณ Volumetric Weight พร้อมพิมพ์ฉลากจัดส่ง (Shipping Label/Waybill) ปิดผนึกที่มุมกล่อง',
+    subtitle: 'เลื่อนกล่องเข้าแท่นชั่งและพิมพ์ใบปะหน้า',
+    area: 'Station Weigh & Auto Print',
+    description: 'พนักงานเลื่อนกล่องจากโต๊ะแพ็คขึ้นแท่นชั่งน้ำหนักดิจิทัล เซนเซอร์วัดมิติตัวกล่องเพื่อคำนวณ Volumetric เครื่องพิมพ์ความร้อนพิมพ์ใบปะหน้าขนส่ง (Waybill) ออกมาติดบนกล่องทันที',
     keyTerms: [
       { term: 'Volumetric Weight', meaning: 'น้ำหนักตามปริมาตรคำนวณจาก (กว้าง × ยาว × สูง) ÷ 5000' },
       { term: 'Waybill / Tracking No.', meaning: 'ฉลากบาร์โค้ดติดตามสถานะพัสดุสำหรับผู้ให้บริการขนส่ง' },
@@ -337,9 +331,9 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     stepNumber: 9,
     titleTh: '9. คัดแยกปลายทาง (Sorting)',
     titleEn: 'Automated Routing & Sorting',
-    subtitle: 'คัดแยกพัสดุลงช่องตามศูนย์กระจายสินค้า (Hub)',
+    subtitle: 'กล่องเลื่อนลงรางคัดแยกตามศูนย์กระจายสินค้า',
     area: 'Chute Sorting Area - Sorter Line',
-    description: 'กล้องสแกนเนอร์อ่านบาร์โค้ดบนฉลากพัสดุ และสั่งแขนผลัก/รางเลื่อนแยกกล่องลง Chute ประจำจังหวัดหรือเส้นทางขนส่ง เช่น สุราษฎร์ธานี, หาดใหญ่, กรุงเทพฯ',
+    description: 'กล่องพัสดุเลื่อนต่อตามสายพาน กล้องสแกนเนอร์อ่านบาร์โค้ดใบปะหน้า แขนผลักอัตโนมัติจะคัดแยกกล่องสไลด์ลงราง Chute ประจำจังหวัดปลายทาง เช่น สุราษฎร์ธานี หาดใหญ่ หรือกรุงเทพฯ',
     keyTerms: [
       { term: 'Sorter Chute', meaning: 'รางปล่อยพัสดุลงสู่กระสอบหรือกรงเหล็กตามรหัสปลายทาง' },
       { term: 'Hub Destination', meaning: 'ศูนย์กระจายสินค้าปลายทางของบริษัทขนส่ง' },
@@ -369,9 +363,9 @@ export const BASE_PROCESS_STATIONS: Omit<ProcessStation, 'coords'>[] = [
     stepNumber: 10,
     titleTh: '10. โหลดขึ้นรถ & จัดส่ง (Dispatch)',
     titleEn: 'Outbound Loading & Fleet Dispatch',
-    subtitle: 'จัดเรียงขึ้นรถขนส่ง NEXUS Fleet ตามเส้นทาง',
+    subtitle: 'พนักงานยกกล่องจากรางโหลดขึ้นรถบรรทุก',
     area: 'Dock 04 - Outbound Bay',
-    description: 'เจ้าหน้าที่สแกนกล่อง/พาเลทขึ้นรถบรรทุกขนส่ง (Load Confirmation) จัดเรียงสินค้าตามลำดับการแวะส่ง (Last-In, First-Out: LIFO) ปิดซีลล็อคท้ายตู้ และเซ็นรับมอบงาน ePOD',
+    description: 'พนักงานประจำลานโหลด ยกกล่องพัสดุจากรางคัดแยก เดินโหลดเข้าสู่ตู้รถบรรทุก NEXUS Fleet ตามลำดับการส่งมอบ (LIFO) ล็อคซีลประตูท้ายรถ และกดยืนยันมอบงานขนส่งในระบบ ePOD',
     keyTerms: [
       { term: 'LIFO Loading', meaning: 'สินค้าที่ส่งจุดแรก ต้องโหลดขึ้นรถเป็นลำดับสุดท้าย เพื่อเปิดหยิบง่าย' },
       { term: 'Manifest', meaning: 'ใบกำกับการขนส่งสินค้าแสดงรายการพัสดุทั้งหมดบนคันรถ' },
@@ -416,6 +410,74 @@ interface CameraTransition {
   duration: number;
 }
 
+// Helper to draw rounded rectangle in 2D Canvas for crisp 3D Text Badges
+function drawRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Generate high-resolution 3D Text Badge billboard sprite
+function createStationBadgeSprite(station: ProcessStation, isActive: boolean): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 140;
+  const ctx = canvas.getContext('2d')!;
+
+  // Drop shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 4;
+
+  // Background Capsule
+  ctx.fillStyle = isActive ? 'rgba(245, 158, 11, 0.96)' : 'rgba(15, 23, 42, 0.90)';
+  ctx.strokeStyle = isActive ? '#fbbf24' : '#38bdf8';
+  ctx.lineWidth = isActive ? 5 : 3;
+  drawRoundRect(ctx, 10, 10, 620, 120, 28);
+  ctx.fill();
+  ctx.stroke();
+
+  // Reset shadow for text
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Badge Circle for Number
+  ctx.fillStyle = isActive ? '#0f172a' : '#0284c7';
+  ctx.beginPath();
+  ctx.arc(70, 70, 42, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = isActive ? '#fbbf24' : '#ffffff';
+  ctx.font = '900 48px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(station.stepNumber), 70, 72);
+
+  // Station Title Text
+  ctx.fillStyle = isActive ? '#0f172a' : '#ffffff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(station.titleTh, 130, 52);
+
+  // Subtitle Area Text
+  ctx.fillStyle = isActive ? '#3b1c06' : '#94a3b8';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText(station.subtitle, 130, 94);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(8.2, 1.8, 1);
+  sprite.userData = { stationId: station.id };
+  return sprite;
+}
+
 export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { branchId?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
@@ -424,7 +486,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
   const [activeTab, setActiveTab] = useState<'sop' | 'live' | 'quiz'>('sop');
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Camera Mode: 'OVERVIEW' keeps bird's eye view without zooming in! 'FOCUS' zooms into station.
+  // Camera Mode: OVERVIEW keeps bird's eye view without zooming in! FOCUS zooms into station.
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'FOCUS'>('OVERVIEW');
   const [isAutoRotate, setIsAutoRotate] = useState(false);
 
@@ -433,14 +495,14 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
   const [quizScore, setQuizScore] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(0);
 
-  // Real Layout & Products from WMS
+  // Real Layout & Products & Stock from WMS
   const [layout, setLayout] = useState<WarehouseLayout | null>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [binStockRows, setBinStockRows] = useState<any[]>([]);
   const [loadingLayout, setLoadingLayout] = useState(true);
 
-  // Load actual warehouse layout and products
-  useEffect(() => {
-    let isMounted = true;
+  // Fetch actual layout and per-bin stock
+  const loadWarehouseData = useCallback(() => {
     setLoadingLayout(true);
     Promise.all([
       fetch(getApiUrl(`/api/warehouse/layout?branchId=${encodeURIComponent(branchId)}`))
@@ -449,84 +511,135 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       fetch(getApiUrl('/api/products'))
         .then((r) => (r.ok ? r.json() : []))
         .catch(() => []),
+      fetch(getApiUrl('/api/warehouse/bin-stock'))
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
     ])
-      .then(([layoutRes, prodsRes]) => {
-        if (!isMounted) return;
+      .then(([layoutRes, prodsRes, stockRes]) => {
         if (layoutRes?.success && layoutRes.data) {
           setLayout(layoutRes.data);
         }
         if (Array.isArray(prodsRes)) {
           setProducts(prodsRes);
         }
+        if (stockRes?.success && Array.isArray(stockRes.rows)) {
+          setBinStockRows(stockRes.rows);
+        }
       })
       .finally(() => {
-        if (isMounted) setLoadingLayout(false);
+        setLoadingLayout(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, [branchId]);
 
-  // Compute warehouse boundaries and dynamic station positions based on real layout
-  const { floorWidth, floorLength, stations } = useMemo(() => {
+  useEffect(() => {
+    loadWarehouseData();
+  }, [loadWarehouseData]);
+
+  // Map products and bin quantities
+  const binDataMap = useMemo(() => {
+    const map = new Map<string, { products: any[]; totalStock: number; status: string }>();
+
+    // 1. From products.location
+    products.forEach((p) => {
+      const loc = String(p.location || 'UNASSIGNED').trim().toUpperCase();
+      if (!map.has(loc)) {
+        map.set(loc, { products: [], totalStock: 0, status: 'NORMAL' });
+      }
+      const entry = map.get(loc)!;
+      entry.products.push(p);
+      entry.totalStock += Number(p.stock || 0);
+      if (entry.totalStock <= 5) entry.status = 'LOW_STOCK';
+    });
+
+    // 2. From binStock rows (if available)
+    binStockRows.forEach((r) => {
+      const loc = String(r.binCode || '').trim().toUpperCase();
+      if (!loc) return;
+      if (!map.has(loc)) {
+        map.set(loc, { products: [], totalStock: 0, status: 'NORMAL' });
+      }
+      const entry = map.get(loc)!;
+      entry.totalStock += Number(r.quantity || 0);
+      const prod = products.find((p) => p.sku === r.sku || p.id === r.sku);
+      if (prod && !entry.products.some((x) => x.id === prod.id)) {
+        entry.products.push(prod);
+      }
+      if (entry.totalStock <= 5) entry.status = 'LOW_STOCK';
+    });
+
+    return map;
+  }, [products, binStockRows]);
+
+  // Compute warehouse boundaries and logical station waypoints
+  const { floorWidth, floorLength, stations, storageCenter } = useMemo(() => {
     const rawRacks = layout?.racks || [];
-    let minX = -18;
-    let maxX = 18;
-    let minZ = -18;
-    let maxZ = 18;
+    let minX = -16;
+    let maxX = 16;
+    let minZ = -16;
+    let maxZ = 16;
 
     if (rawRacks.length > 0) {
       rawRacks.forEach((r) => {
         const halfLen = (r.bays * (r.bayWidth || 2.5)) / 2;
-        minX = Math.min(minX, r.posX - halfLen - 3);
-        maxX = Math.max(maxX, r.posX + halfLen + 3);
-        minZ = Math.min(minZ, r.posZ - (r.rackDepth || 2) - 3);
-        maxZ = Math.max(maxZ, r.posZ + (r.rackDepth || 2) + 8);
+        minX = Math.min(minX, r.posX - halfLen - 2);
+        maxX = Math.max(maxX, r.posX + halfLen + 2);
+        minZ = Math.min(minZ, r.posZ - (r.rackDepth || 2) - 2);
+        maxZ = Math.max(maxZ, r.posZ + (r.rackDepth || 2) + 6);
       });
     }
 
     const calculatedWidth = Math.max(layout?.widthM || 36, maxX - minX + 16, 42);
-    const calculatedLength = Math.max(layout?.lengthM || 42, maxZ - minZ + 18, 46);
+    const calculatedLength = Math.max(layout?.lengthM || 44, maxZ - minZ + 18, 48);
 
-    // Staging and dock positions aligned with actual layout
+    // Staging / Dock coordinates
     const dockZ = Math.min(18, calculatedLength / 2 - 4);
     const inDockX = -calculatedWidth / 2 + 5;
     const outDockX = calculatedWidth / 2 - 5;
-    const rackAisleX = rawRacks.length > 0 ? rawRacks[0].posX : -4;
-    const rackAisleZ = rawRacks.length > 0 ? rawRacks[0].posZ : -2;
+
+    // Center of storage aisles
+    const storeX = (minX + maxX) / 2;
+    const storeZ = (minZ + maxZ) / 2 - 2;
+
+    // Look for real storage rack with products for Putaway & Pick face
+    let putawayX = rawRacks[0]?.posX ?? -6;
+    let putawayZ = rawRacks[0]?.posZ ?? -4;
+    let pickingX = rawRacks[rawRacks.length - 1]?.posX ?? 6;
+    let pickingZ = rawRacks[rawRacks.length - 1]?.posZ ?? -4;
+
+    // Conveyor line coordinates in front of racks
+    const conveyorZ = 6.5;
 
     const dynamicStations: ProcessStation[] = BASE_PROCESS_STATIONS.map((base) => {
       let coords: [number, number, number];
       switch (base.id) {
-        case 1: // Inbound Receiving
+        case 1: // Inbound Receiving (Dock 01)
           coords = [inDockX, 1.2, dockZ];
           break;
-        case 2: // QC Inspection
-          coords = [inDockX + 7, 1.2, dockZ - 4];
+        case 2: // QC Inspection Gate
+          coords = [inDockX + 7, 1.2, dockZ - 3];
           break;
-        case 3: // Putaway
-          coords = [rackAisleX, 2.2, rackAisleZ];
+        case 3: // Putaway into Racks
+          coords = [putawayX, 2.2, putawayZ];
           break;
         case 4: // Wave Release (Control Tower)
-          coords = [0, 1.5, 4];
+          coords = [0, 1.4, 2.5];
           break;
-        case 5: // Picking
-          coords = [rackAisleX + 6, 1.2, rackAisleZ + 3];
+        case 5: // Batch Picking at Rack Face
+          coords = [pickingX, 1.2, pickingZ];
           break;
-        case 6: // Conveyor Induction
-          coords = [-3, 1.2, 8];
+        case 6: // Conveyor Induction Feed
+          coords = [-4, 1.2, conveyorZ];
           break;
-        case 7: // Packing Station
-          coords = [5, 1.2, 8];
+        case 7: // Packing Station Table
+          coords = [4, 1.2, conveyorZ];
           break;
-        case 8: // Weigh & Label
-          coords = [11, 1.2, 8];
+        case 8: // Weigh & Label Scale
+          coords = [10, 1.2, conveyorZ];
           break;
-        case 9: // Automated Sorting
-          coords = [15, 1.2, 5];
+        case 9: // Automated Sorting Chutes
+          coords = [15, 1.2, conveyorZ - 2];
           break;
-        case 10: // Dispatch & Loading
+        case 10: // Dispatch & Outbound Dock
           coords = [outDockX, 1.2, dockZ];
           break;
         default:
@@ -543,6 +656,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       floorWidth: calculatedWidth,
       floorLength: calculatedLength,
       stations: dynamicStations,
+      storageCenter: { x: storeX, z: storeZ },
     };
   }, [layout]);
 
@@ -554,9 +668,12 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
     parcelMesh: THREE.Group;
-    workers: THREE.Group[];
+    badgeSprites: THREE.Sprite[];
     stationBeacons: THREE.Mesh[];
-    stationPins: THREE.Group[];
+    inboundWorkerGroup: THREE.Group;
+    forkliftGroup: THREE.Group;
+    pickerWorkerGroup: THREE.Group;
+    outboundLoaderGroup: THREE.Group;
     cam: CameraState;
     camTransition: CameraTransition | null;
     applyCamera: () => void;
@@ -583,9 +700,9 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           osc.start();
           osc.stop(ctx.currentTime + 0.18);
         } else if (type === 'correct') {
-          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); // E5
-          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16); // G5
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08);
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16);
           gain.gain.setValueAtTime(0.12, ctx.currentTime);
           gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.32);
           osc.start();
@@ -604,7 +721,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     [soundEnabled]
   );
 
-  // Transition to target station
+  // Station navigation handler
   const goToStation = useCallback(
     (idx: number, forceCameraMove = false) => {
       const nextIdx = Math.max(0, Math.min(stations.length - 1, idx));
@@ -616,7 +733,14 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       const t = threeRef.current;
       const targetStation = stations[nextIdx];
 
-      // If in Overview mode and NOT forcing camera move: DO NOT ZOOM IN! Keep user's wide view!
+      // Update badge sprite scales & appearance
+      t.badgeSprites.forEach((sp, i) => {
+        const isActive = i === nextIdx;
+        sp.scale.set(isActive ? 9.5 : 7.2, isActive ? 2.1 : 1.6, 1);
+        sp.position.y = isActive ? 4.5 : 3.8;
+      });
+
+      // If in Overview mode and NOT forcing camera move: KEEP WIDE VIEW! Do not zoom in!
       if (viewMode === 'OVERVIEW' && !forceCameraMove) {
         return;
       }
@@ -625,9 +749,9 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       const targetCam: CameraState = {
         tx: targetStation.coords[0],
         tz: targetStation.coords[2],
-        dist: 22,
+        dist: 24,
         rotX: 0.58,
-        rotY: t.cam.rotY, // preserve current user view angle
+        rotY: t.cam.rotY,
       };
 
       t.camTransition = {
@@ -640,12 +764,12 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     [stations, viewMode, playChime]
   );
 
-  // Camera View Mode switcher
+  // Camera presets
   const setCameraOverview = useCallback(() => {
     setViewMode('OVERVIEW');
     if (!threeRef.current) return;
     const t = threeRef.current;
-    const overviewDist = Math.max(50, Math.max(floorWidth, floorLength) * 1.15);
+    const overviewDist = Math.max(52, Math.max(floorWidth, floorLength) * 1.15);
 
     t.camTransition = {
       from: { ...t.cam },
@@ -693,7 +817,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     return () => clearInterval(timer);
   }, [isPlayingTour, tourSpeed, stations.length, viewMode, goToStation]);
 
-  // Three.js Virtual Facility Initialization
+  // Three.js 3D Virtual Facility Initialization
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -708,7 +832,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 400);
 
-    const initialDist = Math.max(50, Math.max(floorWidth, floorLength) * 1.15);
+    const initialDist = Math.max(52, Math.max(floorWidth, floorLength) * 1.15);
     const cam: CameraState = {
       tx: 0,
       tz: 2,
@@ -762,7 +886,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     blueFillLight.position.set(-35, 30, -30);
     scene.add(blueFillLight);
 
-    // 4. Warehouse Floor with Industrial Safety Markings
+    // 4. Warehouse Concrete Floor & Grid
     const floorGeo = new THREE.PlaneGeometry(floorWidth, floorLength);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x111622,
@@ -774,7 +898,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Grid Floor
     const gridHelper = new THREE.GridHelper(
       Math.max(floorWidth, floorLength),
       Math.round(Math.max(floorWidth, floorLength) / 2),
@@ -784,7 +907,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
-    // Safety perimeter lines
+    // Safety perimeter borders
     const borderMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
     const borderGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-floorWidth / 2 + 1.5, 0.04, -floorLength / 2 + 1.5),
@@ -796,7 +919,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     const perimeterLine = new THREE.Line(borderGeo, borderMat);
     scene.add(perimeterLine);
 
-    // 5. Build Walls & Rollup Dock Doors
+    // 5. Walls & Dock Doors
     const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a2233, roughness: 0.85 });
     const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorWidth, 8, 0.8), wallMat);
     backWall.position.set(0, 4, -floorLength / 2);
@@ -815,17 +938,15 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
     // Roll-up Dock Doors (Inbound left, Outbound right)
     const dockZ = Math.min(18, floorLength / 2 - 4);
-    const dockDoorMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
-    const inDoor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 6), dockDoorMat);
+    const inDoor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 6), new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 }));
     inDoor.position.set(-floorWidth / 2 + 0.4, 2.75, dockZ);
     scene.add(inDoor);
 
-    const dockDoorOutMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.4 });
-    const outDoor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 6), dockDoorOutMat);
+    const outDoor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 6), new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.4 }));
     outDoor.position.set(floorWidth / 2 - 0.4, 2.75, dockZ);
     scene.add(outDoor);
 
-    // 6. Build Transport Trucks (NEXUS Fleet)
+    // 6. Transport Trucks (NEXUS Fleet)
     const createTruck = (x: number, z: number, rotY: number, colorHex: number) => {
       const truck = new THREE.Group();
       const cabMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 });
@@ -864,34 +985,32 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       return truck;
     };
 
-    createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b); // Inbound Truck
-    createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981); // Outbound Truck
+    createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b); // Inbound Truck outside Dock 1
+    createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981); // Outbound Truck outside Dock 4
 
-    // 7. BUILD RACKS (Real Warehouse Layout or Default)
-    const steelPostMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 });
-    const beamMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5, roughness: 0.4 });
+    // 7. BUILD ACCURATE RACKS & REAL FLOOR-BLOCK GOODS
+    const steelPostMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+    const beamMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.4 });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.85 });
-    const cartonMats = [
-      new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 }),
-      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }),
-      new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 }),
-      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 }),
-    ];
+    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.6 }); // Real stock OK
+    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }); // Real stock LOW
+    const emptySlotMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, transparent: true, opacity: 0.35 });
 
     const rawRacks = layout?.racks || [];
 
-    const buildSingleRack = (rack: RackConfig) => {
+    const buildFullRack = (rack: RackConfig) => {
       const rackGroup = new THREE.Group();
       rackGroup.position.set(rack.posX, 0, rack.posZ);
       rackGroup.rotation.y = rack.rotationY || 0;
 
       const totalRackLength = rack.bays * (rack.bayWidth || 2.8);
       const isFloor = rack.type === 'CROSS_DOCK' || rack.type === 'FLOOR_BLOCK';
-      const rackH = isFloor ? rack.levels * (rack.levelHeight || 0.6) : rack.levels * (rack.levelHeight || 1.8) + 0.3;
+      const layerH = Math.max(0.4, Number(rack.levelHeight) || 0.6);
+      const totalRackHeight = isFloor ? rack.levels * layerH : rack.levels * (rack.levelHeight || 1.8) + 0.3;
 
       if (isFloor) {
-        // Floor Block pad
-        const padGeo = new THREE.PlaneGeometry(totalRackLength, rack.rackDepth || 2);
+        // Floor block pad
+        const padGeo = new THREE.PlaneGeometry(totalRackLength, rack.rackDepth || 3);
         const padMat = new THREE.MeshStandardMaterial({
           color: rack.type === 'CROSS_DOCK' ? 0x241d08 : 0x0f1c24,
           roughness: 0.9,
@@ -901,49 +1020,98 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         padMesh.position.set(0, 0.03, 0);
         padMesh.receiveShadow = true;
         rackGroup.add(padMesh);
+
+        // Floor border lines
+        const floorBorderMat = new THREE.LineBasicMaterial({
+          color: rack.type === 'CROSS_DOCK' ? 0xfacc15 : 0x4cd7f6,
+          linewidth: 2,
+        });
+        const floorBorderGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-totalRackLength / 2, 0.04, -rack.rackDepth / 2),
+          new THREE.Vector3(totalRackLength / 2, 0.04, -rack.rackDepth / 2),
+          new THREE.Vector3(totalRackLength / 2, 0.04, rack.rackDepth / 2),
+          new THREE.Vector3(-totalRackLength / 2, 0.04, rack.rackDepth / 2),
+          new THREE.Vector3(-totalRackLength / 2, 0.04, -rack.rackDepth / 2),
+        ]);
+        const floorBorderLine = new THREE.Line(floorBorderGeo, floorBorderMat);
+        rackGroup.add(floorBorderLine);
+
+        // REAL FLOOR BLOCK BULK PALLETS & GOODS ON THE FLOOR
+        for (let b = 1; b <= rack.bays; b++) {
+          const binCode = binCodeFor(rack, b, 1) || `${rack.rackCode}-${b}`;
+          const binData = binDataMap.get(binCode.toUpperCase()) || binDataMap.get(binCode);
+          const hasStock = !!(binData && binData.totalStock > 0);
+          const xPos = -totalRackLength / 2 + (b - 0.5) * (rack.bayWidth || 2.8);
+
+          // Always put wooden pallet on floor block
+          const pallet = new THREE.Mesh(new THREE.BoxGeometry((rack.bayWidth || 2.8) * 0.88, 0.12, (rack.rackDepth || 3) * 0.88), woodMat);
+          pallet.position.set(xPos, 0.08, 0);
+          pallet.receiveShadow = true;
+          rackGroup.add(pallet);
+
+          // Bulk cargo stacked on floor pallet
+          const cargoMat = hasStock ? (binData.status === 'LOW_STOCK' ? stockLowMat : stockOkMat) : new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 });
+          const bulkBox = new THREE.Mesh(new THREE.BoxGeometry((rack.bayWidth || 2.8) * 0.82, 0.9, (rack.rackDepth || 3) * 0.82), cargoMat);
+          bulkBox.position.set(xPos, 0.58, 0);
+          bulkBox.castShadow = true;
+          bulkBox.receiveShadow = true;
+          rackGroup.add(bulkBox);
+        }
       } else {
-        // Upright Steel Posts
-        const postGeo = new THREE.BoxGeometry(0.12, rackH, 0.12);
+        // Vertical Steel Uprights
+        const postGeo = new THREE.BoxGeometry(0.12, totalRackHeight, 0.12);
         for (let b = 0; b <= rack.bays; b++) {
           const xPos = -totalRackLength / 2 + b * (rack.bayWidth || 2.8);
           [-rack.rackDepth / 2, rack.rackDepth / 2].forEach((zPos) => {
             const post = new THREE.Mesh(postGeo, steelPostMat);
-            post.position.set(xPos, rackH / 2, zPos);
+            post.position.set(xPos, totalRackHeight / 2, zPos);
             post.castShadow = true;
             rackGroup.add(post);
           });
         }
 
-        // Horizontal Beams & Pallet Loads
-        for (let lvl = 1; lvl <= Math.min(rack.levels, 6); lvl++) {
+        // Horizontal Beams & Individual Shelf Bins
+        const beamGeo = new THREE.BoxGeometry(totalRackLength, 0.1, 0.08);
+        for (let lvl = 1; lvl <= rack.levels; lvl++) {
           const y = lvl * (rack.levelHeight || 1.8);
-          // Front & back beams
           [-rack.rackDepth / 2, rack.rackDepth / 2].forEach((zPos) => {
-            const bMesh = new THREE.Mesh(new THREE.BoxGeometry(totalRackLength, 0.12, 0.08), beamMat);
-            bMesh.position.set(0, y, zPos);
-            rackGroup.add(bMesh);
+            const beam = new THREE.Mesh(beamGeo, beamMat);
+            beam.position.set(0, y, zPos);
+            rackGroup.add(beam);
           });
 
-          // Bay Pallets & Cartons
-          for (let b = 0; b < rack.bays; b++) {
-            const bayX = -totalRackLength / 2 + (b + 0.5) * (rack.bayWidth || 2.8);
-            // Wooden Pallet Deck
-            const deck = new THREE.Mesh(new THREE.BoxGeometry((rack.bayWidth || 2.8) * 0.85, 0.08, rack.rackDepth * 0.9), woodMat);
-            deck.position.set(bayX, y + 0.04, 0);
-            deck.receiveShadow = true;
-            rackGroup.add(deck);
+          // Wooden shelf decking across level
+          const deck = new THREE.Mesh(new THREE.BoxGeometry(totalRackLength, 0.04, rack.rackDepth + 0.04), woodMat);
+          deck.position.set(0, y + 0.06, 0);
+          deck.receiveShadow = true;
+          rackGroup.add(deck);
 
-            // Stored Product Cartons (sample stock appearance)
-            if ((lvl + b) % 2 === 0) {
-              const cartonCount = 2;
-              for (let c = 0; c < cartonCount; c++) {
-                const cMat = cartonMats[(b + lvl + c) % cartonMats.length];
-                const carton = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.65, 0.75), cMat);
-                carton.position.set(bayX + (c === 0 ? -0.45 : 0.45), y + 0.45, 0);
-                carton.castShadow = true;
-                carton.receiveShadow = true;
-                rackGroup.add(carton);
-              }
+          // Bins across each bay
+          for (let bay = 1; bay <= rack.bays; bay++) {
+            const binCode = binCodeFor(rack, bay, lvl);
+            if (!binCode) continue;
+
+            const binData = binDataMap.get(binCode.toUpperCase()) || binDataMap.get(binCode);
+            const hasStock = !!(binData && binData.totalStock > 0);
+            const xPos = -totalRackLength / 2 + (bay - 0.5) * (rack.bayWidth || 2.8);
+
+            const boxW = (rack.bayWidth || 2.8) * 0.86;
+            const boxH = Math.min(1.0, (rack.levelHeight || 1.8) * 0.65);
+            const boxD = rack.rackDepth * 0.86;
+
+            if (hasStock) {
+              // Real stocked goods matching actual WMS database!
+              const mat = binData.status === 'LOW_STOCK' ? stockLowMat : stockOkMat;
+              const stockBox = new THREE.Mesh(new THREE.BoxGeometry(boxW, boxH, boxD), mat);
+              stockBox.position.set(xPos, y + 0.08 + boxH / 2, 0);
+              stockBox.castShadow = true;
+              stockBox.receiveShadow = true;
+              rackGroup.add(stockBox);
+            } else {
+              // Empty slot indicator
+              const emptyBox = new THREE.Mesh(new THREE.BoxGeometry(boxW, boxH, boxD), emptySlotMat);
+              emptyBox.position.set(xPos, y + 0.08 + boxH / 2, 0);
+              rackGroup.add(emptyBox);
             }
           }
         }
@@ -953,30 +1121,28 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
 
     if (rawRacks.length > 0) {
-      // Render real warehouse racks from WMS configuration!
-      rawRacks.forEach(buildSingleRack);
+      rawRacks.forEach(buildFullRack);
     } else {
-      // Fallback default sample racks if no layout configured yet
+      // Clean fallback layout
       const defaultRacks: RackConfig[] = [
         { rackCode: 'Aisle-A', zoneCode: 'A', posX: -8, posZ: -8, rotationY: 0, bays: 4, levels: 3, bayWidth: 2.8, levelHeight: 1.8, rackDepth: 1.4 },
         { rackCode: 'Aisle-B', zoneCode: 'B', posX: 8, posZ: -8, rotationY: 0, bays: 4, levels: 3, bayWidth: 2.8, levelHeight: 1.8, rackDepth: 1.4 },
         { rackCode: 'Bulk-1', zoneCode: 'BULK', posX: 0, posZ: -12, rotationY: 0, bays: 2, levels: 1, bayWidth: 3.5, levelHeight: 0.5, rackDepth: 4.0, type: 'FLOOR_BLOCK' },
       ];
-      defaultRacks.forEach(buildSingleRack);
+      defaultRacks.forEach(buildFullRack);
     }
 
-    // 8. Control Tower Desk & Screen (Station 4)
+    // 8. Control Tower Terminal (Station 4)
     const deskGroup = new THREE.Group();
     const deskMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
     const desk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 1.2), deskMat);
-    desk.position.set(0, 0.45, 4);
+    desk.position.set(stations[3].coords[0], 0.45, stations[3].coords[2]);
     desk.castShadow = true;
     deskGroup.add(desk);
 
-    // Multi-Monitor Screen on Control Tower
-    const screenMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.6 });
+    const screenMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.7 });
     const screen = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 0.08), screenMat);
-    screen.position.set(0, 1.25, 4.3);
+    screen.position.set(stations[3].coords[0], 1.25, stations[3].coords[2] + 0.3);
     deskGroup.add(screen);
     scene.add(deskGroup);
 
@@ -985,64 +1151,89 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     const conveyorFrameMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 });
     const rollerMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
 
-    // Conveyor Legs & Rails (running from x: -6 to x: 14 at z: 8)
-    const conveyorLen = 20;
-    const conveyorZ = 8;
-    const rail1 = new THREE.Mesh(new THREE.BoxGeometry(conveyorLen, 0.12, 0.08), conveyorFrameMat);
-    rail1.position.set(4, 0.9, conveyorZ - 0.55);
+    const cZ = stations[5].coords[2];
+    const rail1 = new THREE.Mesh(new THREE.BoxGeometry(22, 0.12, 0.08), conveyorFrameMat);
+    rail1.position.set(5.5, 0.9, cZ - 0.55);
     conveyorGroup.add(rail1);
-    const rail2 = new THREE.Mesh(new THREE.BoxGeometry(conveyorLen, 0.12, 0.08), conveyorFrameMat);
-    rail2.position.set(4, 0.9, conveyorZ + 0.55);
+    const rail2 = new THREE.Mesh(new THREE.BoxGeometry(22, 0.12, 0.08), conveyorFrameMat);
+    rail2.position.set(5.5, 0.9, cZ + 0.55);
     conveyorGroup.add(rail2);
 
-    // Rollers
-    for (let rx = -5.8; rx <= 13.8; rx += 0.4) {
+    for (let rx = -5.2; rx <= 16.2; rx += 0.4) {
       const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.05, 12), rollerMat);
       roller.rotation.x = Math.PI / 2;
-      roller.position.set(rx, 0.9, conveyorZ);
+      roller.position.set(rx, 0.9, cZ);
       roller.castShadow = true;
       conveyorGroup.add(roller);
     }
 
-    // Support Legs
-    for (let lx = -5; lx <= 13; lx += 4.5) {
+    for (let lx = -4.5; lx <= 15.5; lx += 5) {
       [-0.5, 0.5].forEach((lz) => {
         const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.9, 0.12), conveyorFrameMat);
-        leg.position.set(lx, 0.45, conveyorZ + lz);
+        leg.position.set(lx, 0.45, cZ + lz);
         conveyorGroup.add(leg);
       });
     }
-
     scene.add(conveyorGroup);
 
-    // 10. Packing Station Tables (Station 7 & 8)
-    const packTableMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
-    const packTable = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 1.4), packTableMat);
-    packTable.position.set(5, 0.45, 10.2);
+    // 10. Packing Station Table (Station 7)
+    const packTable = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 1.4), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 }));
+    packTable.position.set(stations[6].coords[0], 0.45, stations[6].coords[2] + 1.8);
     packTable.castShadow = true;
     scene.add(packTable);
 
-    // Weighing Scale Pad (Station 8)
-    const scalePadMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.6, roughness: 0.2 });
-    const scalePad = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 1.0), scalePadMat);
-    scalePad.position.set(11, 0.94, conveyorZ);
+    // 11. Scale Pad (Station 8)
+    const scalePad = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 1.0), new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.2 }));
+    scalePad.position.set(stations[7].coords[0], 0.94, cZ);
     scene.add(scalePad);
 
-    // 11. Sorting Chutes (Station 9)
+    // 12. Sorting Chutes (Station 9)
     const chuteMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
-    [13, 16].forEach((cx, idx) => {
+    [14, 17].forEach((cx, idx) => {
       const chute = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 2.5), chuteMat);
       chute.rotation.x = -Math.PI / 6;
-      chute.position.set(cx, 0.6, 6 - idx * 2);
+      chute.position.set(cx, 0.6, cZ - 2 - idx * 1.8);
       scene.add(chute);
     });
 
-    // 12. Stylized 3D Workers (Helmet + High-Vis Vest)
-    const workers: THREE.Group[] = [];
-    const createWorker = (x: number, z: number, rotY: number) => {
+    // 13. QC Table (Station 2)
+    const qcTable = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 1.4), new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 }));
+    qcTable.position.set(stations[1].coords[0], 0.45, stations[1].coords[2]);
+    qcTable.castShadow = true;
+    scene.add(qcTable);
+
+    // 14. 3D FLOATING STATION BILLBOARDS (Requirement 3: บอกแต่ละจุดคือสถานีอะไร)
+    const badgeSprites: THREE.Sprite[] = [];
+    const stationBeacons: THREE.Mesh[] = [];
+
+    stations.forEach((s, idx) => {
+      // 3D Canvas Text Billboard
+      const badge = createStationBadgeSprite(s, idx === currentStepIdx);
+      badge.position.set(s.coords[0], 4.2, s.coords[2]);
+      scene.add(badge);
+      badgeSprites.push(badge);
+
+      // Glowing circular floor beacon
+      const beaconGeo = new THREE.RingGeometry(0.9, 1.3, 32);
+      const beaconMat = new THREE.MeshBasicMaterial({
+        color: idx === currentStepIdx ? 0xf59e0b : 0x38bdf8,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: idx === currentStepIdx ? 0.85 : 0.4,
+      });
+      const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+      beacon.rotation.x = -Math.PI / 2;
+      beacon.position.set(s.coords[0], 0.03, s.coords[2]);
+      scene.add(beacon);
+      stationBeacons.push(beacon);
+    });
+
+    // 15. PHYSICAL HANDOVER ACTORS & WORKERS (Requirement 1: คนเดินและส่งต่อแต่ละจุด)
+    // Helper to create human worker
+    const createWorkerModel = (vestColor = 0x10b981) => {
       const worker = new THREE.Group();
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8 });
-      const vestMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4 });
+      const vestMat = new THREE.MeshStandardMaterial({ color: vestColor, roughness: 0.4 });
       const helmetMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2 });
       const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
 
@@ -1065,64 +1256,68 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         leg.castShadow = true;
         worker.add(leg);
       });
-
-      worker.position.set(x, 0, z);
-      worker.rotation.y = rotY;
-      scene.add(worker);
-      workers.push(worker);
       return worker;
     };
 
-    createWorker(stations[0].coords[0] + 1.5, stations[0].coords[2], Math.PI / 2); // Receiving
-    createWorker(stations[1].coords[0], stations[1].coords[2], 0);                 // QC
-    createWorker(stations[4].coords[0], stations[4].coords[2], -Math.PI / 2);      // Picking
-    createWorker(5, 10.2, Math.PI);                                               // Packing
-    createWorker(stations[9].coords[0] - 1.5, stations[9].coords[2], -Math.PI / 2); // Outbound loader
+    // A. Inbound Worker with Pallet Jack (Dock 1 -> QC)
+    const inboundWorkerGroup = new THREE.Group();
+    const inWorker = createWorkerModel(0x10b981);
+    inWorker.position.set(0, 0, -0.6);
+    inboundWorkerGroup.add(inWorker);
 
-    // 13. Interactive 3D Station Number Badges (Pins ① - ⑩)
-    const stationPins: THREE.Group[] = [];
-    const stationBeacons: THREE.Mesh[] = [];
+    // Pallet Jack
+    const jackMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5 });
+    const jackFork = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.12, 1.2), jackMat);
+    jackFork.position.set(0, 0.12, 0.4);
+    inboundWorkerGroup.add(jackFork);
+    inboundWorkerGroup.position.set(stations[0].coords[0], 0, stations[0].coords[2]);
+    scene.add(inboundWorkerGroup);
 
-    stations.forEach((s) => {
-      const pinGroup = new THREE.Group();
+    // B. Putaway Forklift (QC -> Rack Aisle)
+    const forkliftGroup = new THREE.Group();
+    const forkBodyMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
+    const fBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.5, 2.2), forkBodyMat);
+    fBody.position.set(0, 0.9, 0);
+    fBody.castShadow = true;
+    forkliftGroup.add(fBody);
 
-      // Glowing circular beacon base on the floor
-      const beaconGeo = new THREE.RingGeometry(0.9, 1.25, 32);
-      const beaconMat = new THREE.MeshBasicMaterial({
-        color: 0x38bdf8,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.6,
-      });
-      const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-      beacon.rotation.x = -Math.PI / 2;
-      beacon.position.set(s.coords[0], 0.03, s.coords[2]);
-      scene.add(beacon);
-      stationBeacons.push(beacon);
+    // Mast & Forks
+    const mastMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+    const mast = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.8, 0.12), mastMat);
+    mast.position.set(0, 1.5, 1.15);
+    forkliftGroup.add(mast);
 
-      // Pin Mast
-      const mastMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8 });
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8), mastMat);
-      mast.position.set(s.coords[0], s.coords[1] + 1.2, s.coords[2]);
-      pinGroup.add(mast);
+    const fForks = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.2), mastMat);
+    fForks.position.set(0, 0.4, 1.7);
+    forkliftGroup.add(fForks);
 
-      // Pin Head (Sphere badge)
-      const badgeMat = new THREE.MeshStandardMaterial({
-        color: 0x0284c7,
-        emissive: 0x0369a1,
-        emissiveIntensity: 0.4,
-        roughness: 0.2,
-      });
-      const badge = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 16), badgeMat);
-      badge.position.set(s.coords[0], s.coords[1] + 2.2, s.coords[2]);
-      pinGroup.add(badge);
+    forkliftGroup.position.set(stations[1].coords[0] + 4, 0, stations[1].coords[2]);
+    scene.add(forkliftGroup);
 
-      pinGroup.userData = { stationId: s.id };
-      scene.add(pinGroup);
-      stationPins.push(pinGroup);
-    });
+    // C. Order Picker Worker with Multi-tier Pick Cart (Racks -> Conveyor)
+    const pickerWorkerGroup = new THREE.Group();
+    const pWorker = createWorkerModel(0x0284c7);
+    pWorker.position.set(0, 0, -0.7);
+    pickerWorkerGroup.add(pWorker);
 
-    // 14. THE ANIMATED GOLDEN ORDER PARCEL
+    // Pick Cart
+    const cartMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6 });
+    const cart = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 1.2), cartMat);
+    cart.position.set(0, 0.6, 0.3);
+    cart.castShadow = true;
+    pickerWorkerGroup.add(cart);
+
+    pickerWorkerGroup.position.set(stations[4].coords[0], 0, stations[4].coords[2]);
+    scene.add(pickerWorkerGroup);
+
+    // D. Outbound Loader Worker (Chute -> Dock 4 Truck)
+    const outboundLoaderGroup = new THREE.Group();
+    const oWorker = createWorkerModel(0x10b981);
+    outboundLoaderGroup.add(oWorker);
+    outboundLoaderGroup.position.set(stations[8].coords[0], 0, stations[8].coords[2]);
+    scene.add(outboundLoaderGroup);
+
+    // 16. THE GOLDEN FLOWING PARCEL
     const parcelGroup = new THREE.Group();
     const goldBoxMat = new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
@@ -1156,15 +1351,18 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       camera,
       renderer,
       parcelMesh: parcelGroup,
-      workers,
+      badgeSprites,
       stationBeacons,
-      stationPins,
+      inboundWorkerGroup,
+      forkliftGroup,
+      pickerWorkerGroup,
+      outboundLoaderGroup,
       cam,
       camTransition: null,
       applyCamera,
     };
 
-    // 15. Animation Loop
+    // 17. Animation Loop with Physical Human/Equipment Handover
     let animId: number;
     const clock = new THREE.Clock();
 
@@ -1173,13 +1371,22 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       const elapsed = clock.getElapsedTime();
 
       if (threeRef.current) {
-        const { camera, cam, camTransition, parcelMesh, stationBeacons, workers } = threeRef.current;
+        const {
+          camera,
+          cam,
+          camTransition,
+          parcelMesh,
+          stationBeacons,
+          inboundWorkerGroup,
+          forkliftGroup,
+          pickerWorkerGroup,
+          outboundLoaderGroup,
+        } = threeRef.current;
 
-        // Camera Transition Interpolation (Smooth Glide)
+        // Smooth Camera Transition (Cubic Ease-Out)
         if (camTransition) {
           const now = performance.now();
           const progress = Math.min(1, (now - camTransition.startTime) / camTransition.duration);
-          // Smooth cubic ease-out
           const ease = 1 - Math.pow(1 - progress, 3);
 
           cam.tx = THREE.MathUtils.lerp(camTransition.from.tx, camTransition.to.tx, ease);
@@ -1194,34 +1401,67 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             threeRef.current.camTransition = null;
           }
         } else if (isAutoRotate) {
-          // Slow continuous horizontal orbit ONLY (does NOT alter dist or Y!)
           cam.rotY += 0.002 * (tourSpeed || 1);
           applyCamera();
         }
 
-        // Golden Parcel Rotation and Glide towards current station
+        // PHYSICAL HANDOVER ANIMATION: Move workers & equipment according to active step
+        const st = currentStepIdx;
+
+        // Step 1 -> 2: Inbound Worker walks with goods from Truck to QC Table
+        if (st === 0) {
+          inboundWorkerGroup.position.x = THREE.MathUtils.lerp(inboundWorkerGroup.position.x, stations[0].coords[0], 0.06);
+          inboundWorkerGroup.position.z = THREE.MathUtils.lerp(inboundWorkerGroup.position.z, stations[0].coords[2], 0.06);
+        } else if (st === 1) {
+          inboundWorkerGroup.position.x = THREE.MathUtils.lerp(inboundWorkerGroup.position.x, stations[1].coords[0], 0.06);
+          inboundWorkerGroup.position.z = THREE.MathUtils.lerp(inboundWorkerGroup.position.z, stations[1].coords[2] + 1.2, 0.06);
+        }
+
+        // Step 3: Putaway Forklift carries pallet from QC to Storage Rack
+        if (st === 2) {
+          forkliftGroup.position.x = THREE.MathUtils.lerp(forkliftGroup.position.x, stations[2].coords[0], 0.05);
+          forkliftGroup.position.z = THREE.MathUtils.lerp(forkliftGroup.position.z, stations[2].coords[2] + 2.5, 0.05);
+        } else {
+          forkliftGroup.position.x = THREE.MathUtils.lerp(forkliftGroup.position.x, stations[1].coords[0] + 4, 0.04);
+          forkliftGroup.position.z = THREE.MathUtils.lerp(forkliftGroup.position.z, stations[1].coords[2], 0.04);
+        }
+
+        // Step 5 -> 6: Picker walks with cart from Rack to Conveyor Feed
+        if (st === 4) {
+          pickerWorkerGroup.position.x = THREE.MathUtils.lerp(pickerWorkerGroup.position.x, stations[4].coords[0], 0.06);
+          pickerWorkerGroup.position.z = THREE.MathUtils.lerp(pickerWorkerGroup.position.z, stations[4].coords[2], 0.06);
+        } else if (st === 5) {
+          pickerWorkerGroup.position.x = THREE.MathUtils.lerp(pickerWorkerGroup.position.x, stations[5].coords[0] - 1.2, 0.06);
+          pickerWorkerGroup.position.z = THREE.MathUtils.lerp(pickerWorkerGroup.position.z, stations[5].coords[2] + 1.0, 0.06);
+        }
+
+        // Step 9 -> 10: Outbound Loader walks with box from Sorting Chute to Outbound Truck
+        if (st === 8) {
+          outboundLoaderGroup.position.x = THREE.MathUtils.lerp(outboundLoaderGroup.position.x, stations[8].coords[0], 0.06);
+          outboundLoaderGroup.position.z = THREE.MathUtils.lerp(outboundLoaderGroup.position.z, stations[8].coords[2], 0.06);
+        } else if (st === 9) {
+          outboundLoaderGroup.position.x = THREE.MathUtils.lerp(outboundLoaderGroup.position.x, stations[9].coords[0] - 1.5, 0.06);
+          outboundLoaderGroup.position.z = THREE.MathUtils.lerp(outboundLoaderGroup.position.z, stations[9].coords[2], 0.06);
+        }
+
+        // Golden Parcel moves along the realistic physical line
         parcelMesh.rotation.y = elapsed * 0.8;
         const targetCoords = (stations[currentStepIdx] || stations[0]).coords;
         parcelMesh.position.x = THREE.MathUtils.lerp(parcelMesh.position.x, targetCoords[0], 0.08);
         parcelMesh.position.y = THREE.MathUtils.lerp(parcelMesh.position.y, targetCoords[1], 0.08);
         parcelMesh.position.z = THREE.MathUtils.lerp(parcelMesh.position.z, targetCoords[2], 0.08);
 
-        // Animate active beacon ring pulse
+        // Active Beacon Ring pulse
         stationBeacons.forEach((beacon, i) => {
           if (i === currentStepIdx) {
             beacon.scale.setScalar(1 + Math.sin(elapsed * 4) * 0.22);
-            (beacon.material as THREE.MeshBasicMaterial).color.setHex(0xf59e0b); // Active Gold
+            (beacon.material as THREE.MeshBasicMaterial).color.setHex(0xf59e0b);
             (beacon.material as THREE.MeshBasicMaterial).opacity = 0.85;
           } else {
             beacon.scale.setScalar(1.0);
-            (beacon.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8); // Sky blue
+            (beacon.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8);
             (beacon.material as THREE.MeshBasicMaterial).opacity = 0.35;
           }
-        });
-
-        // Worker subtle breathing
-        workers.forEach((w, idx) => {
-          w.position.y = Math.sin(elapsed * 2 + idx) * 0.03;
         });
 
         renderer.render(scene, camera);
@@ -1229,7 +1469,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     animate();
 
-    // 16. Window resize handler
+    // 18. Window resize handler
     const handleResize = () => {
       if (!containerRef.current || !threeRef.current) return;
       const w = containerRef.current.clientWidth;
@@ -1240,7 +1480,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     window.addEventListener('resize', handleResize);
 
-    // 17. Interactive Click on 3D Pins (Raycaster)
+    // 19. Interactive Click on 3D Badges (Raycaster)
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -1267,8 +1507,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     container.addEventListener('click', handleClick);
 
-    // 18. Rock-Solid Camera Controls (Pan, Rotate, Wheel Zoom)
-    // CANCELS any active animation and gives 100% immediate control to user
+    // 20. Rock-Solid Camera Controls (Pan, Rotate, Wheel Zoom)
     const el = renderer.domElement;
     el.style.touchAction = 'none';
 
@@ -1278,7 +1517,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
     const onPointerDown = (e: PointerEvent) => {
       if (!threeRef.current) return;
-      // Immediately cancel any flying transition so camera NEVER snaps or bounces!
       threeRef.current.camTransition = null;
       isPointerDown = true;
       isPanning = e.button === 2 || e.shiftKey;
@@ -1297,7 +1535,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       const { cam, applyCamera } = threeRef.current;
 
       if (isPanning) {
-        // Pan on ground plane
         const k = cam.dist * 0.0016;
         const rightX = Math.cos(cam.rotY);
         const rightZ = -Math.sin(cam.rotY);
@@ -1306,7 +1543,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         cam.tx += (-dx * rightX + dy * fwdX) * k;
         cam.tz += (-dx * rightZ + dy * fwdZ) * k;
       } else {
-        // Free Orbit Rotate
         cam.rotY -= dx * 0.008;
         cam.rotX = Math.max(0.12, Math.min(Math.PI / 2.05, cam.rotX + dy * 0.008));
       }
@@ -1321,11 +1557,9 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       } catch {}
     };
 
-    // Smooth Wheel Zoom: Never bounces back!
     const onWheel = (e: WheelEvent) => {
       if (!threeRef.current) return;
       e.preventDefault();
-      // Immediately cancel any flying transition
       threeRef.current.camTransition = null;
 
       const { cam, applyCamera } = threeRef.current;
@@ -1354,9 +1588,9 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       el.removeEventListener('contextmenu', onContextMenu);
       renderer.dispose();
     };
-  }, [floorWidth, floorLength, stations, currentStepIdx, isAutoRotate, tourSpeed, goToStation]);
+  }, [floorWidth, floorLength, stations, currentStepIdx, isAutoRotate, tourSpeed, goToStation, binDataMap]);
 
-  // Quiz answer submit handler
+  // Quiz submission
   const handleAnswerQuiz = (optionIdx: number) => {
     if (selectedQuizAnswer !== null) return;
     setSelectedQuizAnswer(optionIdx);
@@ -1392,7 +1626,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           </span>
         </div>
 
-        {/* Tab Switcher: SOP Guide vs Live Metrics vs Quiz Training */}
+        {/* Tab Switcher */}
         <div className="grid grid-cols-3 gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 mb-4">
           <button
             onClick={() => setActiveTab('sop')}
@@ -1437,11 +1671,11 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             <div className="space-y-4">
               {/* Description */}
               <div className="p-3.5 rounded-2xl bg-slate-950/40 border border-slate-800/60 text-slate-300 leading-relaxed">
-                <span className="font-bold text-amber-400 block mb-1">มาตรฐานการปฏิบัติงาน:</span>
+                <span className="font-bold text-amber-400 block mb-1">มาตรฐานการปฏิบัติงาน & การส่งต่องาน:</span>
                 {currentStation.description}
               </div>
 
-              {/* Key Terminology Pills */}
+              {/* Key Terminology */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                   คำศัพท์ประจำสถานี (Key Terms):
@@ -1456,7 +1690,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                 </div>
               </div>
 
-              {/* QC Checklist (Green Alert Box) */}
+              {/* QC Checklist */}
               <div className="p-3.5 rounded-2xl bg-emerald-950/25 border border-emerald-500/30 text-emerald-200">
                 <div className="flex items-center gap-1.5 font-black text-emerald-400 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -1469,7 +1703,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
                 </ul>
               </div>
 
-              {/* Safety Rules (Red Alert Box) */}
+              {/* Safety Rules */}
               <div className="p-3.5 rounded-2xl bg-rose-950/25 border border-rose-500/30 text-rose-200">
                 <div className="flex items-center gap-1.5 font-black text-rose-400 mb-1.5">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -1524,10 +1758,10 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
               {products.length > 0 && (
                 <div className="p-3.5 rounded-2xl bg-slate-950/40 border border-slate-800">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                    ตัวอย่างสต็อกจริงในคลังสาขานี้ ({products.length} SKUs):
+                    สินค้าจริงในคลังสาขานี้ ({products.length} SKUs):
                   </span>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                    {products.slice(0, 5).map((p) => (
+                    {products.slice(0, 6).map((p) => (
                       <div key={p.id} className="p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 flex items-center justify-between text-[11px]">
                         <span className="text-slate-200 font-bold truncate max-w-[200px]">{p.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
@@ -1665,25 +1899,32 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
         {/* TOP FLOATING TOOLBAR: Camera View Mode & Warehouse Info */}
         <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          {/* Branch & Mode Badge */}
+          {/* Branch & Layout Badge */}
           <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 pointer-events-auto">
             <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-white">ผังคลัง 3D Digital Twin</span>
+                <span className="text-xs font-black text-white">{layout?.name || `คลังสาขา ${branchId}`}</span>
                 <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded text-[9px] font-mono font-bold">
-                  สาขา: {branchId}
+                  {branchId}
                 </span>
                 {layout?.racks && (
                   <span className="text-[10px] text-slate-400 hidden sm:inline">
-                    ({layout.racks.length} แร็คที่บันทึกไว้)
+                    ({layout.racks.length} แร็ค & ลานวางพื้น)
                   </span>
                 )}
               </div>
             </div>
+            <button
+              onClick={loadWarehouseData}
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors ml-1"
+              title="รีเฟรชข้อมูลผังและสต็อกจริง"
+            >
+              <RefreshCw className={cn('w-3.5 h-3.5', loadingLayout && 'animate-spin text-amber-400')} />
+            </button>
           </div>
 
-          {/* Camera View Mode Toggles: OVERVIEW (ภาพกว้าง) vs FOCUS (โฟกัสสถานี) */}
+          {/* Camera View Mode Toggles */}
           <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1.5 rounded-2xl shadow-xl flex items-center gap-1 pointer-events-auto">
             <button
               onClick={setCameraOverview}
@@ -1732,14 +1973,17 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           </div>
         </div>
 
-        {/* BOTTOM FLOATING CONTROLS: Tour Playback, Speed & Sound */}
+        {/* BOTTOM FLOATING CONTROLS: Active Station Pill & Tour Playback */}
         <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          {/* Active Station Pill */}
-          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2 pointer-events-auto">
+          {/* Active Station Pill with Handover Subtitle */}
+          <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2.5 pointer-events-auto">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-            <span className="text-xs font-black text-amber-400">
-              สถานี {currentStation.stepNumber}: {currentStation.titleTh}
-            </span>
+            <div>
+              <span className="text-xs font-black text-amber-400 block">
+                สถานี {currentStation.stepNumber}: {currentStation.titleTh}
+              </span>
+              <span className="text-[10px] text-slate-300 block">{currentStation.subtitle}</span>
+            </div>
           </div>
 
           {/* Tour Play/Pause, Speed & Sound Controls */}
