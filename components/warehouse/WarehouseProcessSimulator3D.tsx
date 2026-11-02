@@ -890,10 +890,12 @@ export default function WarehouseProcessSimulator3D({
   const [binStockRows, setBinStockRows] = useState<any[]>([]);
   const [loadingLayout, setLoadingLayout] = useState(true);
 
-  // Live Selected Customer Order for Outbound Simulation
+  // Real Active Orders from Database (or On-Hand Stock)
+  const [liveOrders, setLiveOrders] = useState<OutboundOrder[]>(DEFAULT_ACTIVE_ORDERS);
+  const [isOrdersFromDb, setIsOrdersFromDb] = useState<boolean>(false);
   const [selectedOrder, setSelectedOrder] = useState<OutboundOrder>(DEFAULT_ACTIVE_ORDERS[0]);
 
-  // Fetch actual layout and per-bin stock
+  // Fetch actual layout, per-bin stock, and live orders from database
   const loadWarehouseData = useCallback(() => {
     setLoadingLayout(true);
     Promise.all([
@@ -906,16 +908,97 @@ export default function WarehouseProcessSimulator3D({
       fetch(getApiUrl('/api/warehouse/bin-stock'))
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
+      fetch(getApiUrl('/api/orders'))
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
     ])
-      .then(([layoutRes, prodsRes, stockRes]) => {
+      .then(([layoutRes, prodsRes, stockRes, ordersRes]) => {
+        let prodsList: any[] = [];
+        let stockRowsList: any[] = [];
+
         if (layoutRes?.success && layoutRes.data) {
           setLayout(layoutRes.data);
         }
         if (Array.isArray(prodsRes)) {
+          prodsList = prodsRes;
           setProducts(prodsRes);
         }
         if (stockRes?.success && Array.isArray(stockRes.rows)) {
+          stockRowsList = stockRes.rows;
           setBinStockRows(stockRes.rows);
+        }
+
+        // 1. Check Real Outbound Orders from Database
+        const rawDbOrders = Array.isArray(ordersRes?.orders)
+          ? ordersRes.orders
+          : Array.isArray(ordersRes)
+          ? ordersRes
+          : [];
+
+        const dbMapped: OutboundOrder[] = [];
+        rawDbOrders.forEach((o: any) => {
+          const items = Array.isArray(o.items) && o.items.length > 0 ? o.items : [];
+          items.forEach((item: any, idx: number) => {
+            let binCode = String(item.location || '').trim();
+            if (!binCode) {
+              const p = prodsList.find((x: any) => x.sku === item.sku || x.id === item.sku);
+              if (p?.location && p.location !== 'UNASSIGNED') {
+                binCode = p.location;
+              } else {
+                const stockRow = stockRowsList.find((r: any) => (r.sku === item.sku || r.sku === p?.sku) && r.quantity > 0);
+                if (stockRow?.binCode) binCode = stockRow.binCode;
+              }
+            }
+            if (!binCode) binCode = 'A-004';
+
+            dbMapped.push({
+              orderId: idx === 0 ? (o.orderNo || `SO-${String(o.id).slice(0, 6)}`) : `${o.orderNo || 'SO'}-${idx + 1}`,
+              customerName: o.customerName || 'ลูกค้าคลังสินค้า',
+              sku: item.sku || 'SKU-ITEM',
+              skuName: item.name || 'สินค้าพัสดุ',
+              binCode: binCode.toUpperCase(),
+              qty: Number(item.qty || 1),
+              weightKg: Math.round(Number(o.weightKg || item.qty * 1.5) || 20),
+              destination: o.shipAddress || o.channel || 'ศูนย์กระจายสินค้า',
+              priority: o.priority === 'URGENT' ? 'URGENT' : o.priority === 'EXPRESS' ? 'EXPRESS' : 'STANDARD',
+            });
+          });
+        });
+
+        if (dbMapped.length > 0) {
+          const finalOrders = dbMapped.slice(0, 6);
+          setLiveOrders(finalOrders);
+          setIsOrdersFromDb(true);
+          setSelectedOrder(finalOrders[0]);
+        } else {
+          // 2. Fallback: Synthesize from actual products with real stock and location in this warehouse
+          const stockOrders: OutboundOrder[] = [];
+          prodsList
+            .filter((p: any) => p.location && p.location !== 'UNASSIGNED' && Number(p.stock) > 0)
+            .slice(0, 4)
+            .forEach((p: any, idx: number) => {
+              stockOrders.push({
+                orderId: `ORD-${p.sku || p.id}`,
+                customerName: `จัดส่งสาขา ${branchId}`,
+                sku: p.sku || p.id,
+                skuName: p.name,
+                binCode: String(p.location).trim().toUpperCase(),
+                qty: Math.min(Number(p.stock), 15),
+                weightKg: Math.round(Math.min(Number(p.stock), 15) * 2.2),
+                destination: `ศูนย์กระจายสินค้า ${branchId}`,
+                priority: idx === 0 ? 'EXPRESS' : idx === 1 ? 'URGENT' : 'STANDARD',
+              });
+            });
+
+          if (stockOrders.length > 0) {
+            setLiveOrders(stockOrders);
+            setIsOrdersFromDb(false);
+            setSelectedOrder(stockOrders[0]);
+          } else {
+            setLiveOrders(DEFAULT_ACTIVE_ORDERS);
+            setIsOrdersFromDb(false);
+            setSelectedOrder(DEFAULT_ACTIVE_ORDERS[0]);
+          }
         }
       })
       .finally(() => {
@@ -2474,12 +2557,22 @@ export default function WarehouseProcessSimulator3D({
                 <div className="flex items-center justify-between mb-2">
                   <div className={cn('flex items-center gap-1.5 font-black text-xs', isLight ? 'text-amber-700' : 'text-amber-400')}>
                     <ShoppingBag className="w-4 h-4" />
-                    <span>คำสั่งเบิกจ่ายจริง (Live Orders)</span>
+                    <span>คำสั่งเบิกจ่าย (Active Orders)</span>
                   </div>
-                  <span className={cn('text-[10px]', isLight ? 'text-slate-500' : 'text-slate-400')}>คลิกเพื่อจำลองเส้นทาง</span>
+                  {isOrdersFromDb ? (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      🟢 ฐานข้อมูลจริง (DB Orders)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300 shadow-sm flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      🟡 สต็อกจริงในคลัง (On-Hand Stock)
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  {DEFAULT_ACTIVE_ORDERS.map((ord) => {
+                  {liveOrders.map((ord) => {
                     const isSelected = selectedOrder.orderId === ord.orderId;
                     return (
                       <button
