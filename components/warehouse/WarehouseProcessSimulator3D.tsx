@@ -18,9 +18,8 @@ import {
   Activity,
   HelpCircle,
   Eye,
-  Layers,
-  ArrowRight,
   RefreshCw,
+  Tag,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@/lib/config';
@@ -410,7 +409,6 @@ interface CameraTransition {
   duration: number;
 }
 
-// Helper to draw rounded rectangle in 2D Canvas for crisp 3D Text Badges
 function drawRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -421,61 +419,101 @@ function drawRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath();
 }
 
-// Generate high-resolution 3D Text Badge billboard sprite
-function createStationBadgeSprite(station: ProcessStation, isActive: boolean): THREE.Sprite {
+// 1. Industrial Floor Decal: Lies flat on concrete (Zero obstruction to vision!)
+function createFloorDecalMesh(station: ProcessStation): THREE.Mesh {
   const canvas = document.createElement('canvas');
-  canvas.width = 640;
-  canvas.height = 140;
+  canvas.width = 384;
+  canvas.height = 100;
   const ctx = canvas.getContext('2d')!;
 
-  // Drop shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 4;
-
-  // Background Capsule
-  ctx.fillStyle = isActive ? 'rgba(245, 158, 11, 0.96)' : 'rgba(15, 23, 42, 0.90)';
-  ctx.strokeStyle = isActive ? '#fbbf24' : '#38bdf8';
-  ctx.lineWidth = isActive ? 5 : 3;
-  drawRoundRect(ctx, 10, 10, 620, 120, 28);
+  // Background
+  ctx.fillStyle = 'rgba(11, 17, 28, 0.92)';
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 4;
+  drawRoundRect(ctx, 4, 4, 376, 92, 16);
   ctx.fill();
   ctx.stroke();
 
-  // Reset shadow for text
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-
-  // Badge Circle for Number
-  ctx.fillStyle = isActive ? '#0f172a' : '#0284c7';
+  // Badge Circle
+  ctx.fillStyle = '#0284c7';
   ctx.beginPath();
-  ctx.arc(70, 70, 42, 0, Math.PI * 2);
+  ctx.arc(48, 50, 32, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = isActive ? '#fbbf24' : '#ffffff';
-  ctx.font = '900 48px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 36px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(String(station.stepNumber), 70, 72);
+  ctx.fillText(String(station.stepNumber), 48, 52);
 
-  // Station Title Text
-  ctx.fillStyle = isActive ? '#0f172a' : '#ffffff';
-  ctx.font = 'bold 36px sans-serif';
+  // Station Title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 26px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(station.titleTh, 130, 52);
+  ctx.fillText(station.titleTh.replace(/^\d+\.\s*/, ''), 96, 40);
 
-  // Subtitle Area Text
-  ctx.fillStyle = isActive ? '#3b1c06' : '#94a3b8';
-  ctx.font = 'bold 22px sans-serif';
-  ctx.fillText(station.subtitle, 130, 94);
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText(station.titleEn, 96, 72);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
-  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
-  const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(8.2, 1.8, 1);
-  sprite.userData = { stationId: station.id };
-  return sprite;
+  const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.0), mat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set(station.coords[0], 0.025, station.coords[2] + 1.2);
+  return mesh;
+}
+
+// 2. Sleek Active Station Floating Callout (Only ONE in the entire scene!)
+function updateActiveCalloutSprite(sprite: THREE.Sprite, station: ProcessStation) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 440;
+  canvas.height = 110;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+
+  ctx.fillStyle = 'rgba(245, 158, 11, 0.96)';
+  ctx.strokeStyle = '#fef08a';
+  ctx.lineWidth = 4;
+  drawRoundRect(ctx, 8, 8, 424, 94, 20);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  // Number circle
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(52, 55, 34, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = '900 38px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(station.stepNumber), 52, 57);
+
+  // Title
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(station.titleTh, 102, 44);
+
+  ctx.fillStyle = '#3b1c06';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText(station.subtitle, 102, 76);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  sprite.material.map?.dispose();
+  sprite.material.map = texture;
+  sprite.material.needsUpdate = true;
+  sprite.scale.set(4.2, 1.05, 1);
+  sprite.position.set(station.coords[0], 2.8, station.coords[2]);
 }
 
 export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { branchId?: string }) {
@@ -489,6 +527,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
   // Camera Mode: OVERVIEW keeps bird's eye view without zooming in! FOCUS zooms into station.
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'FOCUS'>('OVERVIEW');
   const [isAutoRotate, setIsAutoRotate] = useState(false);
+  const [showActiveLabel, setShowActiveLabel] = useState(true);
 
   // Quiz interactive state
   const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null);
@@ -571,7 +610,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
   }, [products, binStockRows]);
 
   // Compute warehouse boundaries and logical station waypoints
-  const { floorWidth, floorLength, stations, storageCenter } = useMemo(() => {
+  const { floorWidth, floorLength, stations } = useMemo(() => {
     const rawRacks = layout?.racks || [];
     let minX = -16;
     let maxX = 16;
@@ -591,55 +630,48 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     const calculatedWidth = Math.max(layout?.widthM || 36, maxX - minX + 16, 42);
     const calculatedLength = Math.max(layout?.lengthM || 44, maxZ - minZ + 18, 48);
 
-    // Staging / Dock coordinates
     const dockZ = Math.min(18, calculatedLength / 2 - 4);
     const inDockX = -calculatedWidth / 2 + 5;
     const outDockX = calculatedWidth / 2 - 5;
 
-    // Center of storage aisles
-    const storeX = (minX + maxX) / 2;
-    const storeZ = (minZ + maxZ) / 2 - 2;
-
-    // Look for real storage rack with products for Putaway & Pick face
     let putawayX = rawRacks[0]?.posX ?? -6;
     let putawayZ = rawRacks[0]?.posZ ?? -4;
     let pickingX = rawRacks[rawRacks.length - 1]?.posX ?? 6;
     let pickingZ = rawRacks[rawRacks.length - 1]?.posZ ?? -4;
 
-    // Conveyor line coordinates in front of racks
     const conveyorZ = 6.5;
 
     const dynamicStations: ProcessStation[] = BASE_PROCESS_STATIONS.map((base) => {
       let coords: [number, number, number];
       switch (base.id) {
-        case 1: // Inbound Receiving (Dock 01)
+        case 1:
           coords = [inDockX, 1.2, dockZ];
           break;
-        case 2: // QC Inspection Gate
+        case 2:
           coords = [inDockX + 7, 1.2, dockZ - 3];
           break;
-        case 3: // Putaway into Racks
+        case 3:
           coords = [putawayX, 2.2, putawayZ];
           break;
-        case 4: // Wave Release (Control Tower)
+        case 4:
           coords = [0, 1.4, 2.5];
           break;
-        case 5: // Batch Picking at Rack Face
+        case 5:
           coords = [pickingX, 1.2, pickingZ];
           break;
-        case 6: // Conveyor Induction Feed
+        case 6:
           coords = [-4, 1.2, conveyorZ];
           break;
-        case 7: // Packing Station Table
+        case 7:
           coords = [4, 1.2, conveyorZ];
           break;
-        case 8: // Weigh & Label Scale
+        case 8:
           coords = [10, 1.2, conveyorZ];
           break;
-        case 9: // Automated Sorting Chutes
+        case 9:
           coords = [15, 1.2, conveyorZ - 2];
           break;
-        case 10: // Dispatch & Outbound Dock
+        case 10:
           coords = [outDockX, 1.2, dockZ];
           break;
         default:
@@ -656,7 +688,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       floorWidth: calculatedWidth,
       floorLength: calculatedLength,
       stations: dynamicStations,
-      storageCenter: { x: storeX, z: storeZ },
     };
   }, [layout]);
 
@@ -668,7 +699,8 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
     parcelMesh: THREE.Group;
-    badgeSprites: THREE.Sprite[];
+    activeCalloutSprite: THREE.Sprite;
+    stationPins: THREE.Group[];
     stationBeacons: THREE.Mesh[];
     inboundWorkerGroup: THREE.Group;
     forkliftGroup: THREE.Group;
@@ -733,14 +765,21 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       const t = threeRef.current;
       const targetStation = stations[nextIdx];
 
-      // Update badge sprite scales & appearance
-      t.badgeSprites.forEach((sp, i) => {
-        const isActive = i === nextIdx;
-        sp.scale.set(isActive ? 9.5 : 7.2, isActive ? 2.1 : 1.6, 1);
-        sp.position.y = isActive ? 4.5 : 3.8;
+      // Update the SINGLE active station floating callout
+      updateActiveCalloutSprite(t.activeCalloutSprite, targetStation);
+
+      // Update pins highlight
+      t.stationPins.forEach((pin, i) => {
+        const isAct = i === nextIdx;
+        const sphere = pin.children[1] as THREE.Mesh;
+        if (sphere && sphere.material) {
+          (sphere.material as THREE.MeshStandardMaterial).color.setHex(isAct ? 0xf59e0b : 0x0284c7);
+          (sphere.material as THREE.MeshStandardMaterial).emissive.setHex(isAct ? 0xd97706 : 0x0369a1);
+        }
+        pin.scale.setScalar(isAct ? 1.25 : 1.0);
       });
 
-      // If in Overview mode and NOT forcing camera move: KEEP WIDE VIEW! Do not zoom in!
+      // In Overview mode: Keep user's wide view!
       if (viewMode === 'OVERVIEW' && !forceCameraMove) {
         return;
       }
@@ -797,6 +836,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       setCameraFocus();
     }
   }, [viewMode, setCameraOverview, setCameraFocus]);
+
+  // Toggle active callout sprite visibility
+  useEffect(() => {
+    if (threeRef.current) {
+      threeRef.current.activeCalloutSprite.visible = showActiveLabel;
+    }
+  }, [showActiveLabel]);
 
   // Auto-tour timer
   useEffect(() => {
@@ -886,7 +932,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     blueFillLight.position.set(-35, 30, -30);
     scene.add(blueFillLight);
 
-    // 4. Warehouse Concrete Floor & Grid
+    // 4. Warehouse Floor with Industrial Markings
     const floorGeo = new THREE.PlaneGeometry(floorWidth, floorLength);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x111622,
@@ -907,7 +953,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
-    // Safety perimeter borders
+    // Safety perimeter lines
     const borderMat = new THREE.LineBasicMaterial({ color: 0xfacc15, linewidth: 2 });
     const borderGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(-floorWidth / 2 + 1.5, 0.04, -floorLength / 2 + 1.5),
@@ -936,7 +982,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     rightWall.receiveShadow = true;
     scene.add(rightWall);
 
-    // Roll-up Dock Doors (Inbound left, Outbound right)
     const dockZ = Math.min(18, floorLength / 2 - 4);
     const inDoor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 5.5, 6), new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 }));
     inDoor.position.set(-floorWidth / 2 + 0.4, 2.75, dockZ);
@@ -985,15 +1030,15 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       return truck;
     };
 
-    createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b); // Inbound Truck outside Dock 1
-    createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981); // Outbound Truck outside Dock 4
+    createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b);
+    createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981);
 
     // 7. BUILD ACCURATE RACKS & REAL FLOOR-BLOCK GOODS
     const steelPostMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
     const beamMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.4 });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.85 });
-    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.6 }); // Real stock OK
-    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }); // Real stock LOW
+    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.6 });
+    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
     const emptySlotMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, transparent: true, opacity: 0.35 });
 
     const rawRacks = layout?.racks || [];
@@ -1036,20 +1081,18 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
         const floorBorderLine = new THREE.Line(floorBorderGeo, floorBorderMat);
         rackGroup.add(floorBorderLine);
 
-        // REAL FLOOR BLOCK BULK PALLETS & GOODS ON THE FLOOR
+        // Floor Block bulk pallets and actual stock
         for (let b = 1; b <= rack.bays; b++) {
           const binCode = binCodeFor(rack, b, 1) || `${rack.rackCode}-${b}`;
           const binData = binDataMap.get(binCode.toUpperCase()) || binDataMap.get(binCode);
           const hasStock = !!(binData && binData.totalStock > 0);
           const xPos = -totalRackLength / 2 + (b - 0.5) * (rack.bayWidth || 2.8);
 
-          // Always put wooden pallet on floor block
           const pallet = new THREE.Mesh(new THREE.BoxGeometry((rack.bayWidth || 2.8) * 0.88, 0.12, (rack.rackDepth || 3) * 0.88), woodMat);
           pallet.position.set(xPos, 0.08, 0);
           pallet.receiveShadow = true;
           rackGroup.add(pallet);
 
-          // Bulk cargo stacked on floor pallet
           const cargoMat = hasStock ? (binData.status === 'LOW_STOCK' ? stockLowMat : stockOkMat) : new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 });
           const bulkBox = new THREE.Mesh(new THREE.BoxGeometry((rack.bayWidth || 2.8) * 0.82, 0.9, (rack.rackDepth || 3) * 0.82), cargoMat);
           bulkBox.position.set(xPos, 0.58, 0);
@@ -1080,13 +1123,11 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             rackGroup.add(beam);
           });
 
-          // Wooden shelf decking across level
           const deck = new THREE.Mesh(new THREE.BoxGeometry(totalRackLength, 0.04, rack.rackDepth + 0.04), woodMat);
           deck.position.set(0, y + 0.06, 0);
           deck.receiveShadow = true;
           rackGroup.add(deck);
 
-          // Bins across each bay
           for (let bay = 1; bay <= rack.bays; bay++) {
             const binCode = binCodeFor(rack, bay, lvl);
             if (!binCode) continue;
@@ -1100,7 +1141,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             const boxD = rack.rackDepth * 0.86;
 
             if (hasStock) {
-              // Real stocked goods matching actual WMS database!
               const mat = binData.status === 'LOW_STOCK' ? stockLowMat : stockOkMat;
               const stockBox = new THREE.Mesh(new THREE.BoxGeometry(boxW, boxH, boxD), mat);
               stockBox.position.set(xPos, y + 0.08 + boxH / 2, 0);
@@ -1108,7 +1148,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
               stockBox.receiveShadow = true;
               rackGroup.add(stockBox);
             } else {
-              // Empty slot indicator
               const emptyBox = new THREE.Mesh(new THREE.BoxGeometry(boxW, boxH, boxD), emptySlotMat);
               emptyBox.position.set(xPos, y + 0.08 + boxH / 2, 0);
               rackGroup.add(emptyBox);
@@ -1123,7 +1162,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     if (rawRacks.length > 0) {
       rawRacks.forEach(buildFullRack);
     } else {
-      // Clean fallback layout
       const defaultRacks: RackConfig[] = [
         { rackCode: 'Aisle-A', zoneCode: 'A', posX: -8, posZ: -8, rotationY: 0, bays: 4, levels: 3, bayWidth: 2.8, levelHeight: 1.8, rackDepth: 1.4 },
         { rackCode: 'Aisle-B', zoneCode: 'B', posX: 8, posZ: -8, rotationY: 0, bays: 4, levels: 3, bayWidth: 2.8, levelHeight: 1.8, rackDepth: 1.4 },
@@ -1134,19 +1172,20 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
 
     // 8. Control Tower Terminal (Station 4)
     const deskGroup = new THREE.Group();
-    const deskMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
-    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 1.2), deskMat);
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 1.2), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 }));
     desk.position.set(stations[3].coords[0], 0.45, stations[3].coords[2]);
     desk.castShadow = true;
     deskGroup.add(desk);
 
-    const screenMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.7 });
-    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 0.08), screenMat);
+    const screen = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 0.7, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.7 })
+    );
     screen.position.set(stations[3].coords[0], 1.25, stations[3].coords[2] + 0.3);
     deskGroup.add(screen);
     scene.add(deskGroup);
 
-    // 9. Motorized Roller Conveyor (Stations 6 -> 7 -> 8 -> 9)
+    // 9. Motorized Roller Conveyor
     const conveyorGroup = new THREE.Group();
     const conveyorFrameMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 });
     const rollerMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
@@ -1202,24 +1241,48 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     qcTable.castShadow = true;
     scene.add(qcTable);
 
-    // 14. 3D FLOATING STATION BILLBOARDS (Requirement 3: บอกแต่ละจุดคือสถานีอะไร)
-    const badgeSprites: THREE.Sprite[] = [];
+    // 14. ELEGANT, UNCLUTTERED LABELS:
+    // A) Flat Floor Markings (Zero vision obstruction!)
+    // B) Minimal Glowing 3D Pins (Slim mast + glowing coin)
+    // C) SINGLE Active Floating Callout (Only for current active station)
+    const stationPins: THREE.Group[] = [];
     const stationBeacons: THREE.Mesh[] = [];
 
     stations.forEach((s, idx) => {
-      // 3D Canvas Text Billboard
-      const badge = createStationBadgeSprite(s, idx === currentStepIdx);
-      badge.position.set(s.coords[0], 4.2, s.coords[2]);
-      scene.add(badge);
-      badgeSprites.push(badge);
+      // Flat Floor Decal
+      const floorDecal = createFloorDecalMesh(s);
+      scene.add(floorDecal);
+
+      // Compact Minimal 3D Pin
+      const pinGroup = new THREE.Group();
+      const mastMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8 });
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.5, 8), mastMat);
+      mast.position.set(s.coords[0], 0.75, s.coords[2]);
+      pinGroup.add(mast);
+
+      // Top Number Coin
+      const isAct = idx === currentStepIdx;
+      const coinMat = new THREE.MeshStandardMaterial({
+        color: isAct ? 0xf59e0b : 0x0284c7,
+        emissive: isAct ? 0xd97706 : 0x0369a1,
+        emissiveIntensity: 0.5,
+        roughness: 0.2,
+      });
+      const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.06, 16), coinMat);
+      coin.position.set(s.coords[0], 1.6, s.coords[2]);
+      pinGroup.add(coin);
+
+      pinGroup.userData = { stationId: s.id };
+      scene.add(pinGroup);
+      stationPins.push(pinGroup);
 
       // Glowing circular floor beacon
-      const beaconGeo = new THREE.RingGeometry(0.9, 1.3, 32);
+      const beaconGeo = new THREE.RingGeometry(0.7, 1.0, 32);
       const beaconMat = new THREE.MeshBasicMaterial({
-        color: idx === currentStepIdx ? 0xf59e0b : 0x38bdf8,
+        color: isAct ? 0xf59e0b : 0x38bdf8,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: idx === currentStepIdx ? 0.85 : 0.4,
+        opacity: isAct ? 0.85 : 0.3,
       });
       const beacon = new THREE.Mesh(beaconGeo, beaconMat);
       beacon.rotation.x = -Math.PI / 2;
@@ -1228,8 +1291,13 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       stationBeacons.push(beacon);
     });
 
-    // 15. PHYSICAL HANDOVER ACTORS & WORKERS (Requirement 1: คนเดินและส่งต่อแต่ละจุด)
-    // Helper to create human worker
+    // SINGLE Active Floating Callout Sprite
+    const dummySpriteMat = new THREE.SpriteMaterial({ transparent: true, depthTest: false });
+    const activeCalloutSprite = new THREE.Sprite(dummySpriteMat);
+    updateActiveCalloutSprite(activeCalloutSprite, stations[currentStepIdx] || stations[0]);
+    scene.add(activeCalloutSprite);
+
+    // 15. PHYSICAL HANDOVER ACTORS & WORKERS
     const createWorkerModel = (vestColor = 0x10b981) => {
       const worker = new THREE.Group();
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8 });
@@ -1265,7 +1333,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     inWorker.position.set(0, 0, -0.6);
     inboundWorkerGroup.add(inWorker);
 
-    // Pallet Jack
     const jackMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5 });
     const jackFork = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.12, 1.2), jackMat);
     jackFork.position.set(0, 0.12, 0.4);
@@ -1281,7 +1348,6 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     fBody.castShadow = true;
     forkliftGroup.add(fBody);
 
-    // Mast & Forks
     const mastMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
     const mast = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.8, 0.12), mastMat);
     mast.position.set(0, 1.5, 1.15);
@@ -1294,13 +1360,12 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     forkliftGroup.position.set(stations[1].coords[0] + 4, 0, stations[1].coords[2]);
     scene.add(forkliftGroup);
 
-    // C. Order Picker Worker with Multi-tier Pick Cart (Racks -> Conveyor)
+    // C. Order Picker Worker with Cart (Racks -> Conveyor)
     const pickerWorkerGroup = new THREE.Group();
     const pWorker = createWorkerModel(0x0284c7);
     pWorker.position.set(0, 0, -0.7);
     pickerWorkerGroup.add(pWorker);
 
-    // Pick Cart
     const cartMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6 });
     const cart = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 1.2), cartMat);
     cart.position.set(0, 0.6, 0.3);
@@ -1330,8 +1395,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     parcelBox.castShadow = true;
     parcelGroup.add(parcelBox);
 
-    const ribbonMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const ribbon1 = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.66, 0.15), ribbonMat);
+    const ribbon1 = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.66, 0.15), new THREE.MeshBasicMaterial({ color: 0xffffff }));
     parcelGroup.add(ribbon1);
 
     const haloGeo = new THREE.RingGeometry(0.5, 0.75, 24);
@@ -1351,7 +1415,8 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       camera,
       renderer,
       parcelMesh: parcelGroup,
-      badgeSprites,
+      activeCalloutSprite,
+      stationPins,
       stationBeacons,
       inboundWorkerGroup,
       forkliftGroup,
@@ -1362,7 +1427,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
       applyCamera,
     };
 
-    // 17. Animation Loop with Physical Human/Equipment Handover
+    // 17. Animation Loop
     let animId: number;
     const clock = new THREE.Clock();
 
@@ -1376,6 +1441,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           cam,
           camTransition,
           parcelMesh,
+          activeCalloutSprite,
           stationBeacons,
           inboundWorkerGroup,
           forkliftGroup,
@@ -1383,7 +1449,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           outboundLoaderGroup,
         } = threeRef.current;
 
-        // Smooth Camera Transition (Cubic Ease-Out)
+        // Smooth Camera Glide
         if (camTransition) {
           const now = performance.now();
           const progress = Math.min(1, (now - camTransition.startTime) / camTransition.duration);
@@ -1405,7 +1471,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           applyCamera();
         }
 
-        // PHYSICAL HANDOVER ANIMATION: Move workers & equipment according to active step
+        // PHYSICAL HANDOVER ANIMATION
         const st = currentStepIdx;
 
         // Step 1 -> 2: Inbound Worker walks with goods from Truck to QC Table
@@ -1444,12 +1510,15 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           outboundLoaderGroup.position.z = THREE.MathUtils.lerp(outboundLoaderGroup.position.z, stations[9].coords[2], 0.06);
         }
 
-        // Golden Parcel moves along the realistic physical line
+        // Smooth Parcel Flow
         parcelMesh.rotation.y = elapsed * 0.8;
         const targetCoords = (stations[currentStepIdx] || stations[0]).coords;
         parcelMesh.position.x = THREE.MathUtils.lerp(parcelMesh.position.x, targetCoords[0], 0.08);
         parcelMesh.position.y = THREE.MathUtils.lerp(parcelMesh.position.y, targetCoords[1], 0.08);
         parcelMesh.position.z = THREE.MathUtils.lerp(parcelMesh.position.z, targetCoords[2], 0.08);
+
+        // Active Callout subtle floating breath
+        activeCalloutSprite.position.y = 2.8 + Math.sin(elapsed * 2.5) * 0.08;
 
         // Active Beacon Ring pulse
         stationBeacons.forEach((beacon, i) => {
@@ -1460,7 +1529,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
           } else {
             beacon.scale.setScalar(1.0);
             (beacon.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8);
-            (beacon.material as THREE.MeshBasicMaterial).opacity = 0.35;
+            (beacon.material as THREE.MeshBasicMaterial).opacity = 0.30;
           }
         });
 
@@ -1480,7 +1549,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     window.addEventListener('resize', handleResize);
 
-    // 19. Interactive Click on 3D Badges (Raycaster)
+    // 19. Interactive Click on 3D Pins (Raycaster)
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -1507,7 +1576,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
     };
     container.addEventListener('click', handleClick);
 
-    // 20. Rock-Solid Camera Controls (Pan, Rotate, Wheel Zoom)
+    // 20. Rock-Solid Camera Controls
     const el = renderer.domElement;
     el.style.touchAction = 'none';
 
@@ -1937,7 +2006,7 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
               title="ดูภาพกว้างทั้งคลัง (ไม่ซูมเข้าเมื่อเปลี่ยนขั้นตอน)"
             >
               <Maximize2 className="w-3.5 h-3.5" />
-              🌐 ภาพกว้างทั้งคลัง
+              🌐 ภาพกว้าง
             </button>
             <button
               onClick={setCameraFocus}
@@ -1951,6 +2020,17 @@ export default function WarehouseProcessSimulator3D({ branchId = 'URT' }: { bran
             >
               <Eye className="w-3.5 h-3.5" />
               🔭 โฟกัสสถานี
+            </button>
+            <button
+              onClick={() => setShowActiveLabel(!showActiveLabel)}
+              className={cn(
+                'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all',
+                showActiveLabel ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-500 hover:bg-slate-800'
+              )}
+              title="เปิด/ปิดป้ายชื่อลอยในอากาศ (ป้ายบนพื้นยังคงอยู่)"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              {showActiveLabel ? 'ป้ายลอย ON' : 'ป้ายลอย OFF'}
             </button>
             <button
               onClick={() => setIsAutoRotate(!isAutoRotate)}
