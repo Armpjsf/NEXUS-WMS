@@ -131,7 +131,7 @@ function Process3DContent() {
 
         {/* 3D Simulator Container */}
         <main className="w-full">
-          <WarehouseProcessSimulator3D />
+          <WarehouseProcessSimulator3D branchId={currentBranch} />
         </main>
       </div>
     </div>
