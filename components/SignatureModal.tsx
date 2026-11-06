@@ -11,16 +11,26 @@ const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: f
 const MemoizedSignaturePad = memo(({ sigRef, onClear }: { sigRef: any, onClear: () => void }) => {
     const { t } = useLanguage();
     
-    // Effect to handle canvas resolution for high-DPI screens
+    // Effect to handle canvas resolution for high-DPI screens without wiping drawn signatures
     useEffect(() => {
         const resizeCanvas = () => {
             const canvas = sigRef.current?.getCanvas();
-            if (canvas) {
+            if (canvas && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
                 const ratio = Math.max(window.devicePixelRatio || 1, 2);
-                canvas.width = canvas.offsetWidth * ratio;
-                canvas.height = canvas.offsetHeight * ratio;
-                canvas.getContext("2d")?.scale(ratio, ratio);
-                sigRef.current?.clear(); // Need to clear after resize to fix scaling
+                const targetW = canvas.offsetWidth * ratio;
+                const targetH = canvas.offsetHeight * ratio;
+
+                if (canvas.width !== targetW || canvas.height !== targetH) {
+                    const data = sigRef.current?.toData ? sigRef.current.toData() : null;
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                    canvas.getContext("2d")?.scale(ratio, ratio);
+                    if (data && data.length > 0) {
+                        sigRef.current?.fromData(data);
+                    } else {
+                        sigRef.current?.clear();
+                    }
+                }
             }
         };
 
