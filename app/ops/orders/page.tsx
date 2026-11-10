@@ -39,7 +39,7 @@ import { errorMessage } from '@/lib/errors';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
-interface Line { sku: string; name: string; qty: number; picked?: number; packed?: number; location?: string; price?: number; uom?: string; }
+interface Line { sku: string; name: string; qty: number; picked?: number; packed?: number; location?: string; price?: number; uom?: string; drop?: number; }
 interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
 interface Order {
   id: string; orderNo: string; channel: string; customerName: string; status: Status;
@@ -1680,9 +1680,10 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
 }
 
 
-// Management-only order editor — fix a mis-entered order's shipping details
-// (freight, delivery mode, carrier, customer, address, PO). Guarded server-side.
+// Management-only order editor — fix a mis-entered order's shipping details and items (SKU/Qty/Price)
+// Guarded server-side. Resyncs stock reservations automatically when items are updated.
 function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; carriers: Carrier[]; onClose: () => void; onDone: () => void }) {
+  const [activeTab, setActiveTab] = useState<'items' | 'info'>('items');
   const [deliveryMode, setDeliveryMode] = useState<'DELIVERY' | 'SELF_PICKUP'>(order.deliveryMode || 'DELIVERY');
   const [freightCost, setFreightCost] = useState(String(order.freightCost || ''));
   const [carrier, setCarrier] = useState(order.carrier || '');
@@ -1692,92 +1693,346 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
   const [refNo, setRefNo] = useState(order.refNo || '');
   const [saving, setSaving] = useState(false);
 
+  // Line items state
+  const [items, setItems] = useState<Line[]>(() =>
+    (order.items || []).map(l => ({
+      sku: l.sku || '',
+      name: l.name || '',
+      qty: Number(l.qty) || 1,
+      price: Number(l.price) || 0,
+      location: l.location || '',
+      drop: l.drop || 1,
+      picked: l.picked || 0,
+      packed: l.packed || 0,
+    }))
+  );
+
+  const canEditItems = !['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status);
+
+  // Autocomplete catalog from master products
+  const [catalog, setCatalog] = useState<{ id: string; name: string; price?: number; location?: string }[]>([]);
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) setCatalog(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSkuChange = (index: number, newSku: string) => {
+    setItems(prev => {
+      const next = [...prev];
+      const match = catalog.find(p => p.id?.toLowerCase() === newSku.trim().toLowerCase());
+      next[index] = {
+        ...next[index],
+        sku: newSku,
+        name: match?.name || next[index].name,
+        price: match?.price ?? next[index].price,
+        location: match?.location || next[index].location,
+      };
+      return next;
+    });
+  };
+
+  const handleQtyChange = (index: number, val: string) => {
+    const q = Math.max(1, parseInt(val, 10) || 1);
+    setItems(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], qty: q };
+      return next;
+    });
+  };
+
+  const handleNameChange = (index: number, name: string) => {
+    setItems(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], name };
+      return next;
+    });
+  };
+
+
+
+  const handleRemoveLine = (index: number) => {
+    if (items.length <= 1) {
+      toast.error('ต้องมีรายการสินค้าอย่างน้อย 1 รายการ');
+      return;
+    }
+    setItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddLine = () => {
+    setItems(prev => [
+      ...prev,
+      { sku: '', name: '', qty: 1, price: 0, location: '', drop: 1, picked: 0, packed: 0 },
+    ]);
+  };
+
+  const totalItemQty = items.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
+  const totalItemAmount = items.reduce((sum, it) => sum + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
+
   const save = async () => {
+    if (canEditItems) {
+      if (items.length === 0) {
+        toast.error('ต้องมีรายการสินค้าอย่างน้อย 1 รายการ');
+        setActiveTab('items');
+        return;
+      }
+      for (let i = 0; i < items.length; i++) {
+        if (!items[i].sku || !items[i].sku.trim()) {
+          toast.error(`กรุณาระบุรหัสสินค้า (SKU) ในบรรทัดที่ ${i + 1}`);
+          setActiveTab('items');
+          return;
+        }
+        if (!items[i].qty || Number(items[i].qty) <= 0) {
+          toast.error(`จำนวนสินค้าในบรรทัดที่ ${i + 1} ต้องมากกว่า 0`);
+          setActiveTab('items');
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
+      const payload: Record<string, any> = {
+        id: order.id,
+        deliveryMode,
+        freightCost: Number(freightCost) || 0,
+        carrier: deliveryMode === 'SELF_PICKUP' ? 'ลูกค้ารับเอง' : carrier,
+        customerName, phone, shipAddress, refNo,
+      };
+
+      if (canEditItems) {
+        payload.items = items.map(l => ({
+          sku: l.sku.trim().toUpperCase(),
+          name: l.name.trim() || l.sku.trim().toUpperCase(),
+          qty: Number(l.qty) || 1,
+          price: Number(l.price) || 0,
+          location: l.location || '',
+          drop: l.drop || 1,
+          picked: l.picked || 0,
+          packed: l.packed || 0,
+        }));
+      }
+
       const res = await fetch('/api/orders', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: order.id,
-          deliveryMode,
-          freightCost: Number(freightCost) || 0,
-          carrier: deliveryMode === 'SELF_PICKUP' ? 'ลูกค้ารับเอง' : carrier,
-          customerName, phone, shipAddress, refNo,
-        }),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error === 'Forbidden' ? 'เฉพาะแอดมินขึ้นไปเท่านั้น' : (json.error || 'บันทึกไม่สำเร็จ'));
-      toast.success('แก้ไขออเดอร์แล้ว');
+      toast.success('แก้ไขออเดอร์และรายการสินค้าเรียบร้อยแล้ว');
       onDone();
-    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-lg bg-[#171c23] border border-[#30353d] rounded-2xl shadow-2xl max-h-[88vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#30353d] sticky top-0 bg-[#171c23]">
+      <div className="w-full max-w-2xl bg-[#171c23] border border-[#30353d] rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#30353d] bg-[#171c23] shrink-0">
           <div>
-            <h3 className="font-bold text-[#dee2ec] text-sm">แก้ไขออเดอร์ {order.orderNo}</h3>
-            <p className="text-[11px] text-[#8a92a6]">แก้ไขข้อมูลจัดส่ง/ลูกค้า กรณีกรอกผิด (เฉพาะแอดมิน)</p>
+            <h3 className="font-bold text-[#dee2ec] text-sm flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-cyan-400" />
+              แก้ไขออเดอร์ {order.orderNo}
+            </h3>
+            <p className="text-[11px] text-[#8a92a6]">แก้ไขรหัสสินค้าที่พิมพ์ผิด หรือแก้ข้อมูลจัดส่ง/ลูกค้า (เฉพาะแอดมิน)</p>
           </div>
           <button onClick={onClose} className="p-2 text-[#8a92a6] hover:text-[#dee2ec]"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="p-5 space-y-3">
-          <div className="flex gap-2">
-            {([{ key: 'DELIVERY', label: '🚚 ส่งขนส่ง' }, { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' }] as const).map(m => (
-              <button key={m.key} type="button" onClick={() => setDeliveryMode(m.key)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${deliveryMode === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#1b2027] text-[#8a92a6]'}`}>
-                {m.label}
-              </button>
+        {/* Tab Switcher */}
+        <div className="flex border-b border-[#30353d] bg-[#13171d] px-5 pt-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('items')}
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'items'
+                ? 'border-cyan-400 text-cyan-300'
+                : 'border-transparent text-[#8a92a6] hover:text-white'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span>รายการสินค้า ({items.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('info')}
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'info'
+                ? 'border-cyan-400 text-cyan-300'
+                : 'border-transparent text-[#8a92a6] hover:text-white'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            <span>ข้อมูลจัดส่ง / ลูกค้า</span>
+          </button>
+        </div>
+
+        {/* Body Content */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+          <datalist id="catalog-skus">
+            {catalog.map(p => (
+              <option key={p.id} value={p.id}>{p.name} {p.location ? `(${p.location})` : ''}</option>
             ))}
-          </div>
+          </datalist>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-xs text-[#8a92a6] space-y-1">
-              <span>ค่าขนส่ง (บาท)</span>
-              <input type="number" value={freightCost} onChange={e => setFreightCost(e.target.value)} placeholder="0"
-                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-bold outline-none focus:border-cyan-500" />
-            </label>
-            <label className="text-xs text-[#8a92a6] space-y-1">
-              <span>ขนส่ง</span>
-              <select value={carrier} onChange={e => setCarrier(e.target.value)} disabled={deliveryMode === 'SELF_PICKUP'}
-                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] text-sm outline-none focus:border-cyan-500 disabled:opacity-40">
-                {deliveryMode === 'SELF_PICKUP' ? <option>— ลูกค้ารับเอง —</option> : <>
-                  <option value="">— เลือก —</option>
-                  {carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
-                </>}
-              </select>
-            </label>
-          </div>
+          {activeTab === 'items' && (
+            <div className="space-y-3">
+              {canEditItems ? (
+                <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 text-xs">
+                  💡 <b>แก้ไขรหัสสินค้า (SKU):</b> พิมพ์แก้รหัสเดิมที่ผิดได้ทันที ระบบจะปลดการจองสต็อกเดิม และจองสต็อกของ SKU ตัวใหม่ให้อัตโนมัติ โดยใบส่งสินค้าจะอัปเดตเป็นรหัสที่ถูกต้องทันที
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs">
+                  🔒 ออเดอร์นี้อยู่ในสถานะ <b>{STATUS_TH[order.status] || order.status}</b> (ตัดสต็อกแล้ว) ไม่สามารถแก้ไขรายการสินค้าได้โดยตรง หากต้องการสลับของกรุณาทำรับคืนเข้าคลัง (Return)
+                </div>
+              )}
 
-          <label className="text-xs text-[#8a92a6] space-y-1 block">
-            <span>ชื่อลูกค้า</span>
-            <input value={customerName} onChange={e => setCustomerName(e.target.value)}
-              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-medium outline-none focus:border-cyan-500" />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-xs text-[#8a92a6] space-y-1">
-              <span>เบอร์โทร</span>
-              <input value={phone} onChange={e => setPhone(e.target.value)}
-                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
-            </label>
-            <label className="text-xs text-[#8a92a6] space-y-1">
-              <span>อ้างอิง/PO</span>
-              <input value={refNo} onChange={e => setRefNo(e.target.value)}
-                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-mono outline-none focus:border-cyan-500" />
-            </label>
-          </div>
-          <label className="text-xs text-[#8a92a6] space-y-1 block">
-            <span>ที่อยู่ / ปลายทาง</span>
-            <input value={shipAddress} onChange={e => setShipAddress(e.target.value)}
-              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
-          </label>
+              <div className="space-y-2">
+                {items.map((it, idx) => (
+                  <div key={idx} className="p-3 rounded-xl bg-[#1b2027] border border-[#30353d] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#8a92a6]">รายการที่ {idx + 1}</span>
+                      {canEditItems && items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLine(idx)}
+                          className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-0.5 rounded-lg hover:bg-rose-500/10"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>ลบ</span>
+                        </button>
+                      )}
+                    </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                      <div className="sm:col-span-5">
+                        <label className="text-[10px] text-[#8a92a6] block mb-1">รหัสสินค้า (SKU) *</label>
+                        <input
+                          type="text"
+                          list="catalog-skus"
+                          value={it.sku}
+                          disabled={!canEditItems}
+                          onChange={e => handleSkuChange(idx, e.target.value)}
+                          placeholder="เช่น A08842NT..."
+                          className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-[#dee2ec] font-mono text-xs font-bold outline-none focus:border-cyan-500 disabled:opacity-50"
+                        />
+                      </div>
+                      <div className="sm:col-span-4">
+                        <label className="text-[10px] text-[#8a92a6] block mb-1">ชื่อสินค้า</label>
+                        <input
+                          type="text"
+                          value={it.name}
+                          disabled={!canEditItems}
+                          onChange={e => handleNameChange(idx, e.target.value)}
+                          placeholder="ชื่อสินค้า"
+                          className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-[#dee2ec] text-xs outline-none focus:border-cyan-500 disabled:opacity-50"
+                        />
+                      </div>
+                      <div className="sm:col-span-3">
+                        <label className="text-[10px] text-[#8a92a6] block mb-1">จำนวน *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={it.qty}
+                          disabled={!canEditItems}
+                          onChange={e => handleQtyChange(idx, e.target.value)}
+                          className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-[#dee2ec] font-bold text-xs text-right outline-none focus:border-cyan-500 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {canEditItems && (
+                <button
+                  type="button"
+                  onClick={handleAddLine}
+                  className="w-full py-2.5 rounded-xl border border-dashed border-[#30353d] hover:border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>เพิ่มรายการสินค้า (+ Add Item)</span>
+                </button>
+              )}
+
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[#13171d] border border-[#30353d] text-xs">
+                <span className="text-[#8a92a6]">สรุปรวมสินค้า:</span>
+                <span className="font-bold text-[#dee2ec] font-mono">
+                  รวม <span className="text-cyan-400">{totalItemQty.toLocaleString()}</span> ชิ้น {totalItemAmount > 0 ? ` (฿${totalItemAmount.toLocaleString()})` : ''}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'info' && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                {([{ key: 'DELIVERY', label: '🚚 ส่งขนส่ง' }, { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' }] as const).map(m => (
+                  <button key={m.key} type="button" onClick={() => setDeliveryMode(m.key)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${deliveryMode === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#1b2027] text-[#8a92a6]'}`}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs text-[#8a92a6] space-y-1">
+                  <span>ค่าขนส่ง (บาท)</span>
+                  <input type="number" value={freightCost} onChange={e => setFreightCost(e.target.value)} placeholder="0"
+                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-bold outline-none focus:border-cyan-500" />
+                </label>
+                <label className="text-xs text-[#8a92a6] space-y-1">
+                  <span>ขนส่ง</span>
+                  <select value={carrier} onChange={e => setCarrier(e.target.value)} disabled={deliveryMode === 'SELF_PICKUP'}
+                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] text-sm outline-none focus:border-cyan-500 disabled:opacity-40">
+                    {deliveryMode === 'SELF_PICKUP' ? <option>— ลูกค้ารับเอง —</option> : <>
+                      <option value="">— เลือก —</option>
+                      {carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
+                    </>}
+                  </select>
+                </label>
+              </div>
+
+              <label className="text-xs text-[#8a92a6] space-y-1 block">
+                <span>ชื่อลูกค้า</span>
+                <input value={customerName} onChange={e => setCustomerName(e.target.value)}
+                  className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-medium outline-none focus:border-cyan-500" />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs text-[#8a92a6] space-y-1">
+                  <span>เบอร์โทร</span>
+                  <input value={phone} onChange={e => setPhone(e.target.value)}
+                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
+                </label>
+                <label className="text-xs text-[#8a92a6] space-y-1">
+                  <span>อ้างอิง/PO</span>
+                  <input value={refNo} onChange={e => setRefNo(e.target.value)}
+                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-mono outline-none focus:border-cyan-500" />
+                </label>
+              </div>
+              <label className="text-xs text-[#8a92a6] space-y-1 block">
+                <span>ที่อยู่ / ปลายทาง</span>
+                <input value={shipAddress} onChange={e => setShipAddress(e.target.value)}
+                  className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-[#30353d] bg-[#171c23] shrink-0">
           <button onClick={save} disabled={saving}
-            className="w-full mt-2 py-2.5 rounded-xl bg-cyan-500 text-[#062028] font-bold flex items-center justify-center gap-1.5 disabled:opacity-50">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} บันทึกการแก้ไข
+            className="w-full py-2.5 rounded-xl bg-cyan-500 text-[#062028] font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-cyan-400 transition-colors">
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} บันทึกการแก้ไขออเดอร์
           </button>
         </div>
       </div>

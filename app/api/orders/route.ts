@@ -48,13 +48,32 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { id, ...patch } = body;
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    // Editing an order's master details (customer/address/carrier/freight/mode)
+    // Editing an order's master details (customer/address/carrier/freight/mode/items)
     // is a management-only correction; status/POD/item flow stays open to staff.
-    const EDIT_FIELDS = ['customerName', 'phone', 'shipAddress', 'refNo', 'freightCost', 'deliveryMode'];
+    const EDIT_FIELDS = ['customerName', 'phone', 'shipAddress', 'refNo', 'freightCost', 'deliveryMode', 'items'];
     if (EDIT_FIELDS.some(f => f in patch)) {
       const { requireManagement } = await import('@/lib/apiAuth');
       const guard = await requireManagement();
       if (guard.error) return guard.error;
+    }
+
+    if (patch.items !== undefined) {
+      if (!Array.isArray(patch.items) || patch.items.length === 0) {
+        return NextResponse.json({ error: 'ต้องมีรายการสินค้าอย่างน้อย 1 รายการ' }, { status: 400 });
+      }
+      for (const it of patch.items) {
+        if (!it.sku || !String(it.sku).trim()) {
+          return NextResponse.json({ error: 'รหัสสินค้า (SKU) ต้องไม่เป็นค่าว่าง' }, { status: 400 });
+        }
+        if (Number(it.qty) <= 0 || isNaN(Number(it.qty))) {
+          return NextResponse.json({ error: `จำนวนสินค้าของ ${it.sku} ต้องมากกว่า 0` }, { status: 400 });
+        }
+      }
+      const existingOrder = await getOrder(id);
+      if (!existingOrder) return NextResponse.json({ error: 'ไม่พบออเดอร์' }, { status: 404 });
+      if (['SHIPPED', 'DELIVERED'].includes(existingOrder.status)) {
+        return NextResponse.json({ error: 'ไม่สามารถแก้ไขรายการสินค้าได้ เนื่องจากตัดสต็อก/จัดส่งแล้ว' }, { status: 400 });
+      }
     }
     const order = await updateOrder(id, patch);
     if (!order) return NextResponse.json({ error: 'อัปเดตออเดอร์ไม่สำเร็จ' }, { status: 500 });
