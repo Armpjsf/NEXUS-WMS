@@ -120,14 +120,20 @@ function Process3DContent() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg lg:text-xl font-black text-slate-900 tracking-wide">
-                  3D Process Simulator & SOP Digital Twin
+                  3D Process Simulator & Smart AI Digital Twin
                 </h1>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
-                  Interactive SOP
+                  Autonomous Fleet
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-300">
+                  AI Route Ribbon
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                  Live Heatmap
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                จำลองกระบวนการทำงานในคลังสินค้าแบบ 3D สเต็ปต่อสเต็ป 1-10 เชื่อมต่อผังแร็ค สต็อกจริง และใบสั่งเบิกจ่ายจริงแบบเรียลไทม์
+                จำลองคลังสินค้าอัจฉริยะ 3D เชื่อมต่อผังแร็คจริง พร้อมฝูงรถโฟล์กลิฟต์อัตโนมัติ (FL-01..03), เส้นทางนำทางหยิบสินค้า, โหมดสแกน Heatmap และคลิกตรวจสอบวัตถุ 3D รายจุด
               </p>
             </div>
           </div>

@@ -24,6 +24,14 @@ import {
   Sun,
   Moon,
   MapPin,
+  Flame,
+  Navigation,
+  Truck,
+  BatteryCharging,
+  Cpu,
+  X,
+  Crosshair,
+  Zap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getApiUrl } from '@/lib/config';
@@ -766,6 +774,297 @@ interface ArticulatedWorker {
   walkPhase: number;
 }
 
+interface SmartForkliftActor {
+  id: string;
+  name: string;
+  role: string;
+  battery: number;
+  loadKg: number;
+  root: THREE.Group;
+  carriage: THREE.Group;
+  beaconMesh: THREE.Mesh;
+  cargoMesh: THREE.Group;
+  hudSprite: THREE.Sprite;
+}
+
+export interface InspectedObjectInfo {
+  type: 'BIN' | 'FORKLIFT' | 'TRUCK';
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  metrics: { label: string; value: string }[];
+  binCode?: string;
+}
+
+// Create animated chevron texture for AI Route Ribbon on warehouse floor
+function createChevronRibbonTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, 128, 64);
+
+  // Glowing track background
+  ctx.fillStyle = 'rgba(2, 132, 199, 0.24)';
+  ctx.fillRect(0, 8, 128, 48);
+
+  // Bright edge rails
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
+  ctx.fillRect(0, 8, 128, 4);
+  ctx.fillRect(0, 52, 128, 4);
+
+  // Forward chevrons (>>>)
+  ctx.fillStyle = '#38bdf8';
+  for (const offsetX of [16, 72]) {
+    ctx.beginPath();
+    ctx.moveTo(offsetX, 15);
+    ctx.lineTo(offsetX + 24, 32);
+    ctx.lineTo(offsetX, 49);
+    ctx.lineTo(offsetX + 14, 49);
+    ctx.lineTo(offsetX + 38, 32);
+    ctx.lineTo(offsetX + 14, 15);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.minFilter = THREE.LinearFilter;
+  return tex;
+}
+
+// Create Floating Telemetry Badge above Smart Forklifts
+function createForkliftHudSprite(id: string, taskText: string, battery: number, accentHex: string): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 84;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+  ctx.strokeStyle = accentHex;
+  ctx.lineWidth = 4;
+  drawRoundRect(ctx, 4, 4, 312, 76, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = accentHex;
+  ctx.font = '900 22px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(id, 18, 34);
+
+  ctx.fillStyle = '#34d399';
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(`🔋${battery}%`, 300, 34);
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 17px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(taskText.slice(0, 26), 18, 62);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sprite.scale.set(2.9, 0.76, 1);
+  sprite.position.set(0, 3.25, 0);
+  return sprite;
+}
+
+// Build High-Detail Counterbalance Forklift with Overhead Guard, Beacon, Wheels, and Operator
+function createSmartForklift(
+  id: string,
+  name: string,
+  role: string,
+  battery: number,
+  loadKg: number,
+  bodyColorHex: number,
+  accentCss: string
+): SmartForkliftActor {
+  const root = new THREE.Group();
+  root.userData = {
+    inspectable: {
+      type: 'FORKLIFT',
+      id,
+      title: `${id} • ${name}`,
+      subtitle: role,
+      status: battery > 30 ? 'ACTIVE AUTOPILOT' : 'CHARGING',
+      metrics: [
+        { label: 'ระดับแบตเตอรี่', value: `${battery}% (Li-Ion 48V)` },
+        { label: 'น้ำหนักบรรทุกปัจจุบัน', value: `${loadKg} kg` },
+        { label: 'ระบบนำทาง', value: 'AI Waypoint + Obstacle Lidar' },
+      ],
+    } as InspectedObjectInfo,
+  };
+
+  const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColorHex, roughness: 0.3, metalness: 0.25 });
+  const darkSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.8 });
+  const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+
+  // Main chassis & counterweight
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.95, 2.0), bodyMat);
+  chassis.position.set(0, 0.65, -0.1);
+  chassis.castShadow = true;
+  root.add(chassis);
+
+  const rearWeight = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.75, 0.45), darkSteelMat);
+  rearWeight.position.set(0, 0.58, -0.95);
+  root.add(rearWeight);
+
+  // 4 Industrial Tires
+  const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.26, 14);
+  [
+    [-0.68, 0.32, 0.65],
+    [0.68, 0.32, 0.65],
+    [-0.62, 0.28, -0.75],
+    [0.62, 0.28, -0.75],
+  ].forEach(([wx, wy, wz]) => {
+    const wheel = new THREE.Mesh(wheelGeo, tireMat);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(wx, wy, wz);
+    wheel.castShadow = true;
+    root.add(wheel);
+  });
+
+  // Overhead Safety Guard Cage
+  const postGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.35, 8);
+  [
+    [-0.58, 1.75, 0.45],
+    [0.58, 1.75, 0.45],
+    [-0.58, 1.75, -0.65],
+    [0.58, 1.75, -0.65],
+  ].forEach(([px, py, pz]) => {
+    const p = new THREE.Mesh(postGeo, darkSteelMat);
+    p.position.set(px, py, pz);
+    root.add(p);
+  });
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.26, 0.07, 1.22), darkSteelMat);
+  roof.position.set(0, 2.42, -0.1);
+  root.add(roof);
+
+  // Flashing Amber Safety Strobe Beacon on roof
+  const beaconMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+  const beaconMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.18, 12), beaconMat);
+  beaconMesh.position.set(0, 2.55, -0.45);
+  root.add(beaconMesh);
+
+  // Blue Floor Safety Spotlight
+  const spotGeo = new THREE.RingGeometry(0.25, 0.55, 20);
+  const spotMat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.45,
+  });
+  const blueSpot = new THREE.Mesh(spotGeo, spotMat);
+  blueSpot.rotation.x = -Math.PI / 2;
+  blueSpot.position.set(0, 0.03, 2.25);
+  root.add(blueSpot);
+
+  // Dual Hydraulic Mast Rails
+  [-0.42, 0.42].forEach((mx) => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.1, 0.14), darkSteelMat);
+    rail.position.set(mx, 1.6, 0.98);
+    root.add(rail);
+  });
+
+  // Moving Fork Carriage + Dual Steel Tines + Optional Pallet Cargo
+  const carriage = new THREE.Group();
+  const backrest = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.55, 0.08), darkSteelMat);
+  backrest.position.set(0, 0.55, 1.06);
+  carriage.add(backrest);
+
+  [-0.32, 0.32].forEach((fx) => {
+    const tine = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 1.15), darkSteelMat);
+    tine.position.set(fx, 0.25, 1.62);
+    carriage.add(tine);
+  });
+
+  const cargoMesh = new THREE.Group();
+  const pal = new THREE.Mesh(
+    new THREE.BoxGeometry(1.1, 0.12, 1.1),
+    new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.85 })
+  );
+  pal.position.set(0, 0.34, 1.62);
+  cargoMesh.add(pal);
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 0.72, 1.0),
+    new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 })
+  );
+  box.position.set(0, 0.76, 1.62);
+  cargoMesh.add(box);
+  carriage.add(cargoMesh);
+
+  root.add(carriage);
+
+  const hudSprite = createForkliftHudSprite(id, role, battery, accentCss);
+  root.add(hudSprite);
+
+  return {
+    id,
+    name,
+    role,
+    battery,
+    loadKg,
+    root,
+    carriage,
+    beaconMesh,
+    cargoMesh,
+    hudSprite,
+  };
+}
+
+// Build 3D Floor Route Ribbon segments connecting waypoints
+function buildRouteRibbonSegments(
+  group: THREE.Group,
+  points: [number, number][],
+  ribbonTex: THREE.CanvasTexture
+) {
+  while (group.children.length > 0) {
+    const c = group.children[0] as any;
+    if (c.geometry) c.geometry.dispose?.();
+    group.remove(c);
+  }
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x1, z1] = points[i];
+    const [x2, z2] = points[i + 1];
+    const dx = x2 - x1;
+    const dz = z2 - z1;
+    const len = Math.hypot(dx, dz);
+    if (len < 0.2) continue;
+
+    const geo = new THREE.PlaneGeometry(len, 0.68);
+    const mat = new THREE.MeshBasicMaterial({
+      map: ribbonTex,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const seg = new THREE.Mesh(geo, mat);
+    seg.rotation.x = -Math.PI / 2;
+    seg.rotation.z = -Math.atan2(dz, dx);
+    seg.position.set((x1 + x2) / 2, 0.035, (z1 + z2) / 2);
+    group.add(seg);
+
+    // Node marker ring at waypoint
+    const ringGeo = new THREE.RingGeometry(0.22, 0.42, 20);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: i === 0 ? 0x10b981 : 0xf59e0b,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x2, 0.04, z2);
+    group.add(ring);
+  }
+}
+
 function createDetailedWorker(
   role: 'INBOUND' | 'PICKER' | 'LOADER' | 'QC' | 'CONTROL' | 'PACKER' | 'SCALE' | 'DISPATCH',
   vestColorHex: number = 0x10b981
@@ -960,6 +1259,10 @@ export default function WarehouseProcessSimulator3D({
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'FOCUS'>('OVERVIEW');
   const [isAutoRotate, setIsAutoRotate] = useState(false);
   const [showActiveLabel, setShowActiveLabel] = useState(true);
+  const [showRouteRibbon, setShowRouteRibbon] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [followTargetId, setFollowTargetId] = useState<'NONE' | 'FL-01' | 'FL-02' | 'FL-03' | 'PICKER'>('NONE');
+  const [inspectedObj, setInspectedObj] = useState<InspectedObjectInfo | null>(null);
 
   // Quiz interactive state
   const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null);
@@ -1384,7 +1687,48 @@ export default function WarehouseProcessSimulator3D({
 
   const currentStation = stations[currentStepIdx] || stations[0];
 
+  // Calculate AI Picking Route Waypoints & Travel Distance Analytics (Control Tower -> All Order Bins -> Conveyor Feed)
+  const routeAnalytics = useMemo(() => {
+    const startPt: [number, number] = [stations[3]?.coords[0] ?? -6.5, (stations[3]?.coords[2] ?? 4) + 0.5];
+    const waypoints: [number, number][] = [startPt];
+    orderBinTargets.forEach((t) => {
+      waypoints.push([t.aislePos[0], t.aislePos[2]]);
+    });
+    const endPt: [number, number] = [stations[5]?.coords[0] ?? -4.0, conveyorZ - 1.3];
+    waypoints.push(endPt);
+
+    let totalDistanceM = 0;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      totalDistanceM += Math.hypot(
+        waypoints[i + 1][0] - waypoints[i][0],
+        waypoints[i + 1][1] - waypoints[i][1]
+      );
+    }
+    const distRounded = Math.round(totalDistanceM * 10) / 10;
+    const estimatedPickSeconds = Math.round(distRounded / 1.15 + orderBinTargets.length * 12);
+    const efficiencyScore = Math.max(78, Math.min(99, Math.round(100 - distRounded * 0.35)));
+
+    return {
+      waypoints,
+      totalDistanceM: distRounded,
+      estimatedPickSeconds,
+      stopCount: orderBinTargets.length,
+      efficiencyScore,
+    };
+  }, [stations, orderBinTargets, conveyorZ]);
+
   // Live Refs so the 60fps requestAnimationFrame loop reads fresh state WITHOUT rebuilding the WebGL scene!
+  const showRouteRibbonRef = useRef(showRouteRibbon);
+  showRouteRibbonRef.current = showRouteRibbon;
+
+  const showHeatmapRef = useRef(showHeatmap);
+  showHeatmapRef.current = showHeatmap;
+
+  const followTargetIdRef = useRef(followTargetId);
+  followTargetIdRef.current = followTargetId;
+
+  const routeWaypointsRef = useRef(routeAnalytics.waypoints);
+  routeWaypointsRef.current = routeAnalytics.waypoints;
   const currentStepIdxRef = useRef(currentStepIdx);
   currentStepIdxRef.current = currentStepIdx;
 
@@ -1425,6 +1769,18 @@ export default function WarehouseProcessSimulator3D({
     palletJackMesh: THREE.Group;
     forkliftGroup: THREE.Group;
     forkliftCarriage: THREE.Group;
+    smartFleet: SmartForkliftActor[];
+    routeRibbonGroup: THREE.Group;
+    routeRibbonTex: THREE.CanvasTexture;
+    outboundTruck: THREE.Group;
+    outboundDockLamp: THREE.Mesh;
+    binSlotMeshes: {
+      mesh: THREE.Mesh;
+      binCode: string;
+      hasStock: boolean;
+      isLowStock: boolean;
+      normalMat: THREE.Material;
+    }[];
     orderPicker: ArticulatedWorker;
     pickCartMesh: THREE.Group;
     outboundLoader: ArticulatedWorker;
@@ -1575,6 +1931,61 @@ export default function WarehouseProcessSimulator3D({
       if (s) beacon.position.set(s.coords[0], 0.03, s.coords[2]);
     });
   }, [stations, currentStepIdx]);
+
+  // Keep Route Ribbon geometry updated whenever selected order or stations change
+  useEffect(() => {
+    if (!threeRef.current) return;
+    const { routeRibbonGroup, routeRibbonTex } = threeRef.current;
+    buildRouteRibbonSegments(routeRibbonGroup, routeAnalytics.waypoints, routeRibbonTex);
+    routeRibbonGroup.visible = showRouteRibbon;
+  }, [routeAnalytics, showRouteRibbon]);
+
+  // Live Heatmap Material Switcher (Instant update without rebuilding Three.js scene!)
+  useEffect(() => {
+    if (!threeRef.current) return;
+    const activeOrderBins = new Set(orderBinTargets.map((b) => normalizeBinCode(b.binCode)));
+    const heatHotMat = new THREE.MeshStandardMaterial({
+      color: 0xf43f5e,
+      emissive: 0xe11d48,
+      emissiveIntensity: 0.65,
+      roughness: 0.25,
+    });
+    const heatWarnMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.45,
+      roughness: 0.3,
+    });
+    const heatOptimalMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x059669,
+      emissiveIntensity: 0.35,
+      roughness: 0.35,
+    });
+    const heatEmptyMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.24,
+      depthWrite: false,
+    });
+
+    threeRef.current.binSlotMeshes.forEach((slot) => {
+      if (!showHeatmap) {
+        slot.mesh.material = slot.normalMat;
+      } else {
+        const normCode = normalizeBinCode(slot.binCode);
+        if (activeOrderBins.has(normCode)) {
+          slot.mesh.material = heatHotMat;
+        } else if (slot.hasStock && slot.isLowStock) {
+          slot.mesh.material = heatWarnMat;
+        } else if (slot.hasStock) {
+          slot.mesh.material = heatOptimalMat;
+        } else {
+          slot.mesh.material = heatEmptyMat;
+        }
+      }
+    });
+  }, [showHeatmap, orderBinTargets]);
 
   // Camera presets
   const setCameraOverview = useCallback(() => {
@@ -1882,8 +2293,44 @@ export default function WarehouseProcessSimulator3D({
       return truck;
     };
 
-    createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b);
-    createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981);
+    const inboundTruck = createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b);
+    inboundTruck.userData = {
+      inspectable: {
+        type: 'TRUCK',
+        id: 'DOCK-01-IN',
+        title: 'รถบรรทุกขาเข้า • DOCK 01 (Inbound)',
+        subtitle: '6-Wheel Box Truck • ผู้ส่งมอบวัตถุดิบ',
+        status: 'DOCKED & UNLOADING',
+        metrics: [
+          { label: 'สถานะประตู Dock', value: 'เปิดรับสินค้า (Active)' },
+          { label: 'ขั้นตอนที่เกี่ยวข้อง', value: 'สถานี 1: Inbound Dock Receiving' },
+        ],
+      } as InspectedObjectInfo,
+    };
+
+    const outboundTruck = createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981);
+    outboundTruck.userData = {
+      inspectable: {
+        type: 'TRUCK',
+        id: 'DOCK-04-OUT',
+        title: `รถขนส่งขาออก • DOCK 04 (${selectedOrder.orderId})`,
+        subtitle: `ปลายทาง: ${selectedOrder.destination}`,
+        status: 'WAITING FOR DISPATCH',
+        metrics: [
+          { label: 'ใบสั่งขายที่ผูก', value: selectedOrder.orderId },
+          { label: 'สินค้าหลัก', value: `${selectedOrder.skuName} (${selectedOrder.qty} ชิ้น)` },
+          { label: 'น้ำหนักรวม', value: `~${selectedOrder.weightKg} kg` },
+        ],
+      } as InspectedObjectInfo,
+    };
+
+    // Outbound Dock Traffic Signal Lamp (Red while loading, turns Green on Step 10 Dispatch)
+    const outboundDockLamp = new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xef4444 })
+    );
+    outboundDockLamp.position.set(floorWidth / 2 - 0.65, 5.8, dockZ - 2.6);
+    scene.add(outboundDockLamp);
 
     // 8. Accurate Racks & Floor Blocks (Matches Warehouse3DViewer 100%)
     const steelPostMat = new THREE.MeshStandardMaterial({
@@ -1904,6 +2351,13 @@ export default function WarehouseProcessSimulator3D({
     });
 
     const rawRacks = layout?.racks || [];
+    const binSlotMeshes: {
+      mesh: THREE.Mesh;
+      binCode: string;
+      hasStock: boolean;
+      isLowStock: boolean;
+      normalMat: THREE.Material;
+    }[] = [];
 
     const buildFullRack = (rack: RackConfig) => {
       const rackGroup = new THREE.Group();
@@ -2013,17 +2467,42 @@ export default function WarehouseProcessSimulator3D({
           const boxH = Math.max(0.22, layerH - 0.18 - palletH);
           const boxD = depth * 0.82;
 
+          const slotInspectInfo: InspectedObjectInfo = {
+            type: 'BIN',
+            id: binCode,
+            binCode,
+            title: `พิกัดช่องจัดเก็บ [${binCode}]`,
+            subtitle: `แร็ค ${rack.rackCode} • ช่อง Bay ${bay} • ชั้น Level ${lvl}`,
+            status: hasStock ? (binData?.status === 'LOW_STOCK' ? 'LOW STOCK' : 'STOCKED') : 'EMPTY SLOT',
+            metrics: [
+              { label: 'ปริมาณสต็อกคงเหลือ', value: hasStock ? `${binData?.totalStock.toLocaleString()} ชิ้น` : '0 ชิ้น (ว่าง)' },
+              {
+                label: 'รายการสินค้า (SKU)',
+                value:
+                  hasStock && binData?.products && binData.products.length > 0
+                    ? binData.products.map((it) => `${it.id} (${it.stock})`).slice(0, 2).join(', ')
+                    : 'ไม่มีสินค้าในช่องนี้',
+              },
+              { label: 'ระดับการหมุนเวียน (ABC)', value: `Class ${binData?.velocityClass || 'C'} • ${isFloor ? 'Floor Block' : 'Selective Rack'}` },
+            ],
+          };
+
           if (hasStock) {
-            const mat = binData.status === 'LOW_STOCK' ? stockLowMat : stockOkMat;
+            const isLow = binData?.status === 'LOW_STOCK';
+            const mat = isLow ? stockLowMat : stockOkMat;
             const stockBox = new THREE.Mesh(new THREE.BoxGeometry(boxW, boxH, boxD), mat);
             stockBox.position.set(xPos, beamY + 0.04 + palletH + boxH / 2, 0);
             stockBox.castShadow = true;
             stockBox.receiveShadow = true;
+            stockBox.userData = { inspectable: slotInspectInfo };
             rackGroup.add(stockBox);
+            binSlotMeshes.push({ mesh: stockBox, binCode, hasStock: true, isLowStock: isLow, normalMat: mat });
           } else {
             const emptyBox = new THREE.Mesh(new THREE.BoxGeometry(boxW, boxH, boxD), emptySlotMat);
             emptyBox.position.set(xPos, beamY + 0.04 + boxH / 2, 0);
+            emptyBox.userData = { inspectable: slotInspectInfo };
             rackGroup.add(emptyBox);
+            binSlotMeshes.push({ mesh: emptyBox, binCode, hasStock: false, isLowStock: false, normalMat: emptySlotMat });
           }
         }
       }
@@ -2294,28 +2773,94 @@ export default function WarehouseProcessSimulator3D({
     palletJackMesh.position.set(currentStations[0].coords[0], 0, currentStations[0].coords[2] + 0.8);
     scene.add(palletJackMesh);
 
-    // B. Putaway Forklift & Driver (QC -> Storage Racks)
-    const forkliftGroup = new THREE.Group();
-    const forkBodyMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
-    const fBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.5, 2.2), forkBodyMat);
-    fBody.position.set(0, 0.9, 0);
-    fBody.castShadow = true;
-    forkliftGroup.add(fBody);
+    // B. Smart Counterbalance Forklift Fleet (FL-01 Putaway, FL-02 AI Replenish Patrol, FL-03 EV Charging)
+    const fl01 = createSmartForklift(
+      'FL-01',
+      'Toyota 8FBE18 Counterbalance',
+      'INBOUND PUTAWAY (QC ➔ RACK)',
+      92,
+      680,
+      0xf59e0b,
+      '#fbbf24'
+    );
+    fl01.cargoMesh.visible = false; // Uses inboundPalletGroup during Step 3
+    fl01.root.position.set(currentStations[1].coords[0] + 3.8, 0, currentStations[1].coords[2]);
+    fl01.root.rotation.y = Math.PI;
+    scene.add(fl01.root);
 
-    const mastMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
-    const mast = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.2, 0.12), mastMat);
-    mast.position.set(0, 1.6, 1.15);
-    forkliftGroup.add(mast);
+    const forkliftGroup = fl01.root;
+    const forkliftCarriage = fl01.carriage;
 
-    const forkliftCarriage = new THREE.Group();
-    const fForks = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.2), mastMat);
-    fForks.position.set(0, 0.3, 1.7);
-    forkliftCarriage.add(fForks);
-    forkliftGroup.add(forkliftCarriage);
+    // FL-02: Autonomous Cycle-Count & Replenishment Patrol Forklift
+    const fl02 = createSmartForklift(
+      'FL-02',
+      'Crown ESR5200 Reach AI',
+      'AUTO REPLENISH & LIDAR SCAN',
+      84,
+      450,
+      0x0284c7,
+      '#38bdf8'
+    );
+    fl02.root.position.set(0, 0, currentStations[3].coords[2] - 2.2);
+    scene.add(fl02.root);
 
-    forkliftGroup.position.set(currentStations[1].coords[0] + 3.8, 0, currentStations[1].coords[2]);
-    forkliftGroup.rotation.y = Math.PI;
-    scene.add(forkliftGroup);
+    // FL-03: Docked at EV Fast-Charger Station
+    const chargerBayX = -floorWidth / 2 + 4.2;
+    const chargerBayZ = currentStations[3].coords[2] - 1.5;
+
+    // Build EV Fast-Charger Station Pad & Pillar
+    const chargerGroup = new THREE.Group();
+    const chargerPad = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.4, 4.2),
+      new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide,
+      })
+    );
+    chargerPad.rotation.x = -Math.PI / 2;
+    chargerPad.position.set(chargerBayX, 0.025, chargerBayZ);
+    chargerGroup.add(chargerPad);
+
+    const chargerBox = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 1.85, 0.55),
+      new THREE.MeshStandardMaterial({ color: 0x065f46, metalness: 0.6, roughness: 0.3 })
+    );
+    chargerBox.position.set(chargerBayX - 1.25, 0.92, chargerBayZ);
+    chargerBox.castShadow = true;
+    chargerGroup.add(chargerBox);
+
+    const chargerScreen = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.45, 0.36),
+      new THREE.MeshBasicMaterial({ color: 0x34d399 })
+    );
+    chargerScreen.position.set(chargerBayX - 0.91, 1.25, chargerBayZ);
+    chargerGroup.add(chargerScreen);
+    scene.add(chargerGroup);
+
+    const fl03 = createSmartForklift(
+      'FL-03',
+      'Jungheinrich EFG 216k',
+      'EV FAST CHARGING BAY',
+      98,
+      0,
+      0x10b981,
+      '#34d399'
+    );
+    fl03.cargoMesh.visible = false;
+    fl03.root.position.set(chargerBayX + 0.25, 0, chargerBayZ);
+    fl03.root.rotation.y = Math.PI / 2;
+    scene.add(fl03.root);
+
+    const smartFleet: SmartForkliftActor[] = [fl01, fl02, fl03];
+
+    // AI Route Navigation Ribbon on Floor (Dynamic glowing chevron path)
+    const routeRibbonTex = createChevronRibbonTexture();
+    const routeRibbonGroup = new THREE.Group();
+    buildRouteRibbonSegments(routeRibbonGroup, routeWaypointsRef.current, routeRibbonTex);
+    routeRibbonGroup.visible = showRouteRibbonRef.current;
+    scene.add(routeRibbonGroup);
 
     // C. Order Picker Worker with Cart (Stationed at Control Tower Pick Cart Bay -> Walks to Real Bin -> Conveyor Feed)
     const orderPicker = createDetailedWorker('PICKER', 0x0284c7);
@@ -2411,6 +2956,12 @@ export default function WarehouseProcessSimulator3D({
       palletJackMesh,
       forkliftGroup,
       forkliftCarriage,
+      smartFleet,
+      routeRibbonGroup,
+      routeRibbonTex,
+      outboundTruck,
+      outboundDockLamp,
+      binSlotMeshes,
       orderPicker,
       pickCartMesh,
       outboundLoader,
@@ -2446,6 +2997,11 @@ export default function WarehouseProcessSimulator3D({
           palletJackMesh,
           forkliftGroup,
           forkliftCarriage,
+          smartFleet,
+          routeRibbonGroup,
+          routeRibbonTex,
+          outboundTruck,
+          outboundDockLamp,
           orderPicker,
           pickCartMesh,
           outboundLoader,
@@ -2483,6 +3039,78 @@ export default function WarehouseProcessSimulator3D({
         conveyorRollers.forEach((r) => {
           r.rotation.x += 0.08;
         });
+
+        // Animate AI Route Ribbon flowing chevrons (>>>)
+        routeRibbonGroup.visible = showRouteRibbonRef.current;
+        if (showRouteRibbonRef.current) {
+          routeRibbonTex.offset.x = -(elapsed * 1.35) % 1;
+        }
+
+        // Flash safety beacons on all smart forklifts & run FL-02 Autonomous Patrol
+        smartFleet.forEach((fl, fIdx) => {
+          const pulse = 0.5 + 0.5 * Math.sin(elapsed * 8 + fIdx * 2);
+          (fl.beaconMesh.material as THREE.MeshBasicMaterial).color.setHex(
+            pulse > 0.5 ? 0xf59e0b : 0xfef08a
+          );
+          fl.hudSprite.visible = showActiveLabelRef.current;
+        });
+
+        // FL-02 Autonomous Corridor Patrol & Rack Scanning State Machine
+        const fl2 = smartFleet[1];
+        if (fl2) {
+          const patrolCycle = elapsed * 0.45;
+          const patrolX = Math.sin(patrolCycle) * Math.min(11, floorWidth * 0.26);
+          const patrolZ = sts[3].coords[2] - 2.3 + Math.cos(patrolCycle * 2) * 0.9;
+          const dx2 = patrolX - fl2.root.position.x;
+          const dz2 = patrolZ - fl2.root.position.z;
+          fl2.root.position.x = patrolX;
+          fl2.root.position.z = patrolZ;
+          if (Math.hypot(dx2, dz2) > 0.001) {
+            const targetHeading = Math.atan2(dx2, dz2);
+            let diff = targetHeading - fl2.root.rotation.y;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            fl2.root.rotation.y += diff * 0.12;
+          }
+          // Smooth hydraulic mast scan lift at rack ends
+          const scanLift = Math.abs(Math.sin(patrolCycle)) > 0.88 ? 1.15 : 0.18;
+          fl2.carriage.position.y = THREE.MathUtils.lerp(fl2.carriage.position.y, scanLift, 0.08);
+        }
+
+        // Dynamic Outbound Truck & Dock Traffic Light on Step 10 (Dispatch)
+        if (st === 9) {
+          (outboundDockLamp.material as THREE.MeshBasicMaterial).color.setHex(0x10b981); // Green signal
+          const departOffset = stepElapsedSec > 2.2 ? Math.min(9.5, (stepElapsedSec - 2.2) * 2.4) : 0;
+          outboundTruck.position.x = THREE.MathUtils.lerp(
+            outboundTruck.position.x,
+            floorWidth / 2 + 4.5 + departOffset,
+            0.08
+          );
+        } else {
+          (outboundDockLamp.material as THREE.MeshBasicMaterial).color.setHex(0xef4444); // Red safety lock
+          outboundTruck.position.x = THREE.MathUtils.lerp(
+            outboundTruck.position.x,
+            floorWidth / 2 + 4.5,
+            0.1
+          );
+        }
+
+        // Follow Camera Tracking Mode (Locks camera target onto selected Forklift or Order Picker)
+        const followId = followTargetIdRef.current;
+        if (followId !== 'NONE' && !camTransition) {
+          let targetObj: THREE.Object3D | null = null;
+          if (followId === 'FL-01') targetObj = smartFleet[0]?.root || null;
+          else if (followId === 'FL-02') targetObj = smartFleet[1]?.root || null;
+          else if (followId === 'FL-03') targetObj = smartFleet[2]?.root || null;
+          else if (followId === 'PICKER') targetObj = orderPicker.root;
+
+          if (targetObj) {
+            cam.tx = THREE.MathUtils.lerp(cam.tx, targetObj.position.x, 0.12);
+            cam.tz = THREE.MathUtils.lerp(cam.tz, targetObj.position.z, 0.12);
+            cam.dist = THREE.MathUtils.lerp(cam.dist, 18, 0.08);
+            applyCamera();
+          }
+        }
 
         // Stationed Staff Active/Idle Choreography
         stationedStaff.forEach((staff, idx) => {
@@ -2894,6 +3522,11 @@ export default function WarehouseProcessSimulator3D({
           if (obj.userData?.stationId) {
             const stIdx = obj.userData.stationId - 1;
             goToStationRef.current(stIdx, true);
+            return;
+          }
+          if (obj.userData?.inspectable) {
+            setInspectedObj(obj.userData.inspectable as InspectedObjectInfo);
+            playChime('beep');
             return;
           }
           obj = obj.parent;
@@ -3395,6 +4028,46 @@ export default function WarehouseProcessSimulator3D({
                 </div>
               </div>
 
+              {/* AI Route Pathfinding & Travel Analytics Card */}
+              <div
+                className={cn(
+                  'p-3.5 rounded-2xl border space-y-2',
+                  isLight
+                    ? 'bg-gradient-to-br from-sky-50 to-indigo-50/70 border-sky-200 shadow-sm'
+                    : 'bg-sky-950/30 border-sky-500/30'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-black text-xs text-sky-600 dark:text-sky-400">
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>AI Picking Route & Travel Telemetry</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                    Optimization {routeAnalytics.efficiencyScore}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                  <div className={cn('p-2 rounded-xl border', isLight ? 'bg-white border-sky-100' : 'bg-slate-900/70 border-slate-800')}>
+                    <span className="text-[9px] text-slate-500 font-bold block">ระยะทางเดินรวม</span>
+                    <span className="text-sm font-black font-mono text-sky-600 dark:text-sky-400">
+                      {routeAnalytics.totalDistanceM} m
+                    </span>
+                  </div>
+                  <div className={cn('p-2 rounded-xl border', isLight ? 'bg-white border-sky-100' : 'bg-slate-900/70 border-slate-800')}>
+                    <span className="text-[9px] text-slate-500 font-bold block">เวลาหยิบประมาณการ</span>
+                    <span className="text-sm font-black font-mono text-amber-600 dark:text-amber-400">
+                      ~{routeAnalytics.estimatedPickSeconds} วินาที
+                    </span>
+                  </div>
+                  <div className={cn('p-2 rounded-xl border', isLight ? 'bg-white border-sky-100' : 'bg-slate-900/70 border-slate-800')}>
+                    <span className="text-[9px] text-slate-500 font-bold block">จุดแวะหยิบ (Stops)</span>
+                    <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
+                      {routeAnalytics.stopCount} พิกัด
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Warehouse Live Slotting Summary */}
               <div
                 className={cn(
@@ -3819,6 +4492,38 @@ export default function WarehouseProcessSimulator3D({
               🔭 โฟกัสสถานี
             </button>
             <button
+              onClick={() => setShowRouteRibbon(!showRouteRibbon)}
+              className={cn(
+                'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all',
+                showRouteRibbon
+                  ? 'bg-sky-500 text-white font-black shadow-md'
+                  : isLight
+                  ? 'text-slate-600 hover:bg-slate-100'
+                  : 'text-slate-400 hover:bg-slate-800'
+              )}
+              title="เปิด/ปิด เส้นทางนำทางอัจฉริยะบนพื้นคลัง (AI Route Ribbon)"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>เส้นทาง { routeAnalytics.totalDistanceM }m</span>
+            </button>
+
+            <button
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={cn(
+                'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all',
+                showHeatmap
+                  ? 'bg-rose-600 text-white font-black shadow-md'
+                  : isLight
+                  ? 'text-slate-600 hover:bg-slate-100'
+                  : 'text-slate-400 hover:bg-slate-800'
+              )}
+              title="สลับโหมดสแกนความหนาแน่นสต็อก (Live Slotting Heatmap)"
+            >
+              <Flame className="w-3.5 h-3.5" />
+              <span>Heatmap</span>
+            </button>
+
+            <button
               onClick={() => setShowActiveLabel(!showActiveLabel)}
               className={cn(
                 'px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all',
@@ -3862,6 +4567,123 @@ export default function WarehouseProcessSimulator3D({
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
+          </div>
+        </div>
+
+        {/* SMART 3D RAYCAST INSPECTOR OVERLAY (When user clicks any Rack Bin, Forklift, or Dock Truck) */}
+        {inspectedObj && (
+          <div
+            className={cn(
+              'absolute top-20 right-4 z-30 w-80 backdrop-blur-xl border rounded-2xl p-4 shadow-2xl transition-all',
+              isLight
+                ? 'bg-white/95 border-slate-200 text-slate-800'
+                : 'bg-slate-900/95 border-slate-700 text-slate-100'
+            )}
+          >
+            <div className="flex items-start justify-between gap-2 border-b pb-2.5 mb-2.5 border-slate-200 dark:border-slate-800">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-black bg-amber-500 text-slate-950">
+                    3D INSPECTOR • {inspectedObj.type}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    {inspectedObj.status}
+                  </span>
+                </div>
+                <h4 className="font-black text-sm mt-1">{inspectedObj.title}</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{inspectedObj.subtitle}</p>
+              </div>
+              <button
+                onClick={() => setInspectedObj(null)}
+                className="p-1 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              {inspectedObj.metrics.map((m, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    'flex items-center justify-between p-2 rounded-xl border',
+                    isLight ? 'bg-slate-50 border-slate-200/70' : 'bg-slate-950/60 border-slate-800'
+                  )}
+                >
+                  <span className="text-[11px] text-slate-500 font-medium">{m.label}</span>
+                  <span className="font-mono font-black text-[11px] text-right">{m.value}</span>
+                </div>
+              ))}
+            </div>
+            {inspectedObj.type === 'FORKLIFT' && (
+              <button
+                onClick={() => {
+                  const fId = inspectedObj.id as 'FL-01' | 'FL-02' | 'FL-03';
+                  setFollowTargetId(followTargetId === fId ? 'NONE' : fId);
+                }}
+                className="mt-3 w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md"
+              >
+                <Crosshair className="w-3.5 h-3.5" />
+                {followTargetId === inspectedObj.id ? 'ยกเลิกกล้องติดตาม (Unfollow)' : `ล็อกกล้องติดตาม ${inspectedObj.id}`}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* AUTONOMOUS FLEET TELEMETRY & FOLLOW-CAM BAR */}
+        <div className="absolute bottom-20 left-4 z-20 flex flex-wrap items-center gap-1.5 pointer-events-auto">
+          <div
+            className={cn(
+              'backdrop-blur-md border px-2.5 py-1.5 rounded-2xl shadow-lg flex items-center gap-1.5 text-[11px]',
+              isLight
+                ? 'bg-white/95 border-slate-200/90 text-slate-800'
+                : 'bg-slate-900/90 border-slate-700/80 text-white'
+            )}
+          >
+            <Cpu className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="font-black text-[10px] uppercase tracking-wider mr-1">Fleet Cam:</span>
+            {[
+              { id: 'FL-01' as const, label: 'FL-01 (Putaway)', bat: '92%' },
+              { id: 'FL-02' as const, label: 'FL-02 (AI Patrol)', bat: '84%' },
+              { id: 'FL-03' as const, label: 'FL-03 (EV Charge)', bat: '98%' },
+              { id: 'PICKER' as const, label: 'Picker Cart', bat: 'LIVE' },
+            ].map((unit) => {
+              const active = followTargetId === unit.id;
+              return (
+                <button
+                  key={unit.id}
+                  onClick={() => {
+                    const next = active ? 'NONE' : unit.id;
+                    setFollowTargetId(next);
+                    if (next === 'NONE') resetCamera();
+                  }}
+                  className={cn(
+                    'px-2.5 py-1 rounded-xl font-mono text-[10px] font-bold transition-all flex items-center gap-1 border',
+                    active
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-sm scale-105'
+                      : isLight
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  )}
+                  title="คลิกเพื่อล็อกกล้องติดตามยูนิตนี้แบบ Real-time"
+                >
+                  <span>{unit.label}</span>
+                  <span className={cn('text-[9px]', active ? 'text-slate-900' : 'text-emerald-500')}>
+                    {unit.bat}
+                  </span>
+                </button>
+              );
+            })}
+            {followTargetId !== 'NONE' && (
+              <button
+                onClick={() => {
+                  setFollowTargetId('NONE');
+                  resetCamera();
+                }}
+                className="px-2 py-1 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold text-[10px] hover:bg-rose-500/25"
+              >
+                ปลดล็อกกล้อง
+              </button>
+            )}
           </div>
         </div>
 
