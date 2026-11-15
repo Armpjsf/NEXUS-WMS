@@ -28,6 +28,11 @@
   --border-subtle: #252a32;               /* Subtle secondary border */
 
   /* Typography / Text Tokens */
+  --font-prompt: 'Prompt', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
+  --font-chivo: 'Chivo', sans-serif;
+  --font-ibm: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-main: #dee2ec;                   /* Main high-contrast body & heading text */
   --text-muted: #8a92a6;                  /* Secondary text, muted labels, timestamps */
   --text-tactical: #d1c6ab;               /* Warm tactical subtext, industrial labels */
@@ -115,10 +120,10 @@
   --color-cyan: var(--accent-cyan);
   --color-emerald: var(--accent-emerald);
 
-  --font-sans: var(--font-ibm), var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
-  --font-chivo: var(--font-chivo), sans-serif;
-  --font-mono: var(--font-mono), monospace;
-  --font-outfit: var(--font-outfit), sans-serif;
+  --font-sans: 'IBM Plex Sans', 'Prompt', ui-sans-serif, system-ui, sans-serif;
+  --font-chivo: 'Chivo', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-outfit: 'Outfit', sans-serif;
 }
 
 body {

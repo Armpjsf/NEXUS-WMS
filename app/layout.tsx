@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Prompt, Outfit, Chivo, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import PushNotificationManager from "@/components/PushNotificationManager";
@@ -9,35 +8,6 @@ import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import OfflineIndicator from "@/components/OfflineIndicator";
 
 import Providers from "@/components/Providers";
-
-const prompt = Prompt({
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
-  variable: "--font-prompt",
-  subsets: ["latin", "thai"],
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-});
-
-const chivo = Chivo({
-  weight: ['400', '600', '700', '800'],
-  variable: "--font-chivo",
-  subsets: ["latin"],
-});
-
-const ibmPlex = IBM_Plex_Sans({
-  weight: ['400', '500', '600', '700'],
-  variable: "--font-ibm",
-  subsets: ["latin"],
-});
-
-const jetbrains = JetBrains_Mono({
-  weight: ['400', '500', '600', '700'],
-  variable: "--font-mono",
-  subsets: ["latin"],
-});
 
 const FALLBACK_BASE_URL = 'https://nexus-wms.vercel.app';
 
@@ -100,6 +70,12 @@ export default function RootLayout({
   return (
     <html lang="th" className="dark" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300..800&family=Prompt:wght@300;400;500;600;700;800;900&display=swap"
+        />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
@@ -107,7 +83,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning={true}
-        className={`${prompt.variable} ${outfit.variable} ${chivo.variable} ${ibmPlex.variable} ${jetbrains.variable} bg-[#0f141b] text-[#dee2ec] font-sans antialiased`}
+        className="bg-[#0f141b] text-[#dee2ec] font-sans antialiased"
       >
         <Providers>
             <PushNotificationManager />
