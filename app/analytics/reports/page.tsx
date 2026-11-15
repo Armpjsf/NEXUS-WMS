@@ -16,7 +16,9 @@ interface ReportConfig {
   description: string;
   icon: any;
   endpoint: string;
-  color: string;
+  accent: string;
+  iconColor: string;
+  bgIcon: string;
 }
 
 const reports = (t: any): ReportConfig[] => [
@@ -26,7 +28,9 @@ const reports = (t: any): ReportConfig[] => [
     description: t('inventory_summary_desc'),
     icon: PackageIcon,
     endpoint: '/api/reports/inventory',
-    color: 'from-amber-500 to-blue-700'
+    accent: '#4cd7f6',
+    iconColor: 'text-[#4cd7f6]',
+    bgIcon: 'bg-[#4cd7f6]/15'
   },
   {
     id: 'stock_movement',
@@ -34,7 +38,9 @@ const reports = (t: any): ReportConfig[] => [
     description: t('stock_movement_desc'),
     icon: ArrowRight,
     endpoint: '/api/reports/movement',
-    color: 'from-emerald-500 to-teal-600'
+    accent: '#57ec7f',
+    iconColor: 'text-[#57ec7f]',
+    bgIcon: 'bg-[#57ec7f]/15'
   },
   {
     id: 'low_stock',
@@ -42,7 +48,9 @@ const reports = (t: any): ReportConfig[] => [
     description: t('low_stock_desc'),
     icon: Table,
     endpoint: '/api/reports/low-stock',
-    color: 'from-rose-500 to-red-600'
+    accent: '#ff5449',
+    iconColor: 'text-[#ff5449]',
+    bgIcon: 'bg-[#ff5449]/15'
   },
   {
     id: 'damage_report',
@@ -50,7 +58,9 @@ const reports = (t: any): ReportConfig[] => [
     description: t('damage_report_desc'),
     icon: FileText,
     endpoint: '/api/reports/damage',
-    color: 'from-amber-500 to-orange-600'
+    accent: '#facc15',
+    iconColor: 'text-[#facc15]',
+    bgIcon: 'bg-[#facc15]/15'
   }
 ];
 
@@ -67,14 +77,10 @@ function PackageIcon({ className }: { className?: string }) {
 export default function ReportsPage() {
   const { t } = useLanguage();
   const router = useRouter();
-  const [selectedReport, setSelectedReport] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [loading, setLoading] = useState(false);
 
   const availableReports = reports(t);
 
   const handleGenerate = async (report: ReportConfig) => {
-    // Direct link to printable pages for supported reports
     if (report.id === 'inventory_summary') {
         router.push('/analytics/summary');
         return;
@@ -92,10 +98,6 @@ export default function ReportsPage() {
         router.push('/ops/damage');
         return;
     }
-    if (report.id === 'inventory_summary') {
-        router.push('/inventory');
-        return;
-    }
     router.push('/inventory');
   };
 
@@ -104,15 +106,15 @@ export default function ReportsPage() {
       <AmbientBackground />
 
       <div className="max-w-[1500px] mx-auto space-y-7 relative z-10">
-        <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-blue-500/30 hover:bg-blue-500/10 hover:text-blue-700 print:hidden">
+        <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-[#4cd7f6]/30 hover:bg-[#4cd7f6]/10 hover:text-[#4cd7f6] print:hidden">
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
           {t('back_to_analytics')}
         </Link>
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-blue-500/30 bg-[#171c23] p-6 shadow-xl shadow-blue-900/10 backdrop-blur-xl">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-cyan-500 to-slate-700" />
-          <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">Report Center</p>
+        <div className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-xl shadow-black/20 backdrop-blur-xl">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
+          <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#4cd7f6]">Report Center</p>
           <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
-            <span className="p-2 bg-blue-700 rounded-xl text-white">
+            <span className="p-2.5 bg-[#4cd7f6]/15 border border-[#4cd7f6]/30 rounded-xl text-[#4cd7f6]">
               <BarChart className="w-6 h-6" />
             </span>
             {t('report_center_title')}
@@ -120,33 +122,33 @@ export default function ReportsPage() {
           <p className="text-[#8a92a6] mt-2 font-semibold">{t('report_center_subtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {availableReports.map((report) => (
             <motion.div
               key={report.id}
-              whileHover={{ y: -10 }}
+              whileHover={{ y: -4 }}
               transition={{ type: 'spring', stiffness: 300 }}
+              className="h-full"
             >
               <div 
-                className="group relative border-none rounded-[2.5rem] p-8 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden h-full cursor-pointer"
+                className="group relative rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-sm hover:border-[#facc15]/60 transition-all duration-300 overflow-hidden h-full cursor-pointer flex flex-col justify-between"
                 onClick={() => handleGenerate(report)}
               >
-                {/* Permanent Gradient Background */}
-                <div className={cn("absolute inset-0 bg-gradient-to-br transition-transform duration-700 group-hover:scale-110", report.color)} />
+                <div className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: report.accent }} />
 
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg bg-white/20 backdrop-blur-md transition-all duration-500")}>
-                    <report.icon className="w-7 h-7" />
+                <div>
+                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-5 border border-[#30353d]/50", report.bgIcon)}>
+                    <report.icon className={cn("w-6 h-6", report.iconColor)} />
                   </div>
                   
-                  <h3 className="text-2xl font-black text-white mb-3 tracking-tight">{report.name}</h3>
-                  <p className="text-white/80 text-sm mb-8 leading-relaxed font-medium flex-1">{report.description}</p>
-                  
-                  <div className="pt-6 border-t border-white/20 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">CSV / PDF</span>
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-[#171c23] group-hover:text-indigo-600 transition-all duration-500">
-                        <ArrowRight className="w-5 h-5" />
-                    </div>
+                  <h3 className="text-xl font-bold text-[#dee2ec] mb-2 tracking-tight group-hover:text-[#facc15] transition-colors">{report.name}</h3>
+                  <p className="text-[#8a92a6] text-sm leading-relaxed font-medium mb-6">{report.description}</p>
+                </div>
+                
+                <div className="pt-4 border-t border-[#30353d] flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-[#d1c6ab] tracking-wider uppercase">CSV / PDF</span>
+                  <div className="w-8 h-8 rounded-lg bg-[#1b2027] border border-[#30353d] flex items-center justify-center text-[#d1c6ab] group-hover:bg-[#facc15] group-hover:text-[#1b1600] group-hover:border-[#facc15] transition-all">
+                      <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
               </div>
@@ -155,12 +157,12 @@ export default function ReportsPage() {
         </div>
 
         {/* Configuration Panel */}
-        <div className="bg-[#171c23] rounded-3xl p-8 border border-[#30353d]">
+        <div className="bg-[#171c23] rounded-xl p-6 border border-[#30353d] shadow-sm">
           <h3 className="font-bold text-[#dee2ec] mb-6 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#8a92a6]" />
             {t('scheduled_reports')}
           </h3>
-          <div className="p-8 bg-[#1b2027] rounded-2xl text-center border border-dashed border-[#30353d]">
+          <div className="p-8 bg-[#1b2027] rounded-xl text-center border border-dashed border-[#30353d]">
              <p className="text-[#8a92a6] font-medium">{t('scheduled_reports_desc')}</p>
           </div>
         </div>

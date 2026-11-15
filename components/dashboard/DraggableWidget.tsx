@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -35,7 +34,7 @@ export function DraggableWidget({ id, children, className, editMode = false }: D
         style={style} 
         className={cn(
             "relative group h-full", 
-            editMode && "ring-2 ring-indigo-500/20 rounded-[2rem] bg-white",
+            editMode && "ring-2 ring-[#facc15]/50 rounded-xl bg-[#171c23]",
             className
         )}
     >
@@ -44,9 +43,9 @@ export function DraggableWidget({ id, children, className, editMode = false }: D
           <div 
             {...attributes} 
             {...listeners}
-            className="absolute top-4 right-4 z-50 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm cursor-grab active:cursor-grabbing hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors"
+            className="absolute top-4 right-4 z-50 p-2 bg-[#090f15]/90 backdrop-blur-sm rounded-lg border border-[#30353d] text-[#d1c6ab] hover:text-[#facc15] hover:border-[#facc15] shadow-lg cursor-grab active:cursor-grabbing transition-colors"
           >
-             <GripVertical className="w-5 h-5" />
+             <GripVertical className="w-4 h-4" />
           </div>
       )}
       

@@ -56,11 +56,11 @@ export default function StaffPerformancePage() {
   });
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-[#1b2027]">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-[#0f141b]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-violet-600 text-white rounded-2xl shadow-md shadow-violet-500/20">
+          <div className="p-3 bg-[#facc15] text-[#1b1600] rounded-xl shadow-md">
             <Users className="w-6 h-6" />
           </div>
           <div>
@@ -75,68 +75,68 @@ export default function StaffPerformancePage() {
 
         <button
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#171c23] border border-[#30353d] text-[#d1c6ab] hover:bg-[#1b2027] rounded-xl font-bold text-xs shadow-sm transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#171c23] border border-[#30353d] text-[#d1c6ab] hover:bg-[#1b2027] hover:text-[#facc15] rounded-xl font-mono font-bold text-xs shadow-sm transition-all"
         >
-          <Printer className="w-4 h-4" />
+          <Printer className="w-4 h-4 text-[#facc15]" />
           <span>พิมพ์รายงาน KPI</span>
         </button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
-        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+        <div className="p-4 bg-[#171c23] rounded-xl border border-[#30353d] shadow-sm flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-[#4cd7f6]/15 text-[#4cd7f6] border border-[#4cd7f6]/30 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-[#8a92a6] uppercase">พนักงานกำลังปฏิบัติงาน</div>
-            <div className="text-2xl font-black text-[#dee2ec] mt-0.5">
+            <div className="text-[11px] font-mono font-bold text-[#8a92a6] uppercase">พนักงานกำลังปฏิบัติงาน</div>
+            <div className="text-2xl font-mono font-black text-[#dee2ec] mt-0.5">
               {data.activeStaffCount} <span className="text-xs text-[#8a92a6] font-normal">/ {data.staffList.length} คน</span>
             </div>
           </div>
         </div>
 
-        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+        <div className="p-4 bg-[#171c23] rounded-xl border border-[#30353d] shadow-sm flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-[#facc15]/15 text-[#facc15] border border-[#facc15]/30 flex items-center justify-center shrink-0">
             <Zap className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-[#8a92a6] uppercase">อัตราการหยิบเฉลี่ย</div>
-            <div className="text-2xl font-black text-amber-600 mt-0.5">
+            <div className="text-[11px] font-mono font-bold text-[#8a92a6] uppercase">อัตราการหยิบเฉลี่ย</div>
+            <div className="text-2xl font-mono font-black text-[#facc15] mt-0.5">
               {data.warehousePicksPerHour} <span className="text-xs text-[#8a92a6] font-normal">picks/ชม.</span>
             </div>
           </div>
         </div>
 
-        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+        <div className="p-4 bg-[#171c23] rounded-xl border border-[#30353d] shadow-sm flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-[#57ec7f]/15 text-[#57ec7f] border border-[#57ec7f]/30 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-[#8a92a6] uppercase">ความแม่นยำ (Accuracy)</div>
-            <div className="text-2xl font-black text-emerald-600 mt-0.5">
+            <div className="text-[11px] font-mono font-bold text-[#8a92a6] uppercase">ความแม่นยำ (Accuracy)</div>
+            <div className="text-2xl font-mono font-black text-[#57ec7f] mt-0.5">
               {data.overallAccuracyRate}%
             </div>
           </div>
         </div>
 
-        <div className="p-4 bg-[#171c23] rounded-2xl border border-[#30353d]/80 shadow-sm flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-violet-500/10 text-[#facc15] flex items-center justify-center shrink-0">
+        <div className="p-4 bg-[#171c23] rounded-xl border border-[#30353d] shadow-sm flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-[#4cd7f6]/15 text-[#4cd7f6] border border-[#4cd7f6]/30 flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-[#8a92a6] uppercase">เวลาต่อออเดอร์เฉลี่ย</div>
-            <div className="text-2xl font-black text-[#facc15] mt-0.5">
+            <div className="text-[11px] font-mono font-bold text-[#8a92a6] uppercase">เวลาต่อออเดอร์เฉลี่ย</div>
+            <div className="text-2xl font-mono font-black text-[#4cd7f6] mt-0.5">
               {data.avgOrderFulfillmentMinutes} <span className="text-xs text-[#8a92a6] font-normal">นาที/ใบ</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Empty state — ยังไม่มีการเก็บสถิติรายบุคคล */}
+      {/* Empty state */}
       {data.staffList.length === 0 && (
-        <div className="mb-6 flex flex-col items-center justify-center text-center py-14 rounded-3xl border border-dashed border-[#30353d] bg-[#171c23]/70">
-          <Users className="w-10 h-10 text-slate-300 mb-3" />
+        <div className="mb-6 flex flex-col items-center justify-center text-center py-14 rounded-xl border border-dashed border-[#30353d] bg-[#171c23]">
+          <Users className="w-10 h-10 text-[#8a92a6] mb-3" />
           <p className="font-bold text-[#dee2ec]">ยังไม่มีข้อมูลประสิทธิภาพพนักงาน</p>
           <p className="text-sm text-[#8a92a6] mt-1.5 max-w-md">
             ระบบยังไม่ได้บันทึกผู้ปฏิบัติงานในแต่ละรายการ (หยิบ/แพ็ก/ตรวจนับ)
@@ -148,7 +148,7 @@ export default function StaffPerformancePage() {
       {/* Top 3 Performers */}
       <div className={cn("mb-6", data.topPerformers.length === 0 && "hidden")}>
         <div className="text-sm font-bold text-[#dee2ec] mb-3 flex items-center gap-2">
-          <Award className="w-4 h-4 text-amber-500" />
+          <Award className="w-4 h-4 text-[#facc15]" />
           <span>ยอดพนักงานดีเด่นประจำวัน (Top Performers)</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -156,8 +156,8 @@ export default function StaffPerformancePage() {
             <div
               key={p.id}
               className={cn(
-                "p-4 rounded-2xl border shadow-sm flex items-center justify-between",
-                idx === 0 ? "bg-gradient-to-br from-amber-500/10 via-amber-500/10/50 to-[#171c23] border-amber-500/30/80" : "bg-[#171c23] border-[#30353d]/80"
+                "p-4 rounded-xl border shadow-sm flex items-center justify-between",
+                idx === 0 ? "bg-[#171c23] border-[#facc15]/50" : "bg-[#171c23] border-[#30353d]"
               )}
             >
               <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function StaffPerformancePage() {
                   <div className="font-bold text-sm text-[#dee2ec] flex items-center gap-1.5">
                     <span>{p.name}</span>
                     {p.badge && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 font-bold">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#facc15]/15 text-[#facc15] border border-[#facc15]/30 font-mono font-bold">
                         {p.badge}
                       </span>
                     )}
@@ -175,8 +175,8 @@ export default function StaffPerformancePage() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-black text-[#dee2ec]">{p.score}</div>
-                <div className="text-[10px] text-[#8a92a6] font-bold uppercase">คะแนน KPI</div>
+                <div className="text-lg font-mono font-black text-[#dee2ec]">{p.score}</div>
+                <div className="text-[10px] text-[#8a92a6] font-mono font-bold uppercase">คะแนน KPI</div>
               </div>
             </div>
           ))}
@@ -184,7 +184,7 @@ export default function StaffPerformancePage() {
       </div>
 
       {/* Filters & Table */}
-      <div className={cn("bg-[#171c23] rounded-3xl border border-[#30353d]/80 shadow-sm overflow-hidden", data.staffList.length === 0 && "hidden")}>
+      <div className={cn("bg-[#171c23] rounded-xl border border-[#30353d] shadow-sm overflow-hidden", data.staffList.length === 0 && "hidden")}>
         <div className="p-4 border-b border-[#30353d] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="font-bold text-sm text-[#dee2ec]">
             ตารางอันดับและสถิติการปฏิบัติงานรายบุคคล
@@ -198,14 +198,14 @@ export default function StaffPerformancePage() {
                 placeholder="ค้นหาชื่อ, ตำแหน่ง..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl focus:bg-[#171c23] focus:outline-none"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl focus:outline-none focus:border-[#4cd7f6] text-[#dee2ec] placeholder-[#8a92a6]"
               />
             </div>
 
             <select
               value={filterBranch}
               onChange={e => setFilterBranch(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl font-medium"
+              className="px-3 py-1.5 text-xs bg-[#1b2027] border border-[#30353d] rounded-xl font-medium text-[#dee2ec]"
             >
               <option value="ALL">ทุกสาขา</option>
               <option value="HQ">สำนักงานใหญ่ (HQ)</option>
@@ -218,7 +218,7 @@ export default function StaffPerformancePage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#1b2027]/80 text-[#8a92a6] font-bold uppercase border-b border-[#30353d]">
+            <thead className="bg-[#1b2027] text-[#8a92a6] font-mono font-bold uppercase border-b border-[#30353d]">
               <tr>
                 <th className="py-3 px-4">พนักงาน</th>
                 <th className="py-3 px-4 text-center">สถานะ</th>
@@ -232,7 +232,7 @@ export default function StaffPerformancePage() {
             </thead>
             <tbody className="divide-y divide-[#30353d]">
               {filteredStaff.map((s, i) => (
-                <tr key={s.id} className="hover:bg-[#1b2027] transition-colors">
+                <tr key={s.id} className="hover:bg-[#1b2027]/60 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2.5">
                       <span className="text-xl">{s.avatar}</span>
@@ -245,41 +245,41 @@ export default function StaffPerformancePage() {
                   <td className="py-3 px-4 text-center">
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold",
-                        s.status === 'ACTIVE' && "bg-emerald-500/20 text-emerald-800",
-                        s.status === 'BREAK' && "bg-amber-500/20 text-amber-800",
-                        s.status === 'OFFLINE' && "bg-[#252a32] text-[#8a92a6]"
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border",
+                        s.status === 'ACTIVE' && "bg-[#57ec7f]/15 text-[#57ec7f] border-[#57ec7f]/30",
+                        s.status === 'BREAK' && "bg-[#facc15]/15 text-[#facc15] border-[#facc15]/30",
+                        s.status === 'OFFLINE' && "bg-[#252a32] text-[#8a92a6] border-[#30353d]"
                       )}
                     >
                       <span className={cn(
                         "w-1.5 h-1.5 rounded-full",
-                        s.status === 'ACTIVE' ? "bg-emerald-500" : s.status === 'BREAK' ? "bg-amber-500" : "bg-slate-400"
+                        s.status === 'ACTIVE' ? "bg-[#57ec7f]" : s.status === 'BREAK' ? "bg-[#facc15]" : "bg-slate-400"
                       )} />
                       {s.status === 'ACTIVE' && 'กำลังทำงาน'}
                       {s.status === 'BREAK' && 'พักเบรก'}
                       {s.status === 'OFFLINE' && 'ออฟไลน์'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right font-black text-[#dee2ec]">
+                  <td className="py-3 px-4 text-right font-mono font-black text-[#dee2ec]">
                     {s.totalPicks.toLocaleString()} ชิ้น
                   </td>
-                  <td className="py-3 px-4 text-right font-bold text-amber-700">
+                  <td className="py-3 px-4 text-right font-mono font-bold text-[#facc15]">
                     {s.picksPerHour} ชิ้น/ชม.
                   </td>
-                  <td className="py-3 px-4 text-right text-[#d1c6ab]">
+                  <td className="py-3 px-4 text-right font-mono text-[#d1c6ab]">
                     {s.packedOrders} ออเดอร์
                   </td>
-                  <td className="py-3 px-4 text-right text-[#d1c6ab]">
+                  <td className="py-3 px-4 text-right font-mono text-[#d1c6ab]">
                     {s.cycleCountsCompleted} จุด
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="font-black text-emerald-600">{s.accuracyRate}%</div>
-                    <div className="w-16 ml-auto bg-[#252a32] h-1.5 rounded-full overflow-hidden mt-1">
-                      <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${s.accuracyRate}%` }} />
+                    <div className="font-mono font-black text-[#57ec7f]">{s.accuracyRate}%</div>
+                    <div className="w-16 ml-auto bg-[#090f15] border border-[#30353d] h-1.5 rounded-full overflow-hidden mt-1">
+                      <div className="bg-[#57ec7f] h-full rounded-full" style={{ width: `${s.accuracyRate}%` }} />
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <span className="px-2.5 py-1 rounded-xl bg-violet-500/20 text-violet-800 font-black text-xs">
+                    <span className="px-2.5 py-1 rounded-lg bg-[#4cd7f6]/15 border border-[#4cd7f6]/30 text-[#4cd7f6] font-mono font-black text-xs">
                       {s.score}
                     </span>
                   </td>

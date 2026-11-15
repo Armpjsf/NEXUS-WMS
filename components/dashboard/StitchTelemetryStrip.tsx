@@ -31,13 +31,13 @@ export default function StitchTelemetryStrip({ summary }: StitchTelemetryStripPr
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 bg-[#090f15] p-3 rounded-xl border border-[#30353d]/70 shadow-xl mb-6">
       {/* Card 1: Inbound (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#facc15]/50 transition-colors">
-        <div className="absolute top-0 left-0 w-1 h-full bg-[#facc15]" />
+      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#57ec7f]/50 transition-colors">
+        <div className="absolute top-0 left-0 w-1 h-full bg-[#57ec7f]" />
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] text-[#d1c6ab] uppercase tracking-wider font-semibold">
             รับเข้า (INBOUND)
           </span>
-          <ArrowDownToLine className="w-3.5 h-3.5 text-[#facc15]" />
+          <ArrowDownToLine className="w-3.5 h-3.5 text-[#57ec7f]" />
         </div>
         <div className="my-2 flex items-baseline gap-1.5">
           <span className="font-mono text-2xl text-[#dee2ec] font-bold tabular-nums">
@@ -46,7 +46,7 @@ export default function StitchTelemetryStrip({ summary }: StitchTelemetryStripPr
           <span className="font-mono text-xs text-[#d1c6ab]">ชิ้น</span>
         </div>
         <div className="w-full bg-[#252a32] h-1.5 rounded-full overflow-hidden">
-          <div className="bg-[#facc15] h-full transition-all duration-700 rounded-full" style={{ width: `${inboundShare}%` }} />
+          <div className="bg-[#57ec7f] h-full transition-all duration-700 rounded-full" style={{ width: `${inboundShare}%` }} />
         </div>
         <div className="mt-2 text-[#d1c6ab] font-mono text-[10px]">
           {flowTotal > 0 ? `${inboundShare}% ของยอดเคลื่อนไหว` : 'ยังไม่มีรายการเคลื่อนไหว'}
@@ -77,20 +77,20 @@ export default function StitchTelemetryStrip({ summary }: StitchTelemetryStripPr
       </div>
 
       {/* Card 3: Active SKU (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#57ec7f]/50 transition-colors">
-        <div className="absolute top-0 left-0 w-1 h-full bg-[#57ec7f]" />
+      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#facc15]/50 transition-colors">
+        <div className="absolute top-0 left-0 w-1 h-full bg-[#facc15]" />
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] text-[#d1c6ab] uppercase tracking-wider font-semibold">
             SKU ที่มีสต็อก (ACTIVE)
           </span>
-          <Boxes className="w-3.5 h-3.5 text-[#57ec7f]" />
+          <Boxes className="w-3.5 h-3.5 text-[#facc15]" />
         </div>
         <div className="my-2 flex items-baseline gap-1.5">
           <span className="font-mono text-2xl text-[#dee2ec] font-bold tabular-nums">{activeSku.toLocaleString()}</span>
           <span className="font-mono text-xs text-[#d1c6ab]">/ {totalSku.toLocaleString()} รายการ</span>
         </div>
         <div className="w-full bg-[#252a32] h-1.5 rounded-full overflow-hidden">
-          <div className="bg-[#57ec7f] h-full rounded-full transition-all duration-700" style={{ width: `${activeShare}%` }} />
+          <div className="bg-[#facc15] h-full rounded-full transition-all duration-700" style={{ width: `${activeShare}%` }} />
         </div>
         <div className="mt-2 text-[#d1c6ab] font-mono text-[10px]">
           {totalSku > 0 ? `${activeShare}% ของสินค้าทั้งหมด` : 'ยังไม่มีสินค้าในระบบ'}
@@ -118,13 +118,13 @@ export default function StitchTelemetryStrip({ summary }: StitchTelemetryStripPr
       </div>
 
       {/* Card 5: Exceptions (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#ffb4ab]/50 transition-colors">
-        <div className={`absolute top-0 left-0 w-1 h-full ${exceptions > 0 ? 'bg-[#93000a]' : 'bg-[#57ec7f]'}`} />
+      <div className={`bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group ${exceptions > 0 ? 'hover:border-[#ff5449]/50' : 'hover:border-[#57ec7f]/50'} transition-colors`}>
+        <div className={`absolute top-0 left-0 w-1 h-full ${exceptions > 0 ? 'bg-[#ff5449]' : 'bg-[#57ec7f]'}`} />
         <div className="flex items-center justify-between gap-2">
           <span className={`font-mono text-[10px] uppercase tracking-wider font-semibold ${exceptions > 0 ? 'text-[#ffb4ab]' : 'text-[#d1c6ab]'}`}>
             ต้องจัดการ (EXCEPTIONS)
           </span>
-          <AlertOctagon className={`w-3.5 h-3.5 ${exceptions > 0 ? 'text-[#ffb4ab]' : 'text-[#57ec7f]'}`} />
+          <AlertOctagon className={`w-3.5 h-3.5 ${exceptions > 0 ? 'text-[#ff5449]' : 'text-[#57ec7f]'}`} />
         </div>
         <div className="my-2 flex items-baseline gap-1.5">
           <span className={`font-mono text-2xl font-bold tabular-nums ${exceptions > 0 ? 'text-[#ffb4ab]' : 'text-[#57ec7f]'}`}>

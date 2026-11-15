@@ -22,12 +22,17 @@ const TEMPLATES: Record<MType, { headers: string[]; example: any[] }> = {
 interface Row { date: string; type: string; docRef: string; product: string; sku: string; qty: number; location: string; note: string; status: string; }
 
 const TABS: { id: MType; label: string; icon: any; color: string }[] = [
-  { id: 'IN', label: 'รับเข้า', icon: ArrowDownToLine, color: 'emerald' },
-  { id: 'OUT', label: 'จ่ายออก', icon: ArrowUpFromLine, color: 'rose' },
-  { id: 'RETURN', label: 'คืนสินค้า', icon: Undo2, color: 'amber' },
-  { id: 'DAMAGE', label: 'ชำรุด', icon: ShieldAlert, color: 'slate' },
+  { id: 'IN', label: 'รับเข้า (IN)', icon: ArrowDownToLine, color: 'emerald' },
+  { id: 'OUT', label: 'จ่ายออก (OUT)', icon: ArrowUpFromLine, color: 'cyan' },
+  { id: 'RETURN', label: 'คืนสินค้า (RETURN)', icon: Undo2, color: 'amber' },
+  { id: 'DAMAGE', label: 'ชำรุด (DAMAGE)', icon: ShieldAlert, color: 'rose' },
 ];
-const COLOR: Record<string, string> = { emerald: 'from-emerald-600 to-teal-600', rose: 'from-rose-500 to-orange-500', amber: 'from-amber-500 to-orange-500', slate: 'from-slate-700 to-slate-500' };
+const COLOR: Record<string, string> = { 
+  emerald: 'from-[#57ec7f] to-[#10b981]', 
+  cyan: 'from-[#4cd7f6] to-[#0284c7]', 
+  amber: 'from-[#facc15] to-[#d97706]', 
+  rose: 'from-[#ff5449] to-[#dc2626]' 
+};
 
 function fmtDate(d: string) {
   const t = new Date(d);
@@ -133,7 +138,6 @@ export default function MovementsReportPage() {
           if (res.ok) ok++;
         }
       } else if (tab === 'RETURN') {
-        // Group rows by order_no into one RMA each
         const groups: Record<string, any> = {};
         for (const r of dataRows) {
           const key = String(r[1] || 'NO-ORDER');
@@ -169,24 +173,24 @@ export default function MovementsReportPage() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
-              <span className={`grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br ${COLOR[active.color]} text-white shadow-lg`}><active.icon className="w-6 h-6" /></span>
+              <span className={`grid place-items-center w-11 h-11 rounded-xl bg-gradient-to-br ${COLOR[active.color]} text-white shadow-lg`}><active.icon className="w-6 h-6" /></span>
               รายงานการเคลื่อนไหว
             </h1>
             <p className="text-[#d1c6ab] font-medium mt-1">ประวัติ รับ / จ่าย / คืน / ชำรุด · ส่งออก Excel &amp; PDF</p>
           </div>
           <div className="no-print flex flex-wrap gap-2">
-            <button onClick={downloadTemplate} title="ดาวน์โหลดเทมเพลตสำหรับนำเข้า" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#171c23] text-[#d1c6ab] border border-[#30353d] font-bold shadow-sm hover:bg-[#1b2027] active:scale-95 transition-all">
-              <Download className="w-5 h-5" /> เทมเพลต
+            <button onClick={downloadTemplate} title="ดาวน์โหลดเทมเพลตสำหรับนำเข้า" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#171c23] text-[#d1c6ab] border border-[#30353d] font-mono font-bold shadow-sm hover:bg-[#1b2027] active:scale-95 transition-all">
+              <Download className="w-4 h-4 text-[#facc15]" /> เทมเพลต
             </button>
-            <label className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold shadow-sm cursor-pointer transition-all border ${importing ? 'bg-[#252a32] text-[#8a92a6] border-[#30353d]' : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027] active:scale-95'}`}>
-              {importing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />} นำเข้าไฟล์
+            <label className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono font-bold shadow-sm cursor-pointer transition-all border ${importing ? 'bg-[#252a32] text-[#8a92a6] border-[#30353d]' : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027] active:scale-95'}`}>
+              {importing ? <Loader2 className="w-4 h-4 animate-spin text-[#facc15]" /> : <Upload className="w-4 h-4 text-[#4cd7f6]" />} นำเข้าไฟล์
               <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImport} disabled={importing} className="hidden" />
             </label>
-            <button onClick={exportExcel} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold shadow hover:bg-emerald-500 active:scale-95 transition-all">
-              <FileSpreadsheet className="w-5 h-5" /> Excel
+            <button onClick={exportExcel} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#57ec7f] hover:bg-[#45d46c] text-[#090f15] font-mono font-bold shadow active:scale-95 transition-all">
+              <FileSpreadsheet className="w-4 h-4 text-[#090f15]" /> Excel
             </button>
-            <button onClick={() => window.print()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold shadow hover:bg-slate-800 active:scale-95 transition-all">
-              <FileText className="w-5 h-5" /> PDF
+            <button onClick={() => window.print()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1b2027] hover:bg-[#252a32] text-[#dee2ec] border border-[#30353d] font-mono font-bold shadow active:scale-95 transition-all">
+              <FileText className="w-4 h-4 text-[#d1c6ab]" /> PDF
             </button>
           </div>
         </div>
@@ -195,7 +199,7 @@ export default function MovementsReportPage() {
         <div className="no-print flex flex-wrap gap-2">
           {TABS.map(tb => (
             <button key={tb.id} onClick={() => setTab(tb.id)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border transition-colors ${tab === tb.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027]'}`}>
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-sm border transition-colors ${tab === tb.id ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]' : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027]'}`}>
               <tb.icon className="w-4 h-4" /> {tb.label}
             </button>
           ))}
@@ -205,57 +209,57 @@ export default function MovementsReportPage() {
         <div className="no-print flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-3 w-5 h-5 text-[#8a92a6]" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้า / รหัส / เอกสาร..." className="w-full pl-11 bg-[#171c23] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-slate-500" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้า / รหัส / เอกสาร..." className="w-full pl-11 bg-[#171c23] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-[#4cd7f6] text-[#dee2ec] placeholder-[#8a92a6]" />
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#8a92a6]" />
-            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2.5 font-medium outline-none focus:border-slate-500" />
+          <div className="flex items-center gap-2 bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-1">
+            <Calendar className="w-4 h-4 text-[#8a92a6]" />
+            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="bg-transparent text-[#d1c6ab] text-sm py-1.5 font-medium outline-none" />
             <span className="text-[#8a92a6]">–</span>
-            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2.5 font-medium outline-none focus:border-slate-500" />
+            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="bg-transparent text-[#d1c6ab] text-sm py-1.5 font-medium outline-none" />
           </div>
         </div>
 
         {/* Summary */}
         <div className="flex gap-3">
-          <div className="flex-1 rounded-2xl border border-[#30353d] bg-[#171c23] p-4">
-            <div className="text-2xl font-black tabular-nums text-[#dee2ec]">{summary.count.toLocaleString()}</div>
+          <div className="flex-1 rounded-xl border border-[#30353d] bg-[#171c23] p-4">
+            <div className="text-2xl font-mono font-black tabular-nums text-[#dee2ec]">{summary.count.toLocaleString()}</div>
             <div className="text-xs font-bold text-[#8a92a6]">จำนวนรายการ</div>
           </div>
-          <div className="flex-1 rounded-2xl border border-[#30353d] bg-[#171c23] p-4">
-            <div className="text-2xl font-black tabular-nums text-[#dee2ec]">{summary.totalQty.toLocaleString()}</div>
+          <div className="flex-1 rounded-xl border border-[#30353d] bg-[#171c23] p-4">
+            <div className="text-2xl font-mono font-black tabular-nums text-[#57ec7f]">{summary.totalQty.toLocaleString()}</div>
             <div className="text-xs font-bold text-[#8a92a6]">จำนวนรวม (ชิ้น)</div>
           </div>
         </div>
 
         {/* Table */}
-        <div className="print-area rounded-2xl border border-[#30353d] bg-[#171c23] overflow-hidden">
+        <div className="print-area rounded-xl border border-[#30353d] bg-[#171c23] overflow-hidden">
           <div className="hidden print:block px-5 py-3 border-b border-[#30353d] font-black text-[#dee2ec]">
             รายงาน{active.label} · {start || 'ทั้งหมด'} – {end || 'ปัจจุบัน'} · {summary.count} รายการ
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#1b2027] text-[#8a92a6] text-xs uppercase tracking-wide">
-                  <th className="text-left px-4 py-3 font-semibold">วันที่</th>
-                  <th className="text-left px-4 py-3 font-semibold">เอกสาร</th>
-                  <th className="text-left px-4 py-3 font-semibold">สินค้า</th>
-                  <th className="text-right px-4 py-3 font-semibold">จำนวน</th>
-                  <th className="text-left px-4 py-3 font-semibold">ที่เก็บ</th>
-                  <th className="text-left px-4 py-3 font-semibold">หมายเหตุ</th>
+                <tr className="bg-[#1b2027] text-[#8a92a6] text-xs font-mono font-bold uppercase tracking-wide border-b border-[#30353d]">
+                  <th className="text-left px-4 py-3">วันที่</th>
+                  <th className="text-left px-4 py-3">เอกสาร</th>
+                  <th className="text-left px-4 py-3">สินค้า</th>
+                  <th className="text-right px-4 py-3">จำนวน</th>
+                  <th className="text-left px-4 py-3">ที่เก็บ</th>
+                  <th className="text-left px-4 py-3">หมายเหตุ</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-[#8a92a6]"><Loader2 className="w-6 h-6 animate-spin inline" /></td></tr>
+                  <tr><td colSpan={6} className="text-center py-16 text-[#8a92a6] font-mono"><Loader2 className="w-6 h-6 animate-spin inline text-[#facc15]" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-[#8a92a6]">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>
+                  <tr><td colSpan={6} className="text-center py-16 text-[#8a92a6] font-mono">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>
                 ) : filtered.map((r, i) => (
-                  <tr key={i} className="border-t border-[#30353d]">
-                    <td className="px-4 py-2.5 text-[#8a92a6] whitespace-nowrap">{fmtDate(r.date)}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-[#d1c6ab]">{r.docRef}</td>
+                  <tr key={i} className="border-t border-[#30353d] hover:bg-[#1b2027]/60 transition-colors">
+                    <td className="px-4 py-2.5 text-[#8a92a6] font-mono text-xs whitespace-nowrap">{fmtDate(r.date)}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-[#4cd7f6]">{r.docRef}</td>
                     <td className="px-4 py-2.5 font-medium text-[#dee2ec]">{r.product}{r.status && <span className="ml-2 text-[10px] text-[#8a92a6]">({r.status})</span>}</td>
-                    <td className="px-4 py-2.5 text-right font-bold tabular-nums">{r.qty.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-[#8a92a6]">{r.location}</td>
+                    <td className="px-4 py-2.5 text-right font-mono font-bold text-[#dee2ec] tabular-nums">{r.qty.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-[#d1c6ab]">{r.location}</td>
                     <td className="px-4 py-2.5 text-[#8a92a6] max-w-[220px] truncate">{r.note}</td>
                   </tr>
                 ))}

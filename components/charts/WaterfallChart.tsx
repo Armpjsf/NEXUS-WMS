@@ -1,52 +1,53 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { TACTICAL_TOOLTIP_STYLE } from '@/lib/chartTheme';
 
 const WaterfallChart = ({ data }: { data: any[] }) => {
-  // Config for waterfall coloring
+  // Config for tactical waterfall coloring
   const getBarColor = (name: string, value: number) => {
-    if (name === 'Closing') return '#8b5cf6'; // Violet (Final)
-    if (name === 'Opening') return '#22c55e'; // Green (Start)
-    if (name === 'Outbound') return '#f43f5e'; // Red (Negative)
-    if (name === 'Damage') return '#a855f7'; // Purple/Red (Loss) - Let's use Red or distinct
-    if (value < 0) return '#f43f5e'; // Fallback
-    return '#10b981'; // Emerald (Positive/Inbound)
+    if (name === 'Opening') return '#8a92a6'; // Neutral Steel Baseline
+    if (name === 'Inbound') return '#57ec7f'; // Tactical Emerald
+    if (name === 'Outbound') return '#4cd7f6'; // Telemetry Cyan
+    if (name === 'Damage') return '#ff5449'; // Signal Rose
+    if (name === 'Closing') return '#facc15'; // Tactical Gold Final Balance
+    if (value < 0) return '#ff5449'; // Fallback negative
+    return '#57ec7f'; // Fallback positive
   };
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+        margin={{ top: 15, right: 30, left: 10, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
         <XAxis 
           dataKey="name" 
           stroke="#64748b" 
           fontSize={10} 
           tickLine={false}
           axisLine={false}
-          tick={{ fill: '#d1c6ab' }}
+          tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }}
         />
         <YAxis 
           stroke="#64748b" 
           fontSize={10} 
           tickLine={false}
           axisLine={false}
-          tick={{ fill: '#d1c6ab' }}
+          tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }}
+          tickFormatter={(val) => Number(val || 0).toLocaleString()}
         />
         <Tooltip
           cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
-          contentStyle={{ 
-            backgroundColor: '#171c23', 
-            borderColor: '#30353d',
-            borderRadius: '0.75rem',
-            fontSize: '12px',
-            color: '#dee2ec',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
+          contentStyle={TACTICAL_TOOLTIP_STYLE}
+          labelStyle={{ color: '#facc15', fontSize: '12px', fontWeight: 'bold' }}
+          itemStyle={{ color: '#dee2ec', fontFamily: 'monospace' }}
+          formatter={(value: any, name: any, item: any) => {
+            const rawVal = item?.payload?.rawDiff ?? item?.payload?.barValue ?? value;
+            const sign = Number(rawVal) > 0 ? '+' : '';
+            return [`${sign}${Number(rawVal).toLocaleString()} ชิ้น`, 'ปริมาณ'];
           }}
-          itemStyle={{ color: '#dee2ec' }}
-          formatter={(value: any) => [Math.abs(value), 'Quantity']}
         />
         <Bar dataKey="value" stackId="a" fill="transparent" />
         <Bar dataKey="barValue" stackId="a" radius={[4, 4, 0, 0]}>

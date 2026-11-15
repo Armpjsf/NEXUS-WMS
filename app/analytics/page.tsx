@@ -15,54 +15,54 @@ export default function AnalyticsLandingPage() {
       desc: t('demand_forecast_desc'),
       href: '/analytics/forecast',
       icon: TrendingUp,
-      color: 'from-blue-600 to-indigo-600',
-      lightBg: 'bg-indigo-500/10',
-      iconColor: 'text-indigo-600'
+      color: 'from-[#4cd7f6] to-[#0ea5e9]',
+      lightBg: 'bg-[#4cd7f6]/10',
+      iconColor: 'text-[#4cd7f6]'
     },
     {
       title: t('inventory_aging'),
       desc: t('inventory_aging_desc'),
       href: '/analytics/aging',
       icon: Clock,
-      color: 'from-orange-500 to-amber-600',
-      lightBg: 'bg-amber-500/10',
-      iconColor: 'text-amber-600'
+      color: 'from-[#f59e0b] to-[#facc15]',
+      lightBg: 'bg-[#facc15]/10',
+      iconColor: 'text-[#facc15]'
     },
     {
       title: t('transaction_summary'),
       desc: t('transaction_summary_desc'),
       href: '/analytics/summary',
       icon: BarChart3,
-      color: 'from-emerald-500 to-teal-600',
-      lightBg: 'bg-emerald-500/10',
-      iconColor: 'text-emerald-600'
+      color: 'from-[#57ec7f] to-[#10b981]',
+      lightBg: 'bg-[#57ec7f]/10',
+      iconColor: 'text-[#57ec7f]'
     },
     {
       title: t('profit_title'),
       desc: t('profit_subtitle'),
       href: '/analytics/profit',
       icon: PieChart,
-      color: 'from-amber-500 to-pink-600',
-      lightBg: 'bg-purple-500/10',
-      iconColor: 'text-purple-600'
+      color: 'from-[#57ec7f] to-[#4cd7f6]',
+      lightBg: 'bg-[#57ec7f]/10',
+      iconColor: 'text-[#57ec7f]'
     },
     {
-        title: t('report_center'),
-        desc: t('report_center_desc'),
-        href: '/analytics/reports',
-        icon: FileText,
-        color: 'from-rose-500 to-red-600',
-        lightBg: 'bg-rose-500/10',
-        iconColor: 'text-rose-600'
+      title: t('report_center'),
+      desc: t('report_center_desc'),
+      href: '/analytics/reports',
+      icon: FileText,
+      color: 'from-[#ff5449] to-[#f43f5e]',
+      lightBg: 'bg-[#ff5449]/10',
+      iconColor: 'text-[#ff5449]'
     },
     {
-        title: t('menu_smart_restock'),
-        desc: "AI-powered reorder optimization and stockout prediction.",
-        href: '/ai-reorder',
-        icon: Sparkles,
-        color: 'from-amber-600 to-purple-700',
-        lightBg: 'bg-violet-500/10',
-        iconColor: 'text-violet-600'
+      title: t('menu_smart_restock'),
+      desc: "AI-powered reorder optimization and stockout prediction.",
+      href: '/ai-reorder',
+      icon: Sparkles,
+      color: 'from-[#facc15] to-[#4cd7f6]',
+      lightBg: 'bg-[#facc15]/10',
+      iconColor: 'text-[#facc15]'
     }
   ];
 
@@ -74,10 +74,10 @@ export default function AnalyticsLandingPage() {
           <motion.header 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-[1.75rem] border border-[#30353d] bg-[#171c23] p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl"
+            className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl"
           >
-             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-violet-600 to-emerald-500" />
-             <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-violet-700">Decision Intelligence</p>
+             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
+             <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#facc15]">Decision Intelligence</p>
              <h1 className="text-4xl font-black text-[#dee2ec] mb-3 tracking-tight">
                 {t('analytics_center')}
              </h1>
@@ -94,12 +94,12 @@ export default function AnalyticsLandingPage() {
                 >
                    <Link 
                      href={card.href} 
-                     className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg shadow-slate-900/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                     className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg shadow-slate-900/5 transition-all duration-300 hover:-translate-y-1 hover:border-[#facc15]/60 hover:shadow-xl"
                    >
                       <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${card.color}`} />
 
                       <div className="relative z-10">
-                        <div className={`w-14 h-14 ${card.lightBg} rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-105 ring-1 ring-slate-100`}>
+                        <div className={`w-14 h-14 ${card.lightBg} rounded-xl border border-[#30353d]/50 flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-105`}>
                            <card.icon className={`w-7 h-7 ${card.iconColor}`} />
                         </div>
                         
@@ -112,7 +112,7 @@ export default function AnalyticsLandingPage() {
                         </p>
                       </div>
 
-                      <div className="mt-8 flex items-center gap-2 text-[#d1c6ab] font-black text-sm uppercase tracking-widest relative z-10 group-hover:text-blue-700 transition-colors">
+                      <div className="mt-8 flex items-center gap-2 text-[#d1c6ab] font-black text-sm uppercase tracking-widest relative z-10 group-hover:text-[#facc15] transition-colors">
                          {t('go_to_section') || 'Open Module'}
                          <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </div>

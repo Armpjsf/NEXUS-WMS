@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { TACTICAL_TOOLTIP_STYLE } from '@/lib/chartTheme';
 
 interface YearlyComparisonProps {
   data: {
@@ -20,62 +21,55 @@ export default function YearlyComparisonChart({ data, year1Label = "This Year", 
       <BarChart
         data={data}
         margin={{
-          top: 20,
+          top: 15,
           right: 30,
-          left: 0,
+          left: 10,
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
         <XAxis 
           dataKey="month" 
           stroke="#64748b" 
           fontSize={11} 
           tickLine={false} 
           axisLine={false} 
-          tick={{ fill: '#d1c6ab' }}
+          tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }}
         />
         <YAxis 
           stroke="#64748b" 
           fontSize={11} 
           tickLine={false} 
           axisLine={false} 
-          tick={{ fill: '#d1c6ab' }}
-          tickFormatter={(value) => `${value}`} 
+          tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }}
+          tickFormatter={(value) => Number(value || 0).toLocaleString()} 
         />
         <Tooltip
           cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
-          contentStyle={{
-            backgroundColor: '#171c23',
-            border: '1px solid #30353d',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-            color: '#dee2ec'
-          }}
-          itemStyle={{ color: '#dee2ec', fontSize: '12px', fontWeight: 600 }}
-          // Use the series name (e.g. "Inbound 2026") as the label instead of a
-          // generic "Qty" so each row says which year and inbound/outbound it is.
-          formatter={(value: any, name: any) => [value?.toLocaleString() || '0', name] as [string, string]}
+          contentStyle={TACTICAL_TOOLTIP_STYLE}
+          labelStyle={{ color: '#facc15', fontSize: '12px', fontWeight: 'bold' }}
+          itemStyle={{ color: '#dee2ec', fontSize: '12px', fontFamily: 'monospace' }}
+          formatter={(value: any, name: any) => [Number(value || 0).toLocaleString(), name] as [string, string]}
         />
         <Legend 
-            verticalAlign="top" 
-            align="right" 
-            height={36} 
-            iconType="circle"
-            wrapperStyle={{ fontSize: '11px', fontWeight: 500, color: '#dee2ec' }}
+          verticalAlign="top" 
+          align="right" 
+          height={36} 
+          iconType="circle"
+          wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace', color: '#dee2ec' }}
         />
         {/* Inbound Bars */}
         <Bar 
           name={`Inbound ${year2Label}`} 
           dataKey="inYear2" 
-          fill="#bbf7d0" // Green-200
+          fill="rgba(87, 236, 127, 0.32)"
           radius={[4, 4, 0, 0]} 
           barSize={12}
         />
         <Bar 
           name={`Inbound ${year1Label}`} 
           dataKey="inYear1" 
-          fill="#10b981" // Emerald-500
+          fill="#57ec7f"
           radius={[4, 4, 0, 0]} 
           barSize={12}
         />
@@ -84,14 +78,14 @@ export default function YearlyComparisonChart({ data, year1Label = "This Year", 
         <Bar 
           name={`Outbound ${year2Label}`} 
           dataKey="outYear2" 
-          fill="#cbd5e1" // Slate-300
+          fill="rgba(76, 215, 246, 0.32)"
           radius={[4, 4, 0, 0]} 
           barSize={12}
         />
         <Bar 
           name={`Outbound ${year1Label}`} 
           dataKey="outYear1" 
-          fill="#6366f1" // Indigo-500
+          fill="#4cd7f6"
           radius={[4, 4, 0, 0]} 
           barSize={12}
         />

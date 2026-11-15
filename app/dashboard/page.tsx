@@ -48,10 +48,10 @@ import StockDepletionChart from "@/components/StockDepletionChart";
 import { generateDepletionData } from "@/lib/forecast";
 import StitchTelemetryStrip from "@/components/dashboard/StitchTelemetryStrip";
 import StitchDockMatrix from "@/components/dashboard/StitchDockMatrix";
+import { TACTICAL_TOOLTIP_STYLE } from "@/lib/chartTheme";
 
-// Lazy-load the heavy chart components so the dashboard shell paints fast
-// instead of blocking on the full chart bundle.
-const chartLoading = () => <div className="h-64 w-full rounded-2xl bg-slate-100 animate-pulse" />;
+// Lazy-load the heavy chart components
+const chartLoading = () => <div className="h-64 w-full rounded-xl bg-[#1b2027] border border-[#30353d]/60 animate-pulse" />;
 const WaterfallChart = dynamic(() => import("@/components/charts/WaterfallChart"), { ssr: false, loading: chartLoading });
 const YearlyComparisonChart = dynamic(() => import("@/components/charts/YearlyComparisonChart"), { ssr: false, loading: chartLoading });
 const AnnualTrendChart = dynamic(() => import("@/components/charts/AnnualTrendChart"), { ssr: false, loading: chartLoading });
@@ -59,7 +59,7 @@ const AnnualTrendChart = dynamic(() => import("@/components/charts/AnnualTrendCh
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#171c23]/95 backdrop-blur-xl border border-[#30353d] p-3 rounded-xl shadow-2xl text-[#dee2ec] text-xs font-mono">
+      <div className="bg-[#090f15]/95 backdrop-blur-xl border border-[#30353d] p-3 rounded-xl shadow-2xl text-[#dee2ec] text-xs font-mono">
         <p className="font-bold mb-1.5 text-[#facc15] border-b border-[#30353d] pb-1">{label}</p>
         {payload.map((pld: any, index: number) => (
           <div key={index} className="flex justify-between items-center gap-4 py-0.5">
@@ -109,20 +109,20 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, [selectedForecastItem?.sku]);
 
-  // Set default date range on mount (Start from 2024 to include historical data)
+  // Set default date range on mount
   useEffect(() => {
      const now = new Date();
-     const firstDay = new Date(2024, 0, 1); // Jan 1st, 2024
+     const firstDay = new Date(2024, 0, 1);
      setStartDate(firstDay.toISOString().split('T')[0]);
      setEndDate(now.toISOString().split('T')[0]);
   }, []);
 
   useEffect(() => {
     async function fetchData() {
-      if (!startDate || !endDate) return; // Wait for initialization
+      if (!startDate || !endDate) return;
 
       try {
-        setLoading(true); // Show loading state on refetch
+        setLoading(true);
         
         const urlParams = new URLSearchParams(window.location.search);
         const branchId = urlParams.get('branchId') || 'hq';
@@ -136,7 +136,6 @@ export default function Dashboard() {
         
         const url = getApiUrl(`/api/dashboard?${params.toString()}`);
         setDebugInfo(url);
-        console.log("[Dashboard] Fetching URL:", url);
         
         const res = await fetch(url, { cache: 'no-store' });
         
@@ -158,46 +157,45 @@ export default function Dashboard() {
       }
     }
     fetchData();
-  }, [startDate, endDate, selectedYear1, selectedYear2]); // Trigger on changes
+  }, [startDate, endDate, selectedYear1, selectedYear2]);
 
-  if (loading && !data && !startDate) { // Only show full screen loader on initial load
+  if (loading && !data && !startDate) {
     return (
-      <div className="min-h-screen p-8 space-y-8">
-         <div className="flex justify-between items-center">
+      <div className="min-h-screen p-6 space-y-6 bg-[#0f141b]">
+         <div className="flex justify-between items-center bg-[#171c23] p-5 rounded-xl border border-[#30353d]">
             <div className="space-y-2">
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-6 w-48 bg-[#252a32]" />
+              <Skeleton className="h-4 w-64 bg-[#252a32]" />
             </div>
             <div className="flex gap-2">
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-9 w-28 bg-[#252a32]" />
+              <Skeleton className="h-9 w-28 bg-[#252a32]" />
             </div>
          </div>
-         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-40 rounded-[2rem]" />)}
+         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+            {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-28 rounded-xl bg-[#171c23] border border-[#30353d]" />)}
          </div>
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-96 rounded-3xl col-span-2" />
-            <Skeleton className="h-96 rounded-3xl" />
+            <Skeleton className="h-80 rounded-xl col-span-2 bg-[#171c23] border border-[#30353d]" />
+            <Skeleton className="h-80 rounded-xl bg-[#171c23] border border-[#30353d]" />
          </div>
       </div>
     );
   }
 
-  // ... Error handling remains the same ...
   if (error && !data) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-8 bg-slate-50">
-            <div className="max-w-md w-full bg-white border border-red-200 p-6 rounded-2xl shadow-lg">
-                <AlertTriangle className="h-12 w-12 text-red-500 mb-4 mx-auto" />
-                <h2 className="text-xl font-bold text-slate-900 text-center mb-2">Connection Error</h2>
-                <p className="text-red-600 text-center mb-4">{error}</p>
-                <div className="bg-slate-100 p-3 rounded-lg text-xs font-mono text-slate-600 break-all mb-4">
+        <div className="min-h-screen flex items-center justify-center p-8 bg-[#0f141b]">
+            <div className="max-w-md w-full bg-[#171c23] border border-[#ff5449]/40 p-6 rounded-xl shadow-2xl text-[#dee2ec]">
+                <AlertTriangle className="h-12 w-12 text-[#ff5449] mb-4 mx-auto" />
+                <h2 className="text-xl font-bold font-headline text-center mb-2">Connection Error</h2>
+                <p className="text-[#ffb4ab] text-center font-mono text-xs mb-4">{error}</p>
+                <div className="bg-[#090f15] border border-[#30353d] p-3 rounded-lg text-xs font-mono text-[#d1c6ab] break-all mb-4">
                     Attempted URL: {debugInfo}
                 </div>
                 <button 
                     onClick={() => window.location.reload()}
-                    className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-200"
+                    className="w-full py-2.5 bg-[#ff5449] hover:bg-[#ff5449]/90 text-[#090f15] rounded-lg font-mono font-bold transition-colors shadow-lg"
                 >
                     Retry Connection
                 </button>
@@ -206,23 +204,22 @@ export default function Dashboard() {
       );
   }
 
-  // Stagger children animation
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.08
       }
     }
   };
 
   const item = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0 }
   };
 
-  if (!mounted) return null; // Prevent hydration mismatch
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen relative px-4 py-6 pb-32 sm:px-6 lg:p-8">
@@ -238,105 +235,108 @@ export default function Dashboard() {
         variants={container}
         initial="hidden"
         animate="show"
-        className="max-w-[1500px] mx-auto space-y-7"
+        className="max-w-[1500px] mx-auto space-y-6"
       >
-        {/* Stitch Top Telemetry Strip */}
-        <motion.div variants={item}>
-          <StitchTelemetryStrip summary={data?.summary} />
-        </motion.div>
-
-        {/* Header Section (Stitch Tactical Command Card) */}
-        <div className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl">
+        {/* Variation A: Unified Tactical Command Header */}
+        <div className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/95 p-4 sm:p-5 shadow-2xl backdrop-blur-xl">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <motion.div variants={item} className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#facc15] text-[#1b1600] font-headline text-base font-extrabold shadow-md">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            {/* Branding & Title */}
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#facc15] text-[#1b1600] font-headline text-base font-extrabold shadow-md">
                 WMS
               </div>
               <div>
-                <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6]">
-                  Tactical Operations Command Platform
-                </p>
-                <h1 className="font-headline text-2xl md:text-3xl font-black tracking-tight text-[#dee2ec]">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6]">
+                    Tactical Operations Command Platform
+                  </span>
+                  <span className="font-mono text-[9px] bg-[#57ec7f]/15 text-[#57ec7f] border border-[#57ec7f]/30 px-1.5 py-0.2 rounded font-bold">
+                    ONLINE
+                  </span>
+                </div>
+                <h1 className="font-headline text-xl md:text-2xl font-black tracking-tight text-[#dee2ec]">
                   {t('dashboard_title')}
                 </h1>
                 <p className="font-mono text-xs text-[#d1c6ab]">{t('dashboard_subtitle')}</p>
               </div>
-            </motion.div>
-            
-            <motion.div variants={item} className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <DashboardCustomizer visibleWidgets={visibleWidgets} toggleWidget={toggleWidget} />
-              
-              <div className="flex items-center gap-2 rounded-lg border border-[#30353d] bg-[#090f15] p-1.5 shadow-inner">
+            </div>
+
+            {/* Right: Integrated Tabs, Date Range & Customizer */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Integrated Tabs */}
+              <div className="flex items-center rounded-lg border border-[#30353d] bg-[#090f15] p-1 font-mono text-xs">
+                <button
+                  onClick={() => setActiveTab("operational")}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md font-bold transition-all",
+                    activeTab === "operational"
+                      ? "bg-[#facc15] text-[#1b1600] shadow-sm"
+                      : "text-[#d1c6ab] hover:text-[#dee2ec] hover:bg-[#252a32]"
+                  )}
+                >
+                  {t('tab_operational')}
+                </button>
+                <button
+                  onClick={() => setActiveTab("executive")}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md font-bold transition-all",
+                    activeTab === "executive"
+                      ? "bg-[#4cd7f6] text-[#001f26] shadow-sm"
+                      : "text-[#d1c6ab] hover:text-[#dee2ec] hover:bg-[#252a32]"
+                  )}
+                >
+                  {t('tab_executive')}
+                </button>
+                <button
+                  onClick={() => setActiveTab("forecast")}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md font-bold transition-all flex items-center gap-1",
+                    activeTab === "forecast"
+                      ? "bg-[#57ec7f] text-[#002109] shadow-sm"
+                      : "text-[#d1c6ab] hover:text-[#dee2ec] hover:bg-[#252a32]"
+                  )}
+                >
+                  <span>Forecast</span>
+                  <span className="px-1 rounded text-[9px] uppercase font-mono font-black bg-black/20">
+                    AI
+                  </span>
+                </button>
+              </div>
+
+              {/* Date Range Picker */}
+              <div className="flex items-center gap-1.5 rounded-lg border border-[#30353d] bg-[#090f15] p-1 shadow-inner">
                 <div className="relative group">
-                  <Calendar className="absolute left-2.5 top-2 h-4 w-4 text-[#d1c6ab]" />
+                  <Calendar className="absolute left-2 top-1.5 h-3.5 w-3.5 text-[#d1c6ab]" />
                   <input 
                     type="date" 
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="pl-8 pr-2 py-1 bg-[#171c23] border border-[#30353d] rounded text-xs font-mono text-[#dee2ec] focus:border-[#facc15] outline-none transition-all cursor-pointer"
+                    className="pl-7 pr-2 py-1 bg-[#171c23] border border-[#30353d] rounded text-xs font-mono text-[#dee2ec] focus:border-[#facc15] outline-none transition-all cursor-pointer"
                   />
                 </div>
-                <span className="text-[#d1c6ab] font-mono text-xs">→</span>
+                <span className="text-[#8a92a6] font-mono text-xs">→</span>
                 <div className="relative group">
-                  <Calendar className="absolute left-2.5 top-2 h-4 w-4 text-[#d1c6ab]" />
+                  <Calendar className="absolute left-2 top-1.5 h-3.5 w-3.5 text-[#d1c6ab]" />
                   <input 
                     type="date" 
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="pl-8 pr-2 py-1 bg-[#171c23] border border-[#30353d] rounded text-xs font-mono text-[#dee2ec] focus:border-[#facc15] outline-none transition-all cursor-pointer"
+                    className="pl-7 pr-2 py-1 bg-[#171c23] border border-[#30353d] rounded text-xs font-mono text-[#dee2ec] focus:border-[#facc15] outline-none transition-all cursor-pointer"
                   />
                 </div>
               </div>
-            </motion.div>
+
+              {/* Customizer */}
+              <DashboardCustomizer visibleWidgets={visibleWidgets} toggleWidget={toggleWidget} />
+            </div>
           </div>
         </div>
 
-        {/* Tab Navigation (Stitch Tactical Tabs) */}
-        <motion.div variants={item} className="flex w-full max-w-xl flex-wrap gap-1.5 rounded-lg border border-[#30353d] bg-[#171c23]/90 p-1.5 shadow-lg backdrop-blur-xl font-mono text-xs">
-          <button
-            onClick={() => setActiveTab("operational")}
-            className={cn(
-              "px-5 py-2 rounded font-bold transition-all duration-200",
-              activeTab === "operational"
-                ? "bg-[#facc15] text-[#1b1600] shadow-sm"
-                : "text-[#d1c6ab] hover:text-[#dee2ec] hover:bg-[#252a32]"
-            )}
-          >
-            {t('tab_operational')}
-          </button>
-          <button
-            onClick={() => setActiveTab("executive")}
-            className={cn(
-              "px-5 py-2 rounded font-bold transition-all duration-200",
-              activeTab === "executive"
-                ? "bg-[#4cd7f6] text-[#001f26] shadow-sm"
-                : "text-[#d1c6ab] hover:text-[#dee2ec] hover:bg-[#252a32]"
-            )}
-          >
-            {t('tab_executive')}
-          </button>
-          <button
-            onClick={() => setActiveTab("forecast")}
-            className={cn(
-              "px-5 py-2 rounded font-bold transition-all duration-200 flex items-center gap-1.5",
-              activeTab === "forecast"
-                ? "bg-[#57ec7f] text-[#002109] shadow-sm"
-                : "text-[#d1c6ab] hover:text-[#dee2ec] hover:bg-[#252a32]"
-            )}
-          >
-            <span>Forecast</span>
-            <span className="px-1 py-0.2 rounded text-[9px] uppercase font-mono font-black bg-black/20">
-              AI
-            </span>
-          </button>
+        {/* Primary Telemetry Strip (Immediately below Command Header) */}
+        <motion.div variants={item}>
+          <StitchTelemetryStrip summary={data?.summary} />
         </motion.div>
-
-        {activeTab === "operational" && (
-          <motion.div variants={item}>
-            <StitchDockMatrix movements={data?.recentTransactions || []} />
-          </motion.div>
-        )}
 
         {activeTab === "operational" && (
            <DashboardGridLayout 
@@ -351,67 +351,75 @@ export default function Dashboard() {
               ]}
               widgets={{
                   kpi_grid: visibleWidgets['stats'] ? (
-                     <div className="grid grid-cols-2 lg:grid-cols-6 gap-6">
-                        <motion.div variants={item} transition={{ delay: 0.05 }}>
-                           <KpiCard label={t('kpi_active_items')} value={data?.summary?.activeSkuCount || 0} icon={CheckCircle} bg="bg-violet-50" color="text-violet-500" href="/inventory?status=ALL" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.1 }}>
-                           <KpiCard label={t('kpi_total_stock')} value={data?.summary?.totalStock || 0} icon={Package} bg="bg-blue-50" color="text-blue-500" href="/inventory?status=ALL" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.15 }}>
-                           <KpiCard label={t('kpi_total_value')} value={`฿${(data?.summary?.totalValue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={DollarSign} bg="bg-green-50" color="text-green-600" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.2 }}>
-                           <KpiCard label={t('kpi_inbound_total')} value={data?.summary?.inboundPeriod || 0} icon={ArrowDownRight} bg="bg-indigo-50" color="text-indigo-500" href="/ops/receiving" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.25 }}>
-                            <KpiCard label={t('kpi_outbound_total')} value={data?.summary?.outboundPeriod || 0} icon={ArrowUpRight} bg="bg-emerald-50" color="text-emerald-500" href="/ops/outbound" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.28 }}>
+                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {/* 1. Flow Ratio (Inbound / Outbound Ratio) */}
+                        <motion.div variants={item}>
                             <KpiCard 
                               label={t('kpi_flow_ratio')} 
                               value={data?.summary?.inboundPeriod && data?.summary?.outboundPeriod ? (data.summary.inboundPeriod / (data.summary.outboundPeriod || 1)).toFixed(2) : "0.00"}
                               icon={Activity} 
-                              bg="bg-indigo-50" 
-                              color="text-indigo-600" 
-                              title={t('tooltip_flow_ratio') || "อัตราส่วนระหว่างยอดรับเข้าสะสมเทียบกับยอดจ่ายออกสะสมในช่วงเวลาที่เลือก (Inbound Total / Outbound Total)"}
+                              color="cyan"
+                              subtitle="In / Out Ratio"
+                              title={t('tooltip_flow_ratio') || "อัตราส่วนระหว่างยอดรับเข้าสะสมเทียบกับยอดจ่ายออกสะสมในช่วงเวลาที่เลือก"}
                             />
                         </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.3 }}>
-                           <KpiCard label={t('kpi_dead_stock')} value={data?.summary?.deadStockCount || 0} icon={Clock} bg="bg-slate-100" color="text-slate-500" href="/inventory?movement=Deadstock" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.35 }}>
-                           <KpiCard label={t('kpi_aging_stock')} value={data?.summary?.agingStockCount || 0} icon={Clock} bg="bg-rose-50" color="text-rose-600" border={data?.summary?.agingStockCount > 10 ? "border-rose-200" : ""} href="/analytics/aging" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.4 }}>
-                           <KpiCard label={t('kpi_low_stock')} value={data?.summary?.lowStockCount || 0} icon={AlertTriangle} bg="bg-rose-50" color="text-rose-500" border={data?.summary?.lowStockCount > 0 ? "border-rose-200" : ""} href="/inventory?status=LOW" />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.45 }}>
-                            <KpiCard 
-                              label={t('kpi_space_occupancy')} 
-                              value={`${(data?.executive?.spaceEfficiency || 0).toFixed(1)}%`}
-                              icon={MapPin} 
-                              bg="bg-violet-50" 
-                              color="text-violet-600" 
-                            />
-                        </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.5 }}>
+
+                        {/* 2. Turnover Rate */}
+                        <motion.div variants={item}>
                            <KpiCard 
                              label={t('kpi_turnover_rate')} 
                              value={`${(data?.summary?.turnoverRate || 0).toFixed(1)}%`} 
                              icon={Activity} 
-                             bg="bg-emerald-50" 
-                             color="text-emerald-500" 
-                             title={t('tooltip_turnover_rate') || "อัตราส่วนการหมุนเวียนสินค้าคำนวณจาก ยอดจ่ายออกสะสม / ยอดสินค้าคงเหลือทั้งหมด (Outbound Period / Total Stock)"}
+                             color="emerald"
+                             subtitle="Velocity Rate"
+                             title={t('tooltip_turnover_rate') || "อัตราส่วนการหมุนเวียนสินค้าคำนวณจาก ยอดจ่ายออกสะสม / ยอดสินค้าคงเหลือทั้งหมด"}
                            />
                         </motion.div>
-                        <motion.div variants={item} transition={{ delay: 0.6 }}>
+
+                        {/* 3. Space Occupancy */}
+                        <motion.div variants={item}>
+                            <KpiCard 
+                              label={t('kpi_space_occupancy')} 
+                              value={`${(data?.executive?.spaceEfficiency || 0).toFixed(1)}%`}
+                              icon={MapPin} 
+                              color="gold"
+                              subtitle="Utilization"
+                            />
+                        </motion.div>
+
+                        {/* 4. Low Stock SKUs */}
+                        <motion.div variants={item}>
                            <KpiCard 
-                             label={t('kpi_empty_locations') || "Empty Locations"} 
-                             value={data?.summary?.emptyLocationCount || 0} 
-                             icon={MapPin} 
-                             bg="bg-gray-50" 
-                             color="text-gray-500"
+                             label={t('kpi_low_stock')} 
+                             value={data?.summary?.lowStockCount || 0} 
+                             icon={AlertTriangle} 
+                             color={(data?.summary?.lowStockCount || 0) > 0 ? "rose" : "gold"} 
+                             href="/inventory?status=LOW" 
+                             subtitle="Reorder Required"
+                           />
+                        </motion.div>
+
+                        {/* 5. Aging Stock */}
+                        <motion.div variants={item}>
+                           <KpiCard 
+                             label={t('kpi_aging_stock')} 
+                             value={data?.summary?.agingStockCount || 0} 
+                             icon={Clock} 
+                             color="rose" 
+                             href="/analytics/aging" 
+                             subtitle="> 90 Days Holding"
+                           />
+                        </motion.div>
+
+                        {/* 6. Dead Stock with Empty Location Note */}
+                        <motion.div variants={item}>
+                           <KpiCard 
+                             label={t('kpi_dead_stock')} 
+                             value={data?.summary?.deadStockCount || 0} 
+                             icon={Package} 
+                             color="rose" 
+                             href="/inventory?movement=Deadstock" 
+                             subtitle={`Empty Locs: ${data?.summary?.emptyLocationCount || 0}`}
                              title={data?.summary?.emptyLocationList?.join('\n')}
                            />
                         </motion.div>
@@ -419,8 +427,8 @@ export default function Dashboard() {
                   ) : null,
 
                   chart_top_sellers: visibleWidgets['charts'] ? (
-                      <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg flex flex-col">
-                          <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
+                      <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg flex flex-col">
+                          <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-4 flex items-center gap-2">
                             <span className="w-1.5 h-4 bg-[#facc15] rounded-full"></span>
                             {t('chart_top_sellers')}
                           </h3>
@@ -429,142 +437,219 @@ export default function Dashboard() {
                                <BarChart
                                      data={data?.topSellers?.slice(0, 10) || []}
                                      layout="vertical"
-                                     margin={{ top: 10, right: 30, left: 40, bottom: 0 }}
+                                     margin={{ top: 10, right: 30, left: 30, bottom: 0 }}
                                  >
                                      <defs>
                                          <linearGradient id="bestSellerGrad" x1="0" y1="0" x2="1" y2="0">
                                              <stop offset="0%" stopColor="#facc15" stopOpacity={0.95}/>
-                                             <stop offset="100%" stopColor="#eab308" stopOpacity={0.6}/>
+                                             <stop offset="100%" stopColor="#eab308" stopOpacity={0.5}/>
                                          </linearGradient>
                                      </defs>
-                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" horizontal={true} vertical={false} />
-                                     <XAxis type="number" stroke="#64748b" fontSize={10} tick={{fill: '#d1c6ab'}} />
-                                     <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} tick={{fill: '#d1c6ab'}} width={100} />
-                                     <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255, 255, 255, 0.04)'}} />
+                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.07)" horizontal={true} vertical={false} />
+                                     <XAxis 
+                                       type="number" 
+                                       stroke="#64748b" 
+                                       fontSize={10} 
+                                       tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }} 
+                                       tickFormatter={(v) => Number(v || 0).toLocaleString()} 
+                                     />
+                                     <YAxis 
+                                       type="category" 
+                                       dataKey="name" 
+                                       stroke="#64748b" 
+                                       fontSize={10} 
+                                       tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }} 
+                                       width={120} 
+                                       tickFormatter={(val) => typeof val === 'string' && val.length > 15 ? `${val.slice(0, 15)}…` : val} 
+                                     />
+                                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
                                      <Bar dataKey="qty" name="Sold Qty" fill="url(#bestSellerGrad)" radius={[0, 6, 6, 0]} barSize={14} />
                                  </BarChart>
                             </ResponsiveContainer>
                          </div>
-                     </div>
+                      </div>
                   ) : null,
 
-                  chart_inventory_health: visibleWidgets['charts'] ? (
-                      <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg flex flex-col">
-                          <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
-                            <span className="w-1.5 h-4 bg-[#57ec7f] rounded-full"></span>
-                            {t('chart_inventory_health')}
-                         </h3>
-                         <div className="flex-1 w-full min-h-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                               <PieChart>
-                                  <Pie 
-                                     data={data?.healthData || []} 
-                                     dataKey="value" 
-                                     nameKey="name"
-                                     cx="50%" cy="50%" 
-                                     innerRadius={50} outerRadius={70}
-                                     paddingAngle={4} cornerRadius={6}
-                                     label={({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
-                                        if (!value) return null;
-                                        const RADIAN = Math.PI / 180;
-                                        const r = (outerRadius || 0) * 1.25;
-                                        const x = (cx || 0) + r * Math.cos(-(midAngle || 0) * RADIAN);
-                                        const y = (cy || 0) + r * Math.sin(-(midAngle || 0) * RADIAN);
-                                        return <text x={x} y={y} fill="#dee2ec" textAnchor={x > (cx || 0) ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight="bold" fontFamily="monospace">{value}</text>;
-                                     }}
-                                  >
-                                     {(data?.healthData || []).map((entry: any, index: number) => (
-                                        <Cell key={`cell-${index}`} fill={entry.name === 'Healthy' ? '#57ec7f' : entry.name === 'Low' ? '#facc15' : '#ffb4ab'} stroke="none" />
-                                     ))}
-                                  </Pie>
-                                  <Tooltip content={<CustomTooltip />} />
-                                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ color: '#dee2ec', fontSize: '11px' }} />
-                               </PieChart>
-                            </ResponsiveContainer>
-                         </div>
-                     </div>
-                  ) : null,
-                  
-                  chart_sales_category: visibleWidgets['charts'] ? (
-                       <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg flex flex-col">
-                           <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
-                             <span className="w-1.5 h-4 bg-[#4cd7f6] rounded-full"></span>
-                             {t('chart_sales_category')}
+                  chart_inventory_health: visibleWidgets['charts'] ? (() => {
+                      const healthData = data?.healthData || [];
+                      const totalHealthSKUs = healthData.reduce((acc: number, curr: any) => acc + (Number(curr.value) || 0), 0);
+                      const healthyItem = healthData.find((h: any) => h.name === 'Healthy' || h.name === 'ปกติ');
+                      const healthyCount = healthyItem ? Number(healthyItem.value) : 0;
+                      const healthyPct = totalHealthSKUs > 0 ? Math.round((healthyCount / totalHealthSKUs) * 100) : 0;
+                      const lowCount = healthData.find((h: any) => h.name === 'Low' || h.name === 'ใกล้หมด')?.value || 0;
+                      const outCount = healthData.find((h: any) => h.name === 'Out' || h.name === 'หมดสต็อก')?.value || 0;
+
+                      return (
+                        <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg flex flex-col justify-between">
+                            <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-2 flex items-center gap-2">
+                              <span className="w-1.5 h-4 bg-[#57ec7f] rounded-full"></span>
+                              {t('chart_inventory_health')}
                            </h3>
-                           <div className="flex-1 w-full min-h-0">
-                               <ResponsiveContainer width="100%" height="100%">
-                                   <PieChart>
-                                       <Pie
-                                           data={data?.categorySales || []}
-                                           dataKey="value"
-                                           nameKey="name"
-                                           cx="50%" cy="50%"
-                                           innerRadius={55} outerRadius={70}
-                                           paddingAngle={3} cornerRadius={5}
-                                       >
-                                           {(data?.categorySales || []).map((entry: any, index: number) => (
-                                               <Cell key={`cell-${index}`} fill={['#4cd7f6', '#57ec7f', '#facc15', '#a78bfa', '#f43f5e'][index % 5]} stroke="none" />
-                                           ))}
-                                       </Pie>
-                                       <Tooltip content={<CustomTooltip />} />
-                                       <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: '#dee2ec' }} />
-                                   </PieChart>
-                               </ResponsiveContainer>
+                           <div className="relative flex-1 w-full min-h-0">
+                              {/* Center Metric Overlay */}
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-4">
+                                <span className="font-mono text-2xl font-black text-[#57ec7f] tabular-nums">{healthyPct}%</span>
+                                <span className="font-mono text-[9px] uppercase tracking-wider text-[#8a92a6]">Healthy</span>
+                              </div>
+                              <ResponsiveContainer width="100%" height="100%">
+                                 <PieChart>
+                                    <Pie 
+                                       data={healthData} 
+                                       dataKey="value" 
+                                       nameKey="name"
+                                       cx="50%" cy="50%" 
+                                       innerRadius={58} outerRadius={78}
+                                       paddingAngle={4} cornerRadius={6}
+                                    >
+                                       {healthData.map((entry: any, index: number) => {
+                                          const isHealthy = entry.name === 'Healthy' || entry.name === 'ปกติ';
+                                          const isLow = entry.name === 'Low' || entry.name === 'ใกล้หมด';
+                                          const fill = isHealthy ? '#57ec7f' : isLow ? '#facc15' : '#ffb4ab';
+                                          return <Cell key={`cell-${index}`} fill={fill} stroke="none" />;
+                                       })}
+                                    </Pie>
+                                    <Tooltip content={<CustomTooltip />} />
+                                 </PieChart>
+                              </ResponsiveContainer>
                            </div>
-                       </div>
-                  ) : null,
-
-                  chart_weekly_activity: visibleWidgets['charts'] ? (
-                       <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg flex flex-col">
-                           <div className="mb-6 flex items-center justify-between gap-2">
-                             <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider flex items-center gap-2">
-                               <span className="w-1.5 h-4 bg-[#f97316] rounded-full"></span>
-                               {activityDays === 7 ? t('chart_weekly_activity') : 'กิจกรรม 30 วัน'}
-                             </h3>
-                             <div className="flex gap-1">
-                               {([7, 30] as const).map(n => (
-                                 <button key={n} onClick={() => setActivityDays(n)}
-                                   className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors ${activityDays === n ? 'bg-[#f97316] text-[#1b1600] border-[#f97316]' : 'text-[#8a92a6] border-[#30353d] hover:text-[#dee2ec]'}`}>
-                                   {n} วัน
-                                 </button>
-                               ))}
+                           {/* 3-Column Structured Summary Footer */}
+                           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[#30353d]/50 font-mono text-center text-xs">
+                             <div className="p-1.5 rounded bg-[#090f15]/60 border border-[#30353d]/40">
+                               <span className="text-[10px] text-[#57ec7f] block font-bold">Healthy</span>
+                               <span className="text-[#dee2ec] font-bold">{healthyCount.toLocaleString()}</span>
+                             </div>
+                             <div className="p-1.5 rounded bg-[#090f15]/60 border border-[#30353d]/40">
+                               <span className="text-[10px] text-[#facc15] block font-bold">Low</span>
+                               <span className="text-[#dee2ec] font-bold">{Number(lowCount).toLocaleString()}</span>
+                             </div>
+                             <div className="p-1.5 rounded bg-[#090f15]/60 border border-[#30353d]/40">
+                               <span className="text-[10px] text-[#ffb4ab] block font-bold">Out</span>
+                               <span className="text-[#dee2ec] font-bold">{Number(outCount).toLocaleString()}</span>
                              </div>
                            </div>
-                           {(() => {
-                             const rows = (data?.movementData || []).slice(-activityDays);
-                             return rows.length > 0 && rows.every((r: any) => !r.in && !r.out) ? (
-                               <p className="-mt-4 mb-2 text-[11px] text-[#8a92a6]">ไม่มีการรับเข้า/จ่ายออกในช่วงนี้</p>
-                             ) : null;
-                           })()}
-                           <div className="flex-1 w-full min-h-0">
-                              <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={(data?.movementData || []).slice(-activityDays)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                      <defs>
-                                           <linearGradient id="colorInGrad" x1="0" y1="0" x2="0" y2="1">
-                                               <stop offset="5%" stopColor="#4cd7f6" stopOpacity={0.9}/>
-                                               <stop offset="95%" stopColor="#0284c7" stopOpacity={0.4}/>
-                                           </linearGradient>
-                                           <linearGradient id="colorOutGrad" x1="0" y1="0" x2="0" y2="1">
-                                               <stop offset="5%" stopColor="#57ec7f" stopOpacity={0.9}/>
-                                               <stop offset="95%" stopColor="#16a34a" stopOpacity={0.4}/>
-                                           </linearGradient>
-                                       </defs>
-                                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
-                                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} tick={{fill: '#d1c6ab'}} />
-                                      <YAxis stroke="#64748b" fontSize={10} tick={{fill: '#d1c6ab'}} />
-                                      <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255, 255, 255, 0.04)'}} />
-                                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: '#dee2ec' }} />
-                                      <Bar dataKey="in" name={t('legend_inbound')} fill="url(#colorInGrad)" radius={[4, 4, 0, 0]} barSize={activityDays === 7 ? 12 : 5} />
-                                      <Bar dataKey="out" name={t('legend_outbound')} fill="url(#colorOutGrad)" radius={[4, 4, 0, 0]} barSize={activityDays === 7 ? 12 : 5} />
-                                  </BarChart>
-                              </ResponsiveContainer>
+                        </div>
+                      );
+                  })() : null,
+                  
+                  chart_sales_category: visibleWidgets['charts'] ? (() => {
+                       const catData = data?.categorySales || [];
+                       const totalCatQty = catData.reduce((acc: number, c: any) => acc + (Number(c.value) || 0), 0);
+                       const palette = ['#4cd7f6', '#57ec7f', '#facc15', '#f59e0b', '#ff5449'];
+
+                       return (
+                          <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg flex flex-col justify-between">
+                              <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <span className="w-1.5 h-4 bg-[#4cd7f6] rounded-full"></span>
+                                {t('chart_sales_category')}
+                              </h3>
+                              <div className="flex-1 w-full min-h-0 grid grid-cols-1 md:grid-cols-2 items-center gap-3">
+                                  <div className="h-full min-h-[170px] w-full">
+                                      <ResponsiveContainer width="100%" height="100%">
+                                          <PieChart>
+                                              <Pie
+                                                  data={catData}
+                                                  dataKey="value"
+                                                  nameKey="name"
+                                                  cx="50%" cy="50%"
+                                                  innerRadius={46} outerRadius={66}
+                                                  paddingAngle={3} cornerRadius={5}
+                                              >
+                                                  {catData.map((entry: any, index: number) => (
+                                                      <Cell key={`cell-${index}`} fill={palette[index % palette.length]} stroke="none" />
+                                                  ))}
+                                              </Pie>
+                                              <Tooltip content={<CustomTooltip />} />
+                                          </PieChart>
+                                      </ResponsiveContainer>
+                                  </div>
+                                  <div className="space-y-1.5 font-mono text-xs max-h-[220px] overflow-y-auto pr-1">
+                                    {catData.slice(0, 5).map((cat: any, idx: number) => {
+                                      const color = palette[idx % palette.length];
+                                      const share = totalCatQty > 0 ? Math.round((Number(cat.value || 0) / totalCatQty) * 100) : 0;
+                                      return (
+                                        <div key={idx} className="p-1.5 rounded bg-[#090f15]/60 border border-[#30353d]/40">
+                                          <div className="flex items-center justify-between text-[11px] mb-1">
+                                            <span className="flex items-center gap-1.5 text-[#dee2ec] font-bold truncate max-w-[100px]">
+                                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                              <span className="truncate">{cat.name}</span>
+                                            </span>
+                                            <span className="text-[#d1c6ab] font-bold">{share}% <span className="text-[#8a92a6] font-normal">({Number(cat.value).toLocaleString()})</span></span>
+                                          </div>
+                                          <div className="w-full bg-[#1b2027] h-1 rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full" style={{ width: `${share}%`, backgroundColor: color }} />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                              </div>
                           </div>
-                       </div>
-                  ) : null,
+                       );
+                  })() : null,
+
+                  chart_weekly_activity: visibleWidgets['charts'] ? (() => {
+                       const rows = (data?.movementData || []).slice(-activityDays);
+                       const totalInWindow = rows.reduce((sum: number, r: any) => sum + (Number(r.in) || 0), 0);
+                       const totalOutWindow = rows.reduce((sum: number, r: any) => sum + (Number(r.out) || 0), 0);
+
+                       return (
+                          <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg flex flex-col">
+                              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider flex items-center gap-2">
+                                  <span className="w-1.5 h-4 bg-[#facc15] rounded-full"></span>
+                                  {activityDays === 7 ? t('chart_weekly_activity') : 'กิจกรรม 30 วัน'}
+                                </h3>
+                                
+                                <div className="flex items-center gap-2">
+                                  {/* Inline Summary Pill */}
+                                  <div className="hidden sm:flex items-center gap-2 font-mono text-[10px] bg-[#090f15] border border-[#30353d] px-2.5 py-1 rounded-md text-[#d1c6ab]">
+                                    <span className="text-[#57ec7f] font-bold">IN: {totalInWindow.toLocaleString()}</span>
+                                    <span className="text-[#8a92a6]">|</span>
+                                    <span className="text-[#4cd7f6] font-bold">OUT: {totalOutWindow.toLocaleString()}</span>
+                                  </div>
+
+                                  <div className="flex gap-1 font-mono">
+                                    {([7, 30] as const).map(n => (
+                                      <button 
+                                        key={n} 
+                                        onClick={() => setActivityDays(n)}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                                          activityDays === n 
+                                            ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]' 
+                                            : 'text-[#8a92a6] border-[#30353d] hover:text-[#dee2ec] hover:bg-[#252a32]'
+                                        }`}
+                                      >
+                                        {n} วัน
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {rows.length > 0 && rows.every((r: any) => !r.in && !r.out) && (
+                                <p className="mb-2 text-[11px] font-mono text-[#8a92a6]">ไม่มีการรับเข้า/จ่ายออกในช่วงนี้</p>
+                              )}
+
+                              <div className="flex-1 w-full min-h-0">
+                                 <ResponsiveContainer width="100%" height="100%">
+                                     <BarChart data={rows} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
+                                         <XAxis dataKey="name" stroke="#64748b" fontSize={10} tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }} />
+                                         <YAxis stroke="#64748b" fontSize={10} tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }} tickFormatter={(v) => Number(v || 0).toLocaleString()} />
+                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
+                                         <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: '#dee2ec', fontFamily: 'monospace' }} />
+                                         <Bar dataKey="in" name={t('legend_inbound')} fill="#57ec7f" radius={[4, 4, 0, 0]} barSize={activityDays === 7 ? 12 : 5} />
+                                         <Bar dataKey="out" name={t('legend_outbound')} fill="#4cd7f6" radius={[4, 4, 0, 0]} barSize={activityDays === 7 ? 12 : 5} />
+                                     </BarChart>
+                                 </ResponsiveContainer>
+                             </div>
+                          </div>
+                       );
+                  })() : null,
 
                   table_low_stock: visibleWidgets['recent_activity'] ? (
-                     <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg overflow-hidden flex flex-col">
-                        <h3 className="text-xs font-mono font-bold text-[#ffb4ab] uppercase tracking-wider mb-4 flex items-center gap-2">
+                     <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg overflow-hidden flex flex-col">
+                        <h3 className="text-xs font-mono font-bold text-[#ffb4ab] uppercase tracking-wider mb-3 flex items-center gap-2">
                            <AlertTriangle className="h-4 w-4" /> {t('section_low_stock_alert')}
                         </h3>
                         <div className="flex-1 overflow-auto">
@@ -602,18 +687,18 @@ export default function Dashboard() {
                   ) : null,
 
                   table_recent_activity: visibleWidgets['recent_activity'] ? (
-                     <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg overflow-hidden flex flex-col">
-                        <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-4 flex items-center gap-2">
+                     <div className="h-96 rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg overflow-hidden flex flex-col">
+                        <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-3 flex items-center gap-2">
                            <Activity className="h-4 w-4 text-[#facc15]" /> {t('section_recent_activity')}
                         </h3>
                         <div className="flex-1 overflow-auto">
-                           <ul className="space-y-3">
+                           <ul className="space-y-2.5">
                               {data?.recentActivity?.map((activity: any, index: number) => (
                                  <li key={index} className="flex items-center space-x-3 text-xs p-2 rounded-lg bg-[#090f15]/50 border border-[#30353d]/50 hover:bg-[#1d232c] transition-colors">
                                     {activity.type === 'inbound' ? (
                                        <div className="bg-[#57ec7f]/20 border border-[#57ec7f]/30 p-1.5 rounded"><ArrowDownRight className="h-3 w-3 text-[#57ec7f]" /></div>
                                     ) : (
-                                       <div className="bg-[#ffb4ab]/20 border border-[#ffb4ab]/30 p-1.5 rounded"><ArrowUpRight className="h-3 w-3 text-[#ffb4ab]" /></div>
+                                       <div className="bg-[#4cd7f6]/20 border border-[#4cd7f6]/30 p-1.5 rounded"><ArrowUpRight className="h-3 w-3 text-[#4cd7f6]" /></div>
                                     )}
                                     <div className="flex-1 min-w-0 font-mono">
                                        <span className="text-[#dee2ec] font-medium block truncate">{activity.description}</span>
@@ -629,24 +714,31 @@ export default function Dashboard() {
            />
         )}
 
-        {/* Executive Tab - including Waterfall and Radar */}
+        {/* Variation A: Dock & Activity Placement at Bottom of Operational Tab */}
+        {activeTab === "operational" && (
+          <motion.div variants={item} className="pt-2">
+            <StitchDockMatrix movements={data?.recentTransactions || []} />
+          </motion.div>
+        )}
+
+        {/* Executive Tab */}
         {activeTab === "executive" && (
            <motion.div 
              initial={{ opacity: 0, x: 20 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ duration: 0.5 }}
-             className="h-full flex flex-col gap-8 overflow-auto pr-2 pb-8"
+             className="h-full flex flex-col gap-6 overflow-auto pr-2 pb-8"
            >
-               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <AdminMetric label={t('metric_accuracy')} value={`${(data?.executive?.accuracy || 0).toFixed(2)}%`} target="100%" color="text-indigo-500" />
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <AdminMetric label={t('metric_accuracy')} value={`${(data?.executive?.accuracy || 0).toFixed(2)}%`} target="100%" color="text-emerald-500" />
                   <AdminMetric label={t('metric_damage')} value={`${(data?.executive?.damageRate || 0).toFixed(2)}%`} target="0.00%" color="text-rose-500" />
                   <AdminMetric label={t('metric_space')} value={`${(data?.executive?.spaceEfficiency || 0).toFixed(1)}%`} target="100%" color="text-amber-500" />
-                  <AdminMetric label={t('metric_fulfillment')} value={`${(data?.executive?.otif || 0).toFixed(1)}%`} target="100%" color="text-emerald-500" />
+                  <AdminMetric label={t('metric_fulfillment')} value={`${(data?.executive?.otif || 0).toFixed(1)}%`} target="100%" color="text-cyan-500" />
                </div>
                
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                   <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg">
-                      <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                   <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg">
+                      <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-4 flex items-center gap-2">
                          <span className="w-1.5 h-4 bg-[#4cd7f6] rounded-full"></span>
                          {t('chart_flow_analysis')}
                        </h3>
@@ -659,21 +751,21 @@ export default function Dashboard() {
                      </div>
                   </div>
                   
-                   <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg">
-                      <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
-                         <span className="w-1.5 h-4 bg-[#a78bfa] rounded-full"></span>
+                   <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg">
+                      <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-4 flex items-center gap-2">
+                         <span className="w-1.5 h-4 bg-[#facc15] rounded-full"></span>
                          {t('chart_performance_radar')}
                        </h3>
                       <div className="h-64 w-full">
                          <ResponsiveContainer width="100%" height="100%">
                             <RadarChart data={data?.executive?.radarData || []}>
                                <PolarGrid stroke="#30353d" />
-                               <PolarAngleAxis dataKey="metric" stroke="#64748b" fontSize={11} tick={{ fill: '#d1c6ab', fontWeight: 600 }} />
+                               <PolarAngleAxis dataKey="metric" stroke="#64748b" fontSize={11} tick={{ fill: '#d1c6ab', fontWeight: 600, fontFamily: 'monospace' }} />
                                <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#64748b" fontSize={9} tick={false} />
-                               <Radar name="Actual" dataKey="actual" stroke="#818cf8" fill="#818cf8" fillOpacity={0.6} animationDuration={1000} />
-                               <Radar name="Target" dataKey="target" stroke="#57ec7f" fill="#57ec7f" fillOpacity={0.2} animationDuration={1000} />
-                               <Tooltip contentStyle={{ background: '#171c23', border: '1px solid #30353d', borderRadius: '12px', color: '#dee2ec', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)' }} itemStyle={{ color: '#dee2ec' }} />
-                               <Legend wrapperStyle={{ color: '#dee2ec', fontSize: '11px' }} />
+                               <Radar name="Actual" dataKey="actual" stroke="#4cd7f6" fill="#4cd7f6" fillOpacity={0.35} animationDuration={1000} />
+                               <Radar name="Target" dataKey="target" stroke="#facc15" fill="#facc15" fillOpacity={0.12} strokeDasharray="4 4" animationDuration={1000} />
+                               <Tooltip contentStyle={TACTICAL_TOOLTIP_STYLE} itemStyle={{ color: '#dee2ec', fontFamily: 'monospace' }} />
+                               <Legend wrapperStyle={{ color: '#dee2ec', fontSize: '11px', fontFamily: 'monospace' }} />
                             </RadarChart>
                          </ResponsiveContainer>
                       </div>
@@ -681,8 +773,8 @@ export default function Dashboard() {
                </div>
 
                {/* Year Over Year Comparison */}
-               <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+               <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4">
                       <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider flex items-center gap-2">
                          <span className="w-1.5 h-4 bg-[#facc15] rounded-full"></span>
                          {t('chart_yoy')}
@@ -719,8 +811,8 @@ export default function Dashboard() {
                </div>
 
                {/* All-Time Annual Trend */}
-               <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg">
-                  <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-6 flex items-center gap-2">
+               <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg">
+                  <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider mb-5 flex items-center gap-2">
                      <span className="w-1.5 h-4 bg-[#57ec7f] rounded-full"></span>
                      {t('chart_growth_trend')}
                    </h3>
@@ -757,8 +849,8 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg overflow-hidden">
-                   <div className="flex justify-between items-center mb-6">
+                <div className="rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg overflow-hidden">
+                   <div className="flex justify-between items-center mb-5">
                         <h3 className="text-xs font-mono font-bold text-[#dee2ec] uppercase tracking-wider flex items-center gap-2">
                           <span className="w-1.5 h-4 bg-[#facc15] rounded-full"></span>
                           Forecast Radar (AI Prediction)
@@ -836,8 +928,8 @@ export default function Dashboard() {
                                    ))
                                ) : (
                                    <tr>
-                                       <td colSpan={6} className="text-center py-12 text-[#8a92a6] flex flex-col items-center">
-                                           <CheckCircle className="w-10 h-10 mb-2 text-[#57ec7f]" />
+                                       <td colSpan={6} className="text-center py-12 text-[#8a92a6]">
+                                           <CheckCircle className="w-10 h-10 mb-2 text-[#57ec7f] mx-auto" />
                                            <p className="font-mono text-xs text-[#dee2ec]">All systems normal. No stockout risks detected.</p>
                                        </td>
                                    </tr>
@@ -853,54 +945,54 @@ export default function Dashboard() {
    );
  }
  
-function KpiCard({ label, value, icon: Icon, color, bg, border, href, title }: any) {
-    const palette = color.includes('rose') ? {
-      shell: 'border-[#30353d] bg-[#171c23] hover:border-[#ffb4ab]/60',
-      icon: 'bg-[#93000a] text-[#ffdad6]',
-      rail: 'bg-[#ffb4ab]',
+function KpiCard({ label, value, icon: Icon, color, border, href, title, subtitle }: any) {
+    const accent = color === 'rose' ? {
+      rail: 'bg-[#ff5449]',
+      icon: 'text-[#ffb4ab] bg-[#93000a]/30',
       value: 'text-[#ffb4ab]',
-    } : color.includes('amber') ? {
-      shell: 'border-[#30353d] bg-[#171c23] hover:border-[#facc15]/60',
-      icon: 'bg-[#facc15]/20 text-[#facc15]',
+      border: 'hover:border-[#ff5449]/50',
+    } : color === 'gold' ? {
       rail: 'bg-[#facc15]',
+      icon: 'text-[#facc15] bg-[#facc15]/15',
       value: 'text-[#facc15]',
-    } : color.includes('green') || color.includes('emerald') ? {
-      shell: 'border-[#30353d] bg-[#171c23] hover:border-[#57ec7f]/60',
-      icon: 'bg-[#57ec7f]/20 text-[#57ec7f]',
+      border: 'hover:border-[#facc15]/50',
+    } : color === 'emerald' ? {
       rail: 'bg-[#57ec7f]',
+      icon: 'text-[#57ec7f] bg-[#57ec7f]/15',
       value: 'text-[#57ec7f]',
-    } : color.includes('violet') || color.includes('cyan') ? {
-      shell: 'border-[#30353d] bg-[#171c23] hover:border-[#4cd7f6]/60',
-      icon: 'bg-[#4cd7f6]/20 text-[#4cd7f6]',
-      rail: 'bg-[#4cd7f6]',
-      value: 'text-[#4cd7f6]',
-    } : color.includes('blue') || color.includes('indigo') ? {
-      shell: 'border-[#30353d] bg-[#171c23] hover:border-[#facc15]/60',
-      icon: 'bg-[#facc15]/20 text-[#facc15]',
-      rail: 'bg-[#facc15]',
-      value: 'text-[#dee2ec]',
+      border: 'hover:border-[#57ec7f]/50',
     } : {
-      shell: 'border-[#30353d] bg-[#171c23] hover:border-[#facc15]/60',
-      icon: 'bg-[#252a32] text-[#dee2ec]',
-      rail: 'bg-[#30353d]',
-      value: 'text-[#dee2ec]',
+      rail: 'bg-[#4cd7f6]',
+      icon: 'text-[#4cd7f6] bg-[#4cd7f6]/15',
+      value: 'text-[#4cd7f6]',
+      border: 'hover:border-[#4cd7f6]/50',
     };
 
     const Content = (
-      <div title={title} className={cn("relative h-40 overflow-hidden rounded-xl border p-5 shadow-lg transition-all duration-300 cursor-pointer group hover:-translate-y-0.5 hover:shadow-xl", palette.shell, border)}>
-        <div className={cn("absolute left-0 top-0 h-full w-1", palette.rail)} />
+      <div 
+        title={title} 
+        className={cn(
+          "relative h-28 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-3 shadow-md transition-all duration-200 cursor-pointer group flex flex-col justify-between hover:-translate-y-0.5",
+          accent.border,
+          border
+        )}
+      >
+        <div className={cn("absolute left-0 top-0 h-full w-1", accent.rail)} />
 
-        <div className="relative z-10 flex items-start justify-between">
-           <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg shadow", palette.icon)}>
-             <Icon className="h-5 w-5" />
+        <div className="flex items-center justify-between gap-1.5 pl-1.5">
+           <p className="line-clamp-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#d1c6ab]">{label}</p>
+           <div className={cn("p-1 rounded-md shrink-0", accent.icon)}>
+             <Icon className="w-3.5 h-3.5" />
            </div>
         </div>
 
-        <div className="relative z-10 mt-3">
-           <p className="mb-1.5 line-clamp-2 text-[10px] font-mono font-bold uppercase tracking-[0.16em] text-[#d1c6ab]">{label}</p>
-           <p className={cn("text-[2.2rem] leading-none font-bold font-mono tabular-nums tracking-tight", palette.value)}>
-              {typeof value === 'number' ? <CountUp end={value} duration={1.8} separator="," /> : value}
+        <div className="pl-1.5">
+           <p className={cn("text-2xl leading-none font-bold font-mono tabular-nums tracking-tight", accent.value)}>
+              {typeof value === 'number' ? <CountUp end={value} duration={1.5} separator="," /> : value}
            </p>
+           {subtitle && (
+              <p className="text-[10px] font-mono text-[#8a92a6] truncate mt-1">{subtitle}</p>
+           )}
         </div>
       </div>
     );
@@ -911,38 +1003,35 @@ function KpiCard({ label, value, icon: Icon, color, bg, border, href, title }: a
     return Content;
 }
  
- function AdminMetric({ label, value, target, color }: any) {
-    const accent = color.includes('indigo') ? {
-      shell: 'border-blue-400/30 bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 shadow-blue-900/18',
-      rail: 'bg-cyan-300',
-      glow: 'bg-cyan-300/16',
-    } : color.includes('rose') ? {
-      shell: 'border-rose-300/30 bg-gradient-to-br from-rose-700 via-rose-600 to-pink-500 shadow-rose-900/18',
-      rail: 'bg-pink-200',
-      glow: 'bg-pink-200/16',
-    } : color.includes('amber') ? {
-      shell: 'border-amber-300/30 bg-gradient-to-br from-amber-700 via-orange-600 to-amber-500 shadow-amber-900/18',
-      rail: 'bg-amber-100',
-      glow: 'bg-amber-100/16',
-    } : color.includes('emerald') ? {
-      shell: 'border-emerald-300/30 bg-gradient-to-br from-emerald-800 via-teal-700 to-emerald-600 shadow-emerald-900/18',
-      rail: 'bg-teal-100',
-      glow: 'bg-teal-100/16',
-    } : {
-      shell: 'border-slate-300/30 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 shadow-slate-900/18',
-      rail: 'bg-slate-200',
-      glow: 'bg-white/10',
-    };
+function AdminMetric({ label, value, target, color }: { label: string; value: string; target: string; color: string }) {
+    const accentColor = color.includes('emerald') || color.includes('green')
+      ? '#57ec7f'
+      : color.includes('cyan') || color.includes('indigo') || color.includes('blue')
+        ? '#4cd7f6'
+        : color.includes('amber') || color.includes('gold')
+          ? '#facc15'
+          : '#ff5449';
+
+    const numericVal = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+    const numericTarget = parseFloat(target.replace(/[^0-9.]/g, '')) || 100;
+    const progressPct = Math.min(100, Math.max(0, (numericVal / (numericTarget || 100)) * 100));
 
     return (
-      <div className={cn("relative flex h-36 flex-col overflow-hidden rounded-2xl border p-5 text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl", accent.shell)}>
-         <div className={cn("absolute inset-x-0 top-0 h-1", accent.rail)} />
-         <div className={cn("absolute -right-10 -top-10 h-28 w-28 rounded-full", accent.glow)} />
-         <div className="relative z-10">
-            <p className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-white/78">{label}</p>
-            <p className="mb-1 text-3xl font-black tracking-tight text-white drop-shadow-sm">{value}</p>
-            <p className="text-[10px] font-semibold text-white/72">Target: <span className="font-black text-white">{target}</span></p>
+      <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-5 shadow-lg group hover:border-[#30353d]/80 transition-all">
+         <div className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: accentColor }} />
+         <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#d1c6ab]">{label}</p>
+            <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#090f15] border border-[#30353d] text-[#8a92a6]">
+              Target: <span className="text-[#dee2ec] font-bold">{target}</span>
+            </span>
+         </div>
+         <p className="my-1 text-3xl font-mono font-black tabular-nums tracking-tight text-[#dee2ec]">{value}</p>
+         <div className="mt-2 w-full bg-[#090f15] h-1.5 rounded-full overflow-hidden">
+            <div 
+              className="h-full rounded-full transition-all duration-700" 
+              style={{ width: `${progressPct}%`, backgroundColor: accentColor }} 
+            />
          </div>
       </div>
     );
-  }
+}

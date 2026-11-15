@@ -26,7 +26,13 @@ export function useDashboardCustomization() {
     // Load config from localStorage
     const saved = localStorage.getItem('dashboard_config');
     if (saved) {
-      setVisibleWidgets(JSON.parse(saved));
+      try {
+        setVisibleWidgets(JSON.parse(saved));
+      } catch {
+        const defaults: Record<string, boolean> = {};
+        widgets.forEach(w => defaults[w.id] = w.defaultVisible);
+        setVisibleWidgets(defaults);
+      }
     } else {
       // Default
       const defaults: Record<string, boolean> = {};
@@ -58,10 +64,10 @@ export function DashboardCustomizer({
     <div className="relative z-50">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2 text-sm font-medium"
+        className="bg-[#1b2027] hover:bg-[#252a32] border border-[#30353d] text-[#d1c6ab] hover:text-[#facc15] rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition-all shadow-sm flex items-center gap-2"
       >
-        <LayoutTemplate className="w-4 h-4" />
-        Customize
+        <LayoutTemplate className="w-3.5 h-3.5 text-[#facc15]" />
+        <span>Customize</span>
       </button>
 
       <AnimatePresence>
@@ -75,24 +81,24 @@ export function DashboardCustomizer({
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-64 bg-[#171c23] border border-[#30353d] rounded-xl shadow-2xl z-50 overflow-hidden"
             >
-              <div className="p-4 border-b border-slate-100 bg-slate-50">
-                <h3 className="font-bold text-slate-800 text-sm">Dashboard Widgets</h3>
-                <p className="text-xs text-slate-500">Show or hide sections</p>
+              <div className="p-3 border-b border-[#30353d] bg-[#090f15]">
+                <h3 className="font-bold text-[#dee2ec] text-xs font-mono uppercase tracking-wider">Dashboard Widgets</h3>
+                <p className="text-[11px] text-[#8a92a6] font-mono">Show or hide sections</p>
               </div>
-              <div className="p-2">
+              <div className="p-2 space-y-1">
                 {widgets.map(w => (
                   <button
                     key={w.id}
                     onClick={() => toggleWidget(w.id)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors"
+                    className="w-full flex items-center justify-between p-2.5 hover:bg-[#252a32] rounded-lg transition-colors text-left"
                   >
-                    <span className="text-sm text-slate-700">{w.label}</span>
+                    <span className="text-xs text-[#dee2ec] font-mono">{w.label}</span>
                     {visibleWidgets[w.id] ? (
-                      <Eye className="w-4 h-4 text-indigo-500" />
+                      <Eye className="w-3.5 h-3.5 text-[#facc15]" />
                     ) : (
-                      <EyeOff className="w-4 h-4 text-slate-300" />
+                      <EyeOff className="w-3.5 h-3.5 text-[#8a92a6]/40" />
                     )}
                   </button>
                 ))}

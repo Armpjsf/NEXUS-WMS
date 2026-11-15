@@ -18,24 +18,24 @@ const quickActions = [
     labelEn: 'Outbound',
     href: '/ops/outbound',
     icon: PackageMinus,
-    badgeColor: 'text-[#ffb4ab] bg-[#93000a]/30 border-[#ffb4ab]/30',
-    hoverBorder: 'hover:border-[#ffb4ab]/60'
+    badgeColor: 'text-[#4cd7f6] bg-[#4cd7f6]/10 border-[#4cd7f6]/30',
+    hoverBorder: 'hover:border-[#4cd7f6]/60'
   },
   {
     label: 'แจ้งเสีย',
     labelEn: 'Damage',
     href: '/ops/damage',
     icon: AlertTriangle,
-    badgeColor: 'text-[#facc15] bg-[#facc15]/10 border-[#facc15]/30',
-    hoverBorder: 'hover:border-[#facc15]/60'
+    badgeColor: 'text-[#ffb4ab] bg-[#93000a]/30 border-[#ffb4ab]/30',
+    hoverBorder: 'hover:border-[#ffb4ab]/60'
   },
   {
     label: 'สแกน (F2)',
     labelEn: 'Scan',
     href: '/barcode/scanner',
     icon: QrCode,
-    badgeColor: 'text-[#4cd7f6] bg-[#4cd7f6]/10 border-[#4cd7f6]/30',
-    hoverBorder: 'hover:border-[#4cd7f6]/60'
+    badgeColor: 'text-[#facc15] bg-[#facc15]/10 border-[#facc15]/30',
+    hoverBorder: 'hover:border-[#facc15]/60'
   }
 ];
 

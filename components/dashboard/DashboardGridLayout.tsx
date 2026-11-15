@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   DndContext, 
@@ -131,28 +130,28 @@ export function DashboardGridLayout({ widgets, defaultLayout, storageKey = 'dash
     <div className="space-y-4">
        {/* Toolbar */}
        <div className="flex justify-end gap-2 mb-4 items-center">
-           {syncStatus === 'saving' && <span className="text-xs text-slate-400 animate-pulse">Saving to cloud...</span>}
-           {syncStatus === 'saved' && <span className="text-xs text-emerald-500 font-bold">Cloud Synced</span>}
-           {syncStatus === 'error' && <span className="text-xs text-red-500 font-bold">Sync Failed</span>}
+           {syncStatus === 'saving' && <span className="text-xs text-[#8a92a6] font-mono animate-pulse">Saving to cloud...</span>}
+           {syncStatus === 'saved' && <span className="text-xs text-[#57ec7f] font-mono font-bold">Cloud Synced</span>}
+           {syncStatus === 'error' && <span className="text-xs text-[#ff5449] font-mono font-bold">Sync Failed</span>}
            
            {isEditing ? (
                <>
-                 <button onClick={resetLayout} className="text-xs text-slate-400 hover:text-rose-500 font-bold px-3 py-2">
+                 <button onClick={resetLayout} className="text-xs font-mono text-[#8a92a6] hover:text-[#ffb4ab] font-bold px-3 py-1.5 transition-colors">
                     Reset
                  </button>
                  <button 
                     onClick={saveLayout}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-200"
+                    className="flex items-center gap-2 bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all shadow-md"
                  >
-                    <Save className="w-4 h-4" /> Save Layout
+                    <Save className="w-3.5 h-3.5" /> Save Layout
                  </button>
                </>
            ) : (
                <button 
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                  className="flex items-center gap-2 bg-[#171c23] hover:bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15] border border-[#30353d] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all"
                >
-                  <Settings2 className="w-4 h-4" /> Customize Layout
+                  <Settings2 className="w-3.5 h-3.5 text-[#facc15]" /> Customize Layout
                </button>
            )}
        </div>
