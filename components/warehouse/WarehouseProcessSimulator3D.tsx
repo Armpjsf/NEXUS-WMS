@@ -873,7 +873,7 @@ function createForkliftHudSprite(id: string, taskText: string, battery: number, 
 }
 
 // Build High-Detail Counterbalance Forklift with Overhead Guard, Beacon, Wheels, and Operator
-function createSmartForklift(
+export function createSmartForklift(
   id: string,
   name: string,
   role: string,
@@ -924,7 +924,49 @@ function createSmartForklift(
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(wx, wy, wz);
     wheel.castShadow = true;
+    wheel.userData.isWheel = true;
     root.add(wheel);
+  });
+
+  // Driver compartment: seat, backrest, steps, steering column and wheel.
+  const seatMat = new THREE.MeshStandardMaterial({ color: 0x24282c, roughness: 0.95 });
+  const addPart = (w: number, h: number, d: number, x: number, y: number, z: number, mat: THREE.Material) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    mesh.position.set(x, y, z); mesh.castShadow = true; root.add(mesh); return mesh;
+  };
+  addPart(0.58, 0.12, 0.55, 0, 1.18, -0.22, seatMat);
+  addPart(0.58, 0.52, 0.11, 0, 1.43, -0.46, seatMat);
+  [-0.78, 0.78].forEach(x => addPart(0.24, 0.08, 0.5, x, 0.43, -0.15, darkSteelMat));
+  const steering = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.025, 6, 16), darkSteelMat);
+  steering.position.set(0, 1.55, 0.35); steering.rotation.x = -0.6; root.add(steering);
+  addPart(0.045, 0.38, 0.045, 0, 1.3, 0.4, darkSteelMat);
+  [-0.68, 0.68].forEach(x => {
+    const lamp = addPart(0.17, 0.1, 0.05, x, 0.94, 0.92,
+      new THREE.MeshStandardMaterial({ color: 0xfff4d6, emissive: 0xffe3aa, emissiveIntensity: 0.3 }));
+    lamp.castShadow = false;
+  });
+  root.children.filter(c => c.userData.isWheel).forEach(wheel => {
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.29, 12), darkSteelMat);
+    wheel.add(hub);
+    // an off-centre lug makes wheel rotation perceptible
+    const lug = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.31, 0.045), bodyMat);
+    lug.position.x = 0.09; wheel.add(lug);
+  });
+
+  // Seated operator, with bent legs and hands resting by the controls.
+  const operatorSkin = new THREE.MeshStandardMaterial({ color: 0xc99773, roughness: 0.85 });
+  const operatorVest = new THREE.MeshStandardMaterial({ color: 0xe7a321, roughness: 0.85 });
+  addPart(0.4, 0.43, 0.25, 0, 1.49, -0.16, operatorVest);
+  const operatorHead = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), operatorSkin);
+  operatorHead.position.set(0, 1.87, -0.13); root.add(operatorHead);
+  const hardhat = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), bodyMat);
+  hardhat.position.set(0, 1.93, -0.13); root.add(hardhat);
+  [-0.14, 0.14].forEach(x => {
+    addPart(0.14, 0.13, 0.46, x, 1.15, 0.12, seatMat);
+    addPart(0.13, 0.4, 0.14, x, 0.91, 0.29, seatMat);
+    addPart(0.11, 0.11, 0.36, x * 1.7, 1.48, 0.15, operatorVest);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), operatorSkin);
+    hand.position.set(x * 1.7, 1.49, 0.35); root.add(hand);
   });
 
   // Overhead Safety Guard Cage
@@ -969,11 +1011,20 @@ function createSmartForklift(
     root.add(rail);
   });
 
+  const pistonMat = new THREE.MeshStandardMaterial({ color: 0xcbd5df, metalness: 0.85, roughness: 0.2 });
+  [-0.25, 0.25].forEach(x => {
+    const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.5, 8), pistonMat);
+    piston.position.set(x, 1.5, 0.98); root.add(piston);
+  });
   // Moving Fork Carriage + Dual Steel Tines + Optional Pallet Cargo
   const carriage = new THREE.Group();
   const backrest = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.55, 0.08), darkSteelMat);
   backrest.position.set(0, 0.55, 1.06);
   carriage.add(backrest);
+  for (let n = -2; n <= 2; n++) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.65, 0.04), darkSteelMat);
+    bar.position.set(n * 0.21, 0.98, 1.06); carriage.add(bar);
+  }
 
   [-0.32, 0.32].forEach((fx) => {
     const tine = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 1.15), darkSteelMat);
@@ -990,10 +1041,13 @@ function createSmartForklift(
   cargoMesh.add(pal);
   const box = new THREE.Mesh(
     new THREE.BoxGeometry(1.0, 0.72, 1.0),
-    new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 })
+    new THREE.MeshStandardMaterial({ color: 0xb99261, roughness: 0.9 })
   );
   box.position.set(0, 0.76, 1.62);
   cargoMesh.add(box);
+  const tape = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.725, 1.005),
+    new THREE.MeshStandardMaterial({ color: 0xc9b080, roughness: 0.9 }));
+  tape.position.copy(box.position); cargoMesh.add(tape);
   carriage.add(cargoMesh);
 
   root.add(carriage);
@@ -1065,13 +1119,13 @@ function buildRouteRibbonSegments(
   }
 }
 
-function createDetailedWorker(
+export function createDetailedWorker(
   role: 'INBOUND' | 'PICKER' | 'LOADER' | 'QC' | 'CONTROL' | 'PACKER' | 'SCALE' | 'DISPATCH',
   vestColorHex: number = 0x10b981
 ): ArticulatedWorker {
   const root = new THREE.Group();
 
-  const skinMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.5 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xc99773, roughness: 0.8 });
   const vestMat = new THREE.MeshStandardMaterial({ color: vestColorHex, roughness: 0.35 });
   const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
   const shoeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
@@ -1079,15 +1133,24 @@ function createDetailedWorker(
   const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
 
   // 1. Torso
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.65, 0.32), vestMat);
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.23, 0.22, 4, 10), vestMat);
   torso.position.set(0, 1.05, 0);
   torso.castShadow = true;
   root.add(torso);
 
   // Vest stripes
   const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.53, 0.08, 0.33), stripeMat);
-  stripe1.position.set(0, 1.1, 0);
-  root.add(stripe1);
+  stripe1.position.set(0, 0.05, 0);
+  torso.add(stripe1);
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.12, 8), skinMat);
+  neck.position.y = 1.4;
+  root.add(neck);
+  [-0.14, 0.14].forEach(x => {
+    const reflective = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.44, 0.018), stripeMat);
+    reflective.position.set(x, 0.03, 0.225);
+    torso.add(reflective);
+  });
 
   // 2. Head & Helmet
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), skinMat);
@@ -1109,14 +1172,21 @@ function createDetailedWorker(
     const legPivot = new THREE.Group();
     legPivot.position.set(xOffset, 0.72, 0);
 
-    const legMesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.68, 0.2), pantsMat);
-    legMesh.position.set(0, -0.34, 0);
-    legMesh.castShadow = true;
-    legPivot.add(legMesh);
-
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.16, 0.28), shoeMat);
-    boot.position.set(0, -0.62, 0.04);
-    legPivot.add(boot);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, 0.16, 3, 8), pantsMat);
+    thigh.position.y = -0.17;
+    thigh.castShadow = true;
+    legPivot.add(thigh);
+    const knee = new THREE.Group();
+    knee.position.y = -0.34;
+    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.17, 3, 8), pantsMat);
+    shin.position.y = -0.15;
+    knee.add(shin);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.14, 0.29), shoeMat);
+    boot.position.set(0, -0.28, 0.055);
+    boot.castShadow = true;
+    knee.add(boot);
+    legPivot.add(knee);
+    legPivot.userData.knee = knee;
 
     root.add(legPivot);
     return legPivot;
@@ -1130,14 +1200,20 @@ function createDetailedWorker(
     const armPivot = new THREE.Group();
     armPivot.position.set(xOffset, 1.32, 0);
 
-    const sleeve = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.38, 0.16), vestMat);
-    sleeve.position.set(0, -0.19, 0);
+    const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.13, 3, 8), vestMat);
+    sleeve.position.y = -0.13;
     sleeve.castShadow = true;
     armPivot.add(sleeve);
-
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), skinMat);
-    hand.position.set(0, -0.42, 0);
-    armPivot.add(hand);
+    const elbow = new THREE.Group();
+    elbow.position.y = -0.26;
+    elbow.rotation.x = -0.16;
+    const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.12, 3, 8), skinMat);
+    forearm.position.y = -0.11;
+    elbow.add(forearm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.065, 8, 8), skinMat);
+    hand.position.y = -0.23;
+    elbow.add(hand);
+    armPivot.add(elbow);
 
     root.add(armPivot);
     return armPivot;
@@ -1191,51 +1267,61 @@ function createDetailedWorker(
 }
 
 // Procedural Walk & Smooth Turn Engine
+// Motion uses seconds, so 30/60/120 Hz displays cover the same distance.
 function stepWorkerTowards(
-  worker: ArticulatedWorker,
-  targetX: number,
-  targetZ: number,
-  speed: number = 0.08,
-  idleFacingY?: number
+  worker: ArticulatedWorker, targetX: number, targetZ: number,
+  speed: number = 0.08, idleFacingY?: number
 ): boolean {
+  const dt = Number(worker.root.userData.motionDelta) || 1 / 60;
   const dx = targetX - worker.root.position.x;
   const dz = targetZ - worker.root.position.z;
   const dist = Math.hypot(dx, dz);
-
-  if (dist > 0.14) {
-    worker.root.position.x += (dx / dist) * Math.min(speed, dist);
-    worker.root.position.z += (dz / dist) * Math.min(speed, dist);
-
-    const targetHeading = Math.atan2(dx, dz);
-    let diff = targetHeading - worker.root.rotation.y;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    worker.root.rotation.y += diff * 0.18;
-
-    // Stride locomotion
-    worker.walkPhase += 0.24;
-    const swing = Math.sin(worker.walkPhase) * 0.65;
-    worker.leftLeg.rotation.x = swing;
-    worker.rightLeg.rotation.x = -swing;
-    worker.leftArm.rotation.x = -swing * 0.7;
-    worker.rightArm.rotation.x = swing * 0.7;
-    worker.torso.position.y = 1.05 + Math.abs(Math.sin(worker.walkPhase * 2)) * 0.04;
-    return false;
-  } else {
-    // Smooth idle settle
-    worker.leftLeg.rotation.x *= 0.8;
-    worker.rightLeg.rotation.x *= 0.8;
-    worker.leftArm.rotation.x *= 0.8;
-    worker.rightArm.rotation.x *= 0.8;
-    worker.torso.position.y = THREE.MathUtils.lerp(worker.torso.position.y, 1.05, 0.2);
-    if (idleFacingY !== undefined) {
-      let diff = idleFacingY - worker.root.rotation.y;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      worker.root.rotation.y += diff * 0.15;
-    }
-    return true;
+  const heading = dist > 0.03 ? Math.atan2(dx, dz) : idleFacingY;
+  if (heading !== undefined) {
+    const turn = Math.atan2(Math.sin(heading - worker.root.rotation.y), Math.cos(heading - worker.root.rotation.y));
+    worker.root.rotation.y += THREE.MathUtils.clamp(turn, -3.2 * dt, 3.2 * dt);
   }
+  const desired = dist > 0.03 ? Math.min(speed * 18, Math.sqrt(2 * 2.2 * dist)) : 0;
+  const previous = Number(worker.root.userData.walkSpeed) || 0;
+  const velocity = previous + THREE.MathUtils.clamp(desired - previous, -2.2 * dt, 2.2 * dt);
+  worker.root.userData.walkSpeed = velocity;
+  const travel = Math.min(velocity * dt, dist);
+  if (dist > 0.03) {
+    worker.root.position.x += dx / dist * travel;
+    worker.root.position.z += dz / dist * travel;
+  }
+  worker.walkPhase += travel * Math.PI * 2 / 1.1;
+  const amplitude = Math.min(1, velocity / 1.2);
+  const swing = Math.sin(worker.walkPhase) * 0.48 * amplitude;
+  worker.leftLeg.rotation.x = THREE.MathUtils.damp(worker.leftLeg.rotation.x, swing, 16, dt);
+  worker.rightLeg.rotation.x = THREE.MathUtils.damp(worker.rightLeg.rotation.x, -swing, 16, dt);
+  worker.leftArm.rotation.x = THREE.MathUtils.damp(worker.leftArm.rotation.x, -swing * 0.65, 12, dt);
+  worker.rightArm.rotation.x = THREE.MathUtils.damp(worker.rightArm.rotation.x, swing * 0.65, 12, dt);
+  [worker.leftLeg, worker.rightLeg].forEach((leg, i) => {
+    const knee = leg.userData.knee as THREE.Group | undefined;
+    if (knee) knee.rotation.x = -Math.max(0, Math.sin(worker.walkPhase + i * Math.PI)) * 0.6 * amplitude;
+  });
+  worker.torso.position.y = 1.05 + Math.abs(Math.sin(worker.walkPhase)) * 0.025 * amplitude;
+  return dist <= 0.14;
+}
+
+/** Bounded acceleration, steering and braking for a visual forklift actor. */
+function driveForklift(root: THREE.Group, x: number, z: number, dt: number) {
+  const dx = x - root.position.x, dz = z - root.position.z;
+  const dist = Math.hypot(dx, dz);
+  const turn = dist > 0.06 ? Math.atan2(Math.sin(Math.atan2(dx, dz) - root.rotation.y), Math.cos(Math.atan2(dx, dz) - root.rotation.y)) : 0;
+  root.rotation.y += THREE.MathUtils.clamp(turn, -1.25 * dt, 1.25 * dt);
+  const desired = dist > 0.06 ? Math.min(1.6, Math.sqrt(2 * dist)) * Math.max(0, Math.cos(turn)) : 0;
+  const velocity = (Number(root.userData.driveSpeed) || 0) + THREE.MathUtils.clamp(desired - (Number(root.userData.driveSpeed) || 0), -0.85 * dt, 0.85 * dt);
+  root.userData.driveSpeed = velocity;
+  const travel = Math.min(velocity * dt, dist);
+  if (dist > 0.06) {
+    root.position.x += Math.sin(root.rotation.y) * travel;
+    root.position.z += Math.cos(root.rotation.y) * travel;
+  }
+  root.children.forEach(child => {
+    if (child.userData.isWheel) child.rotateY(travel / 0.32);
+  });
 }
 
 export default function WarehouseProcessSimulator3D({
@@ -2340,8 +2426,8 @@ export default function WarehouseProcessSimulator3D({
     });
     const beamMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.5, roughness: 0.4 });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.85 });
-    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.55 });
-    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.55 });
+    const stockOkMat = new THREE.MeshStandardMaterial({ color: 0xb99261, roughness: 0.92 });
+    const stockLowMat = new THREE.MeshStandardMaterial({ color: 0xc39a63, roughness: 0.92 });
     const emptySlotMat = new THREE.MeshStandardMaterial({
       color: isLight ? 0x94a3b8 : 0x475569,
       roughness: 0.5,
@@ -2415,6 +2501,19 @@ export default function WarehouseProcessSimulator3D({
             post.castShadow = true;
             rackGroup.add(post);
           });
+          [-depth / 2, depth / 2].forEach(zPos => {
+            const foot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.025, 0.22), steelPostMat);
+            foot.position.set(xPos, 0.025, zPos); rackGroup.add(foot);
+            const guard = new THREE.Mesh(new THREE.BoxGeometry(0.15, Math.min(0.35, layerH), 0.15), beamMat);
+            guard.position.set(xPos, Math.min(0.35, layerH) / 2 + 0.03, zPos);
+            rackGroup.add(guard);
+          });
+          // Real upright frames have diagonal bracing across their depth.
+          const braceHeight = Math.min(1.4, totalRackHeight * 0.7);
+          const diagonal = new THREE.Mesh(new THREE.BoxGeometry(0.035, Math.hypot(braceHeight, depth), 0.035), steelPostMat);
+          diagonal.position.set(xPos, 0.2 + braceHeight / 2, 0);
+          diagonal.rotation.x = Math.atan2(depth, braceHeight);
+          rackGroup.add(diagonal);
           for (let lvl = 1; lvl <= levels; lvl++) {
             const brace = new THREE.Mesh(braceGeo, steelPostMat);
             brace.position.set(xPos, FIRST_BEAM_Y + (lvl - 0.5) * layerH, 0);
@@ -2495,6 +2594,14 @@ export default function WarehouseProcessSimulator3D({
             stockBox.castShadow = true;
             stockBox.receiveShadow = true;
             stockBox.userData = { inspectable: slotInspectInfo };
+            const tape = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.035, boxW * 0.055), boxH + 0.003, boxD + 0.003),
+              woodMat);
+            stockBox.add(tape);
+            const shippingLabel = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(0.28, boxW * 0.3), Math.min(0.16, boxH * 0.45)),
+              new THREE.MeshStandardMaterial({ color: 0xf4f0e6, roughness: 1 }));
+            shippingLabel.position.set(boxW * 0.24, 0, boxD / 2 + 0.005);
+            shippingLabel.userData = { inspectable: slotInspectInfo };
+            stockBox.add(shippingLabel);
             rackGroup.add(stockBox);
             binSlotMeshes.push({ mesh: stockBox, binCode, hasStock: true, isLowStock: isLow, normalMat: mat });
           } else {
@@ -2977,8 +3084,12 @@ export default function WarehouseProcessSimulator3D({
     let animId: number;
     const clock = new THREE.Clock();
 
+    let previousMotionTime = performance.now();
     const animate = () => {
       animId = requestAnimationFrame(animate);
+      const nowMotion = performance.now();
+      const motionDelta = Math.min(0.05, Math.max(0.001, (nowMotion - previousMotionTime) / 1000));
+      previousMotionTime = nowMotion;
       const elapsed = clock.getElapsedTime();
       const stepElapsedSec = (performance.now() - stepEnteredTimeRef.current) / 1000;
 
@@ -3046,6 +3157,10 @@ export default function WarehouseProcessSimulator3D({
           routeRibbonTex.offset.x = -(elapsed * 1.35) % 1;
         }
 
+        [inboundHandler, orderPicker, outboundLoader].forEach(worker => {
+          worker.root.userData.motionDelta = motionDelta;
+        });
+
         // Flash safety beacons on all smart forklifts & run FL-02 Autonomous Patrol
         smartFleet.forEach((fl, fIdx) => {
           const pulse = 0.5 + 0.5 * Math.sin(elapsed * 8 + fIdx * 2);
@@ -3061,20 +3176,10 @@ export default function WarehouseProcessSimulator3D({
           const patrolCycle = elapsed * 0.45;
           const patrolX = Math.sin(patrolCycle) * Math.min(11, floorWidth * 0.26);
           const patrolZ = sts[3].coords[2] - 2.3 + Math.cos(patrolCycle * 2) * 0.9;
-          const dx2 = patrolX - fl2.root.position.x;
-          const dz2 = patrolZ - fl2.root.position.z;
-          fl2.root.position.x = patrolX;
-          fl2.root.position.z = patrolZ;
-          if (Math.hypot(dx2, dz2) > 0.001) {
-            const targetHeading = Math.atan2(dx2, dz2);
-            let diff = targetHeading - fl2.root.rotation.y;
-            while (diff < -Math.PI) diff += Math.PI * 2;
-            while (diff > Math.PI) diff -= Math.PI * 2;
-            fl2.root.rotation.y += diff * 0.12;
-          }
+          driveForklift(fl2.root, patrolX, patrolZ, motionDelta);
           // Smooth hydraulic mast scan lift at rack ends
           const scanLift = Math.abs(Math.sin(patrolCycle)) > 0.88 ? 1.15 : 0.18;
-          fl2.carriage.position.y = THREE.MathUtils.lerp(fl2.carriage.position.y, scanLift, 0.08);
+          fl2.carriage.position.y = THREE.MathUtils.damp(fl2.carriage.position.y, Math.abs(Number(fl2.root.userData.driveSpeed) || 0) < 0.15 ? scanLift : 0.18, 2, motionDelta);
         }
 
         // Dynamic Outbound Truck & Dock Traffic Light on Step 10 (Dispatch)
@@ -3199,18 +3304,18 @@ export default function WarehouseProcessSimulator3D({
 
           const targetX = sts[2].coords[0];
           const targetZ = sts[2].coords[2] + 1.8;
-          forkliftGroup.position.x = THREE.MathUtils.lerp(forkliftGroup.position.x, targetX, 0.05);
-          forkliftGroup.position.z = THREE.MathUtils.lerp(forkliftGroup.position.z, targetZ, 0.05);
+          driveForklift(forkliftGroup, targetX, targetZ, motionDelta);
 
           const distToRack = Math.hypot(forkliftGroup.position.x - targetX, forkliftGroup.position.z - targetZ);
-          const targetLift = distToRack < 1.5 ? Math.max(0.4, sts[2].coords[1] - 0.3) : 0.25;
-          forkliftCarriage.position.y = THREE.MathUtils.lerp(forkliftCarriage.position.y, targetLift, 0.06);
+          const targetLift = distToRack < 0.3 && Number(forkliftGroup.userData.driveSpeed || 0) < 0.15 ? Math.max(0.4, sts[2].coords[1] - 0.3) : 0.25;
+          forkliftCarriage.position.y = THREE.MathUtils.damp(forkliftCarriage.position.y, targetLift, 1.8, motionDelta);
 
           inboundPalletGroup.visible = true;
+          inboundPalletGroup.rotation.y = forkliftGroup.rotation.y;
           inboundPalletGroup.position.set(
-            forkliftGroup.position.x,
+            forkliftGroup.position.x + Math.sin(forkliftGroup.rotation.y) * 1.4,
             0.2 + forkliftCarriage.position.y,
-            forkliftGroup.position.z - 1.4
+            forkliftGroup.position.z + Math.cos(forkliftGroup.rotation.y) * 1.4
           );
         } else {
           // Steps 4-10: Inbound handler stands at Dock 1, Forklift parked cleanly near QC
@@ -3221,18 +3326,10 @@ export default function WarehouseProcessSimulator3D({
             inboundHandler.root.position.z + 0.85
           );
 
+          inboundPalletGroup.rotation.y = 0;
           inboundPalletGroup.position.set(sts[2].coords[0], sts[2].coords[1], sts[2].coords[2] - 1.2);
-          forkliftCarriage.position.y = THREE.MathUtils.lerp(forkliftCarriage.position.y, 0, 0.06);
-          forkliftGroup.position.x = THREE.MathUtils.lerp(
-            forkliftGroup.position.x,
-            sts[1].coords[0] + 3.8,
-            0.04
-          );
-          forkliftGroup.position.z = THREE.MathUtils.lerp(
-            forkliftGroup.position.z,
-            sts[1].coords[2],
-            0.04
-          );
+          forkliftCarriage.position.y = THREE.MathUtils.damp(forkliftCarriage.position.y, 0, 1.8, motionDelta);
+          driveForklift(forkliftGroup, sts[1].coords[0] + 3.8, sts[1].coords[2], motionDelta);
         }
 
         // 2. OUTBOUND ORDER PICKER, PARCEL & LOADER (Steps 1-10)
