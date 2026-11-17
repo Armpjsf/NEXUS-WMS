@@ -1,5 +1,7 @@
 'use client';
 
+import { getProcessBuildingBounds } from '@/lib/warehouseProcessBounds';
+
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import * as THREE from 'three';
 import {
@@ -1656,7 +1658,7 @@ export default function WarehouseProcessSimulator3D({
   const primaryOrderBinTarget = orderBinTargets[0] || getBinWorldCoordinates(selectedOrder.binCode, layout?.racks || []);
 
   // Compute collision-free warehouse boundaries and dynamic station coordinates
-  const { floorWidth, floorLength, warehouseWidth, warehouseLength, conveyorZ, dockZ, stations } = useMemo(() => {
+  const { floorWidth, floorLength, buildingBounds, warehouseWidth, warehouseLength, conveyorZ, dockZ, stations } = useMemo(() => {
     const rawRacks = layout?.racks || [];
     let minX = -14;
     let maxX = 14;
@@ -1685,13 +1687,14 @@ export default function WarehouseProcessSimulator3D({
 
     // Saved building dimensions and rack coordinates share the 2D map's origin.
     // Keep these separate from the larger demonstration apron/camera envelope.
-    const warehouseWidth = Math.max(1, Number(layout?.widthM) || 38);
-    const warehouseLength = Math.max(1, Number(layout?.lengthM) || 44);
-    const safeFrontZ = Math.max(warehouseLength / 2 + 3, maxRackZ + 4.8);
+    const buildingBounds = getProcessBuildingBounds(layout);
+    const warehouseWidth = buildingBounds.width;
+    const warehouseLength = buildingBounds.length;
+    const safeFrontZ = Math.max(buildingBounds.maxZ + 3, maxRackZ + 4.8);
     const safeConveyorZ = safeFrontZ + 4.2;
     const safeDockZ = safeConveyorZ + 6.5;
 
-    const neededWidth = Math.max(layout?.widthM || 38, (maxX - minX) + 18, 44);
+    const neededWidth = Math.max(Math.abs(buildingBounds.minX) * 2 + 8, Math.abs(buildingBounds.maxX) * 2 + 8, (maxX - minX) + 18, 44);
     const maxAbsZ = Math.max(Math.abs(minZ - 5), Math.abs(safeDockZ + 5));
     const neededLength = Math.max(layout?.lengthM || 44, maxAbsZ * 2, 48);
 
@@ -1768,6 +1771,7 @@ export default function WarehouseProcessSimulator3D({
     return {
       floorWidth: neededWidth,
       floorLength: neededLength,
+      buildingBounds,
       warehouseWidth,
       warehouseLength,
       conveyorZ: safeConveyorZ,
@@ -2273,11 +2277,12 @@ export default function WarehouseProcessSimulator3D({
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
+    floor.position.set(buildingBounds.centerX, 0, buildingBounds.centerZ);
     floor.receiveShadow = true;
     scene.add(floor);
 
     // The process apron is an illustration outside the saved warehouse footprint.
-    const apronStart = warehouseLength / 2;
+    const apronStart = buildingBounds.maxZ;
     const apronEnd = dockZ + 7;
     const apronDepth = Math.max(1, apronEnd - apronStart);
     const apron = new THREE.Mesh(new THREE.PlaneGeometry(floorWidth, apronDepth),
@@ -2290,11 +2295,11 @@ export default function WarehouseProcessSimulator3D({
     // Rectangular grid clipped to the actual building, never a larger square.
     const gridPoints: THREE.Vector3[] = [];
     const gridStep = Math.max(1, Math.ceil(Math.max(warehouseWidth, warehouseLength) / 100));
-    for (let x = -warehouseWidth / 2; x <= warehouseWidth / 2; x += gridStep) {
-      gridPoints.push(new THREE.Vector3(x, 0.01, -warehouseLength / 2), new THREE.Vector3(x, 0.01, warehouseLength / 2));
+    for (let x = buildingBounds.minX; x <= buildingBounds.maxX; x += gridStep) {
+      gridPoints.push(new THREE.Vector3(x, 0.01, buildingBounds.minZ), new THREE.Vector3(x, 0.01, buildingBounds.maxZ));
     }
-    for (let z = -warehouseLength / 2; z <= warehouseLength / 2; z += gridStep) {
-      gridPoints.push(new THREE.Vector3(-warehouseWidth / 2, 0.01, z), new THREE.Vector3(warehouseWidth / 2, 0.01, z));
+    for (let z = buildingBounds.minZ; z <= buildingBounds.maxZ; z += gridStep) {
+      gridPoints.push(new THREE.Vector3(buildingBounds.minX, 0.01, z), new THREE.Vector3(buildingBounds.maxX, 0.01, z));
     }
     scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(gridPoints),
       new THREE.LineBasicMaterial({ color: isLight ? 0xc0c9d2 : 0x334155 })));
@@ -2305,7 +2310,7 @@ export default function WarehouseProcessSimulator3D({
     if (apronCtx) {
       apronCtx.fillStyle = isLight ? '#334155' : '#cbd5e1';
       apronCtx.font = 'bold 30px sans-serif'; apronCtx.textAlign = 'center';
-      apronCtx.fillText('????????????????????? ? ????????????????', 512, 60);
+      apronCtx.fillText('พื้นที่จำลองกระบวนการ • นอกขอบเขตผังคลัง', 512, 60);
       const apronLabel = new THREE.Mesh(new THREE.PlaneGeometry(14, 1.3),
         new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(apronCanvas), transparent: true, depthWrite: false }));
       apronLabel.rotation.x = -Math.PI / 2;
@@ -2316,11 +2321,11 @@ export default function WarehouseProcessSimulator3D({
     // Perimeter boundary line
     const borderMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 });
     const borderGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-warehouseWidth / 2, 0.04, -warehouseLength / 2),
-      new THREE.Vector3(warehouseWidth / 2, 0.04, -warehouseLength / 2),
-      new THREE.Vector3(warehouseWidth / 2, 0.04, warehouseLength / 2),
-      new THREE.Vector3(-warehouseWidth / 2, 0.04, warehouseLength / 2),
-      new THREE.Vector3(-warehouseWidth / 2, 0.04, -warehouseLength / 2),
+      new THREE.Vector3(buildingBounds.minX, 0.04, buildingBounds.minZ),
+      new THREE.Vector3(buildingBounds.maxX, 0.04, buildingBounds.minZ),
+      new THREE.Vector3(buildingBounds.maxX, 0.04, buildingBounds.maxZ),
+      new THREE.Vector3(buildingBounds.minX, 0.04, buildingBounds.maxZ),
+      new THREE.Vector3(buildingBounds.minX, 0.04, buildingBounds.minZ),
     ]);
     const perimeterLine = new THREE.Line(borderGeo, borderMat);
     scene.add(perimeterLine);
@@ -2343,19 +2348,19 @@ export default function WarehouseProcessSimulator3D({
 
     // 6. Walls & Dock Doors
     const wallColor = isLight ? 0x94a3b8 : 0x334155;
-    const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.8 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.8, transparent: true, opacity: 0.24, depthWrite: false });
     const backWall = new THREE.Mesh(new THREE.BoxGeometry(warehouseWidth + 0.4, 8, 0.2), wallMat);
-    backWall.position.set(0, 4, -warehouseLength / 2 - 0.1);
+    backWall.position.set(buildingBounds.centerX, 4, buildingBounds.minZ - 0.1);
     backWall.receiveShadow = true;
     scene.add(backWall);
 
     const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 8, warehouseLength), wallMat);
-    leftWall.position.set(-warehouseWidth / 2 - 0.1, 4, 0);
+    leftWall.position.set(buildingBounds.minX - 0.1, 4, buildingBounds.centerZ);
     leftWall.receiveShadow = true;
     scene.add(leftWall);
 
     const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 8, warehouseLength), wallMat);
-    rightWall.position.set(warehouseWidth / 2 + 0.1, 4, 0);
+    rightWall.position.set(buildingBounds.maxX + 0.1, 4, buildingBounds.centerZ);
     rightWall.receiveShadow = true;
     scene.add(rightWall);
 
@@ -3764,7 +3769,7 @@ export default function WarehouseProcessSimulator3D({
       renderer.dispose();
       threeRef.current = null;
     };
-  }, [floorWidth, floorLength, warehouseWidth, warehouseLength, conveyorZ, dockZ, layout, binDataMap, theme]);
+  }, [floorWidth, floorLength, buildingBounds, warehouseWidth, warehouseLength, conveyorZ, dockZ, layout, binDataMap, theme]);
 
   // Quiz submission handler
   const handleAnswerQuiz = (idx: number) => {
