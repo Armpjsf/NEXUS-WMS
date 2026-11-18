@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase, getServiceSupabase } from '@/lib/supabase';
 import { getCurrentOrgId } from '@/lib/orgContext';
-import { checkPlanLimit } from '@/lib/planLimits';
+import { addBranch } from '@/lib/branches';
+import { EntitlementError } from '@/lib/entitlements';
 import { errorMessage } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
@@ -56,45 +57,23 @@ export async function POST(request: Request) {
     }
     const orgId = await getCurrentOrgId();
 
-    // Enforce plan limit for new branch codes.
-    const { data: existing } = await getServiceSupabase()
-      .from('branches').select('id').eq('org_id', orgId).eq('code', code).maybeSingle();
-    if (!existing) {
-      const limitErr = await checkPlanLimit(orgId, 'branches', 'branches');
-      if (limitErr) return NextResponse.json({ error: limitErr }, { status: 403 });
-    }
-
-    const upsertPayload: Record<string, any> = {
-      org_id: orgId,
+    const result = await addBranch(orgId, {
       code,
       name: body.name,
-      color: body.color || 'slate',
-      status: 'ACTIVE',
-      warehouse_name: body.warehouseName || body.name,
-      pickup_address: body.pickupAddress || '',
-    };
+      color: body.color,
+      warehouseName: body.warehouseName,
+      pickupAddress: body.pickupAddress,
+    });
 
-    let { error } = await getServiceSupabase().from('branches').upsert(
-      upsertPayload,
-      { onConflict: 'org_id,code' },
-    );
-
-    if (error && error.message && (error.message.includes('column') || error.message.includes('does not exist'))) {
-      delete upsertPayload.warehouse_name;
-      delete upsertPayload.pickup_address;
-      const retry = await getServiceSupabase().from('branches').upsert(
-        upsertPayload,
-        { onConflict: 'org_id,code' },
-      );
-      error = retry.error;
-    }
-
-    if (error) {
-      console.error('branches POST error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!result.success) {
+      console.error('branches POST error:', result.error);
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof EntitlementError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }

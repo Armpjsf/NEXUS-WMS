@@ -231,13 +231,15 @@ export default function OrdersPage() {
       )
     : tabFiltered;
 
+  const tmsAppBaseUrl = (process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').trim().replace(/\/$/, '');
+
   const getTrackingUrl = (carrierName: string, trackingNo: string, tmsJobId?: string) => {
-    if (tmsJobId) {
-      return `https://nexus-tms-six.vercel.app/track/${encodeURIComponent(tmsJobId)}`;
+    if (tmsJobId && tmsAppBaseUrl) {
+      return `${tmsAppBaseUrl}/track/${encodeURIComponent(tmsJobId)}`;
     }
     if (!carrierName || !trackingNo) return null;
-    if (trackingNo.startsWith('JOB-') || carrierName.includes('บริษัท') || carrierName.includes('OWN_FLEET')) {
-      return `https://nexus-tms-six.vercel.app/track/${encodeURIComponent(trackingNo.trim())}`;
+    if (tmsAppBaseUrl && (trackingNo.startsWith('JOB-') || carrierName.includes('บริษัท') || carrierName.includes('OWN_FLEET'))) {
+      return `${tmsAppBaseUrl}/track/${encodeURIComponent(trackingNo.trim())}`;
     }
     const c = carriers.find(item => item.name.toLowerCase().includes(carrierName.toLowerCase()) || carrierName.toLowerCase().includes(item.name.toLowerCase()));
     if (c?.trackingUrlTemplate) {
@@ -526,15 +528,17 @@ export default function OrdersPage() {
                           >
                             <RefreshCw className={`w-4 h-4 ${syncingId === o.id ? 'animate-spin text-indigo-600' : ''}`} />
                           </button>
-                          <a
-                            href={`https://nexus-tms-six.vercel.app/track/${encodeURIComponent(tmsId)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="เปิดดูแผนที่สดติดตามรถขนส่ง (TMS Live Tracking)"
-                            className="p-2 rounded-xl text-[#8a92a6] hover:text-cyan-600 hover:bg-cyan-500/10 transition-colors"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
+                          {tmsAppBaseUrl && (
+                            <a
+                              href={`${tmsAppBaseUrl}/track/${encodeURIComponent(tmsId)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="เปิดดูแผนที่สดติดตามรถขนส่ง (TMS Live Tracking)"
+                              className="p-2 rounded-xl text-[#8a92a6] hover:text-cyan-600 hover:bg-cyan-500/10 transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
                         </>
                       )}
 
@@ -1136,9 +1140,10 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
     try {
       // Tag the order with the branch currently selected in the URL so shipped
       // orders route to the right branch (in TMS too). Empty = no branch.
+      const defaultBranch = (process.env.NEXT_PUBLIC_DEFAULT_BRANCH_CODE || '').trim();
       const branchCode = typeof window !== 'undefined'
-        ? (new URLSearchParams(window.location.search).get('branchId') || 'URT')
-        : 'URT';
+        ? (new URLSearchParams(window.location.search).get('branchId') || defaultBranch)
+        : defaultBranch;
       const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
 
       const finalDestinations = multiDrop
@@ -1656,9 +1661,9 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#30353d] flex items-center justify-between bg-[#1b2027]">
-          {tmsId ? (
+          {tmsId && (process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL) ? (
             <a
-              href={`https://nexus-tms-six.vercel.app/track/${encodeURIComponent(tmsId)}`}
+              href={`${(process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').replace(/\/$/, '')}/track/${encodeURIComponent(tmsId)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { mapProductRows, mapProductRow } from '@/lib/data/products';
+import { mapProductRows, mapProductRow, createOrUpdateProductWithQuota } from '@/lib/data/products';
 import { getCurrentOrgId } from '@/lib/orgContext';
 import { requireManagement } from '@/lib/apiAuth';
-import { checkPlanLimit } from '@/lib/planLimits';
+import { EntitlementError } from '@/lib/entitlements';
 import { resetBinsBulk } from '@/lib/stockLocations';
-import { upsertProductsForOrg } from '@/lib/data/productUpsert';
 import { fetchAllRows } from '@/lib/data/fetchAll';
 import { getReservedMap } from '@/lib/reservations';
 import { errorMessage } from '@/lib/errors';
@@ -44,15 +43,7 @@ export async function POST(request: Request) {
     const itemSku = sku || name;
     const orgId = await getCurrentOrgId();
 
-    // Enforce plan limit only for genuinely new SKUs (upsert also handles edits).
-    const { data: existing } = await supabase
-      .from('products').select('id').eq('org_id', orgId).eq('sku', itemSku).maybeSingle();
-    if (!existing) {
-      const limitErr = await checkPlanLimit(orgId, 'products', 'products');
-      if (limitErr) return NextResponse.json({ error: limitErr }, { status: 403 });
-    }
-
-    const { data, error } = await upsertProductsForOrg(orgId, [{
+    const { data, error } = await createOrUpdateProductWithQuota(orgId, {
         sku: itemSku,
         name,
         category: category || 'General',
@@ -65,7 +56,7 @@ export async function POST(request: Request) {
         barcode: barcode || null,
         image_url: image_url || image || null,
         updated_at: new Date().toISOString(),
-      }]);
+      });
 
     if (error) {
       console.error('Supabase Add Product Error:', error);
@@ -82,6 +73,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, product: data?.[0] ? mapProductRow(data[0]) : null });
   } catch (error) {
+    if (error instanceof EntitlementError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
     console.error('API POST Product Error:', error);
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }

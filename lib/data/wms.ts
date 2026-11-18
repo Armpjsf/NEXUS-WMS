@@ -310,25 +310,41 @@ export async function saveUserConfig(userEmail: string, key: string, value: any)
   return true;
 }
 
-// ---- Device tokens (FCM push targets) ----
-export async function registerDeviceToken(token: string, platform = 'unknown'): Promise<'registered' | 'updated'> {
+// ---- Device tokens (FCM push targets, scoped by org_id) ----
+export async function registerDeviceToken(
+  token: string,
+  platform = 'unknown',
+  orgId?: string
+): Promise<'registered' | 'updated'> {
+  const targetOrgId = (orgId || '').trim() || await getCurrentOrgId({ allowDefaultInDev: false });
   const { data: existing } = await supabase
     .from('device_tokens')
     .select('token')
+    .eq('org_id', targetOrgId)
     .eq('token', token)
     .maybeSingle();
 
   const now = new Date().toISOString();
   if (existing) {
-    await supabase.from('device_tokens').update({ last_active: now }).eq('token', token);
+    await supabase
+      .from('device_tokens')
+      .update({ last_active: now, platform })
+      .eq('org_id', targetOrgId)
+      .eq('token', token);
     return 'updated';
   }
-  await supabase.from('device_tokens').insert({ token, platform, last_active: now });
+  await supabase
+    .from('device_tokens')
+    .insert({ org_id: targetOrgId, token, platform, last_active: now });
   return 'registered';
 }
 
-export async function getDeviceTokens(): Promise<string[]> {
-  const { data, error } = await supabase.from('device_tokens').select('token');
+export async function getDeviceTokens(orgId?: string): Promise<string[]> {
+  const targetOrgId = (orgId || '').trim() || await getCurrentOrgId({ allowDefaultInDev: false });
+  const { data, error } = await supabase
+    .from('device_tokens')
+    .select('token')
+    .eq('org_id', targetOrgId);
   if (error) {
     console.error('[data/wms] getDeviceTokens error:', error);
     return [];
@@ -336,10 +352,15 @@ export async function getDeviceTokens(): Promise<string[]> {
   return (data || []).map((r: any) => r.token).filter((t: string) => t && t.length > 10);
 }
 
-export async function removeDeviceTokens(tokens: string[]): Promise<number> {
+export async function removeDeviceTokens(tokens: string[], orgId?: string): Promise<number> {
+  const targetOrgId = (orgId || '').trim() || await getCurrentOrgId({ allowDefaultInDev: false });
   const list = tokens.filter(Boolean);
   if (list.length === 0) return 0;
-  const { error } = await supabase.from('device_tokens').delete().in('token', list);
+  const { error } = await supabase
+    .from('device_tokens')
+    .delete()
+    .eq('org_id', targetOrgId)
+    .in('token', list);
   if (error) {
     console.error('[data/wms] removeDeviceTokens error:', error);
     return 0;

@@ -1,15 +1,34 @@
 import { NextResponse } from 'next/server';
 import { sendFcmToDevices } from '@/lib/fcmSender';
+import { requireCurrentOrgId } from '@/lib/orgContext';
+import { getSessionUser } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    const user = await getSessionUser();
+    const cronSecret = (process.env.CRON_SECRET || '').trim();
+    const authHeader = req.headers.get('authorization') || '';
+    const isCron = Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`);
+
+    if (!user?.orgId && !isCron) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const headerOrgId = (req.headers.get('x-org-id') || '').trim();
+    const orgId = user?.orgId || headerOrgId || await requireCurrentOrgId();
+
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : 'http://localhost:3000';
 
-    const res = await fetch(`${baseUrl}/api/cycle-count/daily`);
+    const res = await fetch(`${baseUrl}/api/cycle-count/daily`, {
+      headers: {
+        ...(req.headers.get('cookie') ? { cookie: req.headers.get('cookie')! } : {}),
+        ...(authHeader ? { authorization: authHeader } : {}),
+      },
+    });
     const items = await res.json();
 
     if (!Array.isArray(items)) {
@@ -35,18 +54,16 @@ export async function POST(req: Request) {
     const title = '🔔 ถึงเวลาตรวจนับสต็อก';
     const body = `📦 ${itemCount} รายการ | ${zoneText}`;
 
-    // FCM — APK
     const { sent: fcmSent, failed: fcmFailed } = await sendFcmToDevices({
       title,
       body,
       data: { type: 'cycle_count', items: JSON.stringify(items.slice(0, 5).map((i: any) => i.sku || i.name)) },
-    }, { tag: 'DailyNotif' });
+    }, { tag: 'DailyNotif', orgId });
 
-    // Web Push — PWA
     let webPushSent = 0;
     try {
       const { sendWebPush } = await import('@/lib/webPushSender');
-      const result = await sendWebPush({ title, body, url: '/cycle-count' });
+      const result = await sendWebPush({ title, body, url: '/cycle-count', orgId });
       webPushSent = result.success;
     } catch (wpErr) {
       console.error('[DailyNotif] Web Push error:', wpErr);
@@ -60,7 +77,6 @@ export async function POST(req: Request) {
       fcmFailed,
       webPushSent,
     });
-
   } catch (error) {
     console.error('Error sending daily notification:', error);
     return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });

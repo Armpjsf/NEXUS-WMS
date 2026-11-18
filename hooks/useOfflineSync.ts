@@ -1,57 +1,83 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { db } from '@/lib/db';
+import { useCallback, useEffect, useState } from 'react';
+import { db, type PendingTransaction } from '@/lib/db';
 import { toast } from 'react-hot-toast';
 
 // Module-level lock so multiple mounted components (e.g. OfflineIndicator + OutboundPage)
 // firing processQueue() concurrently cannot double-submit the same pending transaction.
 let isFlushingQueue = false;
 
-export function useOfflineSync() {
+export interface OfflineSyncScope {
+  orgId?: string;
+  userId?: string;
+}
+
+export function shouldSyncPendingTransaction(
+  item: Pick<PendingTransaction, 'orgId' | 'userId'>,
+  currentScope?: OfflineSyncScope,
+): boolean {
+  const itemOrg = item.orgId?.trim() || '';
+  const itemUser = item.userId?.trim() || '';
+  const scopeOrg = currentScope?.orgId?.trim() || '';
+  const scopeUser = currentScope?.userId?.trim() || '';
+
+  if (itemOrg) {
+    if (!scopeOrg || itemOrg !== scopeOrg) return false;
+  } else if (scopeOrg) {
+    return false;
+  }
+
+  if (itemUser) {
+    if (!scopeUser || itemUser !== scopeUser) return false;
+  }
+
+  return true;
+}
+
+export async function clearOfflineDbForUser(scope?: OfflineSyncScope): Promise<void> {
+  if (!scope?.orgId && !scope?.userId) {
+    await db.pendingTransactions.clear();
+    await db.products.clear();
+    return;
+  }
+  const pending = await db.pendingTransactions.toArray();
+  const toDelete = pending
+    .filter((item) => (!scope.orgId || item.orgId === scope.orgId) && (!scope.userId || item.userId === scope.userId))
+    .map((item) => item.id!)
+    .filter((id) => typeof id === 'number');
+  if (toDelete.length > 0) {
+    await db.pendingTransactions.bulkDelete(toDelete);
+  }
+  if (scope.orgId) {
+    await db.products.where('orgId').equals(scope.orgId).delete();
+  }
+}
+
+export function useOfflineSync(currentScope?: OfflineSyncScope) {
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // 1. Monitor Network Status
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
+  const scopeOrg = currentScope?.orgId?.trim() || '';
+  const scopeUser = currentScope?.userId?.trim() || '';
 
-    const handleOnline = () => {
-      setIsOnline(true);
-      processQueue(); // Auto-sync when back online
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Live count of pending items
-    const interval = setInterval(async () => {
-      const count = await db.pendingTransactions.where('status').equals('PENDING').count();
-      setPendingCount(count);
-    }, 2000);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
-    };
-  }, []);
-
-  // 2. Process the Queue (Push to Cloud)
-  const processQueue = async () => {
+  // 2. Process the Queue (Push to Cloud) with tenant + user re-authorization
+  const processQueue = useCallback(async () => {
     if (!navigator.onLine || isFlushingQueue) return;
 
     isFlushingQueue = true;
     try {
       const pendingItems = await db.pendingTransactions.where('status').equals('PENDING').toArray();
-      if (pendingItems.length === 0) return;
+      const authorizedItems = pendingItems.filter((item) =>
+        shouldSyncPendingTransaction(item, { orgId: scopeOrg, userId: scopeUser }),
+      );
+      if (authorizedItems.length === 0) return;
 
       setIsSyncing(true);
       let successCount = 0;
 
-      for (const item of pendingItems) {
+      for (const item of authorizedItems) {
         const currentRetries = item.retryCount || 0;
         if (currentRetries >= 3) {
           await db.pendingTransactions.update(item.id!, { status: 'FAILED' });
@@ -111,9 +137,37 @@ export function useOfflineSync() {
       setIsSyncing(false);
       isFlushingQueue = false;
     }
-  };
+  }, [scopeOrg, scopeUser]);
 
-  // 3. Cache Data (Pull from Cloud) - To be called manually or on load
+  // 1. Monitor Network Status
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      processQueue();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const interval = setInterval(async () => {
+      const items = await db.pendingTransactions.where('status').equals('PENDING').toArray();
+      const count = items.filter((item) =>
+        shouldSyncPendingTransaction(item, { orgId: scopeOrg, userId: scopeUser }),
+      ).length;
+      setPendingCount(count);
+    }, 2000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, [processQueue, scopeOrg, scopeUser]);
+
+  // 3. Cache Data (Pull from Cloud)
   const syncProducts = async () => {
     if (!navigator.onLine) return;
     try {
@@ -124,13 +178,14 @@ export function useOfflineSync() {
         await db.products.bulkPut(
           list.map((p: any) => ({
             id: p.sku || p.id || p.name,
+            orgId: scopeOrg || p.org_id || undefined,
             name: p.name,
             category: p.category,
             price: p.price,
             stock: p.stock,
             image: p.image,
             updatedAt: Date.now(),
-          }))
+          })),
         );
         console.log('Offline Cache Updated');
       }

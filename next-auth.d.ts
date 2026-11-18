@@ -12,6 +12,7 @@ declare module 'next-auth' {
       orgId?: string;
       allowedBranches?: string[];
       allowedOwners?: string[];
+      revoked?: boolean;
     };
   }
   interface User {

@@ -3,7 +3,8 @@
 import bcrypt from 'bcryptjs';
 import { getServiceSupabase } from './supabase';
 import { getCurrentOrgId, DEFAULT_ORG } from './orgContext';
-import { checkPlanLimit } from './planLimits';
+import { countResource } from './planLimits';
+import { checkAndReserveQuota, releaseQuotaReservation, commitQuotaReservation, EntitlementError } from './entitlements';
 
 export type UserRole =
   | 'Super Admin'
@@ -222,24 +223,50 @@ export async function getUserById(userId: string): Promise<User | null> {
 
 export async function addUser(user: any) {
   const orgId = await getCurrentOrgId();
-  const limitErr = await checkPlanLimit(orgId, 'users', 'app_users');
-  if (limitErr) return { error: limitErr };
+  const eventId = `wms:user:${orgId}:${user.username || Date.now()}`;
+  let reserved = false;
 
-  const hashedPassword = await bcrypt.hash(user.password || '123456', 10);
-  const { error } = await getServiceSupabase().from('app_users').insert({
-    id: `U-${Date.now()}`,
-    org_id: orgId,
-    username: user.username,
-    email: user.email || '',
-    role: user.role || 'Staff',
-    status: 'Active',
-    password_hash: hashedPassword,
-    allowed_branches: user.allowedBranches && user.allowedBranches.length ? user.allowedBranches : ['*'],
-    allowed_owners: user.allowedOwners && user.allowedOwners.length ? user.allowedOwners : ['*'],
-    last_login: new Date().toISOString().split('T')[0],
-  });
-  if (error) { console.error('Add User Error:', error.message); return false; }
-  return true;
+  try {
+    const qRes = await checkAndReserveQuota(
+      orgId,
+      'users',
+      () => countResource(orgId, 'users', 'app_users'),
+      { module: 'wms', eventId },
+    );
+    reserved = qRes.limit >= 0;
+  } catch (err) {
+    if (err instanceof EntitlementError) {
+      return { error: err.message };
+    }
+    throw err;
+  }
+
+  let committed = false;
+  try {
+    const hashedPassword = await bcrypt.hash(user.password || '123456', 10);
+    const { error } = await getServiceSupabase().from('app_users').insert({
+      id: `U-${Date.now()}`,
+      org_id: orgId,
+      username: user.username,
+      email: user.email || '',
+      role: user.role || 'Staff',
+      status: 'Active',
+      password_hash: hashedPassword,
+      allowed_branches: user.allowedBranches && user.allowedBranches.length ? user.allowedBranches : ['*'],
+      allowed_owners: user.allowedOwners && user.allowedOwners.length ? user.allowedOwners : ['*'],
+      last_login: new Date().toISOString().split('T')[0],
+    });
+    if (error) { console.error('Add User Error:', error.message); return false; }
+    if (reserved) {
+      await commitQuotaReservation(orgId, 'users', { module: 'wms', eventId });
+      committed = true;
+    }
+    return true;
+  } finally {
+    if (reserved && !committed) {
+      await releaseQuotaReservation(orgId, 'users', 1, { module: 'wms', eventId }).catch(() => {});
+    }
+  }
 }
 
 export async function updateUser(userId: string, data: any) {

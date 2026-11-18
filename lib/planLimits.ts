@@ -48,7 +48,7 @@ export async function checkPlanLimit(
  *  - branches = active branches only (DELETE soft-deactivates; those used to
  *               keep counting against the limit)
  */
-async function countResource(orgId: string, resource: keyof PlanLimits, table: string): Promise<number> {
+export async function countResource(orgId: string, resource: keyof PlanLimits, table: string): Promise<number> {
   const admin = getServiceSupabase();
   let q = admin.from(table).select('id', { count: 'exact', head: true }).eq('org_id', orgId);
   if (resource === 'branches') q = q.neq('status', 'INACTIVE');

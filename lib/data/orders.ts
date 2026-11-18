@@ -2,13 +2,14 @@
 // Stock is deducted (and OUT transactions logged) the moment an order ships.
 
 import { supabase, getServiceSupabase } from '@/lib/supabase';
-import { getCurrentOrgId } from '@/lib/orgContext';
+import { getCurrentOrgId, requireCurrentOrgId } from '@/lib/orgContext';
 import { isTmsEnabled, createTmsDeliveryJob, isCompanyFleetCarrier, appendTmsJobItems } from '@/lib/tms';
 import { binConsume } from '@/lib/stockLocations';
 import { reserveForOrder, consumeOrderReservations, releaseOrderReservations } from '@/lib/reservations';
 import { toBaseQty } from '@/lib/uom';
 import { fetchAllRows } from '@/lib/data/fetchAll';
 import { nextDocNumber } from '@/lib/docNumber';
+import { AtomicEffectSchemaError } from '@/lib/errors';
 
 export type OrderStatus =
   | 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -343,7 +344,7 @@ export async function createOrder(input: {
   const totalQty = items.reduce((s, l) => s + l.qty, 0);
   const totalAmount = items.reduce((s, l) => s + l.qty * (l.price || 0), 0);
 
-  const targetBranch = (input.branchCode || 'URT').trim();
+  const targetBranch = (input.branchCode || process.env.NEXT_PUBLIC_DEFAULT_BRANCH_CODE || '').trim();
   const vType = (input.vehicleType || '4-Wheel').trim();
 
   let initialNotes = input.notes || '';
@@ -628,7 +629,7 @@ export async function updateOrder(
     isCompanyFleetCarrier(mapped.carrier);
 
   if (needsTmsJob && !mapped.tmsJobId) {
-    const r = await createTmsDeliveryJob(mapped);
+    const r = await createTmsDeliveryJob({ ...mapped, orgId });
     if (r.ok && r.jobId) {
       mapped.tmsJobId = r.jobId;
       mapped.tmsStatus = 'New';
@@ -777,9 +778,72 @@ export async function addItemsToOrder(
 export const addOrderItems = addItemsToOrder;
 
 // Close WMS order automatically upon receiving POD from TMS Webhook
-import type { TmsIncidentItem } from '@/lib/tms';
+import type { TmsIncidentItem, TmsDispatchState } from '@/lib/tms';
+
+const COMPLETED_TMS_STATUSES = new Set([
+  'Completed',
+  'Delivered',
+  'DELIVERED',
+  'Finished',
+  'Closed',
+  'Verified',
+  'Billed',
+  'Paid',
+]);
+
+export interface TmsPodDropInput {
+  drop_index?: number;
+  wms_order_id?: string;
+  wms_order_no?: string;
+  status: string;
+  signature_url?: string | null;
+  photo_urls?: string[];
+  receiver_name?: string | null;
+  delivery_date?: string;
+  has_incidents?: boolean;
+  incidents?: TmsIncidentItem[];
+}
+
+export interface ApplyTmsPodResult {
+  applied: string[];
+  skippedIdempotent: string[];
+  failed: Array<{ orderNo: string; error: string }>;
+  unmappedReviewQueue: string[];
+}
+
+export interface TmsPodInboxContext {
+  connectionId?: string;
+  tenantId?: string;
+  eventId?: string;
+  inboxId?: string | null;
+  workerId?: string;
+  fencingToken?: number | null;
+  committedReceipts?: Record<string, unknown>;
+  recordTargetReceipt?: (
+    targetKey: string,
+    result?: unknown,
+    options?: { effectType?: string; markInboxComplete?: boolean },
+  ) => Promise<Record<string, unknown> | null>;
+}
+
+function isUndefinedRpcError(err: any): boolean {
+  if (!err) return false;
+  const code = String(err.code || '');
+  const msg = String(err.message || '');
+  return code === '42883' || code === 'PGRST202' || /does not exist|could not find/i.test(msg);
+}
+
+function unwrapRpcJson(data: any, fnName: string): any {
+  const first = Array.isArray(data) ? data[0] : data;
+  if (first && typeof first === 'object' && fnName in first) {
+    return first[fnName];
+  }
+  return first;
+}
 
 export async function closeOrderFromTmsPod(input: {
+  orgId?: string;
+  orderId?: string;
   orderNo?: string;
   tmsJobId?: string;
   signatureUrl?: string | null;
@@ -791,12 +855,17 @@ export async function closeOrderFromTmsPod(input: {
   notes?: string;
   hasIncidents?: boolean;
   incidents?: TmsIncidentItem[];
-}): Promise<{ ok: boolean; order?: OutboundOrder; error?: string }> {
+}): Promise<{ ok: boolean; idempotent?: boolean; notFound?: boolean; order?: OutboundOrder; error?: string }> {
   const admin = getServiceSupabase();
-  // org-scope-ok: TMS callback (no session) — order_no / tms_job_id are globally unique
+  // org-scope-ok: when orgId is provided by verified connection/session it strictly filters by org_id; legacy callers pass unique orderNo/tmsJobId
   let query = admin.from('outbound_orders').select('*');
+  if (input.orgId) {
+    query = query.eq('org_id', input.orgId);
+  }
 
-  if (input.orderNo) {
+  if (input.orderId) {
+    query = query.eq('id', input.orderId);
+  } else if (input.orderNo) {
     query = query.eq('order_no', input.orderNo);
   } else if (input.tmsJobId) {
     const safeJobId = String(input.tmsJobId).replace(/[^a-zA-Z0-9._-]/g, '');
@@ -807,7 +876,40 @@ export async function closeOrderFromTmsPod(input: {
 
   const { data: orderRow, error: findError } = await query.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: `Order not found (${input.orderNo || input.tmsJobId})` };
+    return { ok: false, notFound: true, error: `Order not found (${input.orderNo || input.orderId || input.tmsJobId})` };
+  }
+
+  const hasNewIncidents = Boolean(input.hasIncidents && Array.isArray(input.incidents) && input.incidents.length > 0);
+
+  // Idempotency guard: if already DELIVERED with same TMS job, skip duplicate close & audit writes
+  if (
+    orderRow.status === 'DELIVERED' &&
+    (!input.tmsJobId || !orderRow.tms_job_id || orderRow.tms_job_id === input.tmsJobId)
+  ) {
+    if (hasNewIncidents && input.incidents) {
+      try {
+        const { ensureRmaForDamagedOrder } = await import('@/lib/data/returns');
+        const incSummaries = input.incidents
+          .map(i => `${i.category || 'ปัญหาขนส่ง'}${i.description ? `: ${i.description}` : ''}`)
+          .join(' | ');
+        const orderItems = Array.isArray(orderRow.items_json) ? orderRow.items_json : [];
+        const rmaRes = await ensureRmaForDamagedOrder({
+          orderNo: orderRow.order_no,
+          customerName: orderRow.customer_name,
+          reason: `แจ้งชำรุด/ปัญหาขนส่ง: ${incSummaries}`,
+          items: orderItems.map((it: any) => ({ sku: it.sku, name: it.name, qty: it.qty })),
+          notes: `สร้างอัตโนมัติจากรายงานปัญหาคนขับ TMS (คนขับ: ${input.driverName || '-'}, ทะเบียน: ${input.vehiclePlate || '-'})`,
+          orgId: orderRow.org_id,
+        });
+        if (rmaRes.ok && rmaRes.alreadyExists) {
+          return { ok: true, idempotent: true, order: mapOrder(orderRow) };
+        }
+        return { ok: true, idempotent: false, order: mapOrder(orderRow) };
+      } catch (e) {
+        console.warn('[orders] Failed to ensure RMA on idempotent POD:', e);
+      }
+    }
+    return { ok: true, idempotent: true, order: mapOrder(orderRow) };
   }
 
   const podNotesParts: string[] = [];
@@ -842,11 +944,11 @@ export async function closeOrderFromTmsPod(input: {
   if (input.tmsJobId) updateData.tms_job_id = input.tmsJobId;
 
   // Try updating with tms columns
-  // org-scope-ok: orderRow.id resolved by the TMS lookup above
   const first = await admin
     .from('outbound_orders')
     .update(updateData)
     .eq('id', orderRow.id)
+    .eq('org_id', orderRow.org_id)
     .select()
     .single();
   let updated = first.data;
@@ -855,11 +957,11 @@ export async function closeOrderFromTmsPod(input: {
     // Fallback: strip extra columns if not yet migrated in Supabase
     delete updateData.tms_status;
     delete updateData.tms_synced_at;
-    // org-scope-ok: same row as above (fallback without tms columns)
     const { data: fbData, error: fbError } = await admin
       .from('outbound_orders')
       .update(updateData)
       .eq('id', orderRow.id)
+      .eq('org_id', orderRow.org_id)
       .select()
       .single();
 
@@ -886,7 +988,7 @@ export async function closeOrderFromTmsPod(input: {
   }
 
   // Auto-create Reverse Logistics RMA / Quarantine ticket if damage was reported
-  if (input.hasIncidents && input.incidents && input.incidents.length > 0) {
+  if (hasNewIncidents && input.incidents) {
     try {
       const { ensureRmaForDamagedOrder } = await import('@/lib/data/returns');
       const incSummaries = input.incidents
@@ -907,7 +1009,459 @@ export async function closeOrderFromTmsPod(input: {
     }
   }
 
-  return { ok: true, order: mapOrder(updated) };
+  return { ok: true, idempotent: false, order: mapOrder(updated) };
+}
+
+/**
+ * Applies TMS status, per-drop POD completions, and damage incidents to WMS outbound orders.
+ * Guarantees:
+ * - Per-drop completion only closes the specific drop's order (never closes Drop 2 without proof).
+ * - Stale status guard prevents late 'In Transit' / 'Picked Up' webhooks from reverting DELIVERED orders.
+ * - Tenant-scoped lookup: unknown orders enter unmappedReviewQueue without cross-tenant search.
+ */
+export async function applyTmsPodToWmsOrders(input: {
+  orgId?: string;
+  tmsJobId?: string;
+  wmsOrderNo?: string;
+  status?: string;
+  isCompleted?: boolean;
+  drops?: TmsPodDropInput[];
+  externalEntityLinks?: Array<{ wms_order_id?: string; wms_order_no?: string; drop_index?: number; tms_job_id?: string }>;
+  signatureUrl?: string | null;
+  photoUrls?: string[];
+  deliveryDate?: string;
+  receiverName?: string | null;
+  driverName?: string | null;
+  vehiclePlate?: string | null;
+  notes?: string;
+  hasIncidents?: boolean;
+  incidents?: TmsIncidentItem[];
+  inboxContext?: TmsPodInboxContext;
+  onAfterTargetCommit?: (info: {
+    targetKey: string;
+    index: number;
+    total: number;
+    result: Record<string, any> | null;
+  }) => Promise<void> | void;
+}): Promise<ApplyTmsPodResult> {
+  const result: ApplyTmsPodResult = {
+    applied: [],
+    skippedIdempotent: [],
+    failed: [],
+    unmappedReviewQueue: [],
+  };
+
+  const admin = getServiceSupabase();
+  const inboxCtx = input.inboxContext;
+  const linksByDrop = new Map<number, { wms_order_id?: string; wms_order_no?: string }>();
+  for (const l of input.externalEntityLinks || []) {
+    if (l.drop_index != null) {
+      linksByDrop.set(Number(l.drop_index), { wms_order_id: l.wms_order_id, wms_order_no: l.wms_order_no });
+    }
+  }
+
+  const afterTargetHook =
+    typeof input.onAfterTargetCommit === 'function'
+      ? input.onAfterTargetCommit
+      : ((globalThis as any).__NEXUS_TEST_ON_AFTER_TARGET_COMMIT as
+          | ((info: { targetKey: string; index: number; total: number; result: Record<string, any> | null }) =>
+              | Promise<void>
+              | void)
+          | undefined);
+
+  const tryApplyAtomicTarget = async (target: {
+    targetKey: string;
+    orderId?: string;
+    orderNo?: string;
+    tmsJobId?: string;
+    status: string;
+    isCompleted: boolean;
+    signatureUrl?: string | null;
+    photoUrls?: string[];
+    deliveryDate?: string;
+    receiverName?: string | null;
+    hasIncidents?: boolean;
+    incidents?: TmsIncidentItem[];
+    isLastTarget: boolean;
+  }): Promise<{ handled: boolean; outcome?: Record<string, any> }> => {
+    if (!inboxCtx?.eventId) {
+      return { handled: false };
+    }
+    // Event-backed mutations must never fall back to separate writes/receipts,
+    // even during a partially applied migration or a stale PostgREST schema cache.
+    if (typeof admin.rpc !== 'function') throw new AtomicEffectSchemaError();
+    const { data: rpcData, error: rpcErr } = await (admin as any).rpc('apply_wms_tms_pod_target_atomic', {
+      p_tenant_id: inboxCtx.tenantId || input.orgId || 'default',
+      p_connection_id: inboxCtx.connectionId || `conn-tms-wms-${input.orgId || inboxCtx.tenantId || 'default'}`,
+      p_event_id: inboxCtx.eventId,
+      p_target_key: target.targetKey,
+      p_inbox_id: inboxCtx.inboxId || null,
+      p_worker_id: inboxCtx.workerId || 'wms-webhook-worker',
+      p_fencing_token: inboxCtx.fencingToken ?? null,
+      p_order_id: target.orderId || null,
+      p_order_no: target.orderNo || null,
+      p_tms_job_id: target.tmsJobId || null,
+      p_status: target.status || (target.isCompleted ? 'Completed' : 'In Transit'),
+      p_is_completed: Boolean(target.isCompleted),
+      p_signature_url: target.signatureUrl || null,
+      p_photo_urls: Array.isArray(target.photoUrls) ? target.photoUrls : [],
+      p_delivery_date: target.deliveryDate || null,
+      p_receiver_name: target.receiverName || null,
+      p_driver_name: input.driverName || null,
+      p_vehicle_plate: input.vehiclePlate || null,
+      p_notes: input.notes || null,
+      p_has_incidents: Boolean(target.hasIncidents),
+      p_incidents: Array.isArray(target.incidents) ? target.incidents : [],
+      p_mark_inbox_complete: Boolean(target.isLastTarget),
+      p_now: new Date().toISOString(),
+    });
+
+    if (rpcErr) {
+      if (isUndefinedRpcError(rpcErr) || ['42P01', '42703', '42501', 'PGRST203', 'PGRST204'].includes(String(rpcErr.code))) {
+        throw new AtomicEffectSchemaError();
+      }
+      throw new Error(String(rpcErr.message || 'apply_wms_tms_pod_target_atomic failed'));
+    }
+
+    const parsed = unwrapRpcJson(rpcData, 'apply_wms_tms_pod_target_atomic');
+    const validResult =
+      (!Array.isArray(rpcData) || rpcData.length === 1) &&
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed) &&
+      typeof parsed.orderKey === 'string' && parsed.orderKey.trim().length > 0 &&
+      ((parsed.ok === true && typeof parsed.idempotent === 'boolean' &&
+        ['applied', 'skipped_idempotent'].includes(parsed.outcome)) ||
+       (parsed.ok === false && parsed.notFound === true && parsed.outcome === 'not_found'));
+    if (!validResult) throw new AtomicEffectSchemaError();
+    return { handled: true, outcome: parsed };
+  };
+
+  const updateIntermediateForTarget = async (target: {
+    targetKey: string;
+    orderId?: string;
+    orderNo?: string;
+    tmsJobId?: string;
+    status: string;
+    incidents?: TmsIncidentItem[];
+    hasIncidents?: boolean;
+    index: number;
+    total: number;
+  }) => {
+    const label = target.orderNo || target.orderId || target.tmsJobId || 'UNKNOWN';
+    if (!input.orgId && !target.orderNo && !target.orderId && !target.tmsJobId) {
+      result.unmappedReviewQueue.push(label);
+      return;
+    }
+
+    // org-scope-ok: strictly filtered by input.orgId when present; otherwise only matches exact order key
+    let lookupQuery = admin.from('outbound_orders').select('id, org_id, order_no, status, tms_status');
+    if (input.orgId) lookupQuery = lookupQuery.eq('org_id', input.orgId);
+    if (target.orderId) lookupQuery = lookupQuery.eq('id', target.orderId);
+    else if (target.orderNo) lookupQuery = lookupQuery.eq('order_no', target.orderNo);
+    else if (target.tmsJobId) {
+      const safeJobId = String(target.tmsJobId).replace(/[^a-zA-Z0-9._-]/g, '');
+      lookupQuery = lookupQuery.or(`tms_job_id.eq.${safeJobId},tracking_no.eq.${safeJobId}`);
+    }
+
+    const { data: orderRow, error: lookupErr } = await lookupQuery.maybeSingle();
+    if (lookupErr) {
+      result.failed.push({ orderNo: label, error: lookupErr.message });
+      return;
+    }
+    if (!orderRow) {
+      result.unmappedReviewQueue.push(label);
+      return;
+    }
+
+    const targetOrderKey = orderRow.order_no || orderRow.id;
+    // Stale status guard: never revert an already DELIVERED order backwards
+    if (String(orderRow.status || '').toUpperCase() === 'DELIVERED') {
+      result.skippedIdempotent.push(targetOrderKey);
+      return;
+    }
+
+    const patchData: Record<string, any> = {
+      tms_status: target.status,
+      tms_synced_at: new Date().toISOString(),
+    };
+    if (input.driverName) patchData.driver_name = input.driverName;
+    if (input.vehiclePlate) patchData.vehicle_plate = input.vehiclePlate;
+    if (target.hasIncidents && Array.isArray(target.incidents) && target.incidents.length > 0) {
+      const incSummaries = target.incidents
+        .map(i => `${i.category || 'ปัญหาขนส่ง'}${i.description ? `: ${i.description}` : ''}`)
+        .join(' | ');
+      patchData.pod_note = `⚠️ ตรวจพบปัญหาขนส่งระหว่างทาง: ${incSummaries}`;
+    }
+
+    const { error: upErr } = await admin
+      .from('outbound_orders')
+      .update(patchData)
+      .eq('org_id', orderRow.org_id)
+      .eq('id', orderRow.id);
+
+    if (upErr) {
+      result.failed.push({ orderNo: targetOrderKey, error: upErr.message });
+      return;
+    }
+    await inboxCtx?.recordTargetReceipt?.(
+      target.targetKey,
+      { outcome: 'applied', orderKey: targetOrderKey },
+      { effectType: 'wms_pod_target', markInboxComplete: target.index === target.total - 1 },
+    );
+    result.applied.push(targetOrderKey);
+  };
+
+  if (Array.isArray(input.drops) && input.drops.length > 0) {
+    const totalDrops = input.drops.length;
+    for (let idx = 0; idx < totalDrops; idx++) {
+      const drop: TmsPodDropInput = input.drops[idx];
+      const linked = drop.drop_index != null ? linksByDrop.get(Number(drop.drop_index)) : undefined;
+      const orderId = drop.wms_order_id || linked?.wms_order_id;
+      const orderNo = drop.wms_order_no || linked?.wms_order_no;
+      const label = orderNo || orderId || `drop-${drop.drop_index ?? '?'}`;
+      const targetKey = `drop:${drop.drop_index ?? idx + 1}:${orderNo || orderId || 'unmapped'}`;
+      const isLastTarget = idx === totalDrops - 1;
+
+      if (!orderId && !orderNo) {
+        result.unmappedReviewQueue.push(label);
+        continue;
+      }
+
+      const isDropCompleted = COMPLETED_TMS_STATUSES.has(drop.status);
+      const dropIncidents = Array.isArray(drop.incidents) ? drop.incidents : input.incidents;
+      const dropHasIncidents = drop.has_incidents ?? Boolean(dropIncidents && dropIncidents.length > 0);
+      const atomicRes = await tryApplyAtomicTarget({
+        targetKey,
+        orderId,
+        orderNo,
+        tmsJobId: input.tmsJobId,
+        status: drop.status,
+        isCompleted: isDropCompleted,
+        signatureUrl: drop.signature_url ?? input.signatureUrl,
+        photoUrls: Array.isArray(drop.photo_urls) ? drop.photo_urls : input.photoUrls,
+        deliveryDate: drop.delivery_date || input.deliveryDate,
+        receiverName: drop.receiver_name ?? input.receiverName,
+        hasIncidents: dropHasIncidents,
+        incidents: dropIncidents,
+        isLastTarget,
+      });
+
+      if (atomicRes.handled && atomicRes.outcome) {
+        const out = atomicRes.outcome;
+        if (out.notFound) {
+          result.unmappedReviewQueue.push(label);
+        } else if (out.ok) {
+          const key = out.orderKey || label;
+          if (out.idempotent || out.outcome === 'skipped_idempotent') result.skippedIdempotent.push(key);
+          else result.applied.push(key);
+        } else {
+          result.failed.push({ orderNo: label, error: out.error || 'close_failed' });
+        }
+        if (typeof afterTargetHook === 'function') {
+          await afterTargetHook({ targetKey, index: idx, total: totalDrops, result: out });
+        }
+        continue;
+      }
+
+      const priorReceipt = inboxCtx?.committedReceipts?.[targetKey] as Record<string, any> | undefined;
+      if (priorReceipt) {
+        const key = String(priorReceipt.orderKey || label);
+        result.skippedIdempotent.push(key);
+        if (isLastTarget) {
+          await inboxCtx?.recordTargetReceipt?.(targetKey, priorReceipt, {
+            effectType: 'wms_pod_target',
+            markInboxComplete: true,
+          });
+        }
+        if (typeof afterTargetHook === 'function') {
+          await afterTargetHook({ targetKey, index: idx, total: totalDrops, result: { ...priorReceipt, idempotent: true } });
+        }
+        continue;
+      }
+
+      if (isDropCompleted) {
+        const closeRes = await closeOrderFromTmsPod({
+          orgId: input.orgId,
+          orderId,
+          orderNo,
+          tmsJobId: input.tmsJobId,
+          signatureUrl: drop.signature_url ?? input.signatureUrl,
+          photoUrls: Array.isArray(drop.photo_urls) ? drop.photo_urls : input.photoUrls,
+          deliveryDate: drop.delivery_date || input.deliveryDate,
+          receiverName: drop.receiver_name ?? input.receiverName,
+          driverName: input.driverName,
+          vehiclePlate: input.vehiclePlate,
+          notes: input.notes,
+          hasIncidents: dropHasIncidents,
+          incidents: dropIncidents,
+        });
+        if (closeRes.ok) {
+          const key = closeRes.order?.orderNo || label;
+          await inboxCtx?.recordTargetReceipt?.(
+            targetKey,
+            { outcome: closeRes.idempotent ? 'skipped_idempotent' : 'applied', orderKey: key },
+            { effectType: 'wms_pod_target', markInboxComplete: isLastTarget },
+          );
+          if (closeRes.idempotent) result.skippedIdempotent.push(key);
+          else result.applied.push(key);
+        } else if (closeRes.notFound) {
+          result.unmappedReviewQueue.push(label);
+        } else {
+          result.failed.push({ orderNo: label, error: closeRes.error || 'close_failed' });
+        }
+        if (typeof afterTargetHook === 'function') {
+          await afterTargetHook({ targetKey, index: idx, total: totalDrops, result: closeRes as any });
+        }
+      } else {
+        await updateIntermediateForTarget({
+          targetKey,
+          orderId,
+          orderNo,
+          tmsJobId: input.tmsJobId,
+          status: drop.status,
+          hasIncidents: drop.has_incidents,
+          incidents: drop.incidents,
+          index: idx,
+          total: totalDrops,
+        });
+        if (typeof afterTargetHook === 'function') {
+          await afterTargetHook({ targetKey, index: idx, total: totalDrops, result: null });
+        }
+      }
+    }
+    return result;
+  }
+
+  const isWholeJobCompleted =
+    Boolean(input.isCompleted) || (input.status ? COMPLETED_TMS_STATUSES.has(input.status) : false);
+
+  const targets: Array<{ orderId?: string; orderNo?: string }> = [];
+  if (Array.isArray(input.externalEntityLinks) && input.externalEntityLinks.length > 0) {
+    for (const l of input.externalEntityLinks) {
+      if (l.wms_order_id || l.wms_order_no) {
+        targets.push({ orderId: l.wms_order_id, orderNo: l.wms_order_no });
+      }
+    }
+  } else if (input.wmsOrderNo) {
+    for (const part of String(input.wmsOrderNo).split(',').map((s) => s.trim()).filter(Boolean)) {
+      targets.push({ orderNo: part });
+    }
+  } else if (input.tmsJobId) {
+    targets.push({});
+  }
+
+  if (targets.length === 0) {
+    result.unmappedReviewQueue.push(input.tmsJobId || 'UNKNOWN');
+    return result;
+  }
+
+  const totalTargets = targets.length;
+  for (let idx = 0; idx < totalTargets; idx++) {
+    const t = targets[idx];
+    const label = t.orderNo || t.orderId || input.tmsJobId || 'UNKNOWN';
+    const targetKey = `order:${t.orderNo || t.orderId || input.tmsJobId || idx + 1}`;
+    const isLastTarget = idx === totalTargets - 1;
+
+    const atomicRes = await tryApplyAtomicTarget({
+      targetKey,
+      orderId: t.orderId,
+      orderNo: t.orderNo,
+      tmsJobId: input.tmsJobId,
+      status: input.status || (isWholeJobCompleted ? 'Completed' : 'In Transit'),
+      isCompleted: isWholeJobCompleted,
+      signatureUrl: input.signatureUrl,
+      photoUrls: input.photoUrls,
+      deliveryDate: input.deliveryDate,
+      receiverName: input.receiverName,
+      hasIncidents: input.hasIncidents,
+      incidents: input.incidents,
+      isLastTarget,
+    });
+
+    if (atomicRes.handled && atomicRes.outcome) {
+      const out = atomicRes.outcome;
+      if (out.notFound) {
+        result.unmappedReviewQueue.push(label);
+      } else if (out.ok) {
+        const key = out.orderKey || label;
+        if (out.idempotent || out.outcome === 'skipped_idempotent') result.skippedIdempotent.push(key);
+        else result.applied.push(key);
+      } else {
+        result.failed.push({ orderNo: label, error: out.error || 'close_failed' });
+      }
+      if (typeof afterTargetHook === 'function') {
+        await afterTargetHook({ targetKey, index: idx, total: totalTargets, result: out });
+      }
+      continue;
+    }
+
+    const priorReceipt = inboxCtx?.committedReceipts?.[targetKey] as Record<string, any> | undefined;
+    if (priorReceipt) {
+      const key = String(priorReceipt.orderKey || label);
+      result.skippedIdempotent.push(key);
+      if (isLastTarget) {
+        await inboxCtx?.recordTargetReceipt?.(targetKey, priorReceipt, {
+          effectType: 'wms_pod_target',
+          markInboxComplete: true,
+        });
+      }
+      if (typeof afterTargetHook === 'function') {
+        await afterTargetHook({ targetKey, index: idx, total: totalTargets, result: { ...priorReceipt, idempotent: true } });
+      }
+      continue;
+    }
+
+    if (isWholeJobCompleted) {
+      const closeRes = await closeOrderFromTmsPod({
+        orgId: input.orgId,
+        orderId: t.orderId,
+        orderNo: t.orderNo,
+        tmsJobId: input.tmsJobId,
+        signatureUrl: input.signatureUrl,
+        photoUrls: input.photoUrls,
+        deliveryDate: input.deliveryDate,
+        receiverName: input.receiverName,
+        driverName: input.driverName,
+        vehiclePlate: input.vehiclePlate,
+        notes: input.notes,
+        hasIncidents: input.hasIncidents,
+        incidents: input.incidents,
+      });
+      if (closeRes.ok) {
+        const key = closeRes.order?.orderNo || label;
+        await inboxCtx?.recordTargetReceipt?.(
+          targetKey,
+          { outcome: closeRes.idempotent ? 'skipped_idempotent' : 'applied', orderKey: key },
+          { effectType: 'wms_pod_target', markInboxComplete: isLastTarget },
+        );
+        if (closeRes.idempotent) result.skippedIdempotent.push(key);
+        else result.applied.push(key);
+      } else if (closeRes.notFound) {
+        result.unmappedReviewQueue.push(label);
+      } else {
+        result.failed.push({ orderNo: label, error: closeRes.error || 'close_failed' });
+      }
+      if (typeof afterTargetHook === 'function') {
+        await afterTargetHook({ targetKey, index: idx, total: totalTargets, result: closeRes as any });
+      }
+    } else {
+      await updateIntermediateForTarget({
+        targetKey,
+        orderId: t.orderId,
+        orderNo: t.orderNo,
+        tmsJobId: input.tmsJobId,
+        status: input.status || 'In Transit',
+        hasIncidents: input.hasIncidents,
+        incidents: input.incidents,
+        index: idx,
+        total: totalTargets,
+      });
+      if (typeof afterTargetHook === 'function') {
+        await afterTargetHook({ targetKey, index: idx, total: totalTargets, result: null });
+      }
+    }
+  }
+
+  return result;
 }
 
 // On-demand status sync with TMS
@@ -1017,6 +1571,8 @@ export async function getPendingFulfillment(): Promise<{ pending_tasks: any[] }>
   return { pending_tasks: tasks };
 }
 
+const ELIGIBLE_TRIP_STATUSES = new Set(['PENDING', 'PICKING', 'PACKED', 'READY_TO_SHIP']);
+
 // Consolidates multiple WMS orders into a single delivery trip (Multi-Drop Manifest)
 // Works 100% standalone for paper/WMS run sheets, and handshakes with TMS if enabled.
 export async function createDeliveryTrip(input: {
@@ -1027,19 +1583,77 @@ export async function createDeliveryTrip(input: {
   vehicleType?: string;
   dockBay?: string;
   sendToTms?: boolean;
-}): Promise<{ ok: boolean; tripId?: string; orderCount?: number; trackingUrl?: string; error?: string }> {
+  orgId?: string;
+  allowedBranches?: string[];
+}): Promise<{
+  ok: boolean;
+  tripId?: string;
+  orderCount?: number;
+  trackingUrl?: string;
+  dispatchState?: TmsDispatchState;
+  queuedOutboxEventId?: string;
+  error?: string;
+}> {
   if (!Array.isArray(input.orderIds) || input.orderIds.length === 0) {
     return { ok: false, error: 'กรุณาเลือกออเดอร์อย่างน้อย 1 รายการ' };
+  }
+
+  let orgId = (input.orgId || '').trim();
+  if (!orgId) {
+    try {
+      orgId = await requireCurrentOrgId();
+    } catch (err: any) {
+      return { ok: false, error: err?.message || 'Unauthorized: Organization context is required' };
+    }
+  }
+
+  const normalizedInputIds = input.orderIds.map((id) => String(id).trim()).filter(Boolean);
+  const uniqueIds = Array.from(new Set(normalizedInputIds));
+  if (uniqueIds.length === 0 || uniqueIds.length !== input.orderIds.length) {
+    return { ok: false, error: 'รายการออเดอร์ซ้ำหรือไม่ถูกต้อง' };
   }
 
   const admin = getServiceSupabase();
   const { data: rows, error: fetchErr } = await admin
     .from('outbound_orders')
     .select('*')
-    .in('id', input.orderIds);
+    .eq('org_id', orgId)
+    .in('id', uniqueIds);
 
-  if (fetchErr || !rows || rows.length === 0) {
-    return { ok: false, error: 'ไม่พบออเดอร์ที่เลือก' };
+  if (fetchErr || !rows || rows.length !== uniqueIds.length) {
+    return {
+      ok: false,
+      error: 'พบออเดอร์ที่ไม่อยู่ในสิทธิ์ขององค์กรหรือไม่พบในระบบ (ปฏิเสธการทำงานแบบบางส่วน)',
+    };
+  }
+
+  // Branch consistency & authorization check
+  const branchCodes = Array.from(
+    new Set(rows.map((r: any) => String(r.branch_code || '').trim()))
+  );
+  if (branchCodes.length > 1) {
+    return { ok: false, error: 'ไม่สามารถรวมออเดอร์ข้ามสาขาในทริปเดียวกันได้' };
+  }
+  const tripBranch = branchCodes[0] || '';
+  if (
+    Array.isArray(input.allowedBranches) &&
+    input.allowedBranches.length > 0 &&
+    !input.allowedBranches.includes('*')
+  ) {
+    if (!tripBranch || !input.allowedBranches.includes(tripBranch)) {
+      return { ok: false, error: 'ไม่มีสิทธิ์จัดทริปสำหรับสาขานี้' };
+    }
+  }
+
+  // Status eligibility check
+  for (const row of rows as any[]) {
+    const status = String(row.status || '').trim().toUpperCase();
+    if (!ELIGIBLE_TRIP_STATUSES.has(status)) {
+      return {
+        ok: false,
+        error: `ออเดอร์ ${row.order_no || row.id} อยู่ในสถานะ ${row.status} ไม่สามารถจัดทริปได้`,
+      };
+    }
   }
 
   // Generate Trip ID if not provided: TRIP-YYMMDD-NNN
@@ -1051,9 +1665,13 @@ export async function createDeliveryTrip(input: {
   const mappedOrders = rows.map(mapOrder);
   const totalDrops = mappedOrders.length;
 
-  // 1. Update each order in WMS with Trip and Drop sequence metadata
+  // Preserve original snapshots for rollback on partial DB failure
+  const updatedSnapshots: Array<Record<string, any>> = [];
+
+  // 1. Update each order in WMS with Trip and Drop sequence metadata (scoped by org_id)
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+    const row = rows[i] as Record<string, any>;
+    const priorSnapshot = { ...row };
     const dropIndex = i + 1;
     const existingNotes = String(row.notes || '');
     const cleanNotes = existingNotes.replace(/\[Trip:.*?\]/g, '').replace(/\[Drop:.*?\]/g, '').trim();
@@ -1073,29 +1691,83 @@ export async function createDeliveryTrip(input: {
     if (input.vehicleType) updatePatch.vehicle_type = input.vehicleType;
     if (input.dockBay) updatePatch.dock_bay = input.dockBay;
 
-    await admin.from('outbound_orders').update(updatePatch).eq('id', row.id);
+    const { data: updatedRow, error: updateErr } = await admin
+      .from('outbound_orders')
+      .update(updatePatch)
+      .eq('id', row.id)
+      .eq('org_id', orgId)
+      .select('*')
+      .maybeSingle();
+
+    if (updateErr || !updatedRow) {
+      // Roll back previously updated rows within this org
+      for (const prev of updatedSnapshots) {
+        await admin
+          .from('outbound_orders')
+          .update({
+            status: prev.status ?? null,
+            shipped_at: prev.shipped_at ?? null,
+            tms_job_id: prev.tms_job_id ?? null,
+            tms_status: prev.tms_status ?? null,
+            tms_synced_at: prev.tms_synced_at ?? null,
+            notes: prev.notes ?? null,
+            driver_name: prev.driver_name ?? null,
+            vehicle_plate: prev.vehicle_plate ?? null,
+            vehicle_type: prev.vehicle_type ?? null,
+            dock_bay: prev.dock_bay ?? null,
+            updated_at: prev.updated_at ?? null,
+          })
+          .eq('id', prev.id)
+          .eq('org_id', orgId);
+      }
+      return {
+        ok: false,
+        error: updateErr?.message || `อัปเดตออเดอร์ ${row.order_no || row.id} ไม่สำเร็จ`,
+      };
+    }
+
+    updatedSnapshots.push(priorSnapshot);
   }
 
   // 2. If Send to TMS is requested and enabled, create consolidated multi-drop in TMS
   let tmsTrackingUrl: string | undefined;
+  let dispatchState: TmsDispatchState = input.sendToTms === false ? 'disconnected' : 'pending';
+  let queuedOutboxEventId: string | undefined;
   if (input.sendToTms !== false) {
     try {
       const { createTmsConsolidatedTripJob } = await import('@/lib/tms');
       const tmsRes = await createTmsConsolidatedTripJob({
         tripId,
+        orgId,
         driverName: input.driverName,
         vehiclePlate: input.vehiclePlate,
         vehicleType: input.vehicleType,
-        branchCode: rows[0]?.branch_code || 'URT',
+        branchCode: tripBranch || (process.env.NEXT_PUBLIC_DEFAULT_BRANCH_CODE || '').trim() || undefined,
         orders: mappedOrders,
       });
+      if (tmsRes.dispatchState) {
+        dispatchState = tmsRes.dispatchState;
+      } else {
+        dispatchState = tmsRes.skipped ? 'disconnected' : tmsRes.ok ? 'accepted' : 'failed';
+      }
+      if (tmsRes.queuedOutboxEventId) {
+        queuedOutboxEventId = tmsRes.queuedOutboxEventId;
+      }
       if (tmsRes.ok && tmsRes.trackingUrl) {
         tmsTrackingUrl = tmsRes.trackingUrl;
       }
     } catch (tmsErr) {
+      dispatchState = 'failed';
       console.warn('[orders] createDeliveryTrip TMS dispatch warning:', tmsErr);
     }
   }
 
-  return { ok: true, tripId, orderCount: rows.length, trackingUrl: tmsTrackingUrl };
+  return {
+    ok: true,
+    tripId,
+    orderCount: rows.length,
+    trackingUrl: tmsTrackingUrl,
+    dispatchState,
+    queuedOutboxEventId,
+  };
 }

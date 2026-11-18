@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
       }
       if (error) {
         if (previous && previous.length > 0) {
-          await admin.from('warehouse_racks').insert(previous.map(({ id, created_at, ...rest }: any) => rest));
+          await admin.from('warehouse_racks').insert(previous.map(({ id, created_at, ...rest }: any) => ({ ...rest, org_id: orgId })));
         }
         return NextResponse.json({ success: false, error: `บันทึกแร็กไม่สำเร็จ: ${error.message}` }, { status: 500 });
       }

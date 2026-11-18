@@ -20,6 +20,24 @@ import { consumeLotQty } from '@/lib/lots';
 const TABLE = 'stock_locations';
 export const UNASSIGNED = 'UNASSIGNED';
 
+const skuLocks = new Map<string, Promise<void>>();
+
+async function withSkuLock<T>(orgId: string, sku: string, fn: () => Promise<T>): Promise<T> {
+  const key = `${orgId}:${sku}`;
+  const prev = skuLocks.get(key) || Promise.resolve();
+  let release!: () => void;
+  const next = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  skuLocks.set(key, prev.then(() => next));
+  await prev;
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
+}
+
 export interface BinStock {
   binCode: string;
   quantity: number;
@@ -127,26 +145,28 @@ export async function binAdd(
     return Number(atomic);
   }
 
-  const admin = getServiceSupabase();
-  await ensureSeeded(admin, orgId, sku);
+  return withSkuLock(orgId, sku, async () => {
+    const admin = getServiceSupabase();
+    await ensureSeeded(admin, orgId, sku);
 
-  const lot = opts?.lotNo || '';
-  const { data: existing } = await admin
-    .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin).eq('lot_no', lot).maybeSingle();
-  if (existing) {
-    await admin.from(TABLE)
-      .update({ quantity: Number(existing.quantity || 0) + add, updated_at: new Date().toISOString() })
-      .eq('id', existing.id)
-      .eq('org_id', orgId);
-  } else {
-    await admin.from(TABLE)
-      .insert({ org_id: orgId, sku, bin_code: bin, quantity: add, lot_no: lot });
-  }
-  const total = await reconcile(admin, orgId, sku);
-  if (opts?.lotNo && add > 0) {
-    await logLotMoves(orgId, sku, 'IN', [{ binCode: bin, quantity: add, lotNo: opts.lotNo }], opts);
-  }
-  return total;
+    const lot = opts?.lotNo || '';
+    const { data: existing } = await admin
+      .from(TABLE).select('id, quantity').eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin).eq('lot_no', lot).maybeSingle();
+    if (existing) {
+      await admin.from(TABLE)
+        .update({ quantity: Number(existing.quantity || 0) + add, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+        .eq('org_id', orgId);
+    } else {
+      await admin.from(TABLE)
+        .insert({ org_id: orgId, sku, bin_code: bin, quantity: add, lot_no: lot });
+    }
+    const total = await reconcile(admin, orgId, sku);
+    if (opts?.lotNo && add > 0) {
+      await logLotMoves(orgId, sku, 'IN', [{ binCode: bin, quantity: add, lotNo: opts.lotNo }], opts);
+    }
+    return total;
+  });
 }
 
 /**
@@ -171,72 +191,92 @@ export async function binConsume(
     return { taken: takenA, shortfall: Number(atomic.shortfall || 0), total: Number(atomic.total || 0) };
   }
 
-  const admin = getServiceSupabase();
-  await ensureSeeded(admin, orgId, sku);
-  let need = Math.max(0, Number(qty) || 0);
-  const taken: { binCode: string; quantity: number; lotNo?: string }[] = [];
+  return withSkuLock(orgId, sku, async () => {
+    const admin = getServiceSupabase();
+    await ensureSeeded(admin, orgId, sku);
+    let need = Math.max(0, Number(qty) || 0);
+    const taken: { binCode: string; quantity: number; lotNo?: string }[] = [];
 
-  const { data: rows } = await admin
-    .from(TABLE).select('id, bin_code, quantity, lot_no, created_at').eq('org_id', orgId).eq('sku', sku);
-  const bins = (rows || []).filter((b: any) => Number(b.quantity || 0) > 0);
-  const prefer = opts?.preferBin ? norm(opts.preferBin) : null;
+    const prefer = opts?.preferBin ? norm(opts.preferBin) : null;
+    const maxAttempts = 5;
 
-  // A2 — FEFO: consume the lot expiring soonest first. Look up each bin's lot
-  // expiry from product_lots; bins with no lot/expiry fall back to FIFO (oldest
-  // stock_locations row first). A picked `preferBin` still wins so a physical
-  // pick from a scanned bin is honoured over the automatic FEFO order.
-  const lotNos = Array.from(new Set(bins.map((b: any) => b.lot_no).filter(Boolean)));
-  const expMap = new Map<string, { exp: number | null; expired: boolean }>();
-  if (lotNos.length > 0) {
-    try {
-      const { data: lots } = await admin
-        .from('product_lots').select('lot_number, exp_date')
-        .eq('org_id', orgId).eq('sku', sku).in('lot_number', lotNos);
-      for (const l of lots || []) {
-        const exp = l.exp_date ? new Date(l.exp_date).getTime() : null;
-        expMap.set(l.lot_number, { exp, expired: exp != null && exp <= Date.now() });
+    for (let attempt = 0; attempt < maxAttempts && need > 0; attempt++) {
+      const { data: rows } = await admin
+        .from(TABLE).select('id, bin_code, quantity, lot_no, created_at').eq('org_id', orgId).eq('sku', sku);
+      const bins = (rows || []).filter((b: any) => Number(b.quantity || 0) > 0);
+      if (bins.length === 0) break;
+
+      // A2 — FEFO: consume the lot expiring soonest first. Look up each bin's lot
+      // expiry from product_lots; bins with no lot/expiry fall back to FIFO (oldest
+      // stock_locations row first). A picked `preferBin` still wins so a physical
+      // pick from a scanned bin is honoured over the automatic FEFO order.
+      const lotNos = Array.from(new Set(bins.map((b: any) => b.lot_no).filter(Boolean)));
+      const expMap = new Map<string, { exp: number | null; expired: boolean }>();
+      if (lotNos.length > 0) {
+        try {
+          const { data: lots } = await admin
+            .from('product_lots').select('lot_number, exp_date')
+            .eq('org_id', orgId).eq('sku', sku).in('lot_number', lotNos);
+          for (const l of lots || []) {
+            const exp = l.exp_date ? new Date(l.exp_date).getTime() : null;
+            expMap.set(l.lot_number, { exp, expired: exp != null && exp <= Date.now() });
+          }
+        } catch { /* product_lots optional — fall back to FIFO */ }
       }
-    } catch { /* product_lots optional — fall back to FIFO */ }
-  }
-  const meta = (b: any) => (b.lot_no && expMap.get(b.lot_no)) || { exp: null, expired: false };
+      const meta = (b: any) => (b.lot_no && expMap.get(b.lot_no)) || { exp: null, expired: false };
 
-  bins.sort((a: any, b: any) => {
-    if (prefer) {
-      if (a.bin_code === prefer && b.bin_code !== prefer) return -1;
-      if (b.bin_code === prefer && a.bin_code !== prefer) return 1;
+      bins.sort((a: any, b: any) => {
+        if (prefer) {
+          if (a.bin_code === prefer && b.bin_code !== prefer) return -1;
+          if (b.bin_code === prefer && a.bin_code !== prefer) return 1;
+        }
+        const ma = meta(a), mb = meta(b);
+        if (ma.expired !== mb.expired) return ma.expired ? 1 : -1;           // avoid expired unless forced
+        if (ma.exp != null && mb.exp != null && ma.exp !== mb.exp) return ma.exp - mb.exp; // earliest expiry first
+        if (ma.exp != null && mb.exp == null) return -1;                     // dated lots before undated
+        if (ma.exp == null && mb.exp != null) return 1;
+        const ca = new Date(a.created_at || 0).getTime();                    // FIFO tiebreak
+        const cb = new Date(b.created_at || 0).getTime();
+        if (ca !== cb) return ca - cb;
+        return Number(b.quantity || 0) - Number(a.quantity || 0);
+      });
+
+      let contentionDetected = false;
+      for (const b of bins) {
+        if (need <= 0) break;
+        const avail = Number(b.quantity || 0);
+        const use = Math.min(avail, need);
+        if (use <= 0) continue;
+
+        // Optimistic concurrency guard across instances: only deduct if quantity still equals avail
+        const { data: updatedRows, error: updErr } = await admin.from(TABLE)
+          .update({ quantity: avail - use, updated_at: new Date().toISOString() })
+          .eq('id', b.id)
+          .eq('org_id', orgId)
+          .eq('quantity', avail)
+          .select('id, quantity');
+
+        if (updErr || !Array.isArray(updatedRows) || updatedRows.length === 0) {
+          contentionDetected = true;
+          break;
+        }
+
+        taken.push({ binCode: b.bin_code, quantity: use, lotNo: b.lot_no || undefined });
+        need -= use;
+      }
+
+      if (!contentionDetected) break;
     }
-    const ma = meta(a), mb = meta(b);
-    if (ma.expired !== mb.expired) return ma.expired ? 1 : -1;           // avoid expired unless forced
-    if (ma.exp != null && mb.exp != null && ma.exp !== mb.exp) return ma.exp - mb.exp; // earliest expiry first
-    if (ma.exp != null && mb.exp == null) return -1;                     // dated lots before undated
-    if (ma.exp == null && mb.exp != null) return 1;
-    const ca = new Date(a.created_at || 0).getTime();                    // FIFO tiebreak
-    const cb = new Date(b.created_at || 0).getTime();
-    if (ca !== cb) return ca - cb;
-    return Number(b.quantity || 0) - Number(a.quantity || 0);
+
+    const total = await reconcile(admin, orgId, sku);
+    await logLotMoves(orgId, sku, 'OUT', taken, opts); // C1 traceability
+    for (const t of taken) {
+      if (t.lotNo && Number(t.quantity) > 0) {
+        try { await consumeLotQty(orgId, sku, t.lotNo, Number(t.quantity)); } catch { /* best-effort */ }
+      }
+    }
+    return { taken, shortfall: need, total };
   });
-
-  for (const b of bins) {
-    if (need <= 0) break;
-    const avail = Number(b.quantity || 0);
-    const use = Math.min(avail, need);
-    if (use <= 0) continue;
-    await admin.from(TABLE)
-      .update({ quantity: avail - use, updated_at: new Date().toISOString() })
-      .eq('id', b.id)
-      .eq('org_id', orgId);
-    taken.push({ binCode: b.bin_code, quantity: use, lotNo: b.lot_no || undefined });
-    need -= use;
-  }
-
-  const total = await reconcile(admin, orgId, sku);
-  await logLotMoves(orgId, sku, 'OUT', taken, opts); // C1 traceability
-  for (const t of taken) {
-    if (t.lotNo && Number(t.quantity) > 0) {
-      try { await consumeLotQty(orgId, sku, t.lotNo, Number(t.quantity)); } catch { /* best-effort */ }
-    }
-  }
-  return { taken, shortfall: need, total };
 }
 
 /** Move qty of a SKU from one bin to another (partial or whole). */
@@ -308,16 +348,18 @@ export async function binMoveAll(
 export async function binSet(
   orgId: string, sku: string, binCode: string, countedQty: number
 ): Promise<number> {
-  const admin = getServiceSupabase();
-  await ensureSeeded(admin, orgId, sku);
-  const bin = norm(binCode);
-  const val = Math.max(0, Number(countedQty) || 0);
-  // A physical count is per bin, not per lot. Collapse any lot rows in this bin
-  // into a single unlotted row holding the counted quantity.
-  await admin.from(TABLE).delete().eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin);
-  await admin.from(TABLE)
-    .insert({ org_id: orgId, sku, bin_code: bin, quantity: val, lot_no: '' });
-  return reconcile(admin, orgId, sku);
+  return withSkuLock(orgId, sku, async () => {
+    const admin = getServiceSupabase();
+    await ensureSeeded(admin, orgId, sku);
+    const bin = norm(binCode);
+    const val = Math.max(0, Number(countedQty) || 0);
+    // A physical count is per bin, not per lot. Collapse any lot rows in this bin
+    // into a single unlotted row holding the counted quantity.
+    await admin.from(TABLE).delete().eq('org_id', orgId).eq('sku', sku).eq('bin_code', bin);
+    await admin.from(TABLE)
+      .insert({ org_id: orgId, sku, bin_code: bin, quantity: val, lot_no: '' });
+    return reconcile(admin, orgId, sku);
+  });
 }
 
 /**

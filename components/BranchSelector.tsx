@@ -26,7 +26,8 @@ export default function BranchSelector() {
     const [loading, setLoading] = useState(true);
     
     // Default Fallback: URT to match TMS Surat Thani
-    const defaultBranch = { id: 'URT', name: 'สาขาสุราษฎร์ธานี (URT)', color: 'teal', spreadsheetId: '' };
+    const defaultCode = (process.env.NEXT_PUBLIC_DEFAULT_BRANCH_CODE || 'MAIN').trim();
+    const defaultBranch = { id: defaultCode, name: defaultCode === 'MAIN' ? 'สาขาหลัก (MAIN)' : `สาขา (${defaultCode})`, color: 'teal', spreadsheetId: '' };
 
     useEffect(() => {
         // Skip fetch if not authenticated
@@ -63,7 +64,7 @@ export default function BranchSelector() {
         return allowedBranches.includes(b.id);
     });
 
-    const currentBranchId = searchParams.get('branchId') || 'URT';
+    const currentBranchId = searchParams.get('branchId') || defaultCode;
     // Use visibleBranches to determine current branch display
     const currentBranch = visibleBranches.find(b => b.id === currentBranchId) || visibleBranches[0] || defaultBranch;
 

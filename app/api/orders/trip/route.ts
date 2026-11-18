@@ -16,7 +16,11 @@ export async function POST(request: Request) {
     if (guard.error) return guard.error;
 
     const body = await request.json();
-    const res = await createDeliveryTrip(body);
+    const res = await createDeliveryTrip({
+      ...body,
+      orgId: guard.user.orgId,
+      allowedBranches: guard.user.allowedBranches,
+    });
 
     if (!res.ok) {
       return NextResponse.json({ error: res.error || 'สร้างทริปจัดส่งไม่สำเร็จ' }, { status: 400 });

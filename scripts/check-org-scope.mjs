@@ -21,8 +21,6 @@ const DIRS = ['app', 'lib'];
 const GLOBAL_TABLES = new Set([
   'organizations',      // the tenant table itself (queried by id)
   'doc_sequences',
-  'device_tokens',      // push infra, keyed by device
-  'push_subscriptions',
   'rate_limits',
 ]);
 

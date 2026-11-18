@@ -418,15 +418,19 @@ export default function MobileOrdersPage() {
                     <Truck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span className="truncate">{order.carrier || 'ขนส่ง'}: {order.trackingNo}</span>
                   </span>
-                  {order.tmsJobId ? (
+                  {order.tmsJobId && (process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL) ? (
                     <a
-                      href={`https://nexus-tms-six.vercel.app/track/${order.tmsJobId}`}
+                      href={`${(process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').replace(/\/$/, '')}/track/${encodeURIComponent(order.tmsJobId)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform font-sans"
                     >
                       TMS: {order.tmsJobId} ↗
                     </a>
+                  ) : order.tmsJobId ? (
+                    <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold text-[10px] shrink-0 font-sans">
+                      TMS: {order.tmsJobId}
+                    </span>
                   ) : (/บริษัท|จัดส่งเอง|fleet/i.test(order.carrier || '') && order.status === 'SHIPPED') ? (
                     <button
                       type="button"

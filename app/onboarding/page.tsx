@@ -62,7 +62,7 @@ export default function OnboardingPage() {
               <label className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block mb-1.5">ชื่อองค์กร / บริษัท</label>
               <div className="relative">
                 <Building2 className="absolute left-3.5 top-3 w-5 h-5 text-[#8a92a6]" />
-                <input value={orgName} onChange={e => setOrgName(e.target.value)} placeholder="เช่น ดีดี คลังสินค้า" className="w-full pl-11 bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-bold text-[#dee2ec] outline-none focus:border-cyan-500" />
+                <input value={orgName} onChange={e => setOrgName(e.target.value)} placeholder="เช่น อัลฟ่า คลังสินค้า จำกัด" className="w-full pl-11 bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-bold text-[#dee2ec] outline-none focus:border-cyan-500" />
               </div>
             </div>
 

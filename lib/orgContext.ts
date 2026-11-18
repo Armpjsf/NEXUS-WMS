@@ -7,12 +7,39 @@ import { authOptions } from '@/lib/auth';
 
 export const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
-export async function getCurrentOrgId(): Promise<string> {
+/**
+ * Strictly resolves the authenticated organization ID from the session.
+ * Rejects unauthenticated, revoked, or org-less sessions instead of falling back to DEFAULT_ORG.
+ */
+export async function requireCurrentOrgId(): Promise<string> {
+  const session = await getServerSession(authOptions);
+  const user = session?.user as { orgId?: string; revoked?: boolean } | undefined;
+  if (!user || user.revoked || !user.orgId) {
+    throw new Error('Unauthorized: Authenticated organization context is required');
+  }
+  return user.orgId;
+}
+
+export async function getCurrentOrgId(options?: { allowDefaultInDev?: boolean }): Promise<string> {
+  const strict =
+    process.env.STRICT_TENANT_CONTEXT === 'true' ||
+    options?.allowDefaultInDev === false;
+
   try {
     const session = await getServerSession(authOptions);
-    const orgId = session?.user?.orgId;
-    return orgId || DEFAULT_ORG;
-  } catch {
-    return DEFAULT_ORG;
+    const user = session?.user as { orgId?: string; revoked?: boolean } | undefined;
+    if (user?.revoked) {
+      if (strict) throw new Error('Forbidden: Session has been revoked');
+      throw new Error('Forbidden: Session has been revoked');
+    }
+    const orgId = user?.orgId;
+    if (orgId) return orgId;
+  } catch (err) {
+    if (strict) throw err;
   }
+
+  if (strict) {
+    throw new Error('Unauthorized: Organization context is required');
+  }
+  return DEFAULT_ORG;
 }

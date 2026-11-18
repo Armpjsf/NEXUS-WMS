@@ -84,7 +84,8 @@ function useMapBranch(): string | null {
       .then((list: any[]) => {
         if (cancelled) return;
         const ids = Array.isArray(list) ? list.map(b => b.id || b.code).filter(Boolean) : [];
-        setFallback(ids.includes('URT') ? 'URT' : ids[0] || 'MAIN');
+        const defaultCode = (process.env.NEXT_PUBLIC_DEFAULT_BRANCH_CODE || '').trim();
+        setFallback(defaultCode && ids.includes(defaultCode) ? defaultCode : ids[0] || 'MAIN');
       })
       .catch(() => !cancelled && setFallback('MAIN'));
     return () => { cancelled = true; };

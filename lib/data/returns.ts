@@ -120,10 +120,11 @@ export async function ensureRmaForDamagedOrder(input: {
   const admin = getServiceSupabase();
   const orgId = input.orgId || await getCurrentOrgId();
 
-  // Check if RMA already exists for this order
+  // Check if RMA already exists for this order within the same org
   const { data: existing } = await admin
     .from('return_orders')
     .select('*')
+    .eq('org_id', orgId)
     .eq('order_no', input.orderNo)
     .maybeSingle();
 

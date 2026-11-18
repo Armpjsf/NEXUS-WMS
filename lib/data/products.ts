@@ -74,3 +74,44 @@ export function mapProductRow(row: any): UIProduct {
 export function mapProductRows(rows: any[] | null | undefined): UIProduct[] {
   return (rows ?? []).map(mapProductRow);
 }
+
+export async function createOrUpdateProductWithQuota(
+  orgId: string,
+  row: Record<string, any> & { sku: string },
+  opts?: { eventId?: string },
+) {
+  const { getServiceSupabase } = await import('@/lib/supabase');
+  const { countResource } = await import('@/lib/planLimits');
+  const { checkAndReserveQuota, releaseQuotaReservation, commitQuotaReservation } = await import('@/lib/entitlements');
+  const { upsertProductsForOrg } = await import('@/lib/data/productUpsert');
+
+  const db = getServiceSupabase();
+  const { data: existing } = await db
+    .from('products').select('id').eq('org_id', orgId).eq('sku', row.sku).maybeSingle();
+
+  const eventId = opts?.eventId || `wms:product:${orgId}:${row.sku}`;
+  let reserved = false;
+  if (!existing) {
+    const qRes = await checkAndReserveQuota(
+      orgId,
+      'products',
+      () => countResource(orgId, 'products', 'products'),
+      { module: 'wms', eventId },
+    );
+    reserved = qRes.limit >= 0;
+  }
+
+  let committed = false;
+  try {
+    const res = await upsertProductsForOrg(orgId, [row]);
+    if (reserved && !res?.error) {
+      await commitQuotaReservation(orgId, 'products', { module: 'wms', eventId });
+      committed = true;
+    }
+    return res;
+  } finally {
+    if (reserved && !committed) {
+      await releaseQuotaReservation(orgId, 'products', 1, { module: 'wms', eventId }).catch(() => {});
+    }
+  }
+}

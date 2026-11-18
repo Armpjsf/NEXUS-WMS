@@ -17,6 +17,8 @@ export interface DocNumberOptions {
   date?: DocDateStyle;
   /** Zero-pad width of the sequence. Default 3. */
   pad?: number;
+  /** Tenant / org scope for atomic counter isolation across tenants. */
+  orgId?: string;
   /** Existing table/column holding these numbers — seeds the counter so it
    *  never re-issues a number created before the counter existed. */
   existing?: { table: string; column: string; orgId?: string };
@@ -70,9 +72,14 @@ export async function nextDocNumber(prefix: string, opts: DocNumberOptions = {})
   const now = opts.now || new Date();
   const date = bangkokDate(opts.date || 'yymmdd', now);
   const key = `${prefix}-${date}-`;
+  const scopeOrgId = opts.orgId || opts.existing?.orgId;
+  const seqKey = scopeOrgId ? `${key}@${scopeOrgId}` : key;
+  const existingOpt = opts.existing
+    ? { ...opts.existing, orgId: opts.existing.orgId || opts.orgId }
+    : undefined;
   try {
-    const floor = await existingFloor(key, opts.existing);
-    const { data, error } = await getServiceSupabase().rpc('wms_next_doc_seq', { p_key: key, p_floor: floor });
+    const floor = await existingFloor(key, existingOpt);
+    const { data, error } = await getServiceSupabase().rpc('wms_next_doc_seq', { p_key: seqKey, p_floor: floor });
     if (error) throw error;
     const seq = Number(data);
     if (!Number.isFinite(seq) || seq <= 0) throw new Error(`bad sequence ${data}`);

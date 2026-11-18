@@ -134,6 +134,7 @@ export const authOptions: NextAuthOptions = {
         session.user.orgId = token.orgId;
         session.user.allowedBranches = token.allowedBranches;
         session.user.allowedOwners = token.allowedOwners;
+        session.user.revoked = Boolean(token.revoked);
       }
       return session;
     }
