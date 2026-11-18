@@ -1,6 +1,7 @@
 'use client';
 
 import { getProcessBuildingBounds } from '@/lib/warehouseProcessBounds';
+import { rackFloorPoint } from '@/lib/warehouseProcessCoordinates';
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import * as THREE from 'three';
@@ -563,9 +564,6 @@ export function getBinWorldCoordinates(binCode: string, racks: RackConfig[]): Bi
     const totalRackLength = bays * bayW;
     const isFloor = r.type === 'CROSS_DOCK' || r.type === 'FLOOR_BLOCK';
     const layerH = isFloor ? Math.max(0.4, Number(r.levelHeight) || 0.6) : r.levelHeight || 1.8;
-    const rot = r.rotationY || 0;
-    const cos = Math.cos(rot);
-    const sin = Math.sin(rot);
 
     for (let lvl = 1; lvl <= levels; lvl++) {
       for (let bay = 1; bay <= bays; bay++) {
@@ -574,12 +572,10 @@ export function getBinWorldCoordinates(binCode: string, racks: RackConfig[]): Bi
           const bayOffset = -totalRackLength / 2 + (bay - 0.5) * bayW;
           const beamY = isFloor ? 0.08 + (lvl - 1) * layerH : FIRST_BEAM_Y + (lvl - 1) * layerH;
           const shelfY = beamY + layerH * 0.45;
-          const sx = r.posX + bayOffset * cos;
-          const sz = r.posZ + bayOffset * sin;
+          const [sx, sz] = rackFloorPoint(r, bayOffset, 0);
 
           const aisleDist = (r.rackDepth || 2.2) / 2 + 1.35;
-          const ax = sx - sin * aisleDist;
-          const az = sz + cos * aisleDist;
+          const [ax, az] = rackFloorPoint(r, bayOffset, aisleDist);
 
           return {
             shelfPos: [sx, shelfY, sz],
@@ -599,17 +595,13 @@ export function getBinWorldCoordinates(binCode: string, racks: RackConfig[]): Bi
     const r = racks[0];
     const bays = Math.max(1, Math.floor(Number(r.bays) || 1));
     const bayW = r.bayWidth || 2.8;
-    const rot = r.rotationY || 0;
-    const cos = Math.cos(rot);
-    const sin = Math.sin(rot);
     const bayIdx = Math.min(2, bays);
     const bayOffset = -((bays * bayW) / 2) + (bayIdx - 0.5) * bayW;
-    const sx = r.posX + bayOffset * cos;
-    const sz = r.posZ + bayOffset * sin;
+    const [sx, sz] = rackFloorPoint(r, bayOffset, 0);
     const aisleDist = (r.rackDepth || 2.2) / 2 + 1.35;
     return {
       shelfPos: [sx, 1.4, sz],
-      aislePos: [sx - sin * aisleDist, 0, sz + cos * aisleDist],
+      aislePos: [rackFloorPoint(r, bayOffset, aisleDist)[0], 0, rackFloorPoint(r, bayOffset, aisleDist)[1]],
       binCode: norm || binCodeFor(r, bayIdx, 1) || 'A-001',
       rackCode: r.rackCode,
       bay: bayIdx,
@@ -1801,14 +1793,12 @@ export default function WarehouseProcessSimulator3D({
     }
     const distRounded = Math.round(totalDistanceM * 10) / 10;
     const estimatedPickSeconds = Math.round(distRounded / 1.15 + orderBinTargets.length * 12);
-    const efficiencyScore = Math.max(78, Math.min(99, Math.round(100 - distRounded * 0.35)));
 
     return {
       waypoints,
       totalDistanceM: distRounded,
       estimatedPickSeconds,
       stopCount: orderBinTargets.length,
-      efficiencyScore,
     };
   }, [stations, orderBinTargets, conveyorZ]);
 
@@ -4175,10 +4165,10 @@ export default function WarehouseProcessSimulator3D({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-black text-xs text-sky-600 dark:text-sky-400">
                     <Navigation className="w-3.5 h-3.5" />
-                    <span>AI Picking Route & Travel Telemetry</span>
+                    <span>Picking Route Estimate</span>
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
-                    Optimization {routeAnalytics.efficiencyScore}%
+                    ระยะเส้นตรงโดยประมาณ
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-1 text-center">
@@ -4636,10 +4626,10 @@ export default function WarehouseProcessSimulator3D({
                   ? 'text-slate-600 hover:bg-slate-100'
                   : 'text-slate-400 hover:bg-slate-800'
               )}
-              title="เปิด/ปิด เส้นทางนำทางอัจฉริยะบนพื้นคลัง (AI Route Ribbon)"
+              title="จุดเริ่ม → ช่องหยิบ → สายพาน: ระยะเส้นตรงรวม ยังไม่คำนวณทางอ้อมชั้นวาง"
             >
               <Navigation className="w-3.5 h-3.5" />
-              <span>เส้นทาง { routeAnalytics.totalDistanceM }m</span>
+              <span>ระยะประมาณ { routeAnalytics.totalDistanceM }m</span>
             </button>
 
             <button
