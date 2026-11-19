@@ -25,10 +25,11 @@ function ThermalLabelsContent() {
   const [labelType, setLabelType] = useState<LabelType>('SHIPPING_100x150');
 
   // Shipping Label Form Data
+  const [orgName, setOrgName] = useState('Nexus WMS');
   const [carrier, setCarrier] = useState('Flash Express');
   const [trackingNo, setTrackingNo] = useState('TH0123456789A');
   const [orderNo, setOrderNo] = useState('ORD-2026-9876');
-  const [senderName, setSenderName] = useState('คลังสินค้า WMS 360 PRO (ศูนย์กระจายสินค้าหลัก)');
+  const [senderName, setSenderName] = useState('คลังสินค้า Nexus WMS (ศูนย์กระจายสินค้าหลัก)');
   const [senderPhone, setSenderPhone] = useState('02-999-8888');
   const [senderAddress, setSenderAddress] = useState('88/8 หมู่ 5 ถ.พหลโยธิน คลองหนึ่ง คลองหลวง ปทุมธานี 12120');
 
@@ -79,6 +80,22 @@ function ThermalLabelsContent() {
     if (searchParams.get('price')) setProductPrice(searchParams.get('price')!);
     if (searchParams.get('unit')) setProductUnit(searchParams.get('unit')!);
   }, [searchParams]);
+
+  useEffect(() => {
+    fetch('/api/org', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((dOrg) => {
+        if (dOrg?.name) {
+          setOrgName(dOrg.name);
+          setSenderName((prev) =>
+            prev === 'คลังสินค้า Nexus WMS (ศูนย์กระจายสินค้าหลัก)'
+              ? `คลังสินค้า ${dOrg.name} (ศูนย์กระจายสินค้าหลัก)`
+              : prev
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // PDA Scanner auto-fill
   usePdaScanner({
@@ -459,7 +476,7 @@ function ThermalLabelsContent() {
 
                   {/* Footer */}
                   <div className="mt-2 pt-1 border-t border-dashed border-black text-[8px] text-center font-mono">
-                    WMS 360 PRO • FULFILLMENT AUTOMATION SYSTEM
+                    {orgName.toUpperCase()} • FULFILLMENT AUTOMATION SYSTEM
                   </div>
                 </div>
               )}

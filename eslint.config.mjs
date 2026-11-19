@@ -6,6 +6,7 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
       // Legacy debt tracked as warnings (burn down over time); anything that
       // is a real bug stays an error.
@@ -16,12 +17,20 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "warn",
     },
   },
+  {
+    files: ["**/*.cjs"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   globalIgnores([
     ".next/**",
     "out/**",
     "build/**",
     "android/**",
     "public/**",
+    ".claude/**",
+    ".github/**",
     "next-env.d.ts",
   ]),
 ]);

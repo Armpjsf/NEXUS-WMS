@@ -129,7 +129,7 @@ export default function ReturnsScanPage() {
     setProcessing(true);
     const t = toast.loading('กำลังบันทึกและปรับปรุงสถานะคลังสินค้า...');
     try {
-      let patchBody: any = { id: foundRma.id };
+      const patchBody: any = { id: foundRma.id };
 
       if (disposition === 'QUARANTINE') {
         patchBody.status = 'RECEIVED';

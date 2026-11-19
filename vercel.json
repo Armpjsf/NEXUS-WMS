@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/keep-alive",
       "schedule": "0 4 */3 * *"
+    },
+    {
+      "path": "/api/cron/integration-outbox",
+      "schedule": "0 1 * * *"
     }
   ]
 }

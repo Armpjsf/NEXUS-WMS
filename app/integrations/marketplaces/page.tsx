@@ -889,7 +889,7 @@ export default function MarketplaceIntegrationsPage() {
                     className="w-full p-3.5 rounded-2xl border border-[#30353d] hover:border-orange-400 hover:bg-orange-500/10/40 text-left transition-all flex items-center justify-between text-xs"
                   >
                     <div>
-                      <div className="font-bold text-[#dee2ec]">1. เทมเพลตมาตรฐาน WMS 360 PRO</div>
+                      <div className="font-bold text-[#dee2ec]">1. เทมเพลตมาตรฐาน Nexus WMS</div>
                       <div className="text-[11px] text-[#8a92a6] mt-0.5">
                         เหมาะสำหรับออเดอร์ทั่วไป, หน้าร้าน, Facebook, LINE OA
                       </div>

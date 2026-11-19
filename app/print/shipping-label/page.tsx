@@ -43,7 +43,7 @@ function ShippingLabelDoc() {
   const qBoxCount = searchParams.get('boxCount');
 
   const [order, setOrder] = useState<Order | null>(null);
-  const [org, setOrg] = useState<Org>({ name: 'WMS 360 PRO', brandingLogo: '', brandingColor: '#0ea5e9' });
+  const [org, setOrg] = useState<Org>({ name: 'Nexus WMS', brandingLogo: '', brandingColor: '#0ea5e9' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

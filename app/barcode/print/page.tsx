@@ -15,6 +15,7 @@ export default function BarcodePrintPage() {
   const [search, setSearch] = useState('');
   const [printFormat, setPrintFormat] = useState<'label-4x6' | 'a4-sheet'>('label-4x6');
   const [quantity, setQuantity] = useState(1);
+  const [orgName, setOrgName] = useState('Nexus WMS');
   const componentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,6 +23,10 @@ export default function BarcodePrintPage() {
       .then(res => res.json())
       .then(data => setProducts(data || []))
       .catch(console.error);
+    fetch(getApiUrl('/api/org'), { cache: 'no-store' })
+      .then(res => res.ok ? res.json() : null)
+      .then(dOrg => { if (dOrg?.name) setOrgName(dOrg.name); })
+      .catch(() => {});
   }, []);
 
   const handlePrint = useReactToPrint({
@@ -150,7 +155,7 @@ export default function BarcodePrintPage() {
                    // 4x6 Label Template
                    <div className="w-[4in] h-[6in] p-4 flex flex-col items-center justify-between border border-dashed border-slate-200 relative">
                       <div className="w-full text-center border-b-2 border-black pb-4">
-                         <h2 className="text-2xl font-black uppercase tracking-tight leading-none mb-2">WMS 360</h2>
+                         <h2 className="text-2xl font-black uppercase tracking-tight leading-none mb-2">{orgName}</h2>
                          <p className="text-xs font-bold uppercase">Inventory Tag</p>
                       </div>
                       
@@ -188,7 +193,7 @@ export default function BarcodePrintPage() {
                             </div>
                             <div className="w-full flex justify-between items-end border-t border-slate-100 pt-1 mt-1">
                                <span className="text-[10px] text-slate-500">{selectedProduct.location}</span>
-                               <span className="text-[10px] font-bold">WMS 360</span>
+                               <span className="text-[10px] font-bold">{orgName}</span>
                             </div>
                          </div>
                       ))}

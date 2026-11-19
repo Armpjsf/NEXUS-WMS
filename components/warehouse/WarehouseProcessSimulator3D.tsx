@@ -1804,36 +1804,30 @@ export default function WarehouseProcessSimulator3D({
 
   // Live Refs so the 60fps requestAnimationFrame loop reads fresh state WITHOUT rebuilding the WebGL scene!
   const showRouteRibbonRef = useRef(showRouteRibbon);
-  showRouteRibbonRef.current = showRouteRibbon;
-
   const showHeatmapRef = useRef(showHeatmap);
-  showHeatmapRef.current = showHeatmap;
-
   const followTargetIdRef = useRef(followTargetId);
-  followTargetIdRef.current = followTargetId;
-
   const routeWaypointsRef = useRef(routeAnalytics.waypoints);
-  routeWaypointsRef.current = routeAnalytics.waypoints;
   const currentStepIdxRef = useRef(currentStepIdx);
-  currentStepIdxRef.current = currentStepIdx;
-
   const isAutoRotateRef = useRef(isAutoRotate);
-  isAutoRotateRef.current = isAutoRotate;
-
   const tourSpeedRef = useRef(tourSpeed);
-  tourSpeedRef.current = tourSpeed;
-
   const showActiveLabelRef = useRef(showActiveLabel);
-  showActiveLabelRef.current = showActiveLabel;
-
   const stationsRef = useRef(stations);
-  stationsRef.current = stations;
-
   const orderBinTargetsRef = useRef(orderBinTargets);
-  orderBinTargetsRef.current = orderBinTargets;
-
   const viewModeRef = useRef(viewMode);
-  viewModeRef.current = viewMode;
+
+  useEffect(() => {
+    showRouteRibbonRef.current = showRouteRibbon;
+    showHeatmapRef.current = showHeatmap;
+    followTargetIdRef.current = followTargetId;
+    routeWaypointsRef.current = routeAnalytics.waypoints;
+    currentStepIdxRef.current = currentStepIdx;
+    isAutoRotateRef.current = isAutoRotate;
+    tourSpeedRef.current = tourSpeed;
+    showActiveLabelRef.current = showActiveLabel;
+    stationsRef.current = stations;
+    orderBinTargetsRef.current = orderBinTargets;
+    viewModeRef.current = viewMode;
+  });
 
   const stepEnteredTimeRef = useRef<number>(0);
 
@@ -1997,7 +1991,9 @@ export default function WarehouseProcessSimulator3D({
   );
 
   const goToStationRef = useRef(goToStation);
-  goToStationRef.current = goToStation;
+  useEffect(() => {
+    goToStationRef.current = goToStation;
+  }, [goToStation]);
 
   // Keep active callout & pin positions synced whenever `stations` or `currentStepIdx` updates
   useEffect(() => {
@@ -2407,7 +2403,8 @@ export default function WarehouseProcessSimulator3D({
       return truck;
     };
 
-    const inboundTruck = createTruck(-floorWidth / 2 - 4.5, dockZ, 0, 0xf59e0b);
+    const dockZPos = Number(dockZ);
+    const inboundTruck = createTruck(-floorWidth / 2 - 4.5, dockZPos, 0, 0xf59e0b);
     inboundTruck.userData = {
       inspectable: {
         type: 'TRUCK',
@@ -2422,7 +2419,7 @@ export default function WarehouseProcessSimulator3D({
       } as InspectedObjectInfo,
     };
 
-    const outboundTruck = createTruck(floorWidth / 2 + 4.5, dockZ, Math.PI, 0x10b981);
+    const outboundTruck = createTruck(floorWidth / 2 + 4.5, dockZPos, Math.PI, 0x10b981);
     outboundTruck.userData = {
       inspectable: {
         type: 'TRUCK',
