@@ -83,7 +83,7 @@ export default function MobileReceivingPage() {
     if (!q) return;
 
     // Look for matching pending receipt
-    const match = pending.find(r => 
+    const match = pending.find(r =>
       r.receiptNo.toLowerCase() === q ||
       (r.poNumber && r.poNumber.toLowerCase() === q) ||
       r.items.some(it => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q))
@@ -98,7 +98,7 @@ export default function MobileReceivingPage() {
     }
 
     // Check done receipts
-    const matchDone = done.find(r => 
+    const matchDone = done.find(r =>
       r.receiptNo.toLowerCase() === q ||
       (r.poNumber && r.poNumber.toLowerCase() === q)
     );
@@ -135,87 +135,89 @@ export default function MobileReceivingPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Top Mobile Bar - Tactical Hybrid */}
-      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/mobile" 
-              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95 transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="font-bold text-base text-[#dee2ec] leading-tight">รับสินค้าเข้า (Inbound)</h1>
-              <p className="text-[11px] text-[#8a92a6]">สแกนตรวจนับ PO และขึ้นชั้นวาง</p>
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 pb-28 font-sans select-none">
+      {/* Top Mobile Bar */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <Link
+                href="/mobile"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 shadow-xs active:scale-95 transition-all shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="min-w-0">
+                <h1 className="font-bold text-base text-slate-900 leading-tight truncate">รับสินค้าเข้า (Inbound)</h1>
+                <p className="text-[11px] text-slate-600 truncate">สแกนตรวจนับ PO และขึ้นชั้นวาง</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setCameraOpen(true)}
+                className="min-h-[44px] px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm transition-all font-mono"
+              >
+                <Camera className="w-4 h-4" />
+                <span>สแกนกล้อง</span>
+              </button>
+              <button
+                onClick={load}
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs active:scale-95 transition-all"
+                aria-label="รีเฟรช"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCameraOpen(true)}
-              className="px-3 py-1.5 bg-[#57ec7f] hover:bg-[#46c368] active:scale-95 text-[#090f15] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#57ec7f]/20 transition-all font-mono"
-            >
-              <Camera className="w-4 h-4" />
-              <span>สแกนกล้อง</span>
-            </button>
-            <button
-              onClick={load}
-              className="p-2 rounded-lg bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* Search & PDA Indicator */}
-        <div className="mt-3 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="ค้นหาเลขที่ PO, ใบรับ หรือ SKU..."
-              className="w-full bg-[#090f15] border border-[#30353d] rounded-xl pl-9 pr-8 py-2 text-xs text-[#dee2ec] placeholder-[#8a92a6] focus:outline-none focus:border-[#57ec7f]"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-[#8a92a6] hover:text-[#dee2ec]"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-          <div className="px-2.5 py-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[10px] font-mono text-[#57ec7f] flex items-center gap-1 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#57ec7f] animate-pulse" />
-            PDA พร้อม
+          {/* Search & PDA Indicator */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="ค้นหาเลขที่ PO, ใบรับ หรือ SKU..."
+                className="w-full min-h-[44px] bg-white/90 border border-slate-200/80 rounded-full pl-10 pr-9 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="min-h-[44px] px-3 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-700 flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              PDA พร้อม
+            </div>
           </div>
         </div>
       </header>
 
       {/* Tabs: Pending vs Done */}
       <div className="px-4 mt-3 max-w-lg mx-auto">
-        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="nx-glass-card grid grid-cols-2 gap-1.5 p-1.5 rounded-full">
           <button
             onClick={() => setActiveTab('pending')}
-            className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+            className={`min-h-[40px] py-2 text-xs font-bold rounded-full transition-all tabular-nums ${
               activeTab === 'pending'
-                ? 'bg-emerald-600 text-white shadow'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             รอตรวจรับ ({pending.length})
           </button>
           <button
             onClick={() => setActiveTab('done')}
-            className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+            className={`min-h-[40px] py-2 text-xs font-bold rounded-full transition-all tabular-nums ${
               activeTab === 'done'
-                ? 'bg-slate-100 text-slate-900 shadow'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             เสร็จแล้ว ({done.length})
@@ -226,14 +228,16 @@ export default function MobileReceivingPage() {
       {/* Main List */}
       <main className="p-4 space-y-3 max-w-lg mx-auto">
         {loading ? (
-          <div className="py-16 text-center text-slate-500 text-sm">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-500" />
+          <div className="nx-glass-card py-14 text-center text-slate-500 text-sm">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
             กำลังโหลดรายการรับเข้า...
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 space-y-2">
-            <Warehouse className="w-12 h-12 mx-auto text-slate-700" />
-            <p className="text-sm font-semibold text-slate-500">
+          <div className="nx-glass-card py-14 px-6 text-center text-slate-500 space-y-2">
+            <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+              <Warehouse className="w-7 h-7" />
+            </div>
+            <p className="text-sm font-semibold text-slate-600">
               {searchQuery ? 'ไม่พบรายการที่ตรงกับการค้นหา' : activeTab === 'pending' ? 'ไม่มีใบรอตรวจรับสินค้า' : 'ยังไม่มีประวัติการรับเข้า'}
             </p>
           </div>
@@ -243,58 +247,58 @@ export default function MobileReceivingPage() {
             return (
               <div
                 key={r.id}
-                className="p-4 rounded-2xl bg-white/90 border border-slate-200 hover:border-slate-200 shadow-md space-y-3"
+                className="nx-glass-card p-4 space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-slate-900 text-base">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-slate-900 text-base tabular-nums">
                         {r.receiptNo}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        r.status === 'EXPECTED' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                        r.status === 'RECEIVING' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                        'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                        r.status === 'EXPECTED' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                        r.status === 'RECEIVING' ? 'bg-sky-50 text-sky-700 border-sky-200' :
+                        'bg-emerald-50 text-emerald-700 border-emerald-200'
                       }`}>
                         {r.status === 'EXPECTED' ? 'รอรับ' : r.status === 'RECEIVING' ? 'กำลังรับ' : 'เสร็จสิ้น'}
                       </span>
                     </div>
                     {r.poNumber && (
-                      <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-slate-500" /> PO: <strong className="text-slate-600">{r.poNumber}</strong>
+                      <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-1">
+                        <FileText className="w-3 h-3 text-slate-400" /> PO: <strong className="text-slate-800 font-mono">{r.poNumber}</strong>
                       </p>
                     )}
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <span className="text-[11px] text-slate-500 block">ยอดคาดหวัง</span>
-                    <span className="text-base font-black text-emerald-600">{totalPcs}</span>
+                    <span className="text-base font-black text-emerald-700 tabular-nums">{totalPcs}</span>
                     <span className="text-[11px] text-slate-500 ml-1">ชิ้น</span>
                   </div>
                 </div>
 
-                <div className="text-xs text-slate-500 border-t border-slate-200 pt-2 flex items-center justify-between">
+                <div className="text-xs text-slate-600 border-t border-slate-200/70 pt-2 flex items-center justify-between">
                   <span className="truncate max-w-[200px]">ผู้ขาย: {r.supplier || 'ไม่ระบุผู้ขาย'}</span>
-                  <span>{r.items.length} รายการ</span>
+                  <span className="font-semibold tabular-nums">{r.items.length} รายการ</span>
                 </div>
 
                 {r.status !== 'DONE' ? (
                   <button
                     onClick={() => setReceiving(r)}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
+                    className="w-full min-h-[48px] py-3 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
                   >
                     <Warehouse className="w-4 h-4" /> ตรวจรับ & จัดเก็บเข้าชั้นวาง
                   </button>
                 ) : (
-                  <div className="flex items-center justify-between pt-1 text-xs text-emerald-600">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center justify-between pt-1 text-xs text-emerald-700">
+                    <span className="flex items-center gap-1 font-semibold">
                       <CheckCircle2 className="w-4 h-4" /> จัดเก็บเข้าพิกัดสต็อกเรียบร้อย
                     </span>
                     <a
                       href={`/print/putaway-slip?id=${r.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] flex items-center gap-1"
+                      className="min-h-[36px] px-3 py-1.5 rounded-full bg-white/90 border border-slate-200 hover:bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center gap-1"
                     >
                       <Printer className="w-3 h-3" /> ใบจัดเก็บ
                     </a>
@@ -333,14 +337,14 @@ export default function MobileReceivingPage() {
   );
 }
 
-function MobileReceiveModal({ 
-  receipt, 
-  onClose, 
-  onDone 
-}: { 
-  receipt: Receipt; 
-  onClose: () => void; 
-  onDone: () => void; 
+function MobileReceiveModal({
+  receipt,
+  onClose,
+  onDone
+}: {
+  receipt: Receipt;
+  onClose: () => void;
+  onDone: () => void;
 }) {
   const [lines, setLines] = useState<Line[]>(() =>
     receipt.items.map(it => ({
@@ -462,31 +466,33 @@ function MobileReceiveModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white border border-slate-200 w-full max-w-lg max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5">
+    <div className="fixed inset-0 z-[60] bg-slate-900/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-lg max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl text-slate-900">
         {/* Header */}
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <div>
+        <div className="p-4 border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <PackagePlus className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-bold text-slate-900 text-base">ตรวจรับใบ {receipt.receiptNo}</h3>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 shrink-0">
+                <PackagePlus className="w-4 h-4" />
+              </span>
+              <h3 className="font-bold text-slate-900 text-base truncate tabular-nums">ตรวจรับใบ {receipt.receiptNo}</h3>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5 truncate">
               {receipt.poNumber ? `PO: ${receipt.poNumber} · ` : ''}{receipt.supplier || 'ไม่ระบุผู้ขาย'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setItemScannerOpen(true)}
-              className="p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 active:scale-95"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 shadow-xs"
               title="สแกนกล้องตรวจรับ"
             >
               <Camera className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:text-slate-900"
             >
               <X className="w-5 h-5" />
             </button>
@@ -498,26 +504,26 @@ function MobileReceiveModal({
           {lines.map((l, idx) => (
             <div
               key={l.sku}
-              className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
+              className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0">
                   <h4 className="font-bold text-sm text-slate-900">{l.name}</h4>
                   <p className="text-xs text-slate-500 font-mono">SKU: {l.sku}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <span className="text-[10px] text-slate-500 block">สั่งมา</span>
-                  <span className="text-sm font-black text-slate-600">{l.expectedQty} ชิ้น</span>
+                  <span className="text-sm font-black text-slate-700 tabular-nums">{l.expectedQty} ชิ้น</span>
                 </div>
               </div>
 
               {/* Quantity Stepper (1-Thumb Friendly) */}
-              <div className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-200">
+              <div className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/80">
                 <span className="text-xs font-semibold text-slate-600">ยอดรับจริง:</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => updateQty(idx, -1)}
-                    className="w-9 h-9 rounded-lg bg-slate-100 active:bg-slate-200 text-slate-900 flex items-center justify-center font-black"
+                    className="w-10 h-10 rounded-full bg-slate-100 active:bg-slate-200 text-slate-900 flex items-center justify-center font-black"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -532,17 +538,17 @@ function MobileReceiveModal({
                         return copy;
                       });
                     }}
-                    className="w-16 h-9 bg-slate-50 border border-slate-200 rounded-lg text-center font-black text-emerald-600 text-base focus:outline-none"
+                    className="w-16 h-10 bg-slate-50 border border-slate-200 rounded-xl text-center font-black font-mono text-emerald-700 text-base tabular-nums focus:outline-none focus:border-emerald-500"
                   />
                   <button
                     onClick={() => updateQty(idx, 1)}
-                    className="w-9 h-9 rounded-lg bg-emerald-600 active:bg-emerald-500 text-white flex items-center justify-center font-black"
+                    className="w-10 h-10 rounded-full bg-emerald-600 active:bg-emerald-500 text-white flex items-center justify-center font-black"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => updateQty(idx, 5)}
-                    className="px-2 h-9 rounded-lg bg-slate-100 active:bg-slate-200 text-xs font-bold text-slate-600"
+                    className="px-2.5 h-10 rounded-full bg-slate-100 active:bg-slate-200 text-xs font-bold text-slate-700 tabular-nums"
                   >
                     +5
                   </button>
@@ -557,7 +563,7 @@ function MobileReceiveModal({
                     <select
                       value={l.uom || (uomMap[l.sku]?.find(u => u.isBase)?.code || '')}
                       onChange={e => updateUom(idx, e.target.value)}
-                      className="h-9 bg-white border border-slate-200 rounded-lg px-2 text-xs font-bold text-slate-700 focus:outline-none"
+                      className="h-9 bg-white border border-slate-200 rounded-full px-3 text-xs font-bold text-slate-800 focus:outline-none"
                     >
                       {uomMap[l.sku]?.map(u => (
                         <option key={u.code} value={u.code}>{u.name || u.code}{!u.isBase ? ` (×${u.factor})` : ''}</option>
@@ -566,7 +572,7 @@ function MobileReceiveModal({
                     {(() => {
                       const sel = uomMap[l.sku]?.find(u => u.code === (l.uom || uomMap[l.sku]?.find(x => x.isBase)?.code));
                       const base = uomMap[l.sku]?.find(u => u.isBase);
-                      if (sel && !sel.isBase) return <span className="text-[11px] text-emerald-600 font-mono">= {(Number(l.receivedQty || 0) * sel.factor)} {base?.name || 'ชิ้น'}</span>;
+                      if (sel && !sel.isBase) return <span className="text-[11px] text-emerald-700 font-mono tabular-nums">= {(Number(l.receivedQty || 0) * sel.factor)} {base?.name || 'ชิ้น'}</span>;
                       return null;
                     })()}
                   </div>
@@ -574,9 +580,9 @@ function MobileReceiveModal({
               )}
 
               {/* Putaway Bin Coordinates with Multi-Bin Quick Selection */}
-              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+              <div className="pt-2 border-t border-slate-200/70 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
                     <MapPin className="w-3.5 h-3.5 text-emerald-600" />
                     <span>พิกัดจัดเก็บ (Putaway Bin):</span>
                   </div>
@@ -586,12 +592,12 @@ function MobileReceiveModal({
                       value={l.putawayBin || ''}
                       onChange={e => updateBin(idx, e.target.value.toUpperCase())}
                       placeholder="เช่น A-01-01"
-                      className="w-24 py-1 px-2 text-center text-xs font-mono font-bold bg-white border border-slate-200 rounded-lg text-emerald-700 focus:outline-none focus:border-emerald-500 uppercase"
+                      className="w-24 py-1.5 px-2.5 text-center text-xs font-mono font-bold bg-white border border-slate-200 rounded-full text-emerald-700 focus:outline-none focus:border-emerald-500 uppercase"
                     />
                     <button
                       type="button"
                       onClick={() => speakPutawayLocation(l.putawayBin || 'A-01')}
-                      className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900"
+                      className="min-h-[34px] min-w-[34px] inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:text-slate-900"
                       title="ฟังเสียงพิกัด"
                     >
                       <Volume2 className="w-3.5 h-3.5" />
@@ -611,11 +617,11 @@ function MobileReceiveModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-200 shrink-0 space-y-2 bg-white">
+        <div className="p-4 border-t border-slate-200/80 shrink-0 space-y-2 bg-white/95">
           <button
             onClick={handleCommit}
             disabled={submitting}
-            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
+            className="w-full min-h-[48px] py-3.5 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
           >
             {submitting ? (
               <RefreshCw className="w-5 h-5 animate-spin" />

@@ -63,6 +63,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const isAuthOrMobile = pathname === '/login' || pathname.startsWith('/mobile');
+  const isHybridRoute = !pathname?.startsWith('/print') && !isAuthOrMobile;
 
   if (isAuthOrMobile) {
     return (
@@ -70,7 +71,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {hasSafeAreaShield && <div className="mobile-status-bar-shield" aria-hidden="true" />}
         <main
           id="main-content"
-          className={`mobile-shell min-h-screen bg-[#0f141b] ${pathname === '/login' ? 'pt-safe pb-safe' : ''}`}
+          className={`mobile-shell min-h-screen theme-nexus-hybrid text-[#0f172a] ${pathname === '/login' ? 'pt-safe pb-safe' : ''}`}
         >
           {children}
         </main>
@@ -86,7 +87,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <main
         id="main-content"
         style={isNative ? { paddingTop: 'calc(4rem + var(--safe-top, 0px))' } : undefined}
-        className={`min-h-screen pt-16 transition-all duration-300 md:pl-80 bg-[#0f141b] ${isNative ? 'mobile-shell' : ''}`}
+        className={`min-h-screen pt-16 transition-all duration-300 md:pl-80 ${
+          isHybridRoute ? 'theme-nexus-hybrid text-[#0f172a]' : 'bg-[#0f141b]'
+        } ${isNative ? 'mobile-shell' : ''}`}
       >
         {children}
       </main>

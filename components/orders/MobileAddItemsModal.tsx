@@ -155,28 +155,28 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
   const totalPieces = lines.reduce((s, l) => s + l.qty, 0);
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] bg-slate-900/45 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="w-full sm:max-w-md bg-slate-50 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh]"
+        className="w-full sm:max-w-md bg-white/95 backdrop-blur-xl border border-white/90 rounded-t-[24px] sm:rounded-[24px] shadow-2xl text-slate-900 flex flex-col max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-white rounded-t-3xl">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white/90 rounded-t-[24px]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-100 text-amber-700"><PackagePlus className="w-5 h-5" /></div>
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200"><PackagePlus className="w-5 h-5" /></div>
             <div>
               <h2 className="font-bold text-slate-900 text-sm">เพิ่มสินค้าเข้าออเดอร์</h2>
               <p className="font-mono text-[11px] text-slate-500">{order.orderNo}{order.tmsJobId ? ` · TMS ${order.tmsJobId}` : ''}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg bg-slate-100 text-slate-500 active:scale-95"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 active:scale-95 transition-colors"><X className="w-5 h-5" /></button>
         </div>
 
         {/* Scan / search */}
-        <div className="p-4 space-y-2 bg-white border-b border-slate-200">
+        <div className="p-4 space-y-2 bg-white/60 border-b border-slate-100">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <ScanLine className="w-5 h-5 absolute left-3 top-3.5 text-amber-500" />
+              <ScanLine className="w-5 h-5 absolute left-3 top-3.5 text-emerald-600" />
               <input
                 ref={scanRef}
                 value={query}
@@ -184,13 +184,13 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); matchAndAdd(query); } }}
                 inputMode="search"
                 placeholder="สแกน / พิมพ์ SKU หรือชื่อสินค้า"
-                className="w-full pl-10 pr-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-500"
+                className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500"
               />
             </div>
             <button
               type="button"
               onClick={() => setCamOpen(true)}
-              className="shrink-0 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white flex items-center justify-center active:scale-95"
+              className="shrink-0 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center active:scale-95 transition-all"
               aria-label="เปิดกล้องสแกน"
             >
               <Camera className="w-5 h-5" />
@@ -200,7 +200,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
           {/* โหมดของนอกคลัง (cross-dock) — ลูกค้าเอาของมาเอง ไม่มีในคลัง ไม่ตัดสต็อก */}
           <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
             <span className="text-xs font-semibold text-slate-700">🔀 ของนอกคลัง (Cross-dock) — พิมพ์/สแกนเพิ่มได้เลย</span>
-            <input type="checkbox" checked={crossDock} onChange={(e) => setCrossDock(e.target.checked)} className="w-5 h-5 accent-amber-500" />
+            <input type="checkbox" checked={crossDock} onChange={(e) => setCrossDock(e.target.checked)} className="w-5 h-5 accent-emerald-600" />
           </label>
 
           {/* เลือกดรอปที่จะเพิ่มของเข้า (ของที่เพิ่มใหม่จะเข้าดรอปนี้) */}
@@ -210,14 +210,14 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
               <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                 {drops.map(d => (
                   <button key={d} type="button" onClick={() => setTargetDrop(d)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${targetDrop === d ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200'}`}>
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors ${targetDrop === d ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'}`}>
                     ดรอป {d}{dropName(d) ? ` · ${dropName(d)}` : ''}
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-[11px] text-slate-400">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
+            <p className="text-[11px] text-slate-500">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
           )}
 
           {/* ผลค้นหา catalog (เฉพาะโหมดปกติ) */}
@@ -233,7 +233,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
                     <span className="block text-sm text-slate-900 truncate">{p.name}</span>
                     <span className="block font-mono text-[11px] text-slate-500">{p.id} · คงเหลือ {p.stock ?? 0}</span>
                   </span>
-                  <Plus className="w-5 h-5 text-amber-600 shrink-0" />
+                  <Plus className="w-5 h-5 text-emerald-600 shrink-0" />
                 </button>
               ))}
             </div>
@@ -248,7 +248,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
             >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-amber-800 truncate">เพิ่ม “{query.trim()}” เป็นของนอกคลัง</span>
-                <span className="block text-[11px] text-amber-600">Cross-dock · ไม่ตัดสต็อก (แก้ชื่อได้ทีหลัง)</span>
+                <span className="block text-[11px] text-amber-700">Cross-dock · ไม่ตัดสต็อก (แก้ชื่อได้ทีหลัง)</span>
               </span>
               <Plus className="w-5 h-5 text-amber-600 shrink-0" />
             </button>
@@ -263,7 +263,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
               <p className="text-xs text-slate-400">สแกนหรือค้นหาสินค้าเพื่อเพิ่ม</p>
             </div>
           ) : lines.map((l, idx) => (
-            <div key={l.sku} className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+            <div key={l.sku} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 shadow-xs">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   {l.custom ? (
@@ -271,7 +271,7 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
                       value={l.name}
                       onChange={(e) => renameLine(idx, e.target.value)}
                       placeholder="ชื่อสินค้า (นอกคลัง)"
-                      className="w-full text-sm font-semibold text-slate-900 leading-tight bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 outline-none focus:border-amber-500"
+                      className="w-full text-sm font-semibold text-slate-900 leading-tight bg-white border border-amber-300 rounded-lg px-2 py-1 outline-none focus:border-emerald-500"
                     />
                   ) : (
                     <p className="text-sm font-semibold text-slate-900 leading-tight">{l.name}</p>
@@ -285,19 +285,19 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
                   <select
                     value={l.drop}
                     onChange={(e) => setDrop(l.sku, Number(e.target.value))}
-                    className="bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 px-2 py-2 outline-none focus:border-amber-500"
+                    className="bg-white border border-slate-200 rounded-lg text-xs text-slate-900 px-2 py-2 outline-none focus:border-emerald-500"
                   >
                     {drops.map(d => <option key={d} value={d}>ดรอป {d}</option>)}
                   </select>
                 ) : <span className="text-[11px] text-slate-400">ดรอป 1</span>}
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setQty(l.sku, l.qty - 1)} className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95"><Minus className="w-5 h-5" /></button>
+                  <button onClick={() => setQty(l.sku, l.qty - 1)} className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center active:scale-95"><Minus className="w-5 h-5" /></button>
                   <input
                     type="number" value={l.qty} min={1} inputMode="numeric"
                     onChange={(e) => setQty(l.sku, parseInt(e.target.value) || 1)}
-                    className="w-14 h-10 text-center bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-slate-900 outline-none focus:border-amber-500"
+                    className="w-14 h-10 text-center bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 outline-none focus:border-emerald-500"
                   />
-                  <button onClick={() => setQty(l.sku, l.qty + 1)} className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center active:scale-95"><Plus className="w-5 h-5" /></button>
+                  <button onClick={() => setQty(l.sku, l.qty + 1)} className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center active:scale-95"><Plus className="w-5 h-5" /></button>
                 </div>
               </div>
             </div>
@@ -305,14 +305,14 @@ export default function MobileAddItemsModal({ order, onClose, onDone }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-200 bg-white space-y-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="p-4 border-t border-slate-100 bg-white/90 space-y-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>{lines.length} รายการ · รวม {totalPieces} ชิ้น</span>
           </div>
           <button
             onClick={submit}
             disabled={saving || lines.length === 0}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 transition-all"
+            className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 transition-all"
           >
             <PackagePlus className="w-5 h-5" />
             {saving ? 'กำลังบันทึก...' : `เพิ่มเข้าออเดอร์ (${totalPieces})`}

@@ -184,15 +184,15 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 rounded-[24px] shadow-2xl text-slate-900 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h2 className="text-xl font-black flex items-center gap-2 text-slate-800">
-            <FileSpreadsheet className={`w-6 h-6 ${type === 'IN' ? 'text-emerald-500' : 'text-rose-500'}`} />
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
+          <h2 className="text-xl font-black flex items-center gap-2 text-slate-900">
+            <FileSpreadsheet className={`w-6 h-6 ${type === 'IN' ? 'text-emerald-600' : 'text-rose-600'}`} />
             {t('import_excel')} ({type === 'IN' ? t('menu_inbound') : t('menu_outbound')})
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
+          <button onClick={onClose} className="p-2 hover:bg-slate-200/70 rounded-xl transition-colors text-slate-400 hover:text-slate-700">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -205,24 +205,24 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
               onDragOver={handleDrag}
               onDragLeave={handleDrag}
               onDrop={handleDrop}
-              className={`border-3 border-dashed rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-4 transition-all ${
-                dragActive ? 'border-indigo-500 bg-indigo-50/50 scale-98' : 'border-slate-200 hover:border-slate-300 bg-slate-50'
+              className={`border-2 border-dashed rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-4 transition-all ${
+                dragActive ? 'border-emerald-500 bg-emerald-50/60 scale-[0.99]' : 'border-slate-200 hover:border-emerald-300 bg-slate-50/80'
               }`}
             >
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md">
-                <Upload className="w-8 h-8 text-slate-400" />
+              <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm">
+                <Upload className="w-8 h-8 text-emerald-600" />
               </div>
               <div>
-                <p className="font-bold text-slate-700 text-lg">ลากไฟล์ Excel (.xlsx) หรือ CSV มาวางที่นี่</p>
-                <p className="text-slate-400 text-sm mt-1">หรือคลิกปุ่มด้านล่างเพื่อเลือกไฟล์จากเครื่องคอมพิวเตอร์</p>
+                <p className="font-bold text-slate-800 text-lg">ลากไฟล์ Excel (.xlsx) หรือ CSV มาวางที่นี่</p>
+                <p className="text-slate-500 text-sm mt-1">หรือคลิกปุ่มด้านล่างเพื่อเลือกไฟล์จากเครื่องคอมพิวเตอร์</p>
               </div>
-              <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md active:scale-95 text-sm">
+              <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md active:scale-95 text-sm">
                 เลือกไฟล์เอกสาร
                 <input type="file" accept=".xlsx,.xls,.csv" onChange={handleChange} className="hidden" />
               </label>
               
-              <div className="mt-4 pt-4 border-t border-slate-200/50 w-full max-w-md text-xs text-left text-slate-400 space-y-1">
-                <p className="font-bold text-slate-500 mb-1">💡 รูปแบบคอลัมน์ที่รองรับ:</p>
+              <div className="mt-4 pt-4 border-t border-slate-200/70 w-full max-w-md text-xs text-left text-slate-500 space-y-1">
+                <p className="font-bold text-slate-700 mb-1">💡 รูปแบบคอลัมน์ที่รองรับ:</p>
                 <p>• <b>ชื่อสินค้า (SKU)</b> เช่น: สินค้า, ชื่อสินค้า, รหัสสินค้า, SKU</p>
                 <p>• <b>จำนวนสินค้า (Qty)</b> เช่น: จำนวน, จำนวนสินค้า, Qty, Quantity</p>
                 <p>• <i>คอลัมน์เสริม: ราคา (Price), เลขที่เอกสาร (Doc Ref), ล็อตสินค้า (Batch), วันหมดอายุ (Expiry)</i></p>
@@ -233,7 +233,7 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
           {/* Loading state */}
           {loading && (
             <div className="py-20 text-center flex flex-col items-center gap-4">
-              <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+              <Loader2 className="w-12 h-12 text-emerald-600 animate-spin" />
               <p className="font-bold text-slate-600">กำลังตรวจสอบโครงสร้างตารางข้อมูล...</p>
             </div>
           )}
@@ -253,20 +253,20 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
           {/* Preview list */}
           {previewData.length > 0 && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-100 p-4 rounded-xl">
+              <div className="flex justify-between items-center bg-slate-50 border border-slate-200 p-4 rounded-xl">
                 <div className="flex items-center gap-2 text-emerald-700">
                   <CheckCircle className="w-5 h-5" />
                   <span className="font-bold">ไฟล์: {filename} (ตรวจสอบพบ {previewData.length} รายการที่ถูกต้อง)</span>
                 </div>
                 <button 
                   onClick={() => { setPreviewData([]); setErrors([]); }} 
-                  className="text-xs text-rose-500 hover:text-rose-700 font-bold uppercase"
+                  className="text-xs text-rose-600 hover:text-rose-700 font-bold uppercase"
                 >
                   เลือกไฟล์ใหม่
                 </button>
               </div>
 
-              <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+              <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto bg-white">
                 <table className="w-full text-left text-sm text-slate-600">
                   <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 sticky top-0">
                     <tr>
@@ -279,12 +279,12 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {previewData.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="p-3 font-bold text-slate-800">{item.sku}</td>
+                      <tr key={idx} className="hover:bg-slate-50/70">
+                        <td className="p-3 font-bold text-slate-900">{item.sku}</td>
                         <td className={`p-3 text-right font-bold ${type === 'IN' ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {item.qty.toLocaleString()}
                         </td>
-                        <td className="p-3 text-right font-mono text-slate-500">฿{item.salePrice.toLocaleString()}</td>
+                        <td className="p-3 text-right font-mono text-slate-600">฿{item.salePrice.toLocaleString()}</td>
                         <td className="p-3 text-slate-500 truncate max-w-[120px]">{item.docRef || '-'}</td>
                         <td className="p-3 text-xs text-slate-500">
                           {item.batch && <span>Lot: {item.batch} </span>}
@@ -301,15 +301,15 @@ export function ImportTransactionsModal({ isOpen, onClose, type, products, onImp
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
-          <button onClick={onClose} className="px-6 py-3 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+        <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/70">
+          <button onClick={onClose} className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition-colors">
             {t('cancel')}
           </button>
           {previewData.length > 0 && (
             <button 
               onClick={handleConfirm}
               className={`px-8 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2 ${
-                type === 'IN' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-200' : 'bg-rose-600 hover:bg-rose-500 shadow-rose-200'
+                type === 'IN' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
               }`}
             >
               <CheckCircle className="w-5 h-5" />

@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Clock, AlertCircle, Download, ArrowLeft, Layers, X, Calendar } from 'lucide-react';
 import Link from 'next/link';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { useLanguage } from '@/components/providers/LanguageProvider';
+import { cn } from '@/lib/utils';
 
 export default function AgingPage() {
   const { t, language } = useLanguage();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState(90); // Default 3 months
+  const [period, setPeriod] = useState(90);
   const [viewMode, setViewMode] = useState<'DEADSTOCK' | 'ALL'>('DEADSTOCK');
   const [selectedProductForFifo, setSelectedProductForFifo] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -33,6 +33,8 @@ export default function AgingPage() {
     }
     fetchData();
   }, []);
+
+  void mounted;
 
   // Filter Logic: Cumulative (>= selected period)
   const deadstock = data.filter(item => item.daysSinceLastSale >= period && item.stock > 0);
@@ -62,7 +64,7 @@ export default function AgingPage() {
   const exportCSV = () => {
     const BOM = "\uFEFF";
     const headers = ['Product Name,Location,Stock,Value (THB),Movement Status,Last Sold,Days Since Sale'];
-    const rows = tableData.map(item => 
+    const rows = tableData.map(item =>
         `"${item.name.replace(/"/g, '""')}","${item.location || '-'}","${item.stock}","${item.value}","${item.movementStatus || 'Deadstock'}","${item.lastSoldDate || 'Never'}","${item.daysSinceLastSale}"`
     );
     const csvContent = BOM + headers.concat(rows).join('\n');
@@ -77,30 +79,33 @@ export default function AgingPage() {
   };
 
   return (
-    <div className="relative min-h-screen px-4 py-6 sm:px-6 lg:p-8">
-       <AmbientBackground />
-       
-       <div className="relative z-10 mx-auto max-w-[1500px] space-y-7">
-         <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-[#facc15]/30 hover:bg-[#facc15]/10 hover:text-[#facc15]">
-             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 text-slate-900">
+       <div className="mx-auto max-w-[1500px] space-y-6">
+         <Link
+           href="/analytics"
+           className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+         >
+             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
              {t('back_to_analytics')}
          </Link>
 
-         {/* Header */}
-         <div className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-xl shadow-black/20 backdrop-blur-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#f59e0b] via-[#ff5449] to-[#30353d]" />
+         {/* Open Page Header */}
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pt-1">
              <div>
-                <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#facc15]">Aging Risk</p>
-                <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
-                   <div className="p-2.5 bg-[#facc15]/15 border border-[#facc15]/30 rounded-xl">
-                      <Clock className="w-8 h-8 text-[#facc15]" />
-                   </div>
-                   {t('aging_title')}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Aging Risk
+                  </span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+                   <Clock className="w-7 h-7 text-amber-600 shrink-0" />
+                   <span>{t('aging_title')}</span>
                 </h1>
-                <p className="text-[#8a92a6] font-medium mt-2">{t('aging_subtitle')}</p>
+                <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('aging_subtitle')}</p>
              </div>
-           
-            <div className="bg-[#1b2027] border border-[#30353d] p-1.5 rounded-xl flex flex-wrap gap-1">
+
+            <div className="bg-white/65 backdrop-blur-md border border-white/85 p-1 rounded-full flex flex-wrap gap-1 shadow-xs">
                 {[30, 60, 90, 180, 365].map((d) => {
                     const getPeriodLabel = (val: number) => {
                       if (val === 30) return language === 'en' ? '30 Days+' : '30 วัน+';
@@ -113,10 +118,10 @@ export default function AgingPage() {
                         <button
                            key={d}
                            onClick={() => setPeriod(d)}
-                           className={`px-4 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
-                               period === d 
-                               ? 'bg-[#facc15] text-[#1b1600]' 
-                               : 'text-[#d1c6ab] hover:text-[#facc15] hover:bg-[#facc15]/10'
+                           className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all tabular-nums ${
+                               period === d
+                               ? 'bg-slate-900 text-white shadow-xs'
+                               : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                            }`}
                         >
                             {getPeriodLabel(d)}
@@ -126,96 +131,97 @@ export default function AgingPage() {
             </div>
        </div>
 
-       {/* KPIs */}
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           <div className="bg-[#171c23] border border-[#30353d] p-6 rounded-xl shadow-lg">
-               <h3 className="text-[#facc15] text-xs font-mono font-bold uppercase tracking-wider mb-2">
+       {/* KPIs (2 Glass Cards + 1 Hero Dark Accent Alert Card) */}
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+           <div className="nx-glass-card p-6">
+               <h3 className="text-amber-700 text-xs font-semibold uppercase tracking-wider mb-2">
                    {language === 'en' ? `Stagnant Items (> ${period} Days)` : `สินค้าไม่เคลื่อนไหวเกิน ${period} วัน`}
                </h3>
-               <div className="text-3xl font-mono font-black text-[#dee2ec] flex items-center gap-2">
-                   {loading ? '...' : deadstock.length}
-                   <span className="text-xs font-normal text-[#8a92a6]">{t('ai_unit')}</span>
+               <div className="text-3xl font-bold text-slate-900 flex items-baseline gap-2 tabular-nums">
+                   {loading ? '...' : deadstock.length.toLocaleString()}
+                   <span className="text-xs font-medium text-slate-500">{t('ai_unit')}</span>
                </div>
-               <div className="mt-4 flex items-center gap-2 text-xs font-mono text-[#facc15] bg-[#facc15]/10 border border-[#facc15]/20 px-3 py-1 rounded-md w-fit">
-                   <AlertCircle className="w-3.5 h-3.5 text-[#facc15]" />
+               <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-amber-800 bg-amber-500/15 border border-amber-500/25 px-3 py-1 rounded-full">
+                   <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                    {language === 'en' ? `Inactive for at least ${period} days` : `ไม่มีการเคลื่อนไหวอย่างน้อย ${period} วันขึ้นไป`}
                </div>
            </div>
 
-           <div className="bg-[#171c23] border border-[#30353d] p-6 rounded-xl shadow-lg">
-               <h3 className="text-[#4cd7f6] text-xs font-mono font-bold uppercase tracking-wider mb-2">
+           <div className="nx-glass-card p-6">
+               <h3 className="text-sky-700 text-xs font-semibold uppercase tracking-wider mb-2">
                    {language === 'en' ? `Stagnant Value (> ${period} Days)` : `มูลค่าสินค้าไม่เคลื่อนไหว (> ${period} วัน)`}
                </h3>
-               <div className="text-3xl font-mono font-black text-[#dee2ec] flex items-center gap-2">
+               <div className="text-3xl font-bold text-slate-900 flex items-baseline gap-2 tabular-nums">
                    ฿{loading ? '...' : deadstockValue.toLocaleString()}
-                   <span className="text-xs font-normal text-[#8a92a6]">THB</span>
+                   <span className="text-xs font-medium text-slate-500">THB</span>
                </div>
-               <div className="mt-4 flex items-center gap-2 text-xs font-mono text-[#d1c6ab] bg-[#252a32] border border-[#30353d] px-3 py-1 rounded-md w-fit">
-                   <Clock className="w-3.5 h-3.5 text-[#4cd7f6]" />
+               <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-sky-800 bg-sky-500/12 border border-sky-500/20 px-3 py-1 rounded-full">
+                   <Clock className="w-3.5 h-3.5 text-sky-600" />
                    {language === 'en' ? 'Capital tied up in this range' : 'ทุนจมที่ควรเร่งระบายในกลุ่มนี้'}
                </div>
            </div>
 
-           <div className="bg-[#171c23] border border-[#30353d] p-6 rounded-xl relative overflow-hidden group hover:border-[#ff5449]/40 transition-colors shadow-lg">
-               <h3 className="text-[#ffb4ab] text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                   <span className="w-2 h-2 rounded-full bg-[#ff5449] animate-pulse" />
+           {/* 1 Hero Dark Accent Card for True Deadstock */}
+           <div className="nx-dark-accent-card p-6 relative overflow-hidden">
+               <h3 className="text-rose-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-2">
+                   <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
                    {language === 'en' ? 'True Deadstock (1 Year+)' : 'สินค้าค้างสต็อกแท้ (Deadstock 1 ปี+)'}
                </h3>
-               <div className="text-3xl font-mono font-black text-[#dee2ec] flex items-center gap-2">
-                   {loading ? '...' : trueDeadstock.length}
-                   <span className="text-xs font-normal text-[#8a92a6]">{t('ai_unit')}</span>
+               <div className="text-3xl font-bold text-white flex items-baseline gap-2 tabular-nums">
+                   {loading ? '...' : trueDeadstock.length.toLocaleString()}
+                   <span className="text-xs font-medium text-slate-400">{t('ai_unit')}</span>
                </div>
-               <div className="mt-4 text-xs font-mono text-[#8a92a6]">
+               <div className="mt-4 text-xs text-slate-300 tabular-nums">
                    {language === 'en' ? 'Total Frozen Capital: ' : 'เงินจมสะสมวิกฤต: '}
-                   <span className="text-[#ffb4ab] font-bold text-sm">฿{loading ? '...' : trueDeadstockValue.toLocaleString()}</span>
+                   <span className="text-rose-300 font-bold text-sm">฿{loading ? '...' : trueDeadstockValue.toLocaleString()}</span>
                </div>
            </div>
        </div>
 
        {/* FIFO Aging Tier Visual Distribution Strip */}
-       <div className="bg-[#171c23] border border-[#30353d] rounded-xl p-5 shadow-sm space-y-4">
+       <div className="nx-glass-card p-6 space-y-4">
            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                <div>
-                   <h4 className="text-sm font-bold text-[#dee2ec] flex items-center gap-2">
-                       <Layers className="w-4 h-4 text-[#facc15]" />
+                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                       <Layers className="w-4 h-4 text-amber-600" />
                        ภาพรวมการกระจายอายุสต็อก (FIFO Aging Tier Distribution)
                    </h4>
-                   <p className="text-xs text-[#8a92a6] mt-0.5">
+                   <p className="text-xs text-slate-600 mt-0.5 tabular-nums">
                        แสดงสัดส่วนอายุสินค้าทั้งหมด {totalFifoUnits.toLocaleString()} ชิ้นในมุมมอง {viewMode}
                    </p>
                </div>
-               <div className="text-xs font-mono text-[#d1c6ab] bg-[#1b2027] px-3 py-1.5 rounded-lg border border-[#30353d]">
-                   Total Tracked: <span className="font-bold text-[#dee2ec]">{totalFifoUnits.toLocaleString()}</span> units
+               <div className="text-xs font-semibold text-slate-700 bg-white/80 px-3.5 py-1.5 rounded-full border border-slate-200 tabular-nums">
+                   Total Tracked: <span className="font-bold text-slate-900">{totalFifoUnits.toLocaleString()}</span> units
                </div>
            </div>
 
-           {/* Multi-segment Tactical Progress Bar */}
-           <div className="h-4 w-full bg-[#090f15] rounded-lg overflow-hidden flex border border-[#30353d]">
+           {/* Multi-segment Progress Bar */}
+           <div className="h-3.5 w-full bg-slate-200/80 rounded-full overflow-hidden flex">
                {totalFifoUnits > 0 ? (
                    <>
-                       <div 
+                       <div
                            style={{ width: `${(fifoSummary.tier0 / totalFifoUnits) * 100}%` }}
-                           className="bg-[#57ec7f] h-full transition-all duration-500"
+                           className="bg-emerald-500 h-full transition-all duration-500"
                            title={`≤30d: ${fifoSummary.tier0} (${((fifoSummary.tier0 / totalFifoUnits) * 100).toFixed(1)}%)`}
                        />
-                       <div 
+                       <div
                            style={{ width: `${(fifoSummary.tier31 / totalFifoUnits) * 100}%` }}
-                           className="bg-[#4cd7f6] h-full transition-all duration-500"
+                           className="bg-sky-500 h-full transition-all duration-500"
                            title={`31-60d: ${fifoSummary.tier31} (${((fifoSummary.tier31 / totalFifoUnits) * 100).toFixed(1)}%)`}
                        />
-                       <div 
+                       <div
                            style={{ width: `${(fifoSummary.tier61 / totalFifoUnits) * 100}%` }}
-                           className="bg-[#facc15] h-full transition-all duration-500"
+                           className="bg-amber-500 h-full transition-all duration-500"
                            title={`61-90d: ${fifoSummary.tier61} (${((fifoSummary.tier61 / totalFifoUnits) * 100).toFixed(1)}%)`}
                        />
-                       <div 
+                       <div
                            style={{ width: `${(fifoSummary.tier90 / totalFifoUnits) * 100}%` }}
-                           className="bg-[#ff5449] h-full transition-all duration-500"
+                           className="bg-rose-500 h-full transition-all duration-500"
                            title={`>90d: ${fifoSummary.tier90} (${((fifoSummary.tier90 / totalFifoUnits) * 100).toFixed(1)}%)`}
                        />
                    </>
                ) : (
-                   <div className="w-full h-full bg-[#1b2027] flex items-center justify-center text-[10px] text-[#8a92a6]">
+                   <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500">
                        No FIFO Data
                    </div>
                )}
@@ -223,111 +229,115 @@ export default function AgingPage() {
 
            {/* Legend Cards */}
            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
-               <div className="bg-[#1b2027] border border-[#30353d] p-3 rounded-lg flex items-center justify-between">
+               <div className="bg-white/75 border border-slate-200/80 p-3 rounded-2xl flex items-center justify-between">
                    <div className="flex items-center gap-2">
-                       <span className="w-3 h-3 rounded-sm bg-[#57ec7f]" />
-                       <span className="text-xs font-mono font-bold text-[#dee2ec]">≤ 30 วัน</span>
+                       <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                       <span className="text-xs font-bold text-slate-800">≤ 30 วัน</span>
                    </div>
-                   <div className="text-right">
-                       <div className="text-xs font-mono font-bold text-[#57ec7f]">{fifoSummary.tier0.toLocaleString()}</div>
-                       <div className="text-[10px] text-[#8a92a6] font-mono">{totalFifoUnits > 0 ? ((fifoSummary.tier0 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
+                   <div className="text-right tabular-nums">
+                       <div className="text-xs font-bold text-emerald-700">{fifoSummary.tier0.toLocaleString()}</div>
+                       <div className="text-[10px] text-slate-500">{totalFifoUnits > 0 ? ((fifoSummary.tier0 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
                    </div>
                </div>
 
-               <div className="bg-[#1b2027] border border-[#30353d] p-3 rounded-lg flex items-center justify-between">
+               <div className="bg-white/75 border border-slate-200/80 p-3 rounded-2xl flex items-center justify-between">
                    <div className="flex items-center gap-2">
-                       <span className="w-3 h-3 rounded-sm bg-[#4cd7f6]" />
-                       <span className="text-xs font-mono font-bold text-[#dee2ec]">31 - 60 วัน</span>
+                       <span className="w-3 h-3 rounded-full bg-sky-500" />
+                       <span className="text-xs font-bold text-slate-800">31 - 60 วัน</span>
                    </div>
-                   <div className="text-right">
-                       <div className="text-xs font-mono font-bold text-[#4cd7f6]">{fifoSummary.tier31.toLocaleString()}</div>
-                       <div className="text-[10px] text-[#8a92a6] font-mono">{totalFifoUnits > 0 ? ((fifoSummary.tier31 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
+                   <div className="text-right tabular-nums">
+                       <div className="text-xs font-bold text-sky-700">{fifoSummary.tier31.toLocaleString()}</div>
+                       <div className="text-[10px] text-slate-500">{totalFifoUnits > 0 ? ((fifoSummary.tier31 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
                    </div>
                </div>
 
-               <div className="bg-[#1b2027] border border-[#30353d] p-3 rounded-lg flex items-center justify-between">
+               <div className="bg-white/75 border border-slate-200/80 p-3 rounded-2xl flex items-center justify-between">
                    <div className="flex items-center gap-2">
-                       <span className="w-3 h-3 rounded-sm bg-[#facc15]" />
-                       <span className="text-xs font-mono font-bold text-[#dee2ec]">61 - 90 วัน</span>
+                       <span className="w-3 h-3 rounded-full bg-amber-500" />
+                       <span className="text-xs font-bold text-slate-800">61 - 90 วัน</span>
                    </div>
-                   <div className="text-right">
-                       <div className="text-xs font-mono font-bold text-[#facc15]">{fifoSummary.tier61.toLocaleString()}</div>
-                       <div className="text-[10px] text-[#8a92a6] font-mono">{totalFifoUnits > 0 ? ((fifoSummary.tier61 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
+                   <div className="text-right tabular-nums">
+                       <div className="text-xs font-bold text-amber-700">{fifoSummary.tier61.toLocaleString()}</div>
+                       <div className="text-[10px] text-slate-500">{totalFifoUnits > 0 ? ((fifoSummary.tier61 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
                    </div>
                </div>
 
-               <div className="bg-[#1b2027] border border-[#30353d] p-3 rounded-lg flex items-center justify-between">
+               <div className="bg-white/75 border border-slate-200/80 p-3 rounded-2xl flex items-center justify-between">
                    <div className="flex items-center gap-2">
-                       <span className="w-3 h-3 rounded-sm bg-[#ff5449]" />
-                       <span className="text-xs font-mono font-bold text-[#dee2ec]">&gt; 90 วัน</span>
+                       <span className="w-3 h-3 rounded-full bg-rose-500" />
+                       <span className="text-xs font-bold text-slate-800">&gt; 90 วัน</span>
                    </div>
-                   <div className="text-right">
-                       <div className="text-xs font-mono font-bold text-[#ffb4ab]">{fifoSummary.tier90.toLocaleString()}</div>
-                       <div className="text-[10px] text-[#8a92a6] font-mono">{totalFifoUnits > 0 ? ((fifoSummary.tier90 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
+                   <div className="text-right tabular-nums">
+                       <div className="text-xs font-bold text-rose-600">{fifoSummary.tier90.toLocaleString()}</div>
+                       <div className="text-[10px] text-slate-500">{totalFifoUnits > 0 ? ((fifoSummary.tier90 / totalFifoUnits) * 100).toFixed(1) : 0}%</div>
                    </div>
                </div>
            </div>
        </div>
 
        {/* Detailed Table */}
-       <div className="bg-[#171c23] border border-[#30353d] rounded-xl overflow-hidden shadow-sm backdrop-blur-xl">
-           <div className="p-6 border-b border-[#30353d] flex justify-between items-center">
-               <div className="flex items-center gap-4">
-                   <h3 className="text-[#dee2ec] font-bold">{t('inventory_list')}</h3>
-                   <div className="flex bg-[#1b2027] rounded-lg p-1 border border-[#30353d]">
-                       <button 
+       <div className="nx-glass-card overflow-hidden">
+           <div className="p-5 border-b border-slate-200/70 flex flex-wrap justify-between items-center gap-3">
+               <div className="flex flex-wrap items-center gap-3">
+                   <h3 className="text-slate-900 font-bold text-base">{t('inventory_list')}</h3>
+                   <div className="flex bg-slate-100 rounded-full p-1 border border-slate-200">
+                       <button
                          onClick={() => setViewMode('DEADSTOCK')}
-                         className={`px-3 py-1 text-xs rounded-md font-mono font-bold transition-colors ${viewMode === 'DEADSTOCK' ? 'bg-[#ff5449] text-white' : 'text-[#8a92a6] hover:text-[#ffb4ab]'}`}
+                         className={`px-3.5 py-1 text-xs rounded-full font-semibold transition-colors ${viewMode === 'DEADSTOCK' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                        >
                          {t('deadstock_only')}
                        </button>
-                       <button 
+                       <button
                          onClick={() => setViewMode('ALL')}
-                         className={`px-3 py-1 text-xs rounded-md font-mono font-bold transition-colors ${viewMode === 'ALL' ? 'bg-[#4cd7f6] text-[#090f15]' : 'text-[#8a92a6] hover:text-[#4cd7f6]'}`}
+                         className={`px-3.5 py-1 text-xs rounded-full font-semibold transition-colors ${viewMode === 'ALL' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                        >
                          {t('show_all')}
                        </button>
                    </div>
                </div>
-               <button onClick={exportCSV} className="text-[#d1c6ab] hover:text-[#facc15] flex items-center gap-2 text-sm font-mono font-bold transition-colors">
-                   <Download className="w-4 h-4 text-[#facc15]" /> {t('export_csv')}
+               <button
+                 onClick={exportCSV}
+                 className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full flex items-center gap-2 text-xs font-semibold transition-all shadow-xs"
+               >
+                   <Download className="w-3.5 h-3.5" /> {t('export_csv')}
                </button>
            </div>
-           
+
             <div className="overflow-x-auto">
-                <table className="w-full text-left text-[#d1c6ab]">
-                    <thead className="bg-[#1b2027] text-[#8a92a6] text-xs font-mono font-bold uppercase tracking-wider border-b border-[#30353d]">
+                <table className="w-full text-left text-sm text-slate-700">
+                    <thead className="bg-slate-50/80 sticky top-0 text-slate-600 text-[11px] font-semibold uppercase tracking-wider border-b border-slate-200/80">
                         <tr>
                             <th className="px-6 py-4">{t('product')}</th>
                             <th className="px-6 py-4">{t('delivery_location')}</th>
-                            <th className="px-6 py-4">{t('label_stock')}</th>
-                            <th className="px-6 py-4">{t('total_value')}</th>
+                            <th className="px-6 py-4 text-right">{t('label_stock')}</th>
+                            <th className="px-6 py-4 text-right">{t('total_value')}</th>
                             <th className="px-6 py-4 text-center">{t('col_status')}</th>
                             <th className="px-6 py-4">กระจายอายุสต็อก (FIFO Tiers)</th>
                             <th className="px-6 py-4">{t('col_last_sold')}</th>
-                            <th className="px-6 py-4">{t('col_days_inactive')}</th>
+                            <th className="px-6 py-4 text-right">{t('col_days_inactive')}</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#30353d]">
+                    <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={8} className="p-8 text-center text-[#8a92a6] font-mono">{t('loading')}</td></tr>
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">{t('loading')}</td></tr>
                         ) : tableData.length === 0 ? (
-                            <tr><td colSpan={8} className="p-8 text-center text-[#8a92a6] font-mono">{t('no_products_found')}</td></tr>
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">{t('no_products_found')}</td></tr>
                         ) : (
                             tableData.map((item) => (
-                                <tr key={item.id} className="hover:bg-[#1b2027]/60 transition-colors">
-                                    <td className="px-6 py-4 font-bold text-[#dee2ec]">{item.name}</td>
-                                    <td className="px-6 py-4 font-mono text-[#4cd7f6]">{item.location || '-'}</td>
-                                    <td className="px-6 py-4 font-mono font-bold text-[#dee2ec]">{item.stock.toLocaleString()}</td>
-                                    <td className="px-6 py-4 font-mono">฿{item.value.toLocaleString()}</td>
+                                <tr key={item.id} className="hover:bg-emerald-50/40 transition-colors">
+                                    <td className="px-6 py-4 font-semibold text-slate-900">{item.name}</td>
+                                    <td className="px-6 py-4 font-mono text-xs font-semibold text-sky-700">{item.location || '-'}</td>
+                                    <td className="px-6 py-4 text-right font-bold text-slate-900 tabular-nums">{item.stock.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right font-medium text-slate-700 tabular-nums">฿{item.value.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-center">
-                                         <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold whitespace-nowrap border ${
-                                             (item.movementStatus || 'Deadstock') === 'Fast Moving' ? 'bg-[#57ec7f]/15 text-[#57ec7f] border-[#57ec7f]/30' :
-                                             (item.movementStatus || 'Deadstock') === 'Normal Moving' ? 'bg-[#4cd7f6]/15 text-[#4cd7f6] border-[#4cd7f6]/30' :
-                                             (item.movementStatus || 'Deadstock') === 'Slow Moving' ? 'bg-[#facc15]/15 text-[#facc15] border-[#facc15]/30' :
-                                             (item.movementStatus || 'Deadstock') === 'Very Slow Moving' ? 'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30' :
-                                             'bg-[#ff5449]/15 text-[#ffb4ab] border-[#ff5449]/30'
-                                         }`}>
+                                         <span className={cn(
+                                             "text-[10px] px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap border",
+                                             (item.movementStatus || 'Deadstock') === 'Fast Moving' ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20' :
+                                             (item.movementStatus || 'Deadstock') === 'Normal Moving' ? 'bg-sky-500/12 text-sky-700 border-sky-500/20' :
+                                             (item.movementStatus || 'Deadstock') === 'Slow Moving' ? 'bg-amber-500/15 text-amber-800 border-amber-500/25' :
+                                             (item.movementStatus || 'Deadstock') === 'Very Slow Moving' ? 'bg-amber-500/15 text-amber-800 border-amber-500/25' :
+                                             'bg-rose-500/12 text-rose-700 border-rose-500/25'
+                                         )}>
                                              {item.movementStatus || 'Deadstock'}
                                          </span>
                                     </td>
@@ -336,22 +346,22 @@ export default function AgingPage() {
                                             {item.fifoTiers && (
                                                 <>
                                                     {item.fifoTiers.tier_0_30 > 0 && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#57ec7f]/15 border border-[#57ec7f]/30 text-[#57ec7f] font-mono font-semibold" title="อายุไม่เกิน 30 วัน">
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/12 border border-emerald-500/20 text-emerald-700 font-semibold tabular-nums" title="อายุไม่เกิน 30 วัน">
                                                             ≤30d: {item.fifoTiers.tier_0_30}
                                                         </span>
                                                     )}
                                                     {item.fifoTiers.tier_31_60 > 0 && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#4cd7f6]/15 border border-[#4cd7f6]/30 text-[#4cd7f6] font-mono font-semibold" title="อายุ 31-60 วัน">
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/12 border border-sky-500/20 text-sky-700 font-semibold tabular-nums" title="อายุ 31-60 วัน">
                                                             31-60d: {item.fifoTiers.tier_31_60}
                                                         </span>
                                                     )}
                                                     {item.fifoTiers.tier_61_90 > 0 && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#facc15]/15 border border-[#facc15]/30 text-[#facc15] font-mono font-semibold" title="อายุ 61-90 วัน">
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-800 font-semibold tabular-nums" title="อายุ 61-90 วัน">
                                                             61-90d: {item.fifoTiers.tier_61_90}
                                                         </span>
                                                     )}
                                                     {(item.fifoTiers.tier_91_180 + item.fifoTiers.tier_180_plus) > 0 && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#ff5449]/15 border border-[#ff5449]/30 text-[#ffb4ab] font-mono font-semibold" title="อายุมากกว่า 90 วัน">
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/12 border border-rose-500/25 text-rose-700 font-semibold tabular-nums" title="อายุมากกว่า 90 วัน">
                                                             &gt;90d: {item.fifoTiers.tier_91_180 + item.fifoTiers.tier_180_plus}
                                                         </span>
                                                     )}
@@ -360,18 +370,18 @@ export default function AgingPage() {
                                             {item.fifoLayers && item.fifoLayers.length > 0 && (
                                                 <button
                                                     onClick={() => setSelectedProductForFifo(item)}
-                                                    className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-[#facc15] hover:text-white bg-[#facc15]/10 hover:bg-[#facc15]/20 px-2 py-0.5 rounded border border-[#facc15]/30 transition-colors ml-1"
+                                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 hover:text-slate-900 bg-amber-500/12 hover:bg-amber-500/25 px-2.5 py-0.5 rounded-full border border-amber-500/25 transition-colors ml-1 tabular-nums"
                                                 >
-                                                    <Layers className="w-3 h-3 text-[#facc15]" />
+                                                    <Layers className="w-3 h-3 text-amber-600" />
                                                     {item.fifoLayers.length} ล็อต
                                                 </button>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-mono text-xs text-[#8a92a6]">
+                                    <td className="px-6 py-4 font-mono text-xs text-slate-500">
                                         {item.lastSoldDate || t('never_sold')}
                                     </td>
-                                    <td className="px-6 py-4 font-mono font-bold text-[#ffb4ab]">
+                                    <td className="px-6 py-4 text-right font-bold text-rose-600 tabular-nums">
                                         {item.daysSinceLastSale > 9000 ? t('never_sold') : `${item.daysSinceLastSale} days`}
                                     </td>
                                 </tr>
@@ -384,19 +394,19 @@ export default function AgingPage() {
 
         {/* FIFO Lot Detail Modal */}
         {selectedProductForFifo && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setSelectedProductForFifo(null)}>
-                <div className="bg-[#171c23] border border-[#30353d] rounded-xl w-full max-w-xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="p-6 border-b border-[#30353d] flex justify-between items-center bg-[#171c23] shrink-0">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={() => setSelectedProductForFifo(null)}>
+                <div className="bg-white border border-slate-200 rounded-[22px] w-full max-w-xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col text-slate-900" onClick={e => e.stopPropagation()}>
+                    <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/80 shrink-0">
                         <div>
-                            <h2 className="text-lg font-bold text-[#dee2ec] flex items-center gap-2">
-                                <Layers className="w-5 h-5 text-[#facc15]" />
+                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <Layers className="w-5 h-5 text-amber-600" />
                                 รายละเอียดล็อต FIFO: {selectedProductForFifo.name}
                             </h2>
-                            <p className="text-xs text-[#8a92a6] mt-0.5 font-mono">
+                            <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
                                 สต็อกคงเหลือทั้งหมด {selectedProductForFifo.stock} ชิ้น · มูลค่ารวม ฿{selectedProductForFifo.value.toLocaleString()}
                             </p>
                         </div>
-                        <button onClick={() => setSelectedProductForFifo(null)} className="p-2 hover:bg-[#252a32] rounded-lg text-[#8a92a6] hover:text-[#dee2ec] transition-colors">
+                        <button onClick={() => setSelectedProductForFifo(null)} className="p-2 hover:bg-slate-200/70 rounded-full text-slate-500 hover:text-slate-900 transition-colors">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
@@ -405,31 +415,31 @@ export default function AgingPage() {
                             selectedProductForFifo.fifoLayers.map((layer: any, idx: number) => {
                                 const layerVal = (layer.qty || 0) * (selectedProductForFifo.price || 0);
                                 return (
-                                    <div key={idx} className="p-4 rounded-xl border border-[#30353d] bg-[#1b2027] flex items-center justify-between">
+                                    <div key={idx} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
-                                                <Calendar className="w-4 h-4 text-[#8a92a6]" />
-                                                <span className="font-bold text-[#dee2ec] text-sm">รับเข้าเมื่อ: {layer.date}</span>
+                                                <Calendar className="w-4 h-4 text-slate-500" />
+                                                <span className="font-bold text-slate-900 text-sm">รับเข้าเมื่อ: {layer.date}</span>
                                             </div>
-                                            <div className="text-xs text-[#8a92a6]">
-                                                อายุสต็อกล็อตนี้: <span className="font-mono font-bold text-[#d1c6ab]">{layer.daysOld} วัน</span>
+                                            <div className="text-xs text-slate-600">
+                                                อายุสต็อกล็อตนี้: <span className="font-bold text-slate-900 tabular-nums">{layer.daysOld} วัน</span>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-sm font-mono font-black text-[#dee2ec]">{layer.qty} ชิ้น</div>
-                                            <div className="text-xs font-mono font-semibold text-[#57ec7f]">฿{layerVal.toLocaleString()}</div>
+                                        <div className="text-right tabular-nums">
+                                            <div className="text-sm font-bold text-slate-900">{layer.qty} ชิ้น</div>
+                                            <div className="text-xs font-semibold text-emerald-700">฿{layerVal.toLocaleString()}</div>
                                         </div>
                                     </div>
                                 );
                             })
                         ) : (
-                            <div className="text-center py-8 text-[#8a92a6] font-mono">ไม่พบล็อตการรับเข้าในประวัติ</div>
+                            <div className="text-center py-8 text-slate-500">ไม่พบล็อตการรับเข้าในประวัติ</div>
                         )}
                     </div>
-                    <div className="p-4 border-t border-[#30353d] bg-[#1b2027] flex justify-end">
+                    <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
                         <button
                             onClick={() => setSelectedProductForFifo(null)}
-                            className="px-5 py-2 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] font-mono font-bold text-sm rounded-lg transition-all"
+                            className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-full transition-all"
                         >
                             ปิดหน้าต่าง
                         </button>

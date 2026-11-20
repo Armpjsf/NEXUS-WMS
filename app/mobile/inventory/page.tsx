@@ -3,7 +3,6 @@
 import { getApiUrl } from '@/lib/config';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Search, RefreshCw, MapPin, Package, Wifi, WifiOff, X, Tag, Boxes, ScanLine } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import MobileNav from '@/components/MobileNav';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { usePullToRefresh, PullIndicator } from '@/components/ui/PullToRefresh';
@@ -82,7 +81,6 @@ export default function MobileInventoryPage() {
   const onScanned = useCallback((code: string) => {
     const text = (code || '').trim();
     stopScan();
-    // Jump straight to the product if we can match it; otherwise search by code
     const match = products.find((p) =>
       p.name?.toLowerCase() === text.toLowerCase() ||
       p.name?.toLowerCase().includes(text.toLowerCase())
@@ -100,7 +98,6 @@ export default function MobileInventoryPage() {
     setScanning(true);
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
-      // Wait a tick so the target div is mounted
       await new Promise((r) => setTimeout(r, 50));
       const scanner = new Html5Qrcode('inv-scanner');
       scannerRef.current = scanner;
@@ -132,23 +129,26 @@ export default function MobileInventoryPage() {
   const ptr = usePullToRefresh(fetchProducts);
 
   return (
-    <div className="relative min-h-screen pb-24 bg-slate-50/50" style={ptr.rootStyle} {...ptr.bind}>
-      <AmbientBackground />
+    <div className="relative min-h-screen pb-28 text-slate-900" style={ptr.rootStyle} {...ptr.bind}>
       <PullIndicator pullDistance={ptr.pullDistance} refreshing={ptr.refreshing} />
       <div className="relative z-10 max-w-lg mx-auto p-4 md:p-6" style={ptr.contentStyle}>
 
-        {/* Header */}
-        <div className="mb-4 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/50 shadow-sm sticky top-2 z-20">
+        {/* Header (sticky top-2 preserved for safe-area CSS) */}
+        <div className="mb-4 nx-glass-card p-4 sticky top-2 z-20">
           <div className="flex justify-between items-center mb-3">
             <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t('menu_inventory')}</h1>
-              <div className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full font-bold border mt-1 ${isConnected ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight">{t('menu_inventory')}</h1>
+              <div className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full font-bold border mt-1 ${
+                isConnected
+                  ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/25'
+                  : 'bg-rose-500/12 text-rose-700 border-rose-500/25'
+              }`}>
                 {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
                 {isConnected ? t('online') : t('offline')}
               </div>
             </div>
-            <button onClick={fetchProducts} className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-indigo-500 shadow-sm active:scale-95">
-              <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
+            <button onClick={fetchProducts} className="min-h-[44px] min-w-[44px] p-2.5 bg-white/90 border border-slate-200 rounded-full text-slate-600 hover:text-emerald-700 shadow-xs active:scale-95 flex items-center justify-center">
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
           {/* Search + Scan */}
@@ -159,51 +159,51 @@ export default function MobileInventoryPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="ค้นหาสินค้า / ตำแหน่ง..."
-                className="w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:border-indigo-400 focus:bg-white"
+                className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white/90 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:border-emerald-500 focus:bg-white placeholder:text-slate-400"
               />
             </div>
             <button
               onClick={startScan}
-              className="shrink-0 h-12 w-12 flex items-center justify-center rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 transition-all"
+              className="shrink-0 h-12 w-12 flex items-center justify-center rounded-2xl bg-slate-900 hover:bg-slate-800 text-white active:scale-95 transition-all shadow-sm"
               title="สแกนบาร์โค้ด"
             >
-              <ScanLine className="w-6 h-6" />
+              <ScanLine className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-16 text-slate-400 text-sm">กำลังโหลด...</div>
+          <div className="text-center py-16 text-slate-500 text-sm">กำลังโหลด...</div>
         ) : (
           <>
-            <div className="text-xs text-slate-400 font-bold px-2 mb-3">{filtered.length} รายการ</div>
-            <div className="space-y-2">
+            <div className="text-xs text-slate-600 font-bold px-2 mb-3 tabular-nums">{filtered.length} รายการ</div>
+            <div className="space-y-2.5">
               {filtered.map((p, idx) => {
                 const low = typeof p.stock === 'number' && p.stock <= 0;
                 return (
-                  <button key={p.name + idx} onClick={() => setSelected(p)} className="w-full text-left bg-white border border-slate-200 rounded-2xl p-3 shadow-sm flex items-center gap-3 active:scale-[0.99] transition-transform">
+                  <button key={p.name + idx} onClick={() => setSelected(p)} className="w-full text-left nx-glass-card p-3.5 flex items-center gap-3 active:scale-[0.99] transition-transform hover:bg-white/95">
                     {p.image ? (
-                      <img src={`/api/proxy/image?url=${encodeURIComponent(p.image)}`} alt="" className="w-12 h-12 rounded-xl bg-slate-100 object-cover border border-slate-100 shrink-0" />
+                      <img src={`/api/proxy/image?url=${encodeURIComponent(p.image)}`} alt="" className="w-12 h-12 rounded-2xl bg-slate-100 object-cover border border-slate-200 shrink-0" />
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/12 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-500/20">
                         <Package className="w-5 h-5" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="text-slate-900 font-bold text-sm truncate">{p.name}</div>
-                      <div className="text-[11px] text-orange-600 font-bold flex items-center gap-1 mt-0.5 w-fit bg-orange-50 px-1.5 py-0.5 rounded-lg border border-orange-100">
+                      <div className="text-[11px] text-amber-800 font-bold flex items-center gap-1 mt-1 w-fit bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/25">
                         <MapPin className="w-3 h-3" /> {p.location || '-'}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className={`font-black text-xl leading-none ${low ? 'text-red-500' : 'text-slate-900'}`}>{p.stock ?? '-'}</div>
-                      <div className="text-[10px] text-slate-400 font-medium">{p.unit || t('stock_label') || 'คงเหลือ'}</div>
+                      <div className={`font-black text-xl leading-none tabular-nums ${low ? 'text-rose-600' : 'text-slate-900'}`}>{p.stock ?? '-'}</div>
+                      <div className="text-[10px] text-slate-500 font-medium mt-0.5">{p.unit || t('stock_label') || 'คงเหลือ'}</div>
                     </div>
                   </button>
                 );
               })}
               {filtered.length === 0 && (
-                <div className="text-center py-16 text-slate-400 text-sm">ไม่พบสินค้า</div>
+                <div className="nx-glass-card text-center py-14 text-slate-500 text-sm">ไม่พบสินค้า</div>
               )}
             </div>
           </>
@@ -214,43 +214,49 @@ export default function MobileInventoryPage() {
       {/* Product detail bottom-sheet */}
       {selected && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/50 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="w-full max-w-lg bg-white rounded-t-[2rem] p-6 shadow-2xl animate-in slide-in-from-bottom duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-white/95 backdrop-blur-xl border-t border-white/90 rounded-t-[2rem] p-6 shadow-2xl animate-in slide-in-from-bottom duration-200 relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-1.5 bg-slate-200 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
-              <div className="flex items-center gap-4 mt-2">
+              <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
+              <div className="flex items-center gap-4 mt-2 min-w-0">
                 {selected.image ? (
-                  <img src={`/api/proxy/image?url=${encodeURIComponent(selected.image)}`} alt="" className="w-20 h-20 rounded-2xl bg-slate-100 object-cover border border-slate-100" />
+                  <img src={`/api/proxy/image?url=${encodeURIComponent(selected.image)}`} alt="" className="w-20 h-20 rounded-2xl bg-slate-100 object-cover border border-slate-200 shrink-0" />
                 ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100"><Package className="w-8 h-8" /></div>
+                  <div className="w-20 h-20 rounded-2xl bg-emerald-500/12 text-emerald-700 flex items-center justify-center border border-emerald-500/20 shrink-0"><Package className="w-8 h-8" /></div>
                 )}
                 <div className="min-w-0">
                   <div className="text-lg font-black text-slate-900 leading-tight">{selected.name}</div>
-                  {selected.category && <div className="text-xs text-slate-400 font-medium mt-1 flex items-center gap-1"><Tag className="w-3 h-3" /> {selected.category}</div>}
+                  {selected.category && <div className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1"><Tag className="w-3 h-3" /> {selected.category}</div>}
                 </div>
               </div>
-              <button onClick={() => setSelected(null)} className="p-2 text-slate-400 hover:text-slate-600 shrink-0"><X className="w-6 h-6" /></button>
+              <button onClick={() => setSelected(null)} className="p-2 text-slate-400 hover:text-slate-700 shrink-0"><X className="w-6 h-6" /></button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <div className="nx-dark-accent-card rounded-2xl p-4">
                 <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-1"><Boxes className="w-3 h-3" /> คงเหลือ</div>
-                <div className={`text-2xl font-black ${typeof selected.stock === 'number' && selected.stock <= 0 ? 'text-red-500' : 'text-slate-900'}`}>{selected.stock ?? '-'} <span className="text-sm text-slate-400 font-medium">{selected.unit || ''}</span></div>
+                <div className={`text-2xl font-black tabular-nums ${typeof selected.stock === 'number' && selected.stock <= 0 ? 'text-rose-300' : 'text-white'}`}>
+                  {selected.stock ?? '-'} <span className="text-sm text-slate-300 font-medium">{selected.unit || ''}</span>
+                </div>
               </div>
-              <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
-                <div className="text-[10px] uppercase font-bold text-orange-400 flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> ตำแหน่งหลัก</div>
-                <div className="text-2xl font-black text-orange-700">{selected.location || '-'}</div>
+              <div className="bg-amber-500/12 rounded-2xl p-4 border border-amber-500/25">
+                <div className="text-[10px] uppercase font-bold text-amber-700 flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> ตำแหน่งหลัก</div>
+                <div className="text-2xl font-black text-amber-900 font-mono">{selected.location || '-'}</div>
               </div>
             </div>
 
             {/* Pack hierarchy (UOM) */}
             {uoms && uoms.length > 1 && (
               <div className="mt-4">
-                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-2">
+                <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1 mb-2">
                   <Boxes className="w-3 h-3" /> หน่วยบรรจุ (Pack Hierarchy)
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {uoms.map((u, i) => (
-                    <span key={u.code + i} className={`text-xs rounded-lg px-2.5 py-1.5 border ${u.isBase ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
+                    <span key={u.code + i} className={`text-xs rounded-full px-3 py-1 border tabular-nums ${
+                      u.isBase
+                        ? 'bg-slate-100 border-slate-200 text-slate-700'
+                        : 'bg-sky-500/12 border-sky-500/25 text-sky-800'
+                    }`}>
                       <b>{u.name || u.code}</b>{!u.isBase && <span className="text-[11px] opacity-80"> = {u.factor} {uoms[0]?.name || 'ชิ้น'}</span>}
                     </span>
                   ))}
@@ -258,9 +264,9 @@ export default function MobileInventoryPage() {
               </div>
             )}
 
-            {/* Per-bin breakdown (multi-location stock) */}
+            {/* Per-bin breakdown */}
             <div className="mt-4">
-              <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-2">
+              <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1 mb-2">
                 <Boxes className="w-3 h-3" /> กระจายตามพิกัด (Bin)
               </div>
               {binsLoading ? (
@@ -270,13 +276,13 @@ export default function MobileInventoryPage() {
               ) : (
                 <div className="space-y-1.5">
                   {bins.map((b, i) => (
-                    <div key={b.binCode + i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
-                      <span className="flex items-center gap-1.5 text-sm font-mono text-slate-700">
+                    <div key={b.binCode + i} className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-2.5">
+                      <span className="flex items-center gap-1.5 text-sm font-mono text-slate-800">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />{b.binCode}
-                        {b.lotNo ? <span className="text-[10px] text-slate-400">L:{b.lotNo}</span> : null}
+                        {b.lotNo ? <span className="text-[10px] text-slate-500">L:{b.lotNo}</span> : null}
                       </span>
-                      <span className={`text-sm font-black ${b.quantity <= 0 ? 'text-slate-300' : 'text-slate-900'}`}>
-                        {b.quantity} <span className="text-[10px] text-slate-400 font-medium">{selected.unit || ''}</span>
+                      <span className={`text-sm font-black tabular-nums ${b.quantity <= 0 ? 'text-slate-400' : 'text-slate-900'}`}>
+                        {b.quantity} <span className="text-[10px] text-slate-500 font-medium">{selected.unit || ''}</span>
                       </span>
                     </div>
                   ))}
@@ -284,7 +290,7 @@ export default function MobileInventoryPage() {
               )}
             </div>
 
-            <button onClick={() => setSelected(null)} className="w-full mt-5 min-h-[52px] bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-2xl font-bold active:scale-[0.98] transition-all">
+            <button onClick={() => setSelected(null)} className="w-full mt-5 min-h-[52px] bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-full font-bold active:scale-[0.98] transition-all">
               ปิด
             </button>
           </div>
@@ -293,7 +299,7 @@ export default function MobileInventoryPage() {
 
       {/* Barcode scanner overlay */}
       {scanning && (
-        <div className="fixed inset-0 z-[70] bg-slate-950 flex flex-col">
+        <div className="fixed inset-0 z-[70] bg-black/95 flex flex-col">
           <div className="flex justify-between items-center p-4 text-white">
             <span className="font-bold flex items-center gap-2"><ScanLine className="w-5 h-5" /> สแกนบาร์โค้ด</span>
             <button onClick={stopScan} className="p-2 text-white/70 hover:text-white"><X className="w-7 h-7" /></button>
@@ -301,8 +307,8 @@ export default function MobileInventoryPage() {
           <div className="flex-1 flex items-center justify-center p-4">
             <div id="inv-scanner" className="w-full max-w-sm rounded-2xl overflow-hidden" />
           </div>
-          <div className="p-6 text-center text-white/60 text-sm">
-            {scanError ? <span className="text-red-400">{scanError}</span> : 'เล็งกล้องไปที่บาร์โค้ดสินค้า'}
+          <div className="p-6 text-center text-white/70 text-sm">
+            {scanError ? <span className="text-rose-400">{scanError}</span> : 'เล็งกล้องไปที่บาร์โค้ดสินค้า'}
           </div>
         </div>
       )}

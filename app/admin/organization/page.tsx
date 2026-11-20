@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Building2, ArrowLeft, Upload, Loader2, Save, Palette } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { errorMessage } from '@/lib/errors';
 
 const PLANS = ['FREE', 'PRO', 'ENTERPRISE'];
@@ -56,33 +55,43 @@ export default function OrganizationPage() {
     } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
   };
 
-  if (loading) return <div className="min-h-screen grid place-items-center text-[#8a92a6]"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (loading) return <div className="theme-nexus-hybrid min-h-screen grid place-items-center text-slate-500"><Loader2 className="w-8 h-8 animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
-      <AmbientBackground />
-      <div className="relative z-10 max-w-[720px] mx-auto space-y-6">
-        <Link href="/admin" className="inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]"><ArrowLeft className="w-4 h-4" /> ตั้งค่า</Link>
+    <div className="theme-nexus-hybrid min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative text-slate-900">
+      <div className="max-w-[720px] mx-auto space-y-6">
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> ตั้งค่า
+        </Link>
 
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
-            <span className="grid place-items-center w-11 h-11 rounded-2xl text-white shadow-lg" style={{ background: color }}><Building2 className="w-6 h-6" /></span>
+        <div className="pt-1">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+              <Building2 className="w-3 h-3 text-sky-600" />
+              Organization &amp; Branding
+            </span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+            <span className="grid place-items-center w-10 h-10 rounded-2xl text-white shadow-sm shrink-0" style={{ background: color }}><Building2 className="w-5 h-5" /></span>
             ตั้งค่าองค์กร
           </h1>
-          <p className="text-[#d1c6ab] font-medium mt-1">ชื่อ โลโก้ และสีแบรนด์ที่แสดงทั่วทั้งระบบ</p>
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">ชื่อ โลโก้ และสีแบรนด์ที่แสดงทั่วทั้งระบบ</p>
         </div>
 
-        <div className="rounded-2xl border border-[#30353d] bg-[#171c23] backdrop-blur p-6 space-y-6 shadow-sm">
+        <div className="nx-glass-card p-6 space-y-6">
           {/* Logo + name preview */}
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-[#1b2027] border border-[#30353d] grid place-items-center overflow-hidden shrink-0">
+            <div className="w-20 h-20 rounded-2xl bg-white/90 border border-slate-200/80 grid place-items-center overflow-hidden shrink-0">
               {logo ? <img src={logo} alt="logo" className="w-full h-full object-contain" /> : <Building2 className="w-8 h-8 text-slate-300" />}
             </div>
             <div className="flex-1">
-              <label className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block mb-1">ชื่อองค์กร</label>
-              <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-bold text-[#dee2ec] outline-none focus:border-slate-500" />
-              <label className={`mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-xs cursor-pointer transition-colors ${uploading ? 'bg-[#252a32] text-[#8a92a6]' : 'bg-[#1b2027] text-[#d1c6ab] border-[#30353d] hover:bg-[#252a32]'}`}>
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1">ชื่อองค์กร</label>
+              <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-white/90 border border-slate-200/80 rounded-xl px-4 py-2.5 font-bold text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+              <label className={`mt-2.5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border font-semibold text-xs cursor-pointer transition-colors ${uploading ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50 shadow-xs'}`}>
+                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                 {uploading ? 'กำลังอัปโหลด...' : 'อัปโหลดโลโก้'}
                 <input type="file" accept="image/*" onChange={uploadLogo} disabled={uploading} className="hidden" />
               </label>
@@ -91,24 +100,24 @@ export default function OrganizationPage() {
 
           {/* Color */}
           <div>
-            <label className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2 flex items-center gap-1.5"><Palette className="w-4 h-4" /> สีแบรนด์</label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Palette className="w-4 h-4" /> สีแบรนด์</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map(c => (
-                <button key={c} onClick={() => setColor(c)} className={`w-9 h-9 rounded-xl transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-slate-900 scale-110' : ''}`} style={{ background: c }} aria-label={c} />
+                <button key={c} onClick={() => setColor(c)} className={`w-9 h-9 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-slate-900 scale-110' : ''}`} style={{ background: c }} aria-label={c} />
               ))}
-              <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-9 h-9 rounded-xl border border-[#30353d] cursor-pointer" />
+              <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-9 h-9 rounded-full border border-slate-200/80 cursor-pointer" />
             </div>
           </div>
 
           {/* Plan */}
           <div>
-            <label className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block mb-2">แพ็กเกจ</label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">แพ็กเกจ</label>
             <div className="flex gap-2">
               {PLANS.map(p => (
-                <button key={p} onClick={() => canEditPlan && setPlan(p)} disabled={!canEditPlan && plan !== p} className={`px-4 py-2 rounded-xl font-bold text-sm border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${plan === p ? 'bg-slate-900 text-white border-slate-900' : 'bg-[#171c23] text-[#8a92a6] border-[#30353d] hover:bg-[#1b2027]'}`}>{p}</button>
+                <button key={p} onClick={() => canEditPlan && setPlan(p)} disabled={!canEditPlan && plan !== p} className={`px-4 py-2 rounded-full font-semibold text-xs border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${plan === p ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50'}`}>{p}</button>
               ))}
             </div>
-            {!canEditPlan && <p className="text-xs text-[#8a92a6] mt-2">เปลี่ยนแพ็กเกจได้เฉพาะผู้ดูแลแพลตฟอร์ม — ติดต่อผู้ให้บริการเพื่ออัปเกรด</p>}
+            {!canEditPlan && <p className="text-xs text-slate-500 mt-2">เปลี่ยนแพ็กเกจได้เฉพาะผู้ดูแลแพลตฟอร์ม — ติดต่อผู้ให้บริการเพื่ออัปเกรด</p>}
             {planUsage && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {([['products', 'สินค้า (SKU)'], ['users', 'ผู้ใช้'], ['branches', 'สาขา']] as const).map(([key, label]) => {
@@ -117,14 +126,14 @@ export default function OrganizationPage() {
                   const unlimited = limit < 0;
                   const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
                   return (
-                    <div key={key} className="rounded-xl border border-[#30353d] bg-[#1b2027] p-3">
-                      <div className="text-[11px] font-bold text-[#8a92a6]">{label}</div>
-                      <div className="mt-1 text-sm font-bold text-[#dee2ec]">
-                        {used.toLocaleString()} <span className="text-[#8a92a6] font-medium">/ {unlimited ? 'ไม่จำกัด' : limit.toLocaleString()}</span>
+                    <div key={key} className="rounded-2xl border border-slate-200/80 bg-white/75 p-3.5">
+                      <div className="text-[11px] font-bold text-slate-500">{label}</div>
+                      <div className="mt-1 text-sm font-bold text-slate-900 tabular-nums">
+                        {used.toLocaleString()} <span className="text-slate-500 font-medium">/ {unlimited ? 'ไม่จำกัด' : limit.toLocaleString()}</span>
                       </div>
                       {!unlimited && (
-                        <div className="mt-2 h-1.5 rounded-full bg-[#30353d] overflow-hidden">
-                          <div className={`h-full rounded-full ${pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }} />
+                        <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                          <div className={`h-full rounded-full ${pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }} />
                         </div>
                       )}
                     </div>
@@ -136,8 +145,8 @@ export default function OrganizationPage() {
         </div>
 
         <div className="flex justify-end">
-          <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-50" style={{ background: color }}>
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} บันทึก
+          <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-white text-xs font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50" style={{ background: color }}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} บันทึก
           </button>
         </div>
 
@@ -172,37 +181,37 @@ function OrgMembers() {
   };
 
   return (
-    <div className="rounded-2xl border border-[#30353d] bg-[#171c23] p-6 space-y-4">
+    <div className="nx-glass-card p-6 space-y-4">
       <div>
-        <h2 className="text-lg font-black text-[#dee2ec]">สมาชิกจากองค์กรอื่น</h2>
-        <p className="text-sm text-[#8a92a6]">ให้ผู้ใช้ที่มีบัญชีในองค์กรอื่นเข้ามาทำงานในองค์กรนี้ได้ — เขาสลับองค์กรได้จากแถบเมนูซ้าย</p>
+        <h2 className="text-lg font-bold text-slate-900">สมาชิกจากองค์กรอื่น</h2>
+        <p className="text-sm text-slate-600">ให้ผู้ใช้ที่มีบัญชีในองค์กรอื่นเข้ามาทำงานในองค์กรนี้ได้ — เขาสลับองค์กรได้จากแถบเมนูซ้าย</p>
       </div>
       {!migrated ? (
-        <p className="text-sm text-amber-400">ต้องรัน sql/20260925_cost_ratelimit_memberships.sql ก่อนใช้งานส่วนนี้</p>
+        <p className="text-sm text-amber-700 bg-amber-500/15 border border-amber-500/25 px-3 py-2 rounded-xl">ต้องรัน sql/20260925_cost_ratelimit_memberships.sql ก่อนใช้งานส่วนนี้</p>
       ) : (
         <>
           <div className="flex flex-col sm:flex-row gap-2">
             <input value={username} onChange={e => setUsername(e.target.value)} placeholder="ชื่อผู้ใช้ (username)"
-              className="flex-1 bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2 text-sm text-[#dee2ec] outline-none focus:border-slate-500" />
+              className="flex-1 bg-white/90 border border-slate-200/80 rounded-xl px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500" />
             <select value={role} onChange={e => setRole(e.target.value)}
-              className="bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2 text-sm text-[#dee2ec] outline-none">
+              className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500">
               {MEMBER_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
             <button disabled={busy || !username.trim()} onClick={() => call('POST', { username: username.trim(), role }, 'เพิ่มสมาชิกแล้ว')}
-              className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold disabled:opacity-50">เพิ่ม</button>
+              className="px-5 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold disabled:opacity-50 transition-colors">เพิ่ม</button>
           </div>
           {members.length === 0 ? (
-            <p className="text-sm text-[#8a92a6]">ยังไม่มีสมาชิกจากองค์กรอื่น</p>
+            <p className="text-sm text-slate-500">ยังไม่มีสมาชิกจากองค์กรอื่น</p>
           ) : (
-            <div className="divide-y divide-[#30353d] rounded-xl border border-[#30353d]">
+            <div className="divide-y divide-slate-200/70 rounded-2xl border border-slate-200/80 bg-white/60 overflow-hidden">
               {members.map(m => (
-                <div key={m.userId} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <div key={m.userId} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/80 transition-colors">
                   <div className="min-w-0">
-                    <div className="font-bold text-sm text-[#dee2ec] truncate">{m.username}</div>
-                    <div className="text-[11px] text-[#8a92a6]">{m.role}{m.status !== 'Active' ? ` · ${m.status}` : ''}</div>
+                    <div className="font-bold text-sm text-slate-900 truncate">{m.username}</div>
+                    <div className="text-xs text-slate-500">{m.role}{m.status !== 'Active' ? ` · ${m.status}` : ''}</div>
                   </div>
                   <button disabled={busy} onClick={() => confirm(`นำ ${m.username} ออกจากองค์กรนี้?`) && call('DELETE', { userId: m.userId }, 'นำออกแล้ว')}
-                    className="text-xs font-bold text-rose-400 hover:text-rose-300 disabled:opacity-50">นำออก</button>
+                    className="px-3 py-1 rounded-full text-xs font-semibold text-rose-700 bg-rose-500/12 border border-rose-500/20 hover:bg-rose-500/20 disabled:opacity-50 transition-colors">นำออก</button>
                 </div>
               ))}
             </div>

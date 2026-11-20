@@ -10,8 +10,8 @@ import {
   Download,
   Sparkles,
   Users,
+  X,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { ThirdPartyClient, BillingPeriodCalculation } from '@/lib/billingEngine';
 import { ExperimentalBanner } from '@/components/ui/ExperimentalBanner';
@@ -80,8 +80,8 @@ export default function ThreePlBillingPage() {
           email: newEmail,
           storageRatePerCbmDay: newStorageRate,
           pickFeeBase: newPickBase,
-          pickFeePerItem: newPickItem
-        })
+          pickFeePerItem: newPickItem,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -142,14 +142,14 @@ export default function ThreePlBillingPage() {
           itemsCount: Number(itemsCount),
           storageRatePerCbmDay: selectedClient.storageRatePerCbmDay,
           pickFeeBase: selectedClient.pickFeeBase,
-          pickFeePerItem: selectedClient.pickFeePerItem
-        })
+          pickFeePerItem: selectedClient.pickFeePerItem,
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setBillingResult({
           invoiceNumber: data.invoiceNumber,
-          calculation: data.calculation
+          calculation: data.calculation,
         });
         toast.success('คำนวณบิลค่าบริการคลังสำเร็จ!');
       } else {
@@ -162,51 +162,57 @@ export default function ThreePlBillingPage() {
     }
   };
 
-  const filteredClients = clients.filter(c => 
-    c.clientName.toLowerCase().includes(search.toLowerCase()) ||
-    c.clientCode.toLowerCase().includes(search.toLowerCase())
+  const filteredClients = clients.filter(
+    (c) =>
+      c.clientName.toLowerCase().includes(search.toLowerCase()) ||
+      c.clientCode.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
-      <AmbientBackground />
-      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
-        <ExperimentalBanner>
-          ตัวคำนวณค่าบริการเป็นแบบร่าง — ปริมาณพื้นที่/ออเดอร์มาจากที่กรอกเอง ยังไม่ดึงจากการใช้งานจริง และยังไม่บันทึกเป็นใบแจ้งหนี้
-        </ExperimentalBanner>
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900 print:bg-white print:p-0">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="print:hidden">
+          <ExperimentalBanner>
+            ตัวคำนวณค่าบริการเป็นแบบร่าง — ปริมาณพื้นที่/ออเดอร์มาจากที่กรอกเอง ยังไม่ดึงจากการใช้งานจริง และยังไม่บันทึกเป็นใบแจ้งหนี้
+          </ExperimentalBanner>
+        </div>
 
-        {/* Header Tactical Banner */}
-        <div className="relative mx-auto flex flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-          <div className="relative z-10">
-            <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#4cd7f6]" />
-              3PL MULTI-TENANCY & AUTOMATED FULFILLMENT BILLING
-            </p>
-            <h1 className="font-headline text-2xl md:text-3xl font-black text-[#dee2ec] tracking-tight mb-1 flex items-center gap-3">
-              <div className="bg-[#4cd7f6] text-[#042027] p-2 rounded-lg shadow-md">
-                <Building2 className="w-6 h-6" />
-              </div>
-              3PL Client Portal & Automated Billing
+        {/* Open Hybrid Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between pt-1 print:hidden">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/70 backdrop-blur-md border border-white/85 px-2.5 py-0.5 rounded-full shadow-xs">
+                <Sparkles className="w-3 h-3 text-sky-600" />
+                3PL Multi-Tenancy & Automated Billing
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/12 border border-sky-500/20 text-sky-700">
+                <Building2 className="w-5 h-5" />
+              </span>
+              <span>3PL Client Portal & Automated Billing</span>
             </h1>
-            <p className="text-[#8a92a6] font-mono text-xs">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
               ระบบบริหารคลังรับฝากสินค้าสำหรับแบรนด์ลูกค้า และระบบคำนวณค่าฝากเก็บ / ค่าหยิบ-แพ็คอัตโนมัติ
             </p>
           </div>
-          <div className="flex items-center gap-2 relative z-10">
+
+          <div className="flex items-center gap-2.5">
             <button
               onClick={fetchClients}
-              className="p-2.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-xl border border-[#30353d] transition"
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-slate-200/80 px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition disabled:opacity-50"
               title="รีเฟรช"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
+              <span>รีเฟรช</span>
             </button>
             <button
               onClick={() => setShowAddClientModal(true)}
-              className="px-4 py-2.5 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-xl shadow-lg shadow-[#4cd7f6]/20 font-black transition flex items-center gap-2 text-xs"
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 text-xs font-semibold shadow-sm transition"
             >
               <Plus className="w-4 h-4" />
-              + เพิ่มผู้ว่าจ้างใหม่
+              <span>เพิ่มผู้ว่าจ้างใหม่</span>
             </button>
           </div>
         </div>
@@ -214,56 +220,64 @@ export default function ThreePlBillingPage() {
         {/* Main Grid: Client List & Detail/Billing Simulator */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Client List */}
-          <div className="bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
-              <h2 className="font-bold text-[#dee2ec] text-xs">รายชื่อลูกค้า 3PL ({clients.length})</h2>
-              <div className="relative w-40">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a92a6]" />
+          <div className="nx-glass-card p-5 space-y-4 print:hidden">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
+              <h2 className="font-bold text-slate-900 text-sm">
+                รายชื่อลูกค้า 3PL <span className="text-slate-500 font-normal tabular-nums">({clients.length})</span>
+              </h2>
+              <div className="relative w-44">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="ค้นหาแบรนด์..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-2 py-1 text-xs bg-[#12161d] border border-[#30353d] rounded-lg text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/90 border border-slate-200/80 rounded-full text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+            <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-0.5">
               {loading ? (
-                <div className="p-4 text-center text-[#8a92a6] text-xs">กำลังโหลด...</div>
+                <div className="p-6 text-center text-slate-500 text-xs">กำลังโหลด...</div>
               ) : filteredClients.length === 0 ? (
-                <div className="p-8 text-center text-[#8a92a6] text-xs border border-[#30353d] rounded-xl bg-[#12161d]">
-                  <Users className="w-8 h-8 text-[#8a92a6] mx-auto mb-2 opacity-50" />
-                  <p className="font-bold text-[#dee2ec]">ยังไม่มีรายชื่อผู้ว่าจ้าง 3PL</p>
-                  <p>กดปุ่ม "+ เพิ่มผู้ว่าจ้างใหม่" เพื่อบันทึกสัญญาจัดเก็บและอัตราค่าบริการ</p>
+                <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-300 rounded-2xl bg-white/50">
+                  <Users className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="font-semibold text-slate-800">ยังไม่มีรายชื่อผู้ว่าจ้าง 3PL</p>
+                  <p className="mt-1">กดปุ่ม &quot;เพิ่มผู้ว่าจ้างใหม่&quot; เพื่อบันทึกสัญญาจัดเก็บและอัตราค่าบริการ</p>
                 </div>
-              ) : filteredClients.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => {
-                    setSelectedClient(c);
-                    setBillingResult(null);
-                  }}
-                  className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                    selectedClient?.id === c.id
-                      ? 'bg-[#4cd7f6]/10 border-[#4cd7f6] ring-1 ring-[#4cd7f6]'
-                      : 'bg-[#12161d] hover:bg-white/5 border-[#30353d]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-[#dee2ec] text-xs">{c.clientName}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#1e242e] text-[#4cd7f6] border border-[#30353d]">
-                      {c.clientCode}
-                    </span>
+              ) : (
+                filteredClients.map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      setSelectedClient(c);
+                      setBillingResult(null);
+                    }}
+                    className={`p-3.5 rounded-2xl border transition cursor-pointer ${
+                      selectedClient?.id === c.id
+                        ? 'bg-sky-500/10 border-sky-500/40 ring-1 ring-sky-500/30 shadow-xs'
+                        : 'bg-white/75 hover:bg-white border-slate-200/80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900 text-xs">{c.clientName}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-500/12 text-sky-700 border border-sky-500/20">
+                        {c.clientCode}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600">ผู้ติดต่อ: {c.contactPerson || '-'}</div>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 pt-2 border-t border-slate-200/70 tabular-nums">
+                      <span>
+                        ค่าฝาก: <strong className="text-sky-700">฿{c.storageRatePerCbmDay}</strong>/CBM
+                      </span>
+                      <span>
+                        ค่าหยิบ: <strong className="text-emerald-700">฿{c.pickFeeBase}</strong>/บิล
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-[11px] text-[#8a92a6]">ผู้ติดต่อ: {c.contactPerson || '-'}</div>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#8a92a6] pt-1.5 border-t border-[#262c36]">
-                    <span>ค่าฝาก: <strong className="text-[#4cd7f6]">฿{c.storageRatePerCbmDay}</strong>/CBM</span>
-                    <span>ค่าหยิบ: <strong className="text-[#57ec7f]">฿{c.pickFeeBase}</strong>/บิล</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -272,45 +286,55 @@ export default function ThreePlBillingPage() {
             {selectedClient ? (
               <>
                 {/* Profile Card */}
-                <div className="bg-[#171c23]/90 p-5 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
+                <div className="nx-glass-card p-6 space-y-5 print:hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-4">
                     <div>
-                      <h2 className="text-lg font-black text-[#dee2ec]">{selectedClient.clientName}</h2>
-                      <p className="text-xs text-[#4cd7f6] font-mono">รหัสลูกค้า: {selectedClient.clientCode}</p>
+                      <h2 className="text-lg font-bold text-slate-900">{selectedClient.clientName}</h2>
+                      <p className="text-xs text-sky-700 font-mono font-semibold mt-0.5">
+                        รหัสลูกค้า: {selectedClient.clientCode}
+                      </p>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#57ec7f]/20 text-[#57ec7f] border border-[#57ec7f]/30">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/12 text-emerald-700 border border-emerald-500/20">
                       สัญญาใช้งานปกติ (Active)
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d]">
-                      <span className="text-[#8a92a6] block text-[10px]">ค่าฝากเก็บ (Storage Rate)</span>
-                      <strong className="text-sm text-[#dee2ec]">฿{selectedClient.storageRatePerCbmDay}</strong>
-                      <span className="text-[10px] text-[#8a92a6] block">/ CBM / วัน</span>
+                    <div className="p-3.5 bg-white/80 rounded-2xl border border-slate-200/80">
+                      <span className="text-slate-500 block text-[11px] font-medium">ค่าฝากเก็บ (Storage Rate)</span>
+                      <strong className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                        ฿{selectedClient.storageRatePerCbmDay}
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block">/ CBM / วัน</span>
                     </div>
-                    <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d]">
-                      <span className="text-[#8a92a6] block text-[10px]">ค่าหยิบพื้นฐาน (Base Pick)</span>
-                      <strong className="text-sm text-[#dee2ec]">฿{selectedClient.pickFeeBase}</strong>
-                      <span className="text-[10px] text-[#8a92a6] block">/ ออเดอร์</span>
+                    <div className="p-3.5 bg-white/80 rounded-2xl border border-slate-200/80">
+                      <span className="text-slate-500 block text-[11px] font-medium">ค่าหยิบพื้นฐาน (Base Pick)</span>
+                      <strong className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                        ฿{selectedClient.pickFeeBase}
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block">/ ออเดอร์</span>
                     </div>
-                    <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d]">
-                      <span className="text-[#8a92a6] block text-[10px]">ค่าหยิบชิ้นถัดไป (Item Fee)</span>
-                      <strong className="text-sm text-[#dee2ec]">฿{selectedClient.pickFeePerItem}</strong>
-                      <span className="text-[10px] text-[#8a92a6] block">/ ชิ้น</span>
+                    <div className="p-3.5 bg-white/80 rounded-2xl border border-slate-200/80">
+                      <span className="text-slate-500 block text-[11px] font-medium">ค่าหยิบชิ้นถัดไป (Item Fee)</span>
+                      <strong className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                        ฿{selectedClient.pickFeePerItem}
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block">/ ชิ้น</span>
                     </div>
-                    <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d]">
-                      <span className="text-[#8a92a6] block text-[10px]">ค่ากล่อง & วัสดุแพ็ค</span>
-                      <strong className="text-sm text-[#dee2ec]">฿{selectedClient.packMaterialFee}</strong>
-                      <span className="text-[10px] text-[#8a92a6] block">/ กล่องพัสดุ</span>
+                    <div className="p-3.5 bg-white/80 rounded-2xl border border-slate-200/80">
+                      <span className="text-slate-500 block text-[11px] font-medium">ค่ากล่อง & วัสดุแพ็ค</span>
+                      <strong className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                        ฿{selectedClient.packMaterialFee}
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block">/ กล่องพัสดุ</span>
                     </div>
                   </div>
 
                   {/* Billing Generator Parameters */}
-                  <div className="bg-[#12161d] p-4 rounded-xl border border-[#30353d] space-y-3">
+                  <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="font-bold text-xs text-[#facc15] flex items-center gap-1.5">
-                        <Calculator className="w-4 h-4 text-[#facc15]" />
+                      <h3 className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                        <Calculator className="w-4 h-4 text-amber-600" />
                         คำนวณบิลรอบค่าบริการ (Automated Invoice Calculation)
                       </h3>
                       <div className="flex flex-wrap items-center gap-2">
@@ -318,7 +342,7 @@ export default function ThreePlBillingPage() {
                           type="button"
                           onClick={handleLoadLiveUsage}
                           disabled={isLoadingUsage}
-                          className="px-3 py-1.5 bg-[#4cd7f6]/15 hover:bg-[#4cd7f6]/25 border border-[#4cd7f6]/40 text-[#4cd7f6] rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5 disabled:opacity-50"
+                          className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-sky-500/30 text-sky-700 rounded-full text-xs font-semibold shadow-xs transition flex items-center gap-1.5 disabled:opacity-50"
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${isLoadingUsage ? 'animate-spin' : ''}`} />
                           {isLoadingUsage ? 'กำลังดึงข้อมูล...' : 'ดึงยอดใช้งานจริงจากคลัง (Load Live Usage)'}
@@ -326,7 +350,7 @@ export default function ThreePlBillingPage() {
                         <button
                           onClick={handleGenerateBilling}
                           disabled={isCalculating}
-                          className="px-4 py-1.5 bg-[#facc15] hover:bg-[#eab308] text-[#1b1600] rounded-lg text-xs font-black shadow transition flex items-center gap-1"
+                          className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-full text-xs font-bold shadow-xs transition flex items-center gap-1 disabled:opacity-50"
                         >
                           {isCalculating ? 'กำลังคำนวณ...' : '⚡ คำนวณบิลทันที'}
                         </button>
@@ -335,44 +359,44 @@ export default function ThreePlBillingPage() {
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                       <div>
-                        <label className="block text-[#8a92a6] mb-1">จำนวนวันรอบบิล (วัน)</label>
+                        <label className="block text-slate-600 font-medium mb-1">จำนวนวันรอบบิล (วัน)</label>
                         <input
                           type="number"
                           min="1"
                           value={billingDays}
                           onChange={(e) => setBillingDays(Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 bg-[#1c222b] border border-[#30353d] rounded-lg text-[#dee2ec] font-bold"
+                          className="w-full px-3 py-2 bg-white border border-slate-200/80 rounded-xl text-slate-900 font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-[#8a92a6] mb-1">พื้นที่เฉลี่ย (CBM)</label>
+                        <label className="block text-slate-600 font-medium mb-1">พื้นที่เฉลี่ย (CBM)</label>
                         <input
                           type="number"
                           step="0.1"
                           min="0"
                           value={occupiedCbm}
                           onChange={(e) => setOccupiedCbm(Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 bg-[#1c222b] border border-[#30353d] rounded-lg text-[#dee2ec] font-bold"
+                          className="w-full px-3 py-2 bg-white border border-slate-200/80 rounded-xl text-slate-900 font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-[#8a92a6] mb-1">ยอดออเดอร์ที่แพ็ค (ใบ)</label>
+                        <label className="block text-slate-600 font-medium mb-1">ยอดออเดอร์ที่แพ็ค (ใบ)</label>
                         <input
                           type="number"
                           min="0"
                           value={ordersCount}
                           onChange={(e) => setOrdersCount(Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 bg-[#1c222b] border border-[#30353d] rounded-lg text-[#dee2ec] font-bold"
+                          className="w-full px-3 py-2 bg-white border border-slate-200/80 rounded-xl text-slate-900 font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-[#8a92a6] mb-1">ยอดชิ้นสินค้าที่หยิบ (ชิ้น)</label>
+                        <label className="block text-slate-600 font-medium mb-1">ยอดชิ้นสินค้าที่หยิบ (ชิ้น)</label>
                         <input
                           type="number"
                           min="0"
                           value={itemsCount}
                           onChange={(e) => setItemsCount(Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 bg-[#1c222b] border border-[#30353d] rounded-lg text-[#dee2ec] font-bold"
+                          className="w-full px-3 py-2 bg-white border border-slate-200/80 rounded-xl text-slate-900 font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -381,75 +405,104 @@ export default function ThreePlBillingPage() {
 
                 {/* Billing Result Invoice Preview */}
                 {billingResult && (
-                  <div className="bg-[#171c23]/90 p-5 rounded-xl border border-[#4cd7f6]/40 shadow-2xl backdrop-blur-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
+                  <div className="nx-glass-card p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-4">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4cd7f6]">ใบแจ้งหนี้ค่าบริการคลังสินค้า (Proforma Invoice)</span>
-                        <h3 className="text-lg font-black text-[#dee2ec]">{billingResult.invoiceNumber}</h3>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700">
+                          ใบแจ้งหนี้ค่าบริการคลังสินค้า (Proforma Invoice)
+                        </span>
+                        <h3 className="text-lg font-bold text-slate-900 font-mono mt-0.5">
+                          {billingResult.invoiceNumber}
+                        </h3>
                       </div>
                       <button
                         onClick={() => window.print()}
-                        className="px-3 py-1.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-lg text-xs font-bold flex items-center gap-1.5 transition border border-[#30353d]"
+                        className="px-4 py-2 bg-white/90 hover:bg-white text-slate-700 hover:text-slate-900 rounded-full text-xs font-semibold flex items-center gap-1.5 transition border border-slate-200/80 shadow-xs print:hidden"
                       >
                         <Download className="w-3.5 h-3.5" /> พิมพ์ / ส่งออก PDF
                       </button>
                     </div>
 
-                    <div className="space-y-2 text-xs divide-y divide-[#262c36]">
-                      <div className="flex justify-between py-2">
-                        <span className="text-[#8a92a6]">
-                          1. ค่าบริการจัดเก็บสินค้า ({billingResult.calculation.occupiedCbm} CBM x {billingResult.calculation.totalDays} วัน @ ฿{selectedClient.storageRatePerCbmDay})
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between py-2.5 border-b border-slate-200/70">
+                        <span className="text-slate-600">
+                          1. ค่าบริการจัดเก็บสินค้า ({billingResult.calculation.occupiedCbm} CBM x{' '}
+                          {billingResult.calculation.totalDays} วัน @ ฿{selectedClient.storageRatePerCbmDay})
                         </span>
-                        <span className="font-mono font-bold text-[#dee2ec]">
-                          ฿{billingResult.calculation.storageAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between py-2">
-                        <span className="text-[#8a92a6]">
-                          2. ค่าบริการหยิบ-แพ็คตามออเดอร์ ({billingResult.calculation.totalOrdersFulfilled} ออเดอร์ @ ฿{selectedClient.pickFeeBase})
-                        </span>
-                        <span className="font-mono font-bold text-[#dee2ec]">
-                          ฿{billingResult.calculation.baseOrderFee.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                        <span className="font-mono font-bold text-slate-900 tabular-nums">
+                          ฿
+                          {billingResult.calculation.storageAmount.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
 
-                      <div className="flex justify-between py-2">
-                        <span className="text-[#8a92a6]">
-                          3. ค่าบริการหยิบสินค้าชิ้นถัดไป ({billingResult.calculation.totalItemsPicked} ชิ้น @ ฿{selectedClient.pickFeePerItem})
+                      <div className="flex justify-between py-2.5 border-b border-slate-200/70">
+                        <span className="text-slate-600">
+                          2. ค่าบริการหยิบ-แพ็คตามออเดอร์ ({billingResult.calculation.totalOrdersFulfilled}{' '}
+                          ออเดอร์ @ ฿{selectedClient.pickFeeBase})
                         </span>
-                        <span className="font-mono font-bold text-[#dee2ec]">
-                          ฿{billingResult.calculation.itemPickFee.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between py-2">
-                        <span className="text-[#8a92a6]">
-                          4. ค่าวัสดุบรรจุภัณฑ์และกล่องพัสดุ ({billingResult.calculation.totalOrdersFulfilled} กล่อง @ ฿{selectedClient.packMaterialFee})
-                        </span>
-                        <span className="font-mono font-bold text-[#dee2ec]">
-                          ฿{billingResult.calculation.packingMaterialsAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                        <span className="font-mono font-bold text-slate-900 tabular-nums">
+                          ฿
+                          {billingResult.calculation.baseOrderFee.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
 
-                      <div className="flex justify-between py-2 bg-[#12161d] px-3 rounded-lg border border-[#30353d]">
-                        <span className="font-bold text-[#dee2ec]">ยอดรวมก่อนภาษี (Subtotal)</span>
-                        <span className="font-mono font-bold text-[#dee2ec]">
-                          ฿{billingResult.calculation.subtotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                      <div className="flex justify-between py-2.5 border-b border-slate-200/70">
+                        <span className="text-slate-600">
+                          3. ค่าบริการหยิบสินค้าชิ้นถัดไป ({billingResult.calculation.totalItemsPicked} ชิ้น @ ฿
+                          {selectedClient.pickFeePerItem})
+                        </span>
+                        <span className="font-mono font-bold text-slate-900 tabular-nums">
+                          ฿
+                          {billingResult.calculation.itemPickFee.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
 
-                      <div className="flex justify-between py-2 bg-[#12161d] px-3 rounded-lg border border-[#30353d]">
-                        <span className="text-[#8a92a6]">ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
-                        <span className="font-mono text-[#8a92a6]">
-                          ฿{billingResult.calculation.taxAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                      <div className="flex justify-between py-2.5 border-b border-slate-200/70">
+                        <span className="text-slate-600">
+                          4. ค่าวัสดุบรรจุภัณฑ์และกล่องพัสดุ ({billingResult.calculation.totalOrdersFulfilled}{' '}
+                          กล่อง @ ฿{selectedClient.packMaterialFee})
+                        </span>
+                        <span className="font-mono font-bold text-slate-900 tabular-nums">
+                          ฿
+                          {billingResult.calculation.packingMaterialsAmount.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
 
-                      <div className="flex justify-between py-3 bg-[#facc15]/10 border border-[#facc15]/30 px-4 rounded-xl text-sm">
-                        <span className="font-black text-[#facc15]">ยอดสุทธิที่ต้องชำระ (Grand Total)</span>
-                        <span className="font-mono font-black text-lg text-[#facc15]">
-                          ฿{billingResult.calculation.grandTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                      <div className="flex justify-between py-2.5 bg-slate-50/90 px-4 rounded-xl border border-slate-200/80">
+                        <span className="font-bold text-slate-900">ยอดรวมก่อนภาษี (Subtotal)</span>
+                        <span className="font-mono font-bold text-slate-900 tabular-nums">
+                          ฿
+                          {billingResult.calculation.subtotal.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between py-2.5 bg-slate-50/90 px-4 rounded-xl border border-slate-200/80">
+                        <span className="text-slate-600">ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
+                        <span className="font-mono text-slate-600 tabular-nums">
+                          ฿
+                          {billingResult.calculation.taxAmount.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="nx-dark-accent-card flex justify-between items-center py-4 px-5 text-sm mt-2">
+                        <span className="font-bold text-amber-300">ยอดสุทธิที่ต้องชำระ (Grand Total)</span>
+                        <span className="font-mono font-bold text-xl text-white tabular-nums">
+                          ฿
+                          {billingResult.calculation.grandTotal.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
                     </div>
@@ -457,7 +510,7 @@ export default function ThreePlBillingPage() {
                 )}
               </>
             ) : (
-              <div className="p-12 text-center text-[#8a92a6] bg-[#171c23]/90 rounded-xl border border-[#30353d]">
+              <div className="nx-glass-card p-12 text-center text-slate-600 text-sm">
                 กรุณาเลือกลูกค้า 3PL จากรายการด้านซ้าย
               </div>
             )}
@@ -466,83 +519,91 @@ export default function ThreePlBillingPage() {
 
         {/* Modal Add Client */}
         {showAddClientModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl p-6 text-xs font-mono text-[#dee2ec]">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-              <h3 className="text-base font-black text-[#dee2ec] mb-4">เพิ่มผู้ว่าจ้างใหม่ (3PL Tenant)</h3>
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-xs text-slate-900">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
+                <h3 className="text-base font-bold text-slate-900">เพิ่มผู้ว่าจ้างใหม่ (3PL Tenant)</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAddClientModal(false)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               <form onSubmit={handleCreateClient} className="space-y-3">
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">ชื่อบริษัท / แบรนด์สินค้า *</label>
+                  <label className="block text-slate-600 font-semibold mb-1">ชื่อบริษัท / แบรนด์สินค้า *</label>
                   <input
                     type="text"
                     required
                     placeholder="เช่น บจก. พลังงานสะอาด สยาม"
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-slate-50/70 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">ชื่อผู้ติดต่อ</label>
+                    <label className="block text-slate-600 font-semibold mb-1">ชื่อผู้ติดต่อ</label>
                     <input
                       type="text"
                       value={newContactPerson}
                       onChange={(e) => setNewContactPerson(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec]"
+                      className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-slate-50/70 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">เบอร์โทรศัพท์</label>
+                    <label className="block text-slate-600 font-semibold mb-1">เบอร์โทรศัพท์</label>
                     <input
                       type="text"
                       value={newPhone}
                       onChange={(e) => setNewPhone(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec]"
+                      className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-slate-50/70 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 bg-[#12161d] p-3 rounded-xl border border-[#30353d]">
+                <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
                   <div>
-                    <label className="block text-[10px] text-[#8a92a6] font-bold mb-1">ค่าฝาก (฿/CBM)</label>
+                    <label className="block text-[10px] text-slate-600 font-semibold mb-1">ค่าฝาก (฿/CBM)</label>
                     <input
                       type="number"
                       value={newStorageRate}
                       onChange={(e) => setNewStorageRate(Number(e.target.value))}
-                      className="w-full px-2 py-1 bg-[#1c222b] border border-[#30353d] rounded text-[#dee2ec] font-bold"
+                      className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 font-bold tabular-nums"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-[#8a92a6] font-bold mb-1">ค่าหยิบฐาน (฿)</label>
+                    <label className="block text-[10px] text-slate-600 font-semibold mb-1">ค่าหยิบฐาน (฿)</label>
                     <input
                       type="number"
                       value={newPickBase}
                       onChange={(e) => setNewPickBase(Number(e.target.value))}
-                      className="w-full px-2 py-1 bg-[#1c222b] border border-[#30353d] rounded text-[#dee2ec] font-bold"
+                      className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 font-bold tabular-nums"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-[#8a92a6] font-bold mb-1">ชิ้นถัดไป (฿)</label>
+                    <label className="block text-[10px] text-slate-600 font-semibold mb-1">ชิ้นถัดไป (฿)</label>
                     <input
                       type="number"
                       value={newPickItem}
                       onChange={(e) => setNewPickItem(Number(e.target.value))}
-                      className="w-full px-2 py-1 bg-[#1c222b] border border-[#30353d] rounded text-[#dee2ec] font-bold"
+                      className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 font-bold tabular-nums"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#30353d]">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200/80">
                   <button
                     type="button"
                     onClick={() => setShowAddClientModal(false)}
-                    className="px-4 py-2 bg-[#252a32] text-[#8a92a6] hover:text-white rounded-xl"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-semibold"
                   >
                     ยกเลิก
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-xl font-black shadow"
+                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-semibold shadow-xs"
                   >
                     บันทึก
                   </button>

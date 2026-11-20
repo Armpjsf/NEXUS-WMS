@@ -131,46 +131,55 @@ export default function MobileScanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 flex flex-col font-sans select-none">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-slate-950 border-b border-slate-800">
-        <h1 className="text-lg font-bold flex items-center gap-2">
-          <QrCode className="w-5 h-5 text-teal-400" />
-          Quick Scan
-        </h1>
-        <Link href="/dashboard" className="text-slate-400 hover:text-white text-sm">
-          Close
-        </Link>
-      </div>
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm">
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-2">
+          <h1 className="text-base font-bold flex items-center gap-2 text-slate-900">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/12 border border-emerald-500/20 text-emerald-700">
+              <QrCode className="w-4 h-4" />
+            </span>
+            <span>Quick Scan</span>
+          </h1>
+          <Link
+            href="/dashboard"
+            className="min-h-[44px] inline-flex items-center px-4 py-2 rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 text-xs font-bold shadow-xs active:scale-95 transition-all"
+          >
+            ปิด
+          </Link>
+        </div>
+      </header>
 
       {/* Scanner Area */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative p-4 max-w-lg w-full mx-auto flex flex-col">
         {isScanning && !scanResult && (
-          <>
+          <div className="nx-dark-accent-card flex-1 relative overflow-hidden min-h-[360px] flex flex-col justify-center">
             <div id="mobile-scanner" className="w-full h-full"></div>
             {/* Scan Frame Overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-72 h-72 border-2 border-white/30 rounded-2xl relative">
-                <div className="absolute -top-1 -left-1 w-8 h-8 border border-teal-400/80 rounded-tl-xl"></div>
-                <div className="absolute -top-1 -right-1 w-8 h-8 border border-amber-400/80 rounded-tr-xl"></div>
-                <div className="absolute -bottom-1 -left-1 w-8 h-8 border border-blue-400/80 rounded-bl-xl"></div>
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 border border-emerald-400/80 rounded-br-xl"></div>
+              <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative">
+                <div className="absolute -top-1 -left-1 w-8 h-8 border-2 border-emerald-400 rounded-tl-2xl"></div>
+                <div className="absolute -top-1 -right-1 w-8 h-8 border-2 border-amber-400 rounded-tr-2xl"></div>
+                <div className="absolute -bottom-1 -left-1 w-8 h-8 border-2 border-sky-400 rounded-bl-2xl"></div>
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 border-2 border-emerald-400 rounded-br-2xl"></div>
               </div>
             </div>
-            <p className="absolute bottom-8 left-0 right-0 text-center text-white/70 text-sm">
+            <p className="absolute bottom-6 left-4 right-4 text-center text-white/90 text-xs font-semibold bg-black/45 backdrop-blur-md py-2 px-4 rounded-full mx-auto w-fit">
               หันกล้องไปที่บาร์โค้ดหรือ QR Code
             </p>
-          </>
+          </div>
         )}
 
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-            <div className="text-center p-8">
-              <Camera className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-              <p className="text-rose-400 mb-4">{error}</p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="nx-glass-card w-full text-center p-8 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-600">
+                <Camera className="w-8 h-8" />
+              </div>
+              <p className="text-rose-700 font-bold text-sm">{error}</p>
               <button
                 onClick={startScanner}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold"
+                className="min-h-[44px] px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
               >
                 ลองอีกครั้ง
               </button>
@@ -182,39 +191,41 @@ export default function MobileScanPage() {
         <AnimatePresence>
           {scanResult && (
             <motion.div
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className="absolute inset-0 bg-slate-950 p-6"
+              exit={{ opacity: 0, y: 24 }}
+              className="flex-1 flex flex-col"
             >
               {scanResult.product ? (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1">
-                    <div className="w-20 h-20 mx-auto mb-4 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
-                      <Package className="w-10 h-10 text-emerald-400" />
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="nx-dark-accent-card p-6 space-y-5 flex-1">
+                    <div className="w-16 h-16 mx-auto bg-emerald-500/20 border border-emerald-400/35 rounded-full flex items-center justify-center">
+                      <Package className="w-8 h-8 text-emerald-300" />
                     </div>
-                    <h2 className="text-2xl font-bold text-center mb-2">
-                      {scanResult.product.name}
-                    </h2>
-                    <p className="text-slate-400 text-center mb-6">
-                      {scanResult.product.category}
-                    </p>
+                    <div className="text-center space-y-1">
+                      <span className="inline-block px-3 py-0.5 rounded-full bg-white/10 text-emerald-300 text-[11px] font-semibold">
+                        {scanResult.product.category || 'สินค้าในคลัง'}
+                      </span>
+                      <h2 className="text-2xl font-bold text-white leading-snug pt-1">
+                        {scanResult.product.name}
+                      </h2>
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-                        <p className="text-xs text-slate-400 mb-1">สต็อก</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
+                        <p className="text-xs text-slate-300 mb-1">สต็อกคงเหลือ</p>
                         <p className={cn(
-                          "text-3xl font-black",
-                          scanResult.product.stock <= scanResult.product.minStock 
-                            ? "text-rose-400" 
-                            : "text-white"
+                          "text-3xl font-black tabular-nums",
+                          scanResult.product.stock <= scanResult.product.minStock
+                            ? "text-rose-300"
+                            : "text-emerald-300"
                         )}>
                           {scanResult.product.stock}
                         </p>
                       </div>
-                      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center">
-                        <p className="text-xs text-slate-400 mb-1">ตำแหน่ง</p>
-                        <p className="text-lg font-bold text-white">
+                      <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
+                        <p className="text-xs text-slate-300 mb-1">ตำแหน่ง</p>
+                        <p className="text-lg font-bold font-mono text-amber-300 tabular-nums">
                           {scanResult.product.location || '-'}
                         </p>
                       </div>
@@ -222,7 +233,7 @@ export default function MobileScanPage() {
 
                     <Link
                       href={`/inventory/stock-card?search=${encodeURIComponent(scanResult.product.name)}&sku=${encodeURIComponent(scanResult.product.id || '')}`}
-                      className="block w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-center font-bold flex items-center justify-center gap-2"
+                      className="min-h-[48px] w-full py-3 px-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-full text-center font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
                     >
                       ดู Stock Card <ArrowRight className="w-4 h-4" />
                     </Link>
@@ -230,21 +241,21 @@ export default function MobileScanPage() {
 
                   <button
                     onClick={scanAgain}
-                    className="w-full mt-4 py-4 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold"
+                    className="w-full min-h-[48px] py-3.5 px-5 nx-glass-card text-slate-900 hover:bg-white/95 rounded-full font-bold text-sm active:scale-[0.98] transition-all"
                   >
                     สแกนอีกครั้ง
                   </button>
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center">
-                  <div className="w-20 h-20 mb-4 bg-amber-500/20 rounded-2xl flex items-center justify-center">
-                    <Search className="w-10 h-10 text-amber-400" />
+                <div className="nx-glass-card flex-1 flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-16 h-16 mb-4 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center text-amber-600">
+                    <Search className="w-8 h-8" />
                   </div>
-                  <h2 className="text-xl font-bold mb-2">ไม่พบสินค้า</h2>
-                  <p className="text-slate-400 mb-6">รหัส: {scanResult.code}</p>
+                  <h2 className="text-xl font-bold text-slate-900 mb-1">ไม่พบสินค้า</h2>
+                  <p className="text-slate-600 text-sm font-mono mb-6 tabular-nums">รหัส: {scanResult.code}</p>
                   <button
                     onClick={scanAgain}
-                    className="px-8 py-4 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold"
+                    className="min-h-[44px] px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
                   >
                     สแกนอีกครั้ง
                   </button>
@@ -257,21 +268,23 @@ export default function MobileScanPage() {
 
       {/* History */}
       {scanHistory.length > 0 && !isScanning && !scanResult && (
-        <div className="bg-slate-800 p-4 rounded-t-3xl">
-          <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
-            <History className="w-4 h-4" />
-            ล่าสุด
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {scanHistory.map((item, idx) => (
-              <button
-                key={idx}
-                onClick={() => setScanResult(item)}
-                className="flex-shrink-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm"
-              >
-                {item.product?.name || item.code}
-              </button>
-            ))}
+        <div className="max-w-lg w-full mx-auto px-4 pb-6">
+          <div className="nx-glass-card p-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-600 mb-3">
+              <History className="w-4 h-4 text-emerald-600" />
+              ล่าสุด
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {scanHistory.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setScanResult(item)}
+                  className="flex-shrink-0 min-h-[40px] px-4 py-2 bg-white/90 border border-slate-200 hover:border-emerald-400 text-slate-900 rounded-full text-xs font-semibold shadow-xs"
+                >
+                  {item.product?.name || item.code}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

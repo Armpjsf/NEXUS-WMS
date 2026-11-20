@@ -116,25 +116,25 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm">
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
+                className="bg-white/95 backdrop-blur-xl border border-white/90 rounded-[24px] shadow-2xl text-slate-900 w-full max-w-lg overflow-hidden"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
-                    <h2 className="text-xl font-bold text-slate-800">แก้ไขข้อมูลสินค้า</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-slate-500" />
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/70">
+                    <h2 className="text-xl font-bold text-slate-900">แก้ไขข้อมูลสินค้า</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-200/70 rounded-xl transition-colors text-slate-500">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {error && (
-                        <div className="p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-2 text-sm font-medium">
+                        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-sm font-medium">
                             <AlertCircle className="w-4 h-4" />
                             {error}
                         </div>
@@ -147,7 +147,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                                 type="text" 
                                 value={formData.name}
                                 onChange={e => setFormData({...formData, name: e.target.value})}
-                                className="w-full p-3 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:border-emerald-500 focus:outline-none"
                                 required
                             />
                             <p className="text-xs text-slate-400 mt-1">*การเปลี่ยนชื่ออาจมีผลต่อประวัติ Transaction เก่า</p>
@@ -160,7 +160,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                                     type="number" 
                                     value={formData.price}
                                     onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
-                                    className="w-full p-3 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:border-emerald-500 focus:outline-none"
                                 />
                             </div>
                             <div>
@@ -170,7 +170,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                                     list="product-category-options-legacy"
                                     value={formData.category}
                                     onChange={e => setFormData({...formData, category: e.target.value})}
-                                    className="w-full p-3 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:border-emerald-500 focus:outline-none"
                                 />
                                 <datalist id="product-category-options-legacy">
                                     {categories.map(category => (
@@ -185,7 +185,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                             <select
                                 value={formData.status}
                                 onChange={e => setFormData({...formData, status: e.target.value})}
-                                className="w-full p-3 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:border-emerald-500 focus:outline-none"
                             >
                                 <option value="Active">Active</option>
                                 <option value="Inactive">inActive</option>
@@ -199,7 +199,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                                     type="number" 
                                     value={formData.minStock}
                                     onChange={e => setFormData({...formData, minStock: parseFloat(e.target.value)})}
-                                    className="w-full p-3 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:border-emerald-500 focus:outline-none"
                                 />
                             </div>
                             <div>
@@ -209,7 +209,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                                     list="empty-product-locations-legacy"
                                     value={formData.location}
                                     onChange={e => setFormData({...formData, location: e.target.value})}
-                                    className="w-full p-3 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:border-emerald-500 focus:outline-none"
                                 />
                                 <datalist id="empty-product-locations-legacy">
                                     {emptyLocations.map(location => (
@@ -232,7 +232,7 @@ export default function EditProductModal({ isOpen, onClose, product, onSuccess }
                         <button 
                             type="submit" 
                             disabled={isLoading}
-                            className="flex-1 py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+                            className="flex-1 py-3 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
                         >
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                             บันทึก

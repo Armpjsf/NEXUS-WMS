@@ -196,19 +196,19 @@ export default function MobileAdjustPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white pb-28 max-w-md mx-auto font-sans select-none">
+    <div className="min-h-screen text-slate-900 pb-28 max-w-md mx-auto font-sans select-none">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-[#171c23] px-4 py-3 border-b border-slate-800 shadow-lg flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl px-4 py-3 border-b border-white/85 shadow-sm flex items-center justify-between">
         <Link
           href="/mobile"
-          className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-transform"
+          className="min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/90 border border-slate-200 text-slate-700 hover:text-slate-900 active:scale-95 transition-transform flex items-center justify-center"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-base font-bold tracking-wide">ปรับสต็อกด่วน (Quick Adjust)</h1>
+        <h1 className="text-base font-bold tracking-tight text-slate-900">ปรับสต็อกด่วน (Quick Adjust)</h1>
         <Link
           href="/mobile/adjustments"
-          className="px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+          className="min-h-[40px] px-3 py-1.5 rounded-full bg-sky-500/12 border border-sky-500/25 text-xs font-bold text-sky-700 hover:bg-sky-500/20 flex items-center gap-1"
           title="หน้าอนุมัติปรับสต็อก"
         >
           <ClipboardCheck className="w-3.5 h-3.5" />
@@ -218,23 +218,25 @@ export default function MobileAdjustPage() {
 
       <div className="p-4">
         {successInfo ? (
-          <div className="mt-8 p-6 bg-emerald-500/15 border border-emerald-500/40 rounded-3xl text-center space-y-4 animate-in fade-in zoom-in-95">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+          <div className="nx-glass-card mt-6 p-6 text-center space-y-4 animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            </div>
             <div className="space-y-1">
-              <div className="font-bold text-base text-emerald-300">
+              <div className="font-bold text-base text-emerald-700">
                 ส่งคำขอปรับสต็อก {successInfo.requestNo} สำเร็จ!
               </div>
-              <p className="text-xs text-slate-300">
-                รายการ <strong className="text-white">{successInfo.sku}</strong> (ยอดนับจริง:{' '}
-                <strong className="text-emerald-300">{successInfo.newTotal} ชิ้น</strong>)
+              <p className="text-xs text-slate-600 leading-relaxed">
+                รายการ <strong className="text-slate-900">{successInfo.sku}</strong> (ยอดนับจริง:{' '}
+                <strong className="text-emerald-700 tabular-nums">{successInfo.newTotal} ชิ้น</strong>)
                 ถูกส่งเข้าคิว Maker-Checker เพื่อรอหัวหน้าคลังอนุมัติแล้ว
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2.5 pt-2">
               <Link
                 href="/mobile/adjustments"
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg"
+                className="w-full min-h-[48px] py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20"
               >
                 <ClipboardCheck className="w-4 h-4" />
                 <span>ไปหน้าอนุมัติปรับสต็อก (Supervisor Approval)</span>
@@ -249,7 +251,7 @@ export default function MobileAdjustPage() {
                   setAdjustQty(0);
                   setNotes('');
                 }}
-                className="w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs"
+                className="w-full min-h-[44px] py-2.5 rounded-full bg-white/90 border border-slate-200 hover:bg-white text-slate-700 font-bold text-xs"
               >
                 ปรับสต็อกรายการอื่นต่อ
               </button>
@@ -258,8 +260,8 @@ export default function MobileAdjustPage() {
         ) : (
           <form onSubmit={handleSave} className="space-y-4">
             {/* Scan Barcode / Input SKU */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+            <div className="nx-glass-card p-4 space-y-2">
+              <label className="block text-xs font-bold text-slate-600">
                 สแกนบาร์โค้ด หรือ ระบุ SKU *
               </label>
               <div className="flex gap-2">
@@ -286,29 +288,29 @@ export default function MobileAdjustPage() {
                       setCurrentStock(null);
                     }
                   }}
-                  className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-sm font-mono text-white focus:outline-none focus:border-cyan-400"
+                  className="flex-1 min-h-[48px] px-4 py-3 bg-white/90 border border-slate-200 rounded-2xl text-sm font-mono text-slate-900 focus:outline-none focus:border-emerald-500 placeholder:text-slate-400"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setCameraOpen(true)}
-                  className="px-4 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
+                  className="min-h-[48px] px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm"
                 >
                   <Scan className="w-5 h-5" />
                 </button>
               </div>
 
               {suggestions.length > 0 && (
-                <div className="mt-1.5 bg-slate-800 border border-slate-700 rounded-2xl divide-y divide-slate-700/60 overflow-hidden">
+                <div className="mt-1.5 bg-white/95 border border-slate-200 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-sm">
                   {suggestions.map(item => (
                     <button
                       key={item.id || item.sku || item.name}
                       type="button"
                       onClick={() => selectProduct(item)}
-                      className="w-full text-left px-3.5 py-2.5 hover:bg-slate-700/60 flex items-center justify-between text-xs"
+                      className="w-full min-h-[44px] text-left px-3.5 py-2.5 hover:bg-emerald-50/60 flex items-center justify-between text-xs"
                     >
-                      <span className="font-bold text-white truncate">{item.name}</span>
-                      <span className="font-mono text-cyan-400 shrink-0 ml-2">
+                      <span className="font-bold text-slate-900 truncate">{item.name}</span>
+                      <span className="font-mono text-emerald-700 tabular-nums shrink-0 ml-2 font-semibold">
                         {item.sku || item.id} ({item.stock ?? 0})
                       </span>
                     </button>
@@ -318,22 +320,23 @@ export default function MobileAdjustPage() {
             </div>
 
             {productName && (
-              <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-slate-400">ชื่อสินค้า</div>
-                    <div className="text-sm font-bold text-white">{productName}</div>
+              <div className="nx-glass-card p-4 space-y-4">
+                {/* Hero Target Readout */}
+                <div className="nx-dark-accent-card p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">ชื่อสินค้า</div>
+                    <div className="text-sm font-bold text-white truncate mt-0.5">{productName}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs text-slate-400">สต็อกในพิกัดนี้</div>
-                    <div className="text-base font-black text-cyan-400">{currentStock ?? 0} ชิ้น</div>
+                  <div className="text-right shrink-0">
+                    <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">สต็อกในพิกัดนี้</div>
+                    <div className="text-lg font-black text-emerald-300 tabular-nums">{currentStock ?? 0} ชิ้น</div>
                   </div>
                 </div>
 
                 {/* Bin / Location Selector */}
-                <div className="pt-2 border-t border-slate-700/70">
-                  <label className="block text-[11px] text-slate-400 mb-1.5 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-sky-600" />
                     <span>พิกัดชั้นวาง (Bin Location):</span>
                   </label>
                   {bins.length > 0 ? (
@@ -347,10 +350,10 @@ export default function MobileAdjustPage() {
                             setCurrentStock(b.quantity);
                             setAdjustQty(0);
                           }}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all ${
+                          className={`min-h-[38px] px-3 py-1.5 rounded-full text-xs font-mono font-bold border tabular-nums transition-all ${
                             locationCode === b.binCode
-                              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
-                              : 'bg-slate-900 border-slate-700 text-slate-400'
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                              : 'bg-white/90 border-slate-200 text-slate-700 hover:bg-white'
                           }`}
                         >
                           {b.binCode} ({b.quantity})
@@ -362,49 +365,49 @@ export default function MobileAdjustPage() {
                       type="text"
                       value={locationCode}
                       onChange={e => setLocationCode(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
+                      className="w-full min-h-[44px] px-3.5 py-2 bg-white/90 border border-slate-200 rounded-2xl text-xs font-mono text-slate-900 uppercase outline-none focus:border-emerald-500"
                     />
                   )}
                 </div>
 
                 {/* Adjustment Controller */}
-                <div className="pt-2 border-t border-slate-700">
-                  <div className="text-xs text-slate-400 mb-2">จำนวนปรับยอด (+ เพิ่ม / - ลด)</div>
+                <div className="pt-3 border-t border-slate-200/80">
+                  <div className="text-xs font-semibold text-slate-600 mb-2.5">จำนวนปรับยอด (+ เพิ่ม / - ลด)</div>
                   <div className="flex items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setAdjustQty(prev => prev - 1)}
-                      className="w-12 h-12 rounded-2xl bg-rose-600/20 text-rose-400 border border-rose-500/40 font-black text-xl flex items-center justify-center active:scale-90 transition-transform"
+                      className="w-12 h-12 rounded-full bg-rose-500/12 text-rose-700 border border-rose-500/25 font-black text-xl flex items-center justify-center active:scale-90 transition-transform"
                     >
                       <Minus className="w-5 h-5" />
                     </button>
 
                     <div className="text-center">
-                      <div className="text-2xl font-black tabular-nums">
+                      <div className="text-3xl font-black text-slate-900 tabular-nums">
                         {adjustQty > 0 ? `+${adjustQty}` : adjustQty}
                       </div>
-                      <div className="text-[11px] text-slate-400">
-                        สต็อกหลังปรับ: <span className="text-emerald-400 font-bold">{newStock}</span> ชิ้น
+                      <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                        สต็อกหลังปรับ: <span className="text-emerald-700 font-bold">{newStock}</span> ชิ้น
                       </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setAdjustQty(prev => prev + 1)}
-                      className="w-12 h-12 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 font-black text-xl flex items-center justify-center active:scale-90 transition-transform"
+                      className="w-12 h-12 rounded-full bg-emerald-500/12 text-emerald-700 border border-emerald-500/25 font-black text-xl flex items-center justify-center active:scale-90 transition-transform"
                     >
                       <Plus className="w-5 h-5" />
                     </button>
                   </div>
 
                   {/* Quick Presets */}
-                  <div className="grid grid-cols-4 gap-1.5 mt-3">
+                  <div className="grid grid-cols-4 gap-2 mt-3">
                     {[-10, -5, +5, +10].map(val => (
                       <button
                         key={val}
                         type="button"
                         onClick={() => setAdjustQty(prev => prev + val)}
-                        className="py-1.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-xs font-bold text-slate-300 active:scale-95"
+                        className="min-h-[40px] py-2 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-xs font-bold text-slate-800 tabular-nums active:scale-95 transition-all"
                       >
                         {val > 0 ? `+${val}` : val}
                       </button>
@@ -414,41 +417,43 @@ export default function MobileAdjustPage() {
               </div>
             )}
 
-            {/* Reason */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                สาเหตุการปรับยอด
-              </label>
-              <select
-                value={reason}
-                onChange={e => setReason(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-semibold text-white focus:outline-none"
-              >
-                <option value="นับสต็อกหน้างาน (Recount)">นับสต็อกหน้างาน (Recount)</option>
-                <option value="พบสินค้าชำรุด (Damage)">พบสินค้าชำรุด (Damage)</option>
-                <option value="เบิกตัวอย่าง (Sample)">เบิกตัวอย่าง (Sample)</option>
-                <option value="สินค้าหาย / สต็อกไม่ตรง">สินค้าหาย / สต็อกไม่ตรง</option>
-                <option value="ปรับปรุงยอดตามรอบตรวจนับ">ปรับปรุงยอดตามรอบตรวจนับ</option>
-              </select>
-            </div>
+            {/* Reason & Notes */}
+            <div className="nx-glass-card p-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  สาเหตุการปรับยอด
+                </label>
+                <select
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  className="w-full min-h-[48px] px-4 py-3 bg-white/90 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="นับสต็อกหน้างาน (Recount)">นับสต็อกหน้างาน (Recount)</option>
+                  <option value="พบสินค้าชำรุด (Damage)">พบสินค้าชำรุด (Damage)</option>
+                  <option value="เบิกตัวอย่าง (Sample)">เบิกตัวอย่าง (Sample)</option>
+                  <option value="สินค้าหาย / สต็อกไม่ตรง">สินค้าหาย / สต็อกไม่ตรง</option>
+                  <option value="ปรับปรุงยอดตามรอบตรวจนับ">ปรับปรุงยอดตามรอบตรวจนับ</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-                หมายเหตุเพิ่มเติม
-              </label>
-              <input
-                type="text"
-                placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-xs text-white focus:outline-none"
-              />
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  หมายเหตุเพิ่มเติม
+                </label>
+                <input
+                  type="text"
+                  placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  className="w-full min-h-[48px] px-4 py-3 bg-white/90 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-emerald-500 placeholder:text-slate-400"
+                />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={!sku.trim() || adjustQty === 0 || submitting}
-              className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-cyan-500/25 active:scale-98 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-4"
+              className="w-full min-h-[50px] py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               <span>{submitting ? 'กำลังส่งคำขอ...' : 'ส่งคำขอปรับยอดสต็อก (Maker-Checker)'}</span>

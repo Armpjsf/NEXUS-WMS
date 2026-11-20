@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, Clock, BarChart3, Sparkles, FileText, PieChart } from 'lucide-react';
+import { TrendingUp, Clock, BarChart3, Sparkles, FileText, PieChart, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/components/providers/LanguageProvider';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 
 export default function AnalyticsLandingPage() {
   const { t } = useLanguage();
@@ -15,106 +14,113 @@ export default function AnalyticsLandingPage() {
       desc: t('demand_forecast_desc'),
       href: '/analytics/forecast',
       icon: TrendingUp,
-      color: 'from-[#4cd7f6] to-[#0ea5e9]',
-      lightBg: 'bg-[#4cd7f6]/10',
-      iconColor: 'text-[#4cd7f6]'
+      iconTone: 'bg-sky-500/12 border-sky-500/20 text-sky-700',
+      badge: 'Forecasting',
+      badgeTone: 'bg-sky-500/12 text-sky-700 border-sky-500/20',
     },
     {
       title: t('inventory_aging'),
       desc: t('inventory_aging_desc'),
       href: '/analytics/aging',
       icon: Clock,
-      color: 'from-[#f59e0b] to-[#facc15]',
-      lightBg: 'bg-[#facc15]/10',
-      iconColor: 'text-[#facc15]'
+      iconTone: 'bg-amber-500/15 border-amber-500/25 text-amber-700',
+      badge: 'FIFO Tiers',
+      badgeTone: 'bg-amber-500/15 text-amber-800 border-amber-500/25',
     },
     {
       title: t('transaction_summary'),
       desc: t('transaction_summary_desc'),
       href: '/analytics/summary',
       icon: BarChart3,
-      color: 'from-[#57ec7f] to-[#10b981]',
-      lightBg: 'bg-[#57ec7f]/10',
-      iconColor: 'text-[#57ec7f]'
+      iconTone: 'bg-emerald-500/12 border-emerald-500/20 text-emerald-700',
+      badge: 'Throughput',
+      badgeTone: 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20',
     },
     {
       title: t('profit_title'),
       desc: t('profit_subtitle'),
       href: '/analytics/profit',
       icon: PieChart,
-      color: 'from-[#57ec7f] to-[#4cd7f6]',
-      lightBg: 'bg-[#57ec7f]/10',
-      iconColor: 'text-[#57ec7f]'
+      iconTone: 'bg-emerald-500/12 border-emerald-500/20 text-emerald-700',
+      badge: 'Margin',
+      badgeTone: 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20',
     },
     {
       title: t('report_center'),
       desc: t('report_center_desc'),
       href: '/analytics/reports',
       icon: FileText,
-      color: 'from-[#ff5449] to-[#f43f5e]',
-      lightBg: 'bg-[#ff5449]/10',
-      iconColor: 'text-[#ff5449]'
+      iconTone: 'bg-rose-500/12 border-rose-500/20 text-rose-700',
+      badge: 'Exports',
+      badgeTone: 'bg-rose-500/12 text-rose-700 border-rose-500/20',
     },
     {
       title: t('menu_smart_restock'),
       desc: "AI-powered reorder optimization and stockout prediction.",
       href: '/ai-reorder',
       icon: Sparkles,
-      color: 'from-[#facc15] to-[#4cd7f6]',
-      lightBg: 'bg-[#facc15]/10',
-      iconColor: 'text-[#facc15]'
+      iconTone: 'bg-amber-500/15 border-amber-500/25 text-amber-700',
+      badge: 'AI Engine',
+      badgeTone: 'bg-slate-900 text-white border-slate-900',
     }
   ];
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 overflow-hidden">
-       <AmbientBackground />
-       
-       <div className="relative z-10 max-w-[1500px] mx-auto space-y-8">
-          <motion.header 
-            initial={{ opacity: 0, y: -20 }}
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+       <div className="max-w-[1500px] mx-auto space-y-6">
+          <motion.header
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl"
+            className="pt-1"
           >
-             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-             <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#facc15]">Decision Intelligence</p>
-             <h1 className="text-4xl font-black text-[#dee2ec] mb-3 tracking-tight">
+             <div className="flex items-center gap-2 mb-1.5">
+               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                 Decision Intelligence
+               </span>
+             </div>
+             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
                 {t('analytics_center')}
              </h1>
-             <p className="text-[#8a92a6] text-sm font-semibold max-w-3xl">{t('analytics_subtitle')}</p>
+             <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-3xl">{t('analytics_subtitle')}</p>
           </motion.header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
              {cards.map((card, idx) => (
                 <motion.div
                   key={card.href}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
+                  transition={{ delay: idx * 0.05 }}
                 >
-                   <Link 
-                     href={card.href} 
-                     className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-lg shadow-slate-900/5 transition-all duration-300 hover:-translate-y-1 hover:border-[#facc15]/60 hover:shadow-xl"
+                   <Link
+                     href={card.href}
+                     className="nx-glass-card group flex h-full flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-1"
                    >
-                      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${card.color}`} />
-
-                      <div className="relative z-10">
-                        <div className={`w-14 h-14 ${card.lightBg} rounded-xl border border-[#30353d]/50 flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-105`}>
-                           <card.icon className={`w-7 h-7 ${card.iconColor}`} />
+                      <div>
+                        <div className="flex items-center justify-between mb-5">
+                          <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${card.iconTone}`}>
+                             <card.icon className="w-6 h-6" />
+                          </div>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${card.badgeTone}`}>
+                            {card.badge}
+                          </span>
                         </div>
-                        
-                        <h3 className="text-2xl font-black text-[#dee2ec] mb-3 tracking-tight">
+
+                        <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight group-hover:text-emerald-700 transition-colors">
                            {card.title}
                         </h3>
-                        
-                        <p className="text-[#8a92a6] leading-relaxed font-semibold">
+
+                        <p className="text-slate-600 text-sm leading-relaxed">
                            {card.desc}
                         </p>
                       </div>
 
-                      <div className="mt-8 flex items-center gap-2 text-[#d1c6ab] font-black text-sm uppercase tracking-widest relative z-10 group-hover:text-[#facc15] transition-colors">
-                         {t('go_to_section') || 'Open Module'}
-                         <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <div className="mt-6 pt-4 border-t border-slate-200/70 flex items-center justify-between text-slate-700 font-semibold text-xs group-hover:text-emerald-700 transition-colors">
+                         <span>{t('go_to_section') || 'Open Module'}</span>
+                         <span className="w-8 h-8 rounded-full bg-white/80 border border-slate-200 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all">
+                           <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                         </span>
                       </div>
                    </Link>
                 </motion.div>

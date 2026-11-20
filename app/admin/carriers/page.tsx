@@ -15,7 +15,6 @@ import {
   Star,
   X,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { errorMessage } from '@/lib/errors';
 
 interface Carrier {
@@ -121,36 +120,41 @@ export default function AdminCarriersPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
-      <AmbientBackground />
-      <div className="relative z-10 max-w-[1100px] mx-auto space-y-6">
-        <Link href="/admin" className="inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]">
-          <ArrowLeft className="w-4 h-4" /> ตั้งค่าระบบ
+    <div className="theme-nexus-hybrid min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative text-slate-900">
+      <div className="max-w-[1100px] mx-auto space-y-6">
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> ตั้งค่าระบบ
         </Link>
 
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-1">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
-              <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/25">
-                <Truck className="w-6 h-6" />
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <Truck className="w-3 h-3 text-amber-600" />
+                Logistics Network
               </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
               ผู้ให้บริการขนส่ง (Carriers &amp; Logistics)
             </h1>
-            <p className="text-[#d1c6ab] font-medium mt-1">จัดการรายชื่อขนส่ง, เทมเพลตลิงก์ติดตามพัสดุ และเบอร์ติดต่อศูนย์กระจายสินค้า</p>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">จัดการรายชื่อขนส่ง, เทมเพลตลิงก์ติดตามพัสดุ และเบอร์ติดต่อศูนย์กระจายสินค้า</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={load}
-              className="p-2.5 rounded-xl border border-[#30353d] bg-[#171c23] hover:bg-[#171c23] text-[#d1c6ab] shadow-sm transition-colors"
+              className="p-2.5 rounded-full border border-white/90 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 shadow-xs transition-colors"
               title="รีเฟรช"
             >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={openCreate}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-lg shadow-orange-500/25 hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm active:scale-95 transition-all"
             >
-              <Plus className="w-5 h-5" /> เพิ่มขนส่ง
+              <Plus className="w-4 h-4" /> เพิ่มขนส่ง
             </button>
           </div>
         </div>
@@ -160,16 +164,16 @@ export default function AdminCarriersPage() {
           {carriers.map((c) => (
             <div
               key={c.id}
-              className="bg-[#171c23] backdrop-blur-md rounded-2xl border border-[#30353d] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              className="nx-glass-card p-5 hover:-translate-y-0.5 transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#252a32] text-[#d1c6ab]">
+                <div className="flex items-start justify-between gap-3 mb-2.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700">
                       {c.code}
                     </span>
                     {c.isDefault && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 ring-1 ring-amber-300">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 border border-amber-500/25">
                         <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> ขนส่งหลัก
                       </span>
                     )}
@@ -177,14 +181,14 @@ export default function AdminCarriersPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEdit(c)}
-                      className="p-1.5 rounded-lg text-[#8a92a6] hover:text-blue-600 hover:bg-blue-500/10 transition-colors"
+                      className="p-1.5 rounded-full text-slate-500 hover:text-sky-700 hover:bg-sky-500/12 transition-colors"
                       title="แก้ไข"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(c)}
-                      className="p-1.5 rounded-lg text-[#8a92a6] hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                      className="p-1.5 rounded-full text-slate-500 hover:text-rose-700 hover:bg-rose-500/12 transition-colors"
                       title="ลบ"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -192,21 +196,21 @@ export default function AdminCarriersPage() {
                   </div>
                 </div>
 
-                <div className="text-lg font-black text-[#dee2ec] mb-1">{c.name}</div>
+                <div className="text-lg font-bold text-slate-900 mb-1">{c.name}</div>
 
                 {c.phone && (
-                  <div className="flex items-center gap-1.5 text-xs text-[#d1c6ab] font-medium mb-1.5">
-                    <Phone className="w-3.5 h-3.5 text-[#8a92a6]" /> Call Center: {c.phone}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium mb-1.5 tabular-nums">
+                    <Phone className="w-3.5 h-3.5 text-slate-400" /> Call Center: {c.phone}
                   </div>
                 )}
 
                 {c.trackingUrlTemplate ? (
-                  <div className="mt-3 p-2.5 rounded-xl bg-[#1b2027] border border-[#30353d]">
-                    <div className="text-[10px] font-bold uppercase text-[#8a92a6] tracking-wider mb-0.5">Tracking Template</div>
-                    <div className="font-mono text-[11px] text-blue-600 truncate">{c.trackingUrlTemplate}</div>
+                  <div className="mt-3 p-3 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-0.5">Tracking Template</div>
+                    <div className="font-mono text-[11px] text-sky-700 truncate">{c.trackingUrlTemplate}</div>
                   </div>
                 ) : (
-                  <div className="mt-3 text-xs text-[#8a92a6] italic">ไม่มีลิงก์ Tracking อัตโนมัติ (จัดส่งเอง/ทั่วไป)</div>
+                  <div className="mt-3 text-xs text-slate-500 italic">ไม่มีลิงก์ Tracking อัตโนมัติ (จัดส่งเอง/ทั่วไป)</div>
                 )}
               </div>
             </div>
@@ -216,19 +220,21 @@ export default function AdminCarriersPage() {
         {/* Modal */}
         <AnimatePresence>
           {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-lg bg-[#171c23] rounded-3xl shadow-2xl overflow-hidden"
+                className="w-full max-w-lg bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-2xl overflow-hidden text-slate-900"
               >
-                <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
-                  <div className="font-black text-lg flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
+                <div className="px-6 py-5 border-b border-slate-200/80 flex items-center justify-between">
+                  <div className="font-bold text-lg flex items-center gap-2.5 text-slate-900">
+                    <span className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-700">
+                      <Truck className="w-5 h-5" />
+                    </span>
                     {editingCarrier ? 'แก้ไขผู้ให้บริการขนส่ง' : 'เพิ่มผู้ให้บริการขนส่ง'}
                   </div>
-                  <button onClick={() => setShowModal(false)} className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
+                  <button onClick={() => setShowModal(false)} className="p-1.5 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -236,30 +242,30 @@ export default function AdminCarriersPage() {
                 <form onSubmit={handleSave} className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">รหัสย่อขนส่ง</label>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">รหัสย่อขนส่ง</label>
                       <input
                         type="text"
                         placeholder="เช่น FLASH, KERRY"
                         value={formData.code || ''}
                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-mono text-sm uppercase"
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-mono text-sm uppercase"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ชื่อผู้ให้บริการ *</label>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ชื่อผู้ให้บริการ *</label>
                       <input
                         type="text"
                         required
                         placeholder="เช่น Flash Express"
                         value={formData.name || ''}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-medium text-sm"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
                       Tracking URL Template (ใช้ &#123;trackingNo&#125; แทนเลขพัสดุ)
                     </label>
                     <input
@@ -267,32 +273,32 @@ export default function AdminCarriersPage() {
                       placeholder="https://example.com/track?no={trackingNo}"
                       value={formData.trackingUrlTemplate || ''}
                       onChange={(e) => setFormData({ ...formData, trackingUrlTemplate: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-mono text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-mono text-xs"
                     />
-                    <div className="text-[11px] text-[#8a92a6] mt-1">
+                    <div className="text-[11px] text-slate-500 mt-1">
                       ระบบจะแทนค่า &#123;trackingNo&#125; ด้วยเลขพัสดุจริงเพื่อเปิดหน้าเช็กสถานะได้ทันที
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">เบอร์ติดต่อ / Call Center</label>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เบอร์ติดต่อ / Call Center</label>
                       <input
                         type="text"
                         placeholder="เช่น 1436"
                         value={formData.phone || ''}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-medium text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ผู้ติดต่อ / คนขับรถ</label>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ผู้ติดต่อ / คนขับรถ</label>
                       <input
                         type="text"
                         placeholder="ชื่อผู้รับผิดชอบ"
                         value={formData.contactName || ''}
                         onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-medium text-sm"
                       />
                     </div>
                   </div>
@@ -303,25 +309,25 @@ export default function AdminCarriersPage() {
                       id="isDefault"
                       checked={Boolean(formData.isDefault)}
                       onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-                      className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-[#30353d]"
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
                     />
-                    <label htmlFor="isDefault" className="text-sm font-bold text-[#d1c6ab] cursor-pointer">
+                    <label htmlFor="isDefault" className="text-sm font-semibold text-slate-700 cursor-pointer">
                       ตั้งเป็นขนส่งหลักเริ่มต้น (Default Carrier)
                     </label>
                   </div>
 
-                  <div className="pt-4 flex justify-end gap-3 border-t border-[#30353d]">
+                  <div className="pt-4 flex justify-end gap-3 border-t border-slate-200/80">
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="px-5 py-2.5 rounded-xl border border-[#30353d] text-[#d1c6ab] font-bold hover:bg-[#1b2027] transition-colors"
+                      className="px-5 py-2 rounded-full border border-slate-200/80 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors"
                     >
                       ยกเลิก
                     </button>
                     <button
                       type="submit"
                       disabled={saving}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-lg shadow-orange-500/25 hover:from-amber-600 hover:to-orange-700 active:scale-95 transition-all disabled:opacity-50"
+                      className="px-6 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
                     >
                       {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
                     </button>

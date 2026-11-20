@@ -227,107 +227,109 @@ export default function MobileOrdersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Top Mobile Bar - Tactical Hybrid */}
-      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/mobile" 
-              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95 transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="font-bold text-base text-[#dee2ec] leading-tight">สถานี QC &amp; จัดส่ง (Fulfillment)</h1>
-              <p className="text-[11px] text-[#8a92a6]">ตรวจความถูกต้อง แพ็กกล่อง และส่งมอบขนส่ง</p>
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 pb-28 font-sans select-none">
+      {/* Top Mobile Bar */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <Link
+                href="/mobile"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 shadow-xs active:scale-95 transition-all shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="min-w-0">
+                <h1 className="font-bold text-base text-slate-900 leading-tight truncate">สถานี QC &amp; จัดส่ง (Fulfillment)</h1>
+                <p className="text-[11px] text-slate-600 truncate">ตรวจความถูกต้อง แพ็กกล่อง และส่งมอบขนส่ง</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setCameraOpen(true)}
+                className="min-h-[44px] px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm transition-all font-mono"
+              >
+                <Camera className="w-4 h-4" />
+                <span>สแกนกล้อง</span>
+              </button>
+              <button
+                onClick={loadData}
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs active:scale-95 transition-all"
+                aria-label="รีเฟรช"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCameraOpen(true)}
-              className="px-3 py-1.5 bg-[#facc15] hover:bg-[#eec200] active:scale-95 text-[#1b1600] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#facc15]/20 transition-all font-mono"
-            >
-              <Camera className="w-4 h-4" />
-              <span>สแกนกล้อง</span>
-            </button>
-            <button
-              onClick={loadData}
-              className="p-2 rounded-lg bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* Search & Barcode Status */}
-        <div className="mt-3 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="ค้นหาเลขออเดอร์, Tracking, หรือลูกค้า..."
-              className="w-full bg-[#090f15] border border-[#30353d] rounded-xl pl-9 pr-8 py-2 text-xs text-[#dee2ec] placeholder-[#8a92a6] focus:outline-none focus:border-[#4cd7f6]"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-[#8a92a6] hover:text-[#dee2ec]"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-          <div className="px-2.5 py-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[10px] font-mono text-[#4cd7f6] flex items-center gap-1 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#4cd7f6] animate-pulse" />
-            PDA พร้อม
+          {/* Search & Barcode Status */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="ค้นหาเลขออเดอร์, Tracking, หรือลูกค้า..."
+                className="w-full min-h-[44px] bg-white/90 border border-slate-200/80 rounded-full pl-10 pr-9 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="min-h-[44px] px-3 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-700 flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              PDA พร้อม
+            </div>
           </div>
         </div>
       </header>
 
       {/* Status Tabs (4 Dedicated Steps) */}
       <div className="px-4 max-w-lg mx-auto">
-        <div className="grid grid-cols-4 gap-1 mt-3 p-1 bg-slate-50 rounded-xl border border-slate-200 text-center">
+        <div className="nx-glass-card grid grid-cols-4 gap-1 mt-3 p-1.5 rounded-full text-center">
           <button
             onClick={() => setActiveTab('QC')}
-            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+            className={`min-h-[40px] py-1.5 px-1 text-[11px] font-bold rounded-full transition-all tabular-nums ${
               activeTab === 'QC'
-                ? 'bg-teal-600 text-white shadow'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             ตรวจ QC ({qcOrders.length})
           </button>
           <button
             onClick={() => setActiveTab('PACK')}
-            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+            className={`min-h-[40px] py-1.5 px-1 text-[11px] font-bold rounded-full transition-all tabular-nums ${
               activeTab === 'PACK'
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-sky-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             รอแพ็ก ({packOrders.length})
           </button>
           <button
             onClick={() => setActiveTab('DISPATCH')}
-            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+            className={`min-h-[40px] py-1.5 px-1 text-[11px] font-bold rounded-full transition-all tabular-nums ${
               activeTab === 'DISPATCH'
-                ? 'bg-amber-600 text-white shadow'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-amber-500 text-slate-950 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             รอส่ง ({dispatchOrders.length})
           </button>
           <button
             onClick={() => setActiveTab('SHIPPED')}
-            className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+            className={`min-h-[40px] py-1.5 px-1 text-[11px] font-bold rounded-full transition-all tabular-nums ${
               activeTab === 'SHIPPED'
-                ? 'bg-emerald-600 text-white shadow'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             ส่งแล้ว ({shippedOrders.length})
@@ -338,14 +340,16 @@ export default function MobileOrdersPage() {
       {/* Orders List */}
       <main className="p-4 space-y-3 max-w-lg mx-auto">
         {loading ? (
-          <div className="py-16 text-center text-slate-500 text-sm">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-500" />
+          <div className="nx-glass-card py-14 text-center text-slate-500 text-sm">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
             กำลังโหลดรายการออเดอร์...
           </div>
         ) : currentTabOrders.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 space-y-2">
-            <Package className="w-12 h-12 mx-auto text-slate-700" />
-            <p className="text-sm font-semibold text-slate-500">
+          <div className="nx-glass-card py-14 px-6 text-center text-slate-500 space-y-2">
+            <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+              <Package className="w-7 h-7" />
+            </div>
+            <p className="text-sm font-semibold text-slate-600">
               {searchQuery ? 'ไม่พบออเดอร์ที่ตรงกับการค้นหา' : 
                activeTab === 'QC' ? 'ไม่มีออเดอร์รอตรวจ QC (ต้องมีสินค้าที่หยิบเสร็จแล้ว)' :
                activeTab === 'PACK' ? 'ไม่มีออเดอร์รอแพ็ก (ต้องผ่านการตรวจ QC ก่อน)' :
@@ -356,41 +360,41 @@ export default function MobileOrdersPage() {
           currentTabOrders.map(order => (
             <div
               key={order.id}
-              className="p-4 rounded-2xl bg-white/90 border border-slate-200 hover:border-slate-200 shadow-md space-y-3"
+              className="nx-glass-card p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-slate-900 text-base">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold text-slate-900 text-base tabular-nums">
                       {order.orderNo}
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                       {order.channel || 'Direct'}
                     </span>
                     {isQcPassed(order) && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 border border-teal-200">
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         QC ผ่านแล้ว
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                  <p className="text-xs text-slate-600 font-medium mt-0.5 truncate">
                     ลูกค้า: {order.customerName || 'ทั่วไป'}
                   </p>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <span className="text-[10px] text-slate-500 block">จำนวน</span>
-                  <span className="text-base font-black text-blue-600">{order.totalQty}</span>
+                  <span className="text-base font-black text-sky-700 tabular-nums">{order.totalQty}</span>
                   <span className="text-[11px] text-slate-500 ml-1">ชิ้น</span>
                 </div>
               </div>
 
               {/* Items preview */}
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+              <div className="p-3 rounded-2xl bg-white/85 border border-slate-200/80 text-xs space-y-1">
                 {order.items.map((it, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-slate-600">
-                    <span className="truncate max-w-[200px]">• {cleanItemName(it.name)}</span>
-                    <span className="font-mono text-slate-500">x{it.qty}</span>
+                  <div key={idx} className="flex items-center justify-between text-slate-700 gap-2">
+                    <span className="truncate max-w-[210px] font-medium">• {cleanItemName(it.name)}</span>
+                    <span className="font-mono font-semibold text-slate-600 tabular-nums shrink-0">x{it.qty}</span>
                   </div>
                 ))}
               </div>
@@ -399,13 +403,13 @@ export default function MobileOrdersPage() {
               {(order.dockBay || order.vehiclePlate) && (
                 <div className="flex items-center gap-1.5 flex-wrap text-xs">
                   {order.dockBay && (
-                    <span className="font-bold px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
-                      ⚓ ท่า: {order.dockBay}
+                    <span className="font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                      ท่า: {order.dockBay}
                     </span>
                   )}
                   {order.vehiclePlate && (
-                    <span className="font-bold px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300">
-                      🚛 รถ: {order.vehiclePlate} {order.driverName ? `(${order.driverName})` : ''}
+                    <span className="font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      รถ: {order.vehiclePlate} {order.driverName ? `(${order.driverName})` : ''}
                     </span>
                   )}
                 </div>
@@ -413,7 +417,7 @@ export default function MobileOrdersPage() {
 
               {/* Tracking info if already packed/shipped */}
               {order.trackingNo && (
-                <div className="flex items-center justify-between gap-2 text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg">
+                <div className="flex items-center justify-between gap-2 text-xs font-mono text-amber-800 bg-amber-50/90 border border-amber-200 p-2.5 rounded-2xl">
                   <span className="flex items-center gap-1.5 truncate">
                     <Truck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span className="truncate">{order.carrier || 'ขนส่ง'}: {order.trackingNo}</span>
@@ -423,21 +427,21 @@ export default function MobileOrdersPage() {
                       href={`${(process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').replace(/\/$/, '')}/track/${encodeURIComponent(order.tmsJobId)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform font-sans"
+                      className="px-2.5 py-1 rounded-full bg-sky-600 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform font-sans"
                     >
                       TMS: {order.tmsJobId} ↗
                     </a>
                   ) : order.tmsJobId ? (
-                    <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold text-[10px] shrink-0 font-sans">
+                    <span className="px-2.5 py-1 rounded-full bg-white text-slate-700 border border-slate-200 font-bold text-[10px] shrink-0 font-sans">
                       TMS: {order.tmsJobId}
                     </span>
                   ) : (/บริษัท|จัดส่งเอง|fleet/i.test(order.carrier || '') && order.status === 'SHIPPED') ? (
                     <button
                       type="button"
                       onClick={() => handleRetryTms(order)}
-                      className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-transform flex items-center gap-1 font-sans"
+                      className="px-2.5 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] shrink-0 active:scale-95 transition-transform flex items-center gap-1 font-sans"
                     >
-                      <span>⚡ ส่งเข้า TMS</span>
+                      <span>ส่งเข้า TMS</span>
                     </button>
                   ) : null}
                 </div>
@@ -447,7 +451,7 @@ export default function MobileOrdersPage() {
               {order.status === 'PICKED' && !isQcPassed(order) && (
                 <button
                   onClick={() => setQcOrder(order)}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all"
+                  className="w-full min-h-[48px] py-3 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
                 >
                   <ShieldCheck className="w-4 h-4" /> เปิดสถานีตรวจสอบ QC (ยิงบาร์โค้ดเช็กสินค้า)
                 </button>
@@ -456,7 +460,7 @@ export default function MobileOrdersPage() {
               {order.status === 'PICKED' && isQcPassed(order) && (
                 <button
                   onClick={() => setPackingOrder(order)}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all"
+                  className="w-full min-h-[48px] py-3 px-4 rounded-full bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-slate-900/15 transition-all"
                 >
                   <Package className="w-4 h-4" /> เลือกกล่อง &amp; บันทึกแพ็กพัสดุ (Packing)
                 </button>
@@ -465,15 +469,15 @@ export default function MobileOrdersPage() {
               {order.status === 'PACKED' && (
                 <button
                   onClick={() => setDispatchOrder(order)}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all"
+                  className="w-full min-h-[48px] py-3 px-4 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all"
                 >
                   <Truck className="w-4 h-4" /> {order.deliveryMode === 'SELF_PICKUP' ? 'ส่งมอบให้ลูกค้า (รับเอง)' : 'สแกนเลขพัสดุ & ส่งมอบขนส่ง'}
                 </button>
               )}
 
               {order.status === 'SHIPPED' && (
-                <div className="flex items-center justify-between gap-2 pt-1 text-xs text-emerald-600">
-                  <span className="flex items-center gap-1">
+                <div className="flex items-center justify-between gap-2 pt-1 text-xs text-emerald-700">
+                  <span className="flex items-center gap-1 font-semibold">
                     <CheckCircle2 className="w-4 h-4" /> ส่งมอบให้ขนส่งแล้ว
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -481,7 +485,7 @@ export default function MobileOrdersPage() {
                       href={`/print/qc-handover?id=${order.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-[11px] flex items-center gap-1 font-bold"
+                      className="min-h-[36px] px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[11px] flex items-center gap-1 font-bold"
                     >
                       <Printer className="w-3 h-3" /> ใบ QC
                     </a>
@@ -489,7 +493,7 @@ export default function MobileOrdersPage() {
                       href={`/print/shipping-label?id=${order.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] flex items-center gap-1"
+                      className="min-h-[36px] px-3 py-1 rounded-full bg-white/90 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] flex items-center gap-1 font-semibold"
                     >
                       <Printer className="w-3 h-3" /> ฉลาก 4x6
                     </a>
@@ -510,7 +514,7 @@ export default function MobileOrdersPage() {
                     tmsJobId: (order as any).tmsJobId || (order.trackingNo?.startsWith('JOB-') ? order.trackingNo : undefined),
                     destinations: (order as any).destinations,
                   })}
-                  className="w-full py-3 rounded-xl bg-white border-2 border-amber-500 text-amber-700 font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                  className="w-full min-h-[44px] py-2.5 px-4 rounded-full bg-white/90 border border-amber-300 hover:bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
                 >
                   <PackagePlus className="w-4 h-4" /> เพิ่มสินค้าเข้าออเดอร์ (สแกนของเพิ่ม)
                 </button>
@@ -676,49 +680,49 @@ function MobileQcModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 w-full max-w-lg max-h-[85dvh] flex flex-col rounded-t-3xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5">
+    <div className="fixed inset-0 z-[60] bg-slate-900/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-lg max-h-[85dvh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl text-slate-900">
         {/* Modal Header */}
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-teal-100 text-teal-600 border border-teal-200">
+        <div className="p-4 border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </span>
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">สถานีตรวจ QC: {order.orderNo}</h3>
-                <p className="text-xs text-slate-500">ลูกค้า: {order.customerName} • ตรวจแล้ว {totalVerified}/{totalRequired} ชิ้น</p>
+              <div className="min-w-0">
+                <h3 className="font-bold text-slate-900 text-base truncate tabular-nums">สถานีตรวจ QC: {order.orderNo}</h3>
+                <p className="text-xs text-slate-600 truncate tabular-nums">ลูกค้า: {order.customerName} • ตรวจแล้ว {totalVerified}/{totalRequired} ชิ้น</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setScannerOpen(true)}
-              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 shadow-md shadow-teal-600/30"
+              className="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 active:scale-95 shadow-sm"
               title="เปิดกล้องสแกน QC"
             >
               <Camera className="w-4 h-4" />
               <span>สแกน</span>
             </button>
-            <button onClick={onClose} className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900">
+            <button onClick={onClose} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:text-slate-900">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Scan instruction banner */}
-        <div className="bg-teal-50 border-b border-teal-200 px-4 py-2 text-xs text-teal-700 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-xs text-emerald-800 flex items-center justify-between">
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             ยิงบาร์โค้ด หรือ กดปุ่ม +1 เพื่อตรวจสินค้า
           </span>
-          <button onClick={handleMarkAllVerified} className="text-teal-600 underline font-bold text-xs">
+          <button onClick={handleMarkAllVerified} className="text-emerald-700 underline font-bold text-xs">
             ตรวจผ่านทั้งหมด
           </button>
         </div>
 
         {/* Quick Barcode Scan / Type Input Bar */}
-        <div className="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+        <div className="p-3 bg-slate-50/90 border-b border-slate-200/80 flex items-center gap-2">
           <form
             onSubmit={e => {
               e.preventDefault();
@@ -730,20 +734,20 @@ function MobileQcModal({
             className="flex items-center gap-2 flex-1"
           >
             <div className="relative flex-1">
-              <Scan className="w-4 h-4 text-teal-600 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Scan className="w-4 h-4 text-emerald-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={quickInput}
                 onChange={e => setQuickInput(e.target.value)}
                 onFocus={(e) => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
                 placeholder="สแกน หรือ พิมพ์ SKU แล้วกด Enter..."
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-500 font-mono focus:outline-none focus:border-teal-500 font-bold"
+                className="w-full min-h-[44px] pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-full text-xs text-slate-900 placeholder:text-slate-400 font-mono focus:outline-none focus:border-emerald-500 font-bold"
               />
             </div>
             <button
               type="submit"
               disabled={!quickInput.trim()}
-              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl transition-all shrink-0"
+              className="min-h-[44px] px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs rounded-full transition-all shrink-0"
             >
               ตรวจ
             </button>
@@ -758,26 +762,26 @@ function MobileQcModal({
               <div
                 key={idx}
                 className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
-                  isDone 
-                    ? 'bg-teal-50 border-teal-200 text-slate-900 shadow-xs' 
-                    : 'bg-slate-50 border-slate-200 text-slate-600'
+                  isDone
+                    ? 'bg-emerald-50/90 border-emerald-200 text-slate-900'
+                    : 'bg-slate-50/90 border-slate-200/80 text-slate-700'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                    isDone ? 'bg-teal-100 text-teal-600 border border-teal-200' : 'bg-slate-100 text-slate-500'
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 tabular-nums ${
+                    isDone ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-white border border-slate-200 text-slate-600'
                   }`}>
                     {isDone ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
                   </div>
-                  <div>
-                    <h4 className="font-bold text-xs leading-snug">{cleanItemName(it.name)}</h4>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-xs text-slate-900 leading-snug truncate">{cleanItemName(it.name)}</h4>
                     <span className="text-[10px] font-mono text-slate-500 block mt-0.5">SKU: {it.sku}</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="text-right font-mono">
-                    <span className={`text-base font-black ${isDone ? 'text-teal-600' : 'text-amber-600'}`}>
+                  <div className="text-right font-mono tabular-nums">
+                    <span className={`text-base font-black ${isDone ? 'text-emerald-700' : 'text-amber-700'}`}>
                       {it.verifiedQty || 0}
                     </span>
                     <span className="text-xs text-slate-500"> / {it.qty}</span>
@@ -786,7 +790,7 @@ function MobileQcModal({
                     <button
                       type="button"
                       onClick={() => handleScanItem(it.sku)}
-                      className="px-2.5 py-1.5 bg-teal-100 hover:bg-teal-500/30 text-teal-700 rounded-lg text-xs font-bold border border-teal-200 active:scale-95 transition-all"
+                      className="min-h-[36px] px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-full text-xs font-bold border border-emerald-200 active:scale-95 transition-all"
                       title="คลิกเพื่อตรวจผ่าน +1"
                     >
                       +1
@@ -799,14 +803,14 @@ function MobileQcModal({
         </div>
 
         {/* Submit QC Pass */}
-        <div className="p-4 border-t border-slate-200 shrink-0 bg-white space-y-2.5">
+        <div className="p-4 border-t border-slate-200/80 shrink-0 bg-white/95 space-y-2.5">
           {/* Optional QC Staff Signature */}
-          <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50/90 border border-slate-200/80">
             <div className="flex items-center gap-2.5 min-w-0">
               {qcStaffSig ? (
-                <img src={qcStaffSig} alt="ลายเซ็น QC" className="h-9 w-16 object-contain bg-white border border-emerald-200 rounded px-1 shrink-0" />
+                <img src={qcStaffSig} alt="ลายเซ็น QC" className="h-9 w-16 object-contain bg-white border border-emerald-200 rounded-lg px-1 shrink-0" />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
                   <PenLine className="w-4 h-4" />
                 </div>
               )}
@@ -822,7 +826,7 @@ function MobileQcModal({
             <button
               type="button"
               onClick={() => setSigOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold shrink-0 active:scale-95"
+              className="min-h-[36px] px-3.5 py-1.5 rounded-full bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shrink-0 active:scale-95"
             >
               {qcStaffSig ? 'เซ็นใหม่' : 'เซ็นชื่อ'}
             </button>
@@ -831,9 +835,9 @@ function MobileQcModal({
           <button
             onClick={handleApproveQc}
             disabled={submitting || !allItemsVerified}
-            className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
+            className={`w-full min-h-[48px] py-3.5 px-5 rounded-full font-black text-sm flex items-center justify-center gap-2 transition-all tabular-nums ${
               allItemsVerified
-                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 text-white shadow-xl shadow-teal-600/30 active:scale-[0.98]'
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 active:scale-[0.98]'
                 : 'bg-slate-100 text-slate-500 cursor-not-allowed border border-slate-200'
             }`}
           >
@@ -843,8 +847,8 @@ function MobileQcModal({
               <CheckCircle2 className="w-5 h-5" />
             )}
             <span>
-              {allItemsVerified 
-                ? '✓ ผ่านการตรวจ QC ครบถ้วน (ส่งต่อสถานีแพ็กกล่อง)' 
+              {allItemsVerified
+                ? 'ผ่านการตรวจ QC ครบถ้วน (ส่งต่อสถานีแพ็กกล่อง)'
                 : `กรุณายิงบาร์โค้ดตรวจสินค้าให้ครบ (${totalVerified}/${totalRequired} ชิ้น)`}
             </span>
           </button>
@@ -943,44 +947,44 @@ function MobilePackingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 pb-36 sm:pb-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 max-h-[85dvh] overflow-y-auto overscroll-contain">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-blue-100 text-blue-600 border border-blue-200">
+    <div className="fixed inset-0 z-[60] bg-slate-900/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 pb-36 sm:pb-6 shadow-2xl space-y-4 max-h-[85dvh] overflow-y-auto overscroll-contain text-slate-900">
+        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="p-2 rounded-full bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
               <Package className="w-5 h-5" />
             </span>
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">สถานีแพ็กกล่อง: {order.orderNo}</h3>
-              <p className="text-xs text-slate-500">ลูกค้า: {order.customerName}</p>
+            <div className="min-w-0">
+              <h3 className="font-bold text-slate-900 text-base truncate tabular-nums">สถานีแพ็กกล่อง: {order.orderNo}</h3>
+              <p className="text-xs text-slate-600 truncate">ลูกค้า: {order.customerName}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-900">
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* QC Verified Tag */}
-        <div className="p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-700 text-xs flex items-center justify-between">
+        <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-bold">
-            <ShieldCheck className="w-4 h-4 text-teal-600" /> ตรวจสอบ QC ผ่านครบถ้วนแล้ว
+            <ShieldCheck className="w-4 h-4 text-emerald-600" /> ตรวจสอบ QC ผ่านครบถ้วนแล้ว
           </span>
-          <span className="text-[11px] font-mono font-bold text-teal-600">{order.totalQty} ชิ้น</span>
+          <span className="text-[11px] font-mono font-bold text-emerald-700 tabular-nums">{order.totalQty} ชิ้น</span>
         </div>
 
         {/* Box Size Picker */}
         <div>
-          <label className="text-xs text-slate-500 block mb-1.5 font-bold">เลือกขนาดกล่องพัสดุ (Box Size)</label>
+          <label className="text-xs text-slate-700 block mb-1.5 font-bold">เลือกขนาดกล่องพัสดุ (Box Size)</label>
           <div className="grid grid-cols-4 gap-2">
             {BOX_SIZES.map(b => (
               <button
                 key={b.code}
                 type="button"
                 onClick={() => setSelectedBox(b.code)}
-                className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${
+                className={`min-h-[44px] py-2 px-1 rounded-full text-xs font-bold border transition-all text-center ${
                   selectedBox === b.code
-                    ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
-                    : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-200'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                 }`}
               >
                 {b.code}
@@ -992,7 +996,7 @@ function MobilePackingModal({
         {/* Weight & Box Count */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-slate-500 block mb-1 font-bold">น้ำหนักรวม (กก.)</label>
+            <label className="text-xs text-slate-700 block mb-1 font-bold">น้ำหนักรวม (กก.)</label>
             <input
               type="number"
               inputMode="decimal"
@@ -1000,11 +1004,11 @@ function MobilePackingModal({
               value={weightKg}
               onFocus={handleInputFocus}
               onChange={e => setWeightKg(e.target.value)}
-              className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono text-sm focus:outline-none focus:border-blue-500 font-bold"
+              className="w-full min-h-[44px] p-2.5 rounded-2xl bg-white border border-slate-200 text-slate-900 font-mono text-sm tabular-nums focus:outline-none focus:border-emerald-500 font-bold"
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500 block mb-1 font-bold">จำนวนกล่อง (ชิ้น)</label>
+            <label className="text-xs text-slate-700 block mb-1 font-bold">จำนวนกล่อง (ชิ้น)</label>
             <input
               type="number"
               inputMode="numeric"
@@ -1012,13 +1016,13 @@ function MobilePackingModal({
               value={boxCount}
               onFocus={handleInputFocus}
               onChange={e => setBoxCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono text-sm focus:outline-none focus:border-blue-500 font-bold"
+              className="w-full min-h-[44px] p-2.5 rounded-2xl bg-white border border-slate-200 text-slate-900 font-mono text-sm tabular-nums focus:outline-none focus:border-emerald-500 font-bold"
             />
           </div>
         </div>
 
         {/* Print Shipping Label Link (Auto-saves draft & prints) */}
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+        <div className="p-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 flex items-center justify-between gap-2">
           <div className="text-xs">
             <span className="font-bold text-slate-900 block">พิมพ์ใบปะหน้าพัสดุ (4x6 / A4)</span>
             <span className="text-[10px] text-slate-500">บันทึกขนาด & น้ำหนักทันทีก่อนพิมพ์</span>
@@ -1027,9 +1031,9 @@ function MobilePackingModal({
             type="button"
             onClick={() => handleCommitPack(true)}
             disabled={submitting}
-            className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-blue-200 active:scale-95 transition-all"
+            className="min-h-[40px] px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-bold rounded-full flex items-center gap-1.5 border border-sky-200 active:scale-95 transition-all shrink-0"
           >
-            <Printer className="w-4 h-4 text-blue-600" />
+            <Printer className="w-4 h-4 text-sky-600" />
             <span>พิมพ์ฉลาก</span>
           </button>
         </div>
@@ -1041,7 +1045,7 @@ function MobilePackingModal({
             type="button"
             onClick={() => handleCommitPack(true)}
             disabled={submitting}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 active:scale-[0.98] transition-all"
+            className="w-full min-h-[48px] py-3.5 px-5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-slate-900/15 active:scale-[0.98] transition-all"
           >
             {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Printer className="w-5 h-5" />}
             <span>บันทึกแพ็กกล่อง & พิมพ์ฉลาก (PACK & PRINT)</span>
@@ -1052,7 +1056,7 @@ function MobilePackingModal({
             type="button"
             onClick={() => handleCommitPack(false)}
             disabled={submitting}
-            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+            className="w-full min-h-[44px] py-3 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
           >
             <CheckCircle2 className="w-4 h-4 text-slate-500" />
             <span>บันทึกแพ็กเสร็จสิ้น (ไม่พิมพ์ฉลาก)</span>
@@ -1190,33 +1194,35 @@ function MobileDispatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 pb-36 sm:pb-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 max-h-[85dvh] overflow-y-auto overscroll-contain">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <div className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-amber-600" />
-            <h3 className="font-bold text-slate-900 text-base">{isPickup ? 'ส่งมอบให้ลูกค้า (รับเอง)' : 'ส่งมอบขนส่ง'}: {order.orderNo}</h3>
+    <div className="fixed inset-0 z-[60] bg-slate-900/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 pb-36 sm:pb-6 shadow-2xl space-y-4 max-h-[85dvh] overflow-y-auto overscroll-contain text-slate-900">
+        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="p-2 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+              <Truck className="w-5 h-5" />
+            </span>
+            <h3 className="font-bold text-slate-900 text-base truncate tabular-nums">{isPickup ? 'ส่งมอบให้ลูกค้า (รับเอง)' : 'ส่งมอบขนส่ง'}: {order.orderNo}</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900">
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {isPickup && (
-          <div className="rounded-xl bg-orange-50 border border-orange-200 p-3 text-sm text-orange-700 font-semibold flex items-center gap-2">
-            🏭 ลูกค้ารับเอง — ไม่ต้องเลือกขนส่ง/เลขพัสดุ กดยืนยันเมื่อส่งมอบให้ลูกค้าแล้ว
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 font-semibold flex items-center gap-2">
+            ลูกค้ารับเอง — ไม่ต้องเลือกขนส่ง/เลขพัสดุ กดยืนยันเมื่อส่งมอบให้ลูกค้าแล้ว
           </div>
         )}
 
         {/* Dock Bay Selector */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-            ⚓ ท่าเทียบ / จุดวางพักรอขึ้นรถ (Dock Bay)
+            ท่าเทียบ / จุดวางพักรอขึ้นรถ (Dock Bay)
           </label>
           <select
             value={dockBay}
             onChange={e => setDockBay(e.target.value)}
-            className="w-full bg-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-amber-900 border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full min-h-[44px] bg-white rounded-2xl px-3.5 py-2.5 text-xs font-bold text-amber-900 border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500"
           >
             <option value="">-- ไม่ระบุ Dock (จัดส่งทั่วไป) --</option>
             <option value="BAY-01">BAY-01 (Inbound / จุดรับเข้า)</option>
@@ -1232,7 +1238,7 @@ function MobileDispatchModal({
         {/* Courier Select */}
         {!isPickup && (<>
         <div>
-          <label className="text-xs text-slate-500 block mb-1.5 font-semibold">ผู้ให้บริการขนส่ง (Carrier)</label>
+          <label className="text-xs text-slate-700 block mb-1.5 font-semibold">ผู้ให้บริการขนส่ง (Carrier)</label>
           <select
             value={carrier}
             onChange={e => {
@@ -1242,7 +1248,7 @@ function MobileDispatchModal({
                 setTrackingNo(order.orderNo);
               }
             }}
-            className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm focus:outline-none focus:border-amber-500"
+            className="w-full min-h-[44px] p-3 rounded-2xl bg-white border border-slate-200 text-slate-900 font-bold text-sm focus:outline-none focus:border-amber-500"
           >
             {carriers.length > 0 ? (
               carriers.map(c => (
@@ -1264,22 +1270,22 @@ function MobileDispatchModal({
 
         {/* Company Fleet TMS Vehicle & Driver Section */}
         {isFleet && (
-          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl space-y-3">
+          <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-blue-900 flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-blue-600" /> มอบหมายรถและคนขับ (เชื่อมต่อ TMS)
+              <span className="text-xs font-black text-sky-900 flex items-center gap-1.5">
+                <Truck className="w-4 h-4 text-sky-600" /> มอบหมายรถและคนขับ (เชื่อมต่อ TMS)
               </span>
-              <span className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded-full">TMS Auto-Job</span>
+              <span className="text-[10px] bg-sky-600 text-white font-bold px-2.5 py-0.5 rounded-full">TMS Auto-Job</span>
             </div>
 
             {/* Vehicle Selector */}
             <div>
-              <label className="text-xs text-blue-900 block mb-1 font-bold">เลือกรถในระบบ (ทะเบียนรถ)</label>
+              <label className="text-xs text-sky-900 block mb-1 font-bold">เลือกรถในระบบ (ทะเบียนรถ)</label>
               {vehicles.length > 0 ? (
                 <select
                   value={selectedVehicleId}
                   onChange={e => handleSelectVehicle(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500 mb-1.5"
+                  className="w-full min-h-[44px] p-2.5 rounded-2xl bg-white border border-sky-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-sky-500 mb-1.5"
                 >
                   <option value="">-- เลือกรถในระบบ หรือกรอกด้านล่าง --</option>
                   {vehicles.map(v => (
@@ -1294,28 +1300,28 @@ function MobileDispatchModal({
                 value={vehiclePlate}
                 onChange={e => setVehiclePlate(e.target.value)}
                 placeholder="ระบุทะเบียนรถ เช่น 1กข-9999 สุราษฎร์ธานี"
-                className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+                className="w-full min-h-[44px] p-2.5 rounded-2xl bg-white border border-sky-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-sky-500"
               />
             </div>
 
             {/* Driver Name & Vehicle Type */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-blue-900 block mb-1 font-bold">ชื่อคนขับ</label>
+                <label className="text-xs text-sky-900 block mb-1 font-bold">ชื่อคนขับ</label>
                 <input
                   type="text"
                   value={driverName}
                   onChange={e => setDriverName(e.target.value)}
                   placeholder="ระบุชื่อคนขับรถ..."
-                  className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+                  className="w-full min-h-[44px] p-2.5 rounded-2xl bg-white border border-sky-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-sky-500"
                 />
               </div>
               <div>
-                <label className="text-xs text-blue-900 block mb-1 font-bold">ประเภทรถ</label>
+                <label className="text-xs text-sky-900 block mb-1 font-bold">ประเภทรถ</label>
                 <select
                   value={vehicleType}
                   onChange={e => setVehicleType(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+                  className="w-full min-h-[44px] p-2.5 rounded-2xl bg-white border border-sky-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-sky-500"
                 >
                   <option value="4-Wheel">กระบะ 4 ล้อ</option>
                   <option value="6-Wheel">บรรทุก 6 ล้อ</option>
@@ -1328,10 +1334,10 @@ function MobileDispatchModal({
 
             {/* Destination Address (Critical for TMS navigation) */}
             <div>
-              <label className="text-xs text-blue-900 block mb-1 font-bold flex items-center justify-between">
+              <label className="text-xs text-sky-900 block mb-1 font-bold flex items-center justify-between">
                 <span>ที่อยู่จัดส่งปลายทาง (ส่งพิกัดให้คนขับ)</span>
                 {!shipAddress.trim() && (
-                  <span className="text-[10px] text-amber-600 font-bold">⚠️ ยังไม่มีที่อยู่</span>
+                  <span className="text-[10px] text-amber-700 font-bold">ยังไม่มีที่อยู่</span>
                 )}
               </label>
               <textarea
@@ -1339,7 +1345,7 @@ function MobileDispatchModal({
                 onChange={e => setShipAddress(e.target.value)}
                 placeholder="กรอกที่อยู่ปลายทางสำหรับคนขับนำทางในแอป TMS..."
                 rows={2}
-                className="w-full p-2.5 rounded-xl bg-white border border-blue-300 text-slate-900 font-medium text-xs focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full p-2.5 rounded-2xl bg-white border border-sky-200 text-slate-900 font-medium text-xs focus:outline-none focus:border-sky-500 resize-none"
               />
             </div>
           </div>
@@ -1347,7 +1353,7 @@ function MobileDispatchModal({
 
         {/* Tracking Number Input + Scan */}
         <div>
-          <label className="text-xs text-slate-500 block mb-1.5 font-semibold">
+          <label className="text-xs text-slate-700 block mb-1.5 font-semibold">
             {isFleet ? 'เลขที่พัสดุ / รหัสงาน (Tracking / Job)' : 'เลขพัสดุ (Tracking No.)'}
           </label>
           <div className="flex items-center gap-2">
@@ -1357,17 +1363,17 @@ function MobileDispatchModal({
               onChange={e => setTrackingNo(e.target.value)}
               onFocus={(e) => setTimeout(() => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)}
               placeholder={isFleet ? `เช่น ${order.orderNo}` : 'สแกนหรือพิมพ์เลขพัสดุ...'}
-              className="flex-1 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-amber-600 font-black text-sm focus:outline-none focus:border-amber-500"
+              className="flex-1 min-h-[48px] px-4 py-3 rounded-full bg-white border border-slate-200 font-mono text-amber-700 font-black text-sm focus:outline-none focus:border-amber-500"
             />
             <button
               onClick={() => setScanCamOpen(true)}
-              className="p-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center active:scale-95 shadow-md shadow-amber-600/30"
+              className="min-h-[48px] min-w-[48px] p-3 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center active:scale-95 shadow-sm"
               title="สแกนบาร์โค้ด Tracking"
             >
               <Camera className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-[10px] text-slate-500 mt-1">
+          <p className="text-[10px] text-slate-500 mt-1.5">
             {isFleet
               ? '• รถบริษัท: ระบบจะใช้เลขออเดอร์สร้างงานใน TMS อัตโนมัติ (หรือจะยิงเลขบาร์โค้ดก็ได้)'
               : '• ขนส่งเอกชน: กดปุ่มกล้อง หรือใช้ปืนยิงบาร์โค้ดสแกนเลขจากใบปะหน้า Flash/Kerry'}
@@ -1379,7 +1385,7 @@ function MobileDispatchModal({
         <button
           onClick={handleCommitDispatch}
           disabled={submitting}
-          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 active:scale-[0.98] transition-all"
+          className="w-full min-h-[48px] py-3.5 px-5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all"
         >
           {submitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
           <span>{isPickup ? 'ยืนยันลูกค้ารับสินค้าแล้ว' : isFleet ? 'ยืนยันส่งมอบ & สร้างงานเข้า TMS' : 'ยืนยันส่งมอบให้ขนส่ง (SHIPPED)'}</span>

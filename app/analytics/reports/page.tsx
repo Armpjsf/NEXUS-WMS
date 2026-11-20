@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { FileText, Calendar, ArrowRight, BarChart, Table, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/config';
@@ -16,9 +14,7 @@ interface ReportConfig {
   description: string;
   icon: any;
   endpoint: string;
-  accent: string;
-  iconColor: string;
-  bgIcon: string;
+  iconTone: string;
 }
 
 const reports = (t: any): ReportConfig[] => [
@@ -28,9 +24,7 @@ const reports = (t: any): ReportConfig[] => [
     description: t('inventory_summary_desc'),
     icon: PackageIcon,
     endpoint: '/api/reports/inventory',
-    accent: '#4cd7f6',
-    iconColor: 'text-[#4cd7f6]',
-    bgIcon: 'bg-[#4cd7f6]/15'
+    iconTone: 'bg-sky-500/12 border-sky-500/20 text-sky-700',
   },
   {
     id: 'stock_movement',
@@ -38,9 +32,7 @@ const reports = (t: any): ReportConfig[] => [
     description: t('stock_movement_desc'),
     icon: ArrowRight,
     endpoint: '/api/reports/movement',
-    accent: '#57ec7f',
-    iconColor: 'text-[#57ec7f]',
-    bgIcon: 'bg-[#57ec7f]/15'
+    iconTone: 'bg-emerald-500/12 border-emerald-500/20 text-emerald-700',
   },
   {
     id: 'low_stock',
@@ -48,9 +40,7 @@ const reports = (t: any): ReportConfig[] => [
     description: t('low_stock_desc'),
     icon: Table,
     endpoint: '/api/reports/low-stock',
-    accent: '#ff5449',
-    iconColor: 'text-[#ff5449]',
-    bgIcon: 'bg-[#ff5449]/15'
+    iconTone: 'bg-rose-500/12 border-rose-500/20 text-rose-600',
   },
   {
     id: 'damage_report',
@@ -58,9 +48,7 @@ const reports = (t: any): ReportConfig[] => [
     description: t('damage_report_desc'),
     icon: FileText,
     endpoint: '/api/reports/damage',
-    accent: '#facc15',
-    iconColor: 'text-[#facc15]',
-    bgIcon: 'bg-[#facc15]/15'
+    iconTone: 'bg-amber-500/15 border-amber-500/25 text-amber-700',
   }
 ];
 
@@ -102,52 +90,55 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8">
-      <AmbientBackground />
-
-      <div className="max-w-[1500px] mx-auto space-y-7 relative z-10">
-        <Link href="/analytics" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-[#4cd7f6]/30 hover:bg-[#4cd7f6]/10 hover:text-[#4cd7f6] print:hidden">
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-[1500px] mx-auto space-y-6">
+        <Link
+          href="/analytics"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all print:hidden w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
           {t('back_to_analytics')}
         </Link>
-        <div className="relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-xl shadow-black/20 backdrop-blur-xl">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-          <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#4cd7f6]">Report Center</p>
-          <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
-            <span className="p-2.5 bg-[#4cd7f6]/15 border border-[#4cd7f6]/30 rounded-xl text-[#4cd7f6]">
-              <BarChart className="w-6 h-6" />
+
+        {/* Open Page Header */}
+        <div className="pt-1">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+              Report Center
             </span>
-            {t('report_center_title')}
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <BarChart className="w-7 h-7 text-sky-600 shrink-0" />
+            <span>{t('report_center_title')}</span>
           </h1>
-          <p className="text-[#8a92a6] mt-2 font-semibold">{t('report_center_subtitle')}</p>
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('report_center_subtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {availableReports.map((report) => (
             <motion.div
               key={report.id}
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -3 }}
               transition={{ type: 'spring', stiffness: 300 }}
               className="h-full"
             >
-              <div 
-                className="group relative rounded-xl border border-[#30353d] bg-[#171c23] p-6 shadow-sm hover:border-[#facc15]/60 transition-all duration-300 overflow-hidden h-full cursor-pointer flex flex-col justify-between"
+              <div
+                className="nx-glass-card group p-6 transition-all duration-300 h-full cursor-pointer flex flex-col justify-between"
                 onClick={() => handleGenerate(report)}
               >
-                <div className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: report.accent }} />
-
                 <div>
-                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-5 border border-[#30353d]/50", report.bgIcon)}>
-                    <report.icon className={cn("w-6 h-6", report.iconColor)} />
+                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-5 border", report.iconTone)}>
+                    <report.icon className="w-6 h-6" />
                   </div>
-                  
-                  <h3 className="text-xl font-bold text-[#dee2ec] mb-2 tracking-tight group-hover:text-[#facc15] transition-colors">{report.name}</h3>
-                  <p className="text-[#8a92a6] text-sm leading-relaxed font-medium mb-6">{report.description}</p>
+
+                  <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight group-hover:text-emerald-700 transition-colors">{report.name}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed mb-6">{report.description}</p>
                 </div>
-                
-                <div className="pt-4 border-t border-[#30353d] flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold text-[#d1c6ab] tracking-wider uppercase">CSV / PDF</span>
-                  <div className="w-8 h-8 rounded-lg bg-[#1b2027] border border-[#30353d] flex items-center justify-center text-[#d1c6ab] group-hover:bg-[#facc15] group-hover:text-[#1b1600] group-hover:border-[#facc15] transition-all">
+
+                <div className="pt-4 border-t border-slate-200/70 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-500 tracking-wider uppercase">CSV / PDF</span>
+                  <div className="w-8 h-8 rounded-full bg-white/80 border border-slate-200 flex items-center justify-center text-slate-700 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all">
                       <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -157,13 +148,13 @@ export default function ReportsPage() {
         </div>
 
         {/* Configuration Panel */}
-        <div className="bg-[#171c23] rounded-xl p-6 border border-[#30353d] shadow-sm">
-          <h3 className="font-bold text-[#dee2ec] mb-6 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#8a92a6]" />
+        <div className="nx-glass-card p-6">
+          <h3 className="font-bold text-slate-900 mb-5 flex items-center gap-2 text-base">
+            <Calendar className="w-4 h-4 text-slate-500" />
             {t('scheduled_reports')}
           </h3>
-          <div className="p-8 bg-[#1b2027] rounded-xl text-center border border-dashed border-[#30353d]">
-             <p className="text-[#8a92a6] font-medium">{t('scheduled_reports_desc')}</p>
+          <div className="p-8 bg-slate-50/80 rounded-2xl text-center border border-dashed border-slate-300">
+             <p className="text-slate-600 text-sm font-medium">{t('scheduled_reports_desc')}</p>
           </div>
         </div>
       </div>

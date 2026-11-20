@@ -367,25 +367,24 @@ export default function MobilePickingPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Header - Tactical Hybrid */}
-      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl relative overflow-hidden text-[#dee2ec]">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/mobile" 
-              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95 transition-all"
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 pb-28 font-sans select-none">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm">
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/mobile"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 shadow-xs active:scale-95 transition-all shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div>
-              <h1 className="font-bold text-base text-[#dee2ec] leading-tight">หยิบสินค้า (Wave Picking)</h1>
-              <p className="text-[11px] text-[#8a92a6]">เดินตามเส้นทาง S-Shape พร้อมเสียงนำทาง</p>
+            <div className="min-w-0">
+              <h1 className="font-bold text-base text-slate-900 leading-tight truncate">หยิบสินค้า (Wave Picking)</h1>
+              <p className="text-[11px] text-slate-600 truncate">เดินตามเส้นทาง S-Shape พร้อมเสียงนำทาง</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => {
                 const next = !voiceEnabled;
@@ -403,10 +402,10 @@ export default function MobilePickingPage() {
                   toast('ปิดเสียงนำทาง', { icon: '🔇' });
                 }
               }}
-              className={`p-2 rounded-xl border transition-all ${
+              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full border transition-all ${
                 voiceEnabled
-                  ? 'bg-[#facc15]/10 text-[#facc15] border-[#facc15]/30'
-                  : 'bg-[#252a32] text-[#8a92a6] border-[#30353d]'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-white/90 text-slate-500 border-slate-200/80'
               }`}
               title={voiceEnabled ? 'เปิดเสียงภาษาไทยอยู่ (แตะเพื่อทดสอบ)' : 'ปิดเสียง'}
             >
@@ -415,7 +414,7 @@ export default function MobilePickingPage() {
             {activeWave && (
               <button
                 onClick={() => setCameraOpen(true)}
-                className="px-3 py-1.5 bg-[#facc15] hover:bg-[#eec200] active:scale-95 text-[#1b1600] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#facc15]/20 transition-all font-mono"
+                className="min-h-[44px] px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm transition-all font-mono"
               >
                 <Camera className="w-4 h-4" />
                 <span>สแกนหยิบ</span>
@@ -430,33 +429,33 @@ export default function MobilePickingPage() {
           /* No Active Wave: Prompt to start from pending orders */
           <div className="space-y-4">
             {pendingOrders.length > 0 ? (
-              <div className="p-6 rounded-3xl bg-white/90 border border-blue-200 text-center space-y-4 shadow-xl">
-                <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center mx-auto">
+              <div className="nx-glass-card p-6 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center mx-auto">
                   <Boxes className="w-8 h-8" />
                 </div>
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mb-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-800 text-xs font-bold mb-2 tabular-nums">
                     <Package className="w-3.5 h-3.5" />
                     มีออเดอร์ค้างหยิบ {pendingOrders.length} รายการ
                   </div>
                   <h2 className="text-xl font-black text-slate-900">พร้อมสร้าง Wave หยิบสินค้า</h2>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                  <p className="text-xs text-slate-600 mt-1 max-w-xs mx-auto leading-relaxed">
                     ระบบจะจัดกลุ่มออเดอร์จริงและคำนวณเส้นทางเดินหยิบแบบ S-Shape เพื่อลดระยะทางเดินให้สั้นที่สุด
                   </p>
                 </div>
 
                 {/* Preview of pending orders */}
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-2 text-xs">
-                  <span className="font-bold text-slate-500 text-[11px] block uppercase">ออเดอร์ที่พร้อมหยิบในรอบนี้ (สูงสุด 5 ออเดอร์)</span>
+                <div className="p-3.5 rounded-2xl bg-white/85 border border-slate-200/80 text-left space-y-2 text-xs">
+                  <span className="font-bold text-slate-600 text-[11px] block uppercase">ออเดอร์ที่พร้อมหยิบในรอบนี้ (สูงสุด 5 ออเดอร์)</span>
                   {pendingOrders.slice(0, 5).map(o => (
-                    <div key={o.id} className="flex items-center justify-between py-1 border-b border-slate-200 last:border-0">
+                    <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-slate-200/70 last:border-0">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-slate-900">{o.orderNo}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">
                           {o.channel || 'Direct'}
                         </span>
                       </div>
-                      <span className="text-blue-600 font-bold font-mono">
+                      <span className="text-sky-700 font-bold font-mono tabular-nums">
                         {o.totalQty || o.items?.length || 1} ชิ้น
                       </span>
                     </div>
@@ -466,7 +465,7 @@ export default function MobilePickingPage() {
                 <button
                   onClick={startWaveFromOrders}
                   disabled={loading}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-600/30 transition-all disabled:opacity-60"
+                  className="w-full min-h-[48px] py-3.5 px-5 rounded-full bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-slate-900/15 transition-all disabled:opacity-60 tabular-nums"
                 >
                   <Play className="w-5 h-5 fill-current" />
                   <span>เริ่มคำสั่งหยิบรวม ({Math.min(5, pendingOrders.length)} ออเดอร์)</span>
@@ -474,13 +473,13 @@ export default function MobilePickingPage() {
               </div>
             ) : (
               /* Satisfying Empty State: No pending orders */
-              <div className="p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-4 shadow-xl">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto">
+              <div className="nx-glass-card p-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-900">ไม่มีออเดอร์ค้างหยิบ 🎉</h2>
-                  <p className="text-xs text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                  <p className="text-xs text-slate-600 mt-2 max-w-xs mx-auto leading-relaxed">
                     ออเดอร์ทั้งหมดถูกหยิบและส่งต่อไปยัง <strong>สถานีตรวจ QC และโต๊ะแพ็กกิ้ง</strong> เรียบร้อยแล้ว
                   </p>
                 </div>
@@ -488,24 +487,24 @@ export default function MobilePickingPage() {
                 <div className="pt-2 space-y-2.5">
                   <Link
                     href="/mobile/orders"
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all"
+                    className="w-full min-h-[48px] py-3.5 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
                   >
-                    <span>🔍 ไปที่สถานีตรวจ QC &amp; แพ็กกล่อง (QC Station)</span>
+                    <span>ไปที่สถานีตรวจ QC &amp; แพ็กกล่อง (QC Station)</span>
                     <ChevronRight className="w-4 h-4" />
                   </Link>
 
                   <button
                     onClick={createDemoOrder}
                     disabled={creatingDemo}
-                    className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-blue-600 hover:text-blue-700 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 transition-all"
+                    className="w-full min-h-[44px] py-3 px-4 rounded-full bg-white/90 hover:bg-white text-slate-800 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 transition-all"
                   >
-                    <PlusCircle className="w-4 h-4" />
+                    <PlusCircle className="w-4 h-4 text-sky-600" />
                     <span>{creatingDemo ? 'กำลังสร้าง...' : '(โหมดทดสอบ) สร้างออเดอร์ใหม่เพื่อลองหยิบ'}</span>
                   </button>
 
                   <button
                     onClick={loadData}
-                    className="w-full py-2.5 text-slate-500 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-1.5"
+                    className="w-full min-h-[44px] py-2.5 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-1.5"
                   >
                     <RefreshCw className="w-3.5 h-3.5" /> ตรวจสอบออเดอร์ใหม่อีกครั้ง
                   </button>
@@ -517,33 +516,33 @@ export default function MobilePickingPage() {
           /* Active Picking Wave */
           <>
             {/* Wave Progress Bar */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-md space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-blue-600">
+            <div className="nx-glass-card p-4 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs font-bold text-sky-700 tabular-nums">
                   {activeWave.waveNumber} ({activeWave.totalOrders} ออเดอร์)
                 </span>
-                <span className="text-xs font-bold text-slate-600">
+                <span className="text-xs font-bold text-slate-700 tabular-nums">
                   หยิบแล้ว {pickedCount} / {totalCount} รายการ
                 </span>
               </div>
-              <div className="w-full bg-slate-50 rounded-full h-3 overflow-hidden border border-slate-200">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-300 rounded-full"
+              <div className="w-full bg-slate-200/80 rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
                   style={{ width: `${activeWave.progressPercent}%` }}
                 />
               </div>
             </div>
 
-            {/* Current Target Hero Card */}
+            {/* Current Target Hero Card (Dark Accent Readout) */}
             {currentTarget ? (
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-blue-50 to-white border-2 border-blue-200 p-5 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1.5">
-                    <Navigation className="w-3.5 h-3.5 text-blue-600" /> เป้าหมาย #{currentTarget.pickSequence} (ออเดอร์ {currentTarget.orderDocNum || '-'})
+              <div className="nx-dark-accent-card p-5 space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/10 text-sky-300 border border-white/15 flex items-center gap-1.5 tabular-nums">
+                    <Navigation className="w-3.5 h-3.5 text-sky-300" /> เป้าหมาย #{currentTarget.pickSequence} (ออเดอร์ {currentTarget.orderDocNum || '-'})
                   </span>
                   <button
                     onClick={() => speakPickInstruction(currentTarget)}
-                    className="p-2 rounded-xl bg-slate-100 text-blue-600 hover:text-slate-900 active:scale-95"
+                    className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/10 border border-white/15 text-amber-300 hover:bg-white/20 active:scale-95"
                     title="ฟังเสียงอีกครั้ง"
                   >
                     <Volume2 className="w-4 h-4" />
@@ -551,9 +550,9 @@ export default function MobilePickingPage() {
                 </div>
 
                 {/* Target Location (Bin) - HUGE */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1">
-                  <span className="text-xs text-slate-500 block">พิกัดชั้นวางเป้าหมาย</span>
-                  <span className="text-3xl font-black text-amber-600 tracking-wider font-mono">
+                <div className="p-4 rounded-2xl bg-white/10 border border-white/15 text-center space-y-1">
+                  <span className="text-xs text-slate-300 block">พิกัดชั้นวางเป้าหมาย</span>
+                  <span className="text-3xl font-black text-amber-300 tracking-wider font-mono tabular-nums">
                     {currentTarget.location}
                   </span>
                 </div>
@@ -561,15 +560,15 @@ export default function MobilePickingPage() {
                 {/* Strict FEFO Lot & Expiry Badges */}
                 {currentTarget.lotNumber && currentTarget.lotNumber !== 'UNASSIGNED' && (
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 font-mono text-xs font-bold">
-                      <span>🔒 กฎ FEFO ล็อต:</span>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-500/20 border border-sky-400/35 rounded-full text-sky-200 font-mono text-xs font-bold">
+                      <span>FEFO ล็อต:</span>
                       <span className="font-black underline">{currentTarget.lotNumber}</span>
                     </div>
                     {currentTarget.expDate && (
-                      <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-mono font-bold border ${
-                        currentTarget.expiryRisk === 'CRITICAL' ? 'bg-rose-100 border-rose-300 text-rose-800 animate-pulse' :
-                        currentTarget.expiryRisk === 'WARNING' ? 'bg-amber-100 border-amber-300 text-amber-800' :
-                        'bg-emerald-100 border-emerald-300 text-emerald-800'
+                      <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold border tabular-nums ${
+                        currentTarget.expiryRisk === 'CRITICAL' ? 'bg-rose-500/25 border-rose-400/50 text-rose-200 animate-pulse' :
+                        currentTarget.expiryRisk === 'WARNING' ? 'bg-amber-500/25 border-amber-400/50 text-amber-200' :
+                        'bg-emerald-500/20 border-emerald-400/40 text-emerald-200'
                       }`}>
                         <span>EXP: {currentTarget.expDate.slice(0, 10)}</span>
                         {currentTarget.daysToExpiry !== undefined && (
@@ -581,7 +580,7 @@ export default function MobilePickingPage() {
                 )}
 
                 {/* Alternate Bins with Stock */}
-                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-200">
+                <div className="bg-white/95 p-3 rounded-2xl text-slate-900">
                   <BinQuickSelect
                     sku={currentTarget.sku}
                     selectedBin={currentTarget.location}
@@ -595,19 +594,21 @@ export default function MobilePickingPage() {
 
                 {/* Target Product Details */}
                 <div className="space-y-1">
-                  <h3 className="font-black text-lg text-slate-900 leading-tight">
+                  <h3 className="font-black text-lg text-white leading-tight">
                     {currentTarget.productName}
                   </h3>
-                  <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                  <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
                     <span className="font-mono">SKU: {currentTarget.sku}</span>
-                    <span>หยิบ: <strong className="text-2xl font-black text-emerald-600 ml-1">{currentTarget.requestedQty}</strong> {currentTarget.unit || 'ชิ้น'}</span>
+                    <span className="tabular-nums">
+                      หยิบ: <strong className="text-2xl font-black text-emerald-300 ml-1">{currentTarget.requestedQty}</strong> {currentTarget.unit || 'ชิ้น'}
+                    </span>
                   </div>
                 </div>
 
                 {/* 1-Thumb Confirm Button */}
                 <button
                   onClick={() => confirmPickItem(currentTarget)}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 transition-all"
+                  className="w-full min-h-[52px] py-3.5 px-5 rounded-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-950 font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-all tabular-nums"
                 >
                   <Check className="w-6 h-6 stroke-[3]" />
                   <span>ยืนยันหยิบสำเร็จ ({currentTarget.requestedQty} {currentTarget.unit || 'ชิ้น'})</span>
@@ -615,8 +616,8 @@ export default function MobilePickingPage() {
               </div>
             ) : (
               /* Completed Screen */
-              <div className="p-8 rounded-3xl bg-emerald-50 border border-emerald-200 text-center space-y-4 shadow-2xl animate-in zoom-in-95">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto">
+              <div className="nx-glass-card p-8 border-2 border-emerald-200 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <div>
@@ -628,11 +629,11 @@ export default function MobilePickingPage() {
 
                 {/* Completed orders tag list */}
                 {completedOrderNos.length > 0 && (
-                  <div className="p-3 rounded-xl bg-white border border-slate-200 text-left space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-500 block">ออเดอร์ที่หยิบเสร็จในรอบนี้:</span>
+                  <div className="p-3.5 rounded-2xl bg-white/85 border border-slate-200/80 text-left space-y-1.5">
+                    <span className="text-[11px] font-bold text-slate-600 block">ออเดอร์ที่หยิบเสร็จในรอบนี้:</span>
                     <div className="flex flex-wrap gap-1.5">
                       {completedOrderNos.map(no => (
-                        <span key={no} className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-mono text-xs font-bold border border-emerald-200">
+                        <span key={no} className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-mono text-xs font-bold border border-emerald-200 tabular-nums">
                           {no}
                         </span>
                       ))}
@@ -640,12 +641,12 @@ export default function MobilePickingPage() {
                   </div>
                 )}
 
-                <div className="space-y-2 pt-2">
+                <div className="space-y-2.5 pt-2">
                   <Link
                     href="/mobile/orders"
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all"
+                    className="w-full min-h-[48px] py-3.5 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
                   >
-                    <span>🔍 ส่งต่อโต๊ะตรวจ QC &amp; แพ็กกล่อง (QC Station)</span>
+                    <span>ส่งต่อโต๊ะตรวจ QC &amp; แพ็กกล่อง (QC Station)</span>
                     <ChevronRight className="w-4 h-4" />
                   </Link>
 
@@ -655,15 +656,15 @@ export default function MobilePickingPage() {
                         setActiveWave(null);
                         loadData();
                       }}
-                      className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200"
+                      className="min-h-[44px] py-2.5 px-3 rounded-full bg-white/90 hover:bg-white text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200"
                     >
                       <RotateCcw className="w-4 h-4" /> ดึงรอบหยิบถัดไป
                     </button>
                     <Link
                       href="/mobile"
-                      className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200"
+                      className="min-h-[44px] py-2.5 px-3 rounded-full bg-white/90 hover:bg-white text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200"
                     >
-                      🏠 กลับหน้าหลัก
+                      กลับหน้าหลัก
                     </Link>
                   </div>
                 </div>
@@ -672,47 +673,47 @@ export default function MobilePickingPage() {
 
             {/* List of items in Wave */}
             <div className="space-y-2 pt-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 px-1 tabular-nums">
                 รายการสินค้าในรอบ ({activeWave.items.length})
               </span>
               <div className="space-y-2">
                 {activeWave.items.map(it => (
                   <div
                     key={it.id}
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
+                    className={`nx-glass-card p-3.5 flex items-center justify-between text-xs transition-all ${
                       it.status === 'PICKED'
-                        ? 'bg-slate-50 border-slate-200 text-slate-500'
+                        ? 'opacity-65 text-slate-500'
                         : it.id === currentTarget?.id
-                        ? 'bg-blue-50 border-blue-200 text-slate-900 font-bold shadow'
-                        : 'bg-white border-slate-200 text-slate-600'
+                        ? 'border-2 border-emerald-500 text-slate-900 font-bold'
+                        : 'text-slate-700'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] ${
-                        it.status === 'PICKED' 
-                          ? 'bg-emerald-100 text-emerald-600' 
-                          : 'bg-slate-100 text-slate-500'
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 tabular-nums ${
+                        it.status === 'PICKED'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-white/90 text-slate-700 border border-slate-200'
                       }`}>
                         {it.status === 'PICKED' ? '✓' : it.pickSequence}
                       </div>
-                      <div>
-                        <p className="truncate max-w-[180px]">{it.productName}</p>
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="min-w-0">
+                        <p className="truncate max-w-[180px] text-slate-900">{it.productName}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span className="text-[10px] font-mono text-slate-500">{it.location}</span>
                           {it.lotNumber && it.lotNumber !== 'UNASSIGNED' && (
-                            <span className="text-[9px] px-1 rounded bg-blue-100 text-blue-700 font-mono font-bold">
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-mono font-bold">
                               L:{it.lotNumber}
                             </span>
                           )}
                           {it.expDate && (
-                            <span className="text-[9px] text-slate-500 font-mono">
+                            <span className="text-[9px] text-slate-500 font-mono tabular-nums">
                               EXP:{it.expDate.slice(0, 10)}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <span className="font-mono font-bold">
+                    <span className="font-mono font-bold text-slate-900 tabular-nums shrink-0 ml-2">
                       {it.requestedQty} {it.unit || 'ชิ้น'}
                     </span>
                   </div>

@@ -11,7 +11,13 @@ import { useLanguage } from '@/components/providers/LanguageProvider';
 
 export default function PrintLabelsPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="theme-nexus-hybrid min-h-screen flex items-center justify-center text-slate-700">
+          <div className="nx-glass-card px-6 py-4 text-sm font-semibold">Loading...</div>
+        </div>
+      }
+    >
       <PrintLabelsContent />
     </Suspense>
   );
@@ -53,24 +59,36 @@ function PrintLabelsContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handlePrint]);
 
+  void router;
+
   return (
-    <div className="min-h-screen bg-[#1b2027] flex flex-col md:flex-row">
+    <div className="theme-nexus-hybrid min-h-screen flex flex-col md:flex-row text-slate-900 print:bg-white">
       {/* Sidebar Controls - Hidden on Print */}
-      <div className="w-full md:w-80 bg-[#171c23] border-r border-[#30353d] p-6 flex flex-col h-auto md:h-screen overflow-y-auto print:hidden z-10 shadow-lg md:shadow-none">
-        <div className="mb-8">
-            <Link href="/inventory" className="inline-flex items-center text-[#8a92a6] hover:text-[#dee2ec] transition-colors mb-4">
-                <ArrowLeft className="w-4 h-4 mr-1" /> {t('back_to_inventory')}
+      <div className="w-full md:w-88 bg-white/75 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/85 p-6 flex flex-col h-auto md:h-screen overflow-y-auto print:hidden z-10 shadow-sm md:shadow-none">
+        <div className="mb-6">
+            <Link
+              href="/inventory"
+              className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-slate-200/80 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all mb-4 w-fit"
+            >
+                <ArrowLeft className="w-3.5 h-3.5" /> {t('back_to_inventory')}
             </Link>
-            <h1 className="text-2xl font-black text-[#dee2ec] tracking-tight">{t('label_printer_title')}</h1>
-            <p className="text-sm text-[#8a92a6] mt-1">{t('label_printer_subtitle')}</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800 bg-white/75 border border-slate-200/80 px-2.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Label Studio
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('label_printer_title')}</h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('label_printer_subtitle')}</p>
         </div>
 
-        {/* Item Details */}
-        <div className="bg-[#1b2027] p-4 rounded-xl border border-[#30353d] mb-6">
-            <h3 className="font-bold text-[#d1c6ab] mb-1">{name}</h3>
-            <div className="flex justify-between items-center text-sm">
-                <span className="font-mono text-[#8a92a6]">{sku}</span>
-                <span className="font-bold text-[#dee2ec]">฿{Number(price).toLocaleString()}</span>
+        {/* Item Details (Hero Dark Accent Card) */}
+        <div className="nx-dark-accent-card p-4 mb-6">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Selected SKU</p>
+            <h3 className="font-bold text-white mb-2 leading-snug">{name}</h3>
+            <div className="flex justify-between items-center text-sm pt-2 border-t border-white/10">
+                <span className="font-mono text-xs text-slate-300">{sku}</span>
+                <span className="font-bold text-emerald-400 tabular-nums">฿{Number(price).toLocaleString()}</span>
             </div>
         </div>
 
@@ -78,11 +96,11 @@ function PrintLabelsContent() {
         <div className="space-y-6 flex-1">
             {/* Copies */}
             <div>
-                <label className="block text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2">{t('copies')}</label>
-                <div className="flex items-center space-x-3">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('copies')}</label>
+                <div className="flex items-center gap-2.5">
                     <button 
                         onClick={() => setCopies(Math.max(1, copies - 1))}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#30353d] hover:bg-[#1b2027] text-[#d1c6ab] transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/85 border border-slate-200 hover:bg-white text-slate-700 hover:text-slate-900 shadow-xs transition-colors"
                     >
                         <Minus className="w-4 h-4" />
                     </button>
@@ -90,11 +108,11 @@ function PrintLabelsContent() {
                         type="number" 
                         value={copies}
                         onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="flex-1 h-10 border border-[#30353d] rounded-lg text-center font-bold text-[#dee2ec] focus:border-indigo-500 outline-none"
+                        className="flex-1 h-10 bg-white/85 border border-slate-200 rounded-full text-center font-bold text-slate-900 tabular-nums focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all"
                     />
                     <button 
                          onClick={() => setCopies(copies + 1)}
-                         className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#30353d] hover:bg-[#1b2027] text-[#d1c6ab] transition-colors"
+                         className="w-10 h-10 flex items-center justify-center rounded-full bg-white/85 border border-slate-200 hover:bg-white text-slate-700 hover:text-slate-900 shadow-xs transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                     </button>
@@ -103,16 +121,16 @@ function PrintLabelsContent() {
 
             {/* Sizes */}
             <div>
-                <label className="block text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2">{t('size')}</label>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('size')}</label>
                 <div className="grid grid-cols-3 gap-2">
                     {['small', 'standard', 'large'].map((s) => (
                         <button
                             key={s}
                             onClick={() => setLabelSize(s as any)}
-                            className={`px-2 py-2 rounded-lg text-xs font-bold capitalize border transition-all ${
+                            className={`px-2 py-2 rounded-full text-xs font-semibold capitalize border transition-all ${
                                 labelSize === s 
-                                ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/30' 
-                                : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:border-[#30353d]'
+                                ? 'bg-slate-900 text-white border-slate-900 shadow-sm' 
+                                : 'bg-white/80 text-slate-700 border-slate-200 hover:bg-white hover:text-slate-900'
                             }`}
                         >
                             {s}
@@ -123,49 +141,50 @@ function PrintLabelsContent() {
 
             {/* Options */}
             <div>
-                <label className="block text-xs font-bold text-[#8a92a6] uppercase tracking-wider mb-2">{t('options')}</label>
-                <div className="space-y-2">
-                    <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-[#1b2027] transition-colors">
-                        <input type="checkbox" checked={showPrice} onChange={(e) => setShowPrice(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                        <span className="text-sm font-medium text-[#d1c6ab]">{t('show_price')}</span>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('options')}</label>
+                <div className="space-y-1.5">
+                    <label className="flex items-center space-x-2.5 cursor-pointer p-2.5 rounded-2xl bg-white/60 hover:bg-white/90 border border-slate-200/70 transition-colors">
+                        <input type="checkbox" checked={showPrice} onChange={(e) => setShowPrice(e.target.checked)} className="rounded text-emerald-600 focus:ring-emerald-500" />
+                        <span className="text-sm font-medium text-slate-800">{t('show_price')}</span>
                     </label>
-                    <label className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-[#1b2027] transition-colors">
-                        <input type="checkbox" checked={showQR} onChange={(e) => setShowQR(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                        <span className="text-sm font-medium text-[#d1c6ab]">{t('use_qr')}</span>
+                    <label className="flex items-center space-x-2.5 cursor-pointer p-2.5 rounded-2xl bg-white/60 hover:bg-white/90 border border-slate-200/70 transition-colors">
+                        <input type="checkbox" checked={showQR} onChange={(e) => setShowQR(e.target.checked)} className="rounded text-emerald-600 focus:ring-emerald-500" />
+                        <span className="text-sm font-medium text-slate-800">{t('use_qr')}</span>
                     </label>
                 </div>
             </div>
         </div>
 
         {/* Action Button */}
-        <div className="mt-8 pt-6 border-t border-[#30353d]">
+        <div className="mt-8 pt-6 border-t border-slate-200/80">
             <button
                 type="button"
                 onClick={() => window.print()}
-                className="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 group"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 rounded-full shadow-sm transition-all flex items-center justify-center gap-2 group"
             >
-                <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <Printer className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span>{t('print_labels_btn')}</span>
             </button>
-            <p className="text-center text-xs text-[#8a92a6] mt-3 flex items-center justify-center gap-1">
-                <span className="bg-[#252a32] px-1 py-0.5 rounded border border-[#30353d] font-mono">Ctrl</span> + <span className="bg-[#252a32] px-1 py-0.5 rounded border border-[#30353d] font-mono">Enter</span> to print
+            <p className="text-center text-xs text-slate-500 mt-3 flex items-center justify-center gap-1">
+                <span className="bg-white/85 px-1.5 py-0.5 rounded-md border border-slate-200 font-mono text-slate-700">Ctrl</span> + <span className="bg-white/85 px-1.5 py-0.5 rounded-md border border-slate-200 font-mono text-slate-700">Enter</span> to print
             </p>
         </div>
       </div>
 
       {/* Preview Area */}
-      {/* (Omit unmodified surrounding elements but target the Label props inside the loop) */}
-      <div className="flex-1 bg-[#252a32] p-8 overflow-y-auto flex justify-center items-start">
-        <div className="w-full max-w-3xl">
-            <div className="mb-4 flex items-center justify-between print:hidden">
-                <h2 className="font-bold text-[#8a92a6] uppercase tracking-wider text-sm flex items-center gap-2">
-                    <Settings className="w-4 h-4" /> {t('preview')}
+      <div className="flex-1 p-6 md:p-8 overflow-y-auto flex justify-center items-start print:p-0 print:bg-white">
+        <div className="w-full max-w-3xl space-y-4">
+            <div className="nx-glass-card px-5 py-3 flex items-center justify-between print:hidden">
+                <h2 className="font-semibold text-slate-700 uppercase tracking-wider text-xs flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-emerald-600" /> {t('preview')}
                 </h2>
-                <span className="text-xs text-[#8a92a6]">{t('total_labels').replace('{0}', copies.toString())}</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/12 text-emerald-800 border border-emerald-500/20 text-xs font-semibold tabular-nums">
+                  {t('total_labels').replace('{0}', copies.toString())}
+                </span>
             </div>
 
-            {/* THE PRINTABLE AREA */}
-            <div ref={componentRef} className="bg-white p-8 rounded-xl shadow-sm min-h-[500px] print:shadow-none print:p-0 print:m-0 print:bg-transparent">
+            {/* THE PRINTABLE AREA — crisp black-on-white */}
+            <div ref={componentRef} className="bg-white text-black p-8 rounded-2xl border border-slate-200/80 shadow-sm min-h-[500px] print:shadow-none print:border-0 print:p-0 print:m-0 print:bg-transparent">
                 <style type="text/css" media="print">
                     {`
                         @page { size: auto; margin: 0mm; }

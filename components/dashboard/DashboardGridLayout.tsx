@@ -130,18 +130,18 @@ export function DashboardGridLayout({ widgets, defaultLayout, storageKey = 'dash
     <div className="space-y-4">
        {/* Toolbar */}
        <div className="flex justify-end gap-2 mb-4 items-center">
-           {syncStatus === 'saving' && <span className="text-xs text-[#8a92a6] font-mono animate-pulse">Saving to cloud...</span>}
-           {syncStatus === 'saved' && <span className="text-xs text-[#57ec7f] font-mono font-bold">Cloud Synced</span>}
-           {syncStatus === 'error' && <span className="text-xs text-[#ff5449] font-mono font-bold">Sync Failed</span>}
+           {syncStatus === 'saving' && <span className="text-xs text-slate-500 animate-pulse">Saving to cloud...</span>}
+           {syncStatus === 'saved' && <span className="text-xs text-emerald-600 font-semibold">Cloud Synced</span>}
+           {syncStatus === 'error' && <span className="text-xs text-rose-600 font-semibold">Sync Failed</span>}
            
            {isEditing ? (
                <>
-                 <button onClick={resetLayout} className="text-xs font-mono text-[#8a92a6] hover:text-[#ffb4ab] font-bold px-3 py-1.5 transition-colors">
+                 <button onClick={resetLayout} className="text-xs text-slate-500 hover:text-rose-600 font-semibold px-3 py-1.5 transition-colors">
                     Reset
                  </button>
                  <button 
                     onClick={saveLayout}
-                    className="flex items-center gap-2 bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all shadow-md"
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-sm"
                  >
                     <Save className="w-3.5 h-3.5" /> Save Layout
                  </button>
@@ -149,9 +149,9 @@ export function DashboardGridLayout({ widgets, defaultLayout, storageKey = 'dash
            ) : (
                <button 
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 bg-[#171c23] hover:bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15] border border-[#30353d] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all"
+                  className="flex items-center gap-2 bg-white/80 hover:bg-white backdrop-blur-md text-slate-700 hover:text-slate-900 border border-white/90 px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-sm"
                >
-                  <Settings2 className="w-3.5 h-3.5 text-[#facc15]" /> Customize Layout
+                  <Settings2 className="w-3.5 h-3.5 text-emerald-600" /> Customize Layout
                </button>
            )}
        </div>

@@ -11,8 +11,8 @@ import {
   Hammer,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { BillOfMaterials, BomComponent } from '@/lib/kittingEngine';
 import { errorMessage } from '@/lib/errors';
@@ -57,8 +57,8 @@ export default function KittingPage() {
   useEffect(() => {
     fetchBoms();
     fetch('/api/products')
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (Array.isArray(d)) setProducts(d);
       })
       .catch(() => {});
@@ -72,18 +72,18 @@ export default function KittingPage() {
     }
     const qty = Math.max(1, Number(compQtyInput) || 1);
     const matchedProd = products.find(
-      p => (p.id || p.sku || '').toLowerCase() === skuTrimmed.toLowerCase() || (p.name || '').toLowerCase() === skuTrimmed.toLowerCase()
+      (p) =>
+        (p.id || p.sku || '').toLowerCase() === skuTrimmed.toLowerCase() ||
+        (p.name || '').toLowerCase() === skuTrimmed.toLowerCase()
     );
     const finalSku = matchedProd?.id || matchedProd?.sku || skuTrimmed;
     const finalName = compNameInput.trim() || matchedProd?.name || finalSku;
     const finalUnit = matchedProd?.unit || 'ชิ้น';
 
-    setComponentsList(prev => {
-      const existingIdx = prev.findIndex(c => c.componentSku === finalSku);
+    setComponentsList((prev) => {
+      const existingIdx = prev.findIndex((c) => c.componentSku === finalSku);
       if (existingIdx >= 0) {
-        return prev.map((c, idx) =>
-          idx === existingIdx ? { ...c, quantity: c.quantity + qty } : c
-        );
+        return prev.map((c, idx) => (idx === existingIdx ? { ...c, quantity: c.quantity + qty } : c));
       }
       return [
         ...prev,
@@ -101,7 +101,7 @@ export default function KittingPage() {
   };
 
   const handleRemoveComponent = (index: number) => {
-    setComponentsList(prev => prev.filter((_, idx) => idx !== index));
+    setComponentsList((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const handleBuildOrDisassemble = async (action: 'ASSEMBLE' | 'DISASSEMBLE') => {
@@ -114,8 +114,8 @@ export default function KittingPage() {
         body: JSON.stringify({
           bomId: selectedBom.id,
           quantity: Number(buildQty),
-          action
-        })
+          action,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -144,8 +144,8 @@ export default function KittingPage() {
           kitSku: newKitSku,
           kitName: newKitName,
           assemblyLaborCost: newLaborCost,
-          components: componentsList
-        })
+          components: componentsList,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -164,143 +164,148 @@ export default function KittingPage() {
     }
   };
 
-  const filteredBoms = boms.filter(b => 
-    b.kitName.toLowerCase().includes(search.toLowerCase()) ||
-    b.kitSku.toLowerCase().includes(search.toLowerCase())
+  const filteredBoms = boms.filter(
+    (b) =>
+      b.kitName.toLowerCase().includes(search.toLowerCase()) ||
+      b.kitSku.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
-      <AmbientBackground />
-      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
-
-        {/* Header Tactical Banner */}
-        <div className="relative mx-auto flex flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#57ec7f] via-[#4cd7f6] to-[#facc15]" />
-          <div className="relative z-10">
-            <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#57ec7f] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#57ec7f]" />
-              BILL OF MATERIALS (BOM) & KITTING WORKSHOP
-            </p>
-            <h1 className="font-headline text-2xl md:text-3xl font-black text-[#dee2ec] tracking-tight mb-1 flex items-center gap-3">
-              <div className="bg-[#57ec7f] text-[#0a2012] p-2 rounded-lg shadow-md">
-                <Boxes className="w-6 h-6" />
-              </div>
-              Kitting & Bundling Engine (BOM Management)
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+      <div className="mx-auto max-w-7xl space-y-6">
+        {/* Open Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between pt-1">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800 bg-white/70 backdrop-blur-md border border-white/85 px-2.5 py-0.5 rounded-full shadow-xs">
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                Bill of Materials & Kitting Workshop
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/12 border border-emerald-500/20 text-emerald-700">
+                <Boxes className="w-5 h-5" />
+              </span>
+              <span>Kitting & Bundling Engine (BOM Management)</span>
             </h1>
-            <p className="text-[#8a92a6] font-mono text-xs">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
               บริหารสูตรสินค้าชุด (Bill of Materials), รวมชิ้นส่วนย่อยเป็นชุดเซ็ต และแยกชิ้นส่วนคืนคลังพร้อมระบบตรวจสอบสต็อก
             </p>
           </div>
-          <div className="flex items-center gap-2 relative z-10">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={fetchBoms}
-              className="p-2.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-xl border border-[#30353d] transition"
+              disabled={loading}
+              className="p-2.5 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-full border border-slate-200/80 shadow-xs transition disabled:opacity-50"
               title="รีเฟรช"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2.5 bg-[#57ec7f] hover:bg-[#43d469] text-[#0a2012] rounded-xl shadow-lg shadow-[#57ec7f]/20 font-black transition flex items-center gap-2 text-xs"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-sm font-semibold transition flex items-center gap-2 text-xs"
             >
-              <Plus className="w-4 h-4" /> + กำหนดสูตร BOM ใหม่
+              <Plus className="w-4 h-4" /> กำหนดสูตร BOM ใหม่
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: BOM List */}
-          <div className="bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
-              <h2 className="font-bold text-[#dee2ec] text-xs">สูตรสินค้าชุด ({boms.length})</h2>
-              <div className="relative w-36">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a92a6]" />
+          <div className="nx-glass-card p-5 space-y-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
+              <h2 className="font-bold text-slate-900 text-sm">
+                สูตรสินค้าชุด <span className="text-slate-500 font-normal tabular-nums">({boms.length})</span>
+              </h2>
+              <div className="relative w-40">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="ค้นหาชุด..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-2 py-1 text-xs bg-[#12161d] border border-[#30353d] rounded-lg text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/90 border border-slate-200/80 rounded-full text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[550px] overflow-y-auto">
+            <div className="space-y-2.5 max-h-[550px] overflow-y-auto pr-0.5">
               {loading ? (
-                <div className="p-4 text-center text-[#8a92a6] text-xs">กำลังโหลด...</div>
+                <div className="p-6 text-center text-slate-500 text-xs">กำลังโหลด...</div>
               ) : filteredBoms.length === 0 ? (
-                <div className="p-8 text-center text-[#8a92a6] text-xs border border-[#30353d] rounded-xl bg-[#12161d]">
-                  <Layers className="w-8 h-8 text-[#8a92a6] mx-auto mb-2 opacity-50" />
-                  <p className="font-bold text-[#dee2ec]">ยังไม่มีสูตรสินค้าชุด (BOM)</p>
-                  <p>กดปุ่ม "+ กำหนดสูตร BOM ใหม่" เพื่อสร้างโครงสร้างสินค้าจัดเซ็ต</p>
+                <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-300 rounded-2xl bg-white/50">
+                  <Layers className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="font-semibold text-slate-800">ยังไม่มีสูตรสินค้าชุด (BOM)</p>
+                  <p className="mt-1">กดปุ่ม &quot;กำหนดสูตร BOM ใหม่&quot; เพื่อสร้างโครงสร้างสินค้าจัดเซ็ต</p>
                 </div>
-              ) : filteredBoms.map((b) => (
-                <div
-                  key={b.id}
-                  onClick={() => setSelectedBom(b)}
-                  className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                    selectedBom?.id === b.id
-                      ? 'bg-[#57ec7f]/10 border-[#57ec7f] ring-1 ring-[#57ec7f]'
-                      : 'bg-[#12161d] hover:bg-white/5 border-[#30353d]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-[#dee2ec] text-xs">{b.kitName}</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#57ec7f]/20 text-[#57ec7f] font-bold border border-[#57ec7f]/30">
-                      v{b.version}
-                    </span>
+              ) : (
+                filteredBoms.map((b) => (
+                  <div
+                    key={b.id}
+                    onClick={() => setSelectedBom(b)}
+                    className={`p-3.5 rounded-2xl border transition cursor-pointer ${
+                      selectedBom?.id === b.id
+                        ? 'bg-emerald-500/10 border-emerald-500/40 ring-1 ring-emerald-500/30 shadow-xs'
+                        : 'bg-white/75 hover:bg-white border-slate-200/80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900 text-xs">{b.kitName}</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/12 text-emerald-700 font-bold border border-emerald-500/20">
+                        v{b.version}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-mono text-sky-700 font-semibold">{b.kitSku}</div>
+                    <div className="mt-2 text-[11px] text-slate-600 tabular-nums">
+                      ประกอบด้วย <strong className="text-emerald-700">{b.components.length}</strong> ชิ้นส่วน
+                    </div>
                   </div>
-                  <div className="text-[11px] font-mono text-[#4cd7f6]">{b.kitSku}</div>
-                  <div className="mt-2 text-[11px] text-[#8a92a6]">
-                    ประกอบด้วย <strong className="text-[#57ec7f]">{b.components.length}</strong> ชิ้นส่วน
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           {/* Right: BOM Details & Assembly Terminal */}
           <div className="lg:col-span-2 space-y-6">
             {selectedBom ? (
-              <div className="bg-[#171c23]/90 p-6 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl space-y-6">
-                <div className="flex items-center justify-between border-b border-[#30353d] pb-4">
+              <div className="nx-glass-card p-6 space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-4">
                   <div>
-                    <span className="text-[10px] font-bold text-[#57ec7f] uppercase tracking-widest">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">
                       Bill of Materials (BOM Master)
                     </span>
-                    <h2 className="text-xl font-black text-[#dee2ec] mt-0.5">{selectedBom.kitName}</h2>
-                    <p className="text-xs font-mono text-[#4cd7f6]">Parent SKU: {selectedBom.kitSku}</p>
+                    <h2 className="text-xl font-bold text-slate-900 mt-0.5">{selectedBom.kitName}</h2>
+                    <p className="text-xs font-mono text-sky-700 font-semibold">Parent SKU: {selectedBom.kitSku}</p>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#57ec7f]/20 text-[#57ec7f] border border-[#57ec7f]/30">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/12 text-emerald-700 border border-emerald-500/20">
                     {selectedBom.status}
                   </span>
                 </div>
 
                 {/* Component breakdown table */}
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#8a92a6]">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
                     รายการชิ้นส่วนประกอบ (Components per 1 Kit)
                   </h3>
-                  <div className="border border-[#30353d] rounded-xl overflow-hidden text-xs">
-                    <table className="w-full text-left font-mono">
-                      <thead className="bg-[#12161d] border-b border-[#30353d] text-[#8a92a6] font-bold">
+                  <div className="border border-slate-200/80 rounded-2xl overflow-hidden text-xs bg-white/60">
+                    <table className="w-full text-left">
+                      <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-600 text-[11px] font-semibold uppercase tracking-wider">
                         <tr>
-                          <th className="py-2.5 px-3">รหัสชิ้นส่วน (Component SKU)</th>
-                          <th className="py-2.5 px-3">ชื่อสินค้าชิ้นส่วน</th>
-                          <th className="py-2.5 px-3 text-center">จำนวนต่อชุด</th>
-                          <th className="py-2.5 px-3 text-center">ต้องใช้รวม ({buildQty} ชุด)</th>
+                          <th className="py-3 px-4">รหัสชิ้นส่วน (Component SKU)</th>
+                          <th className="py-3 px-4">ชื่อสินค้าชิ้นส่วน</th>
+                          <th className="py-3 px-4 text-center">จำนวนต่อชุด</th>
+                          <th className="py-3 px-4 text-center">ต้องใช้รวม ({buildQty} ชุด)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#262c36]">
+                      <tbody className="divide-y divide-slate-200/70">
                         {selectedBom.components.map((comp) => (
-                          <tr key={comp.componentSku} className="hover:bg-white/5">
-                            <td className="py-2.5 px-3 font-mono font-bold text-[#dee2ec]">{comp.componentSku}</td>
-                            <td className="py-2.5 px-3 text-[#dee2ec]">{comp.componentName}</td>
-                            <td className="py-2.5 px-3 text-center font-mono font-semibold text-[#8a92a6]">
+                          <tr key={comp.componentSku} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-3 px-4 font-mono font-bold text-slate-900">{comp.componentSku}</td>
+                            <td className="py-3 px-4 text-slate-800">{comp.componentName}</td>
+                            <td className="py-3 px-4 text-center font-mono font-semibold text-slate-600 tabular-nums">
                               {comp.quantity} {comp.unit}
                             </td>
-                            <td className="py-2.5 px-3 text-center font-mono font-black text-[#57ec7f] bg-[#57ec7f]/5">
+                            <td className="py-3 px-4 text-center font-mono font-bold text-emerald-700 bg-emerald-500/8 tabular-nums">
                               {comp.quantity * buildQty} {comp.unit}
                             </td>
                           </tr>
@@ -311,29 +316,32 @@ export default function KittingPage() {
                 </div>
 
                 {/* Action Box: Assemble or Disassemble */}
-                <div className="bg-[#12161d] p-5 rounded-xl border border-[#30353d] space-y-4">
+                <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <label className="text-xs font-bold text-[#8a92a6]">จำนวนชุดที่ต้องการจัดการ:</label>
+                      <label className="text-xs font-semibold text-slate-700">จำนวนชุดที่ต้องการจัดการ:</label>
                       <input
                         type="number"
                         min="1"
                         value={buildQty}
                         onChange={(e) => setBuildQty(Math.max(1, Number(e.target.value)))}
-                        className="w-24 px-3 py-1.5 border border-[#30353d] rounded-xl font-mono font-black text-base text-center bg-[#1c222b] text-[#dee2ec]"
+                        className="w-24 px-3 py-1.5 border border-slate-200/80 rounded-xl font-mono font-bold text-base text-center bg-white text-slate-900 tabular-nums focus:border-emerald-500 focus:outline-none"
                       />
-                      <span className="text-xs text-[#8a92a6]">ชุด</span>
+                      <span className="text-xs text-slate-600">ชุด</span>
                     </div>
-                    <div className="text-xs text-[#8a92a6]">
-                      ค่าแรงประกอบรวม: <strong className="text-[#dee2ec]">฿{selectedBom.assemblyLaborCost * buildQty}</strong>
+                    <div className="text-xs text-slate-600 tabular-nums">
+                      ค่าแรงประกอบรวม:{' '}
+                      <strong className="text-slate-900 font-mono">
+                        ฿{(selectedBom.assemblyLaborCost * buildQty).toLocaleString()}
+                      </strong>
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-[#262c36]">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-slate-200/70">
                     <button
                       onClick={() => handleBuildOrDisassemble('ASSEMBLE')}
                       disabled={isProcessing}
-                      className="flex-1 px-5 py-3 bg-[#57ec7f] hover:bg-[#43d469] text-[#0a2012] rounded-xl font-black text-xs shadow-lg shadow-[#57ec7f]/20 transition flex items-center justify-center gap-2"
+                      className="flex-1 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold text-xs shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <Hammer className="w-4 h-4" />
                       สั่งประกอบชุดเซ็ต (Assemble Kit & Deduct Stock)
@@ -342,7 +350,7 @@ export default function KittingPage() {
                     <button
                       onClick={() => handleBuildOrDisassemble('DISASSEMBLE')}
                       disabled={isProcessing}
-                      className="px-5 py-3 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] border border-[#30353d] rounded-xl font-bold text-xs transition flex items-center justify-center gap-2"
+                      className="px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/80 rounded-full font-semibold text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <Split className="w-4 h-4" />
                       แยกชิ้นส่วนคืนคลัง (De-kitting)
@@ -351,7 +359,7 @@ export default function KittingPage() {
                 </div>
               </div>
             ) : (
-              <div className="p-12 text-center text-[#8a92a6] bg-[#171c23]/90 rounded-xl border border-[#30353d]">
+              <div className="nx-glass-card p-12 text-center text-slate-500 text-sm">
                 กรุณาเลือกสูตร BOM จากรายการด้านซ้าย
               </div>
             )}
@@ -360,48 +368,56 @@ export default function KittingPage() {
 
         {/* Modal new BOM */}
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl p-6 text-xs font-mono text-[#dee2ec] space-y-4">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#57ec7f] via-[#4cd7f6] to-[#facc15]" />
-              <h3 className="text-base font-black text-[#dee2ec]">กำหนดสูตรสินค้าชุดใหม่ (New BOM)</h3>
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-xs text-slate-900 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                <h3 className="text-base font-bold text-slate-900">กำหนดสูตรสินค้าชุดใหม่ (New BOM)</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               <form onSubmit={handleCreateBom} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">รหัสชุดสินค้า (Parent SKU) *</label>
+                    <label className="block text-slate-600 font-semibold mb-1">รหัสชุดสินค้า (Parent SKU) *</label>
                     <input
                       type="text"
                       required
                       placeholder="เช่น KIT-CAMPING-01"
                       value={newKitSku}
                       onChange={(e) => setNewKitSku(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                      className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-slate-50/70 text-slate-900 font-mono focus:bg-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">ชื่อชุดสินค้า *</label>
+                    <label className="block text-slate-600 font-semibold mb-1">ชื่อชุดสินค้า *</label>
                     <input
                       type="text"
                       required
                       placeholder="เช่น ชุดแคมป์ปิ้งพรีเมียม"
                       value={newKitName}
                       onChange={(e) => setNewKitName(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                      className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-slate-50/70 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">ค่าแรงประกอบต่อชุด (฿)</label>
+                  <label className="block text-slate-600 font-semibold mb-1">ค่าแรงประกอบต่อชุด (฿)</label>
                   <input
                     type="number"
                     value={newLaborCost}
                     onChange={(e) => setNewLaborCost(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec]"
+                    className="w-full px-3 py-2 border border-slate-200/80 rounded-xl bg-slate-50/70 text-slate-900 tabular-nums focus:bg-white focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
 
-                <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d] space-y-3">
-                  <span className="font-bold text-[#8a92a6] block text-[11px]">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                  <span className="font-semibold text-slate-700 block text-[11px]">
                     เพิ่มชิ้นส่วนประกอบ (Add BOM Components):
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
@@ -415,13 +431,13 @@ export default function KittingPage() {
                           const val = e.target.value;
                           setCompSkuInput(val);
                           const matched = products.find(
-                            p => (p.id || p.sku || '').toLowerCase() === val.toLowerCase()
+                            (p) => (p.id || p.sku || '').toLowerCase() === val.toLowerCase()
                           );
                           if (matched && matched.name) {
                             setCompNameInput(matched.name);
                           }
                         }}
-                        className="w-full px-2.5 py-2 border border-[#30353d] rounded-lg bg-[#171c23] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                        className="w-full px-2.5 py-2 border border-slate-200 rounded-xl bg-white text-slate-900 focus:border-emerald-500 focus:outline-none"
                       />
                       <datalist id="bom-product-skus">
                         {products.map((p: any, idx: number) => (
@@ -437,7 +453,7 @@ export default function KittingPage() {
                         placeholder="ชื่อชิ้นส่วน..."
                         value={compNameInput}
                         onChange={(e) => setCompNameInput(e.target.value)}
-                        className="w-full px-2.5 py-2 border border-[#30353d] rounded-lg bg-[#171c23] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                        className="w-full px-2.5 py-2 border border-slate-200 rounded-xl bg-white text-slate-900 focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                     <div className="sm:col-span-3 flex gap-1.5">
@@ -446,12 +462,12 @@ export default function KittingPage() {
                         min={1}
                         value={compQtyInput}
                         onChange={(e) => setCompQtyInput(Math.max(1, Number(e.target.value) || 1))}
-                        className="w-16 px-2 py-2 border border-[#30353d] rounded-lg bg-[#171c23] text-[#dee2ec] text-center font-bold focus:border-[#4cd7f6] focus:outline-none"
+                        className="w-16 px-2 py-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-center font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={handleAddComponent}
-                        className="flex-1 px-2.5 py-2 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-lg font-black flex items-center justify-center gap-1 whitespace-nowrap"
+                        className="flex-1 px-2.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold flex items-center justify-center gap-1 whitespace-nowrap"
                         title="เพิ่มชิ้นส่วน (Add Component)"
                       >
                         <Plus className="w-3.5 h-3.5" /> เพิ่ม
@@ -459,31 +475,31 @@ export default function KittingPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 pt-2 border-t border-[#262c36]">
-                    <span className="font-bold text-[#8a92a6] block text-[11px]">
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
+                    <span className="font-semibold text-slate-600 block text-[11px] tabular-nums">
                       ชิ้นส่วนในชุด ({componentsList.length} รายการ):
                     </span>
                     {componentsList.length === 0 ? (
-                      <div className="text-[11px] text-[#8a92a6] py-2 text-center">
+                      <div className="text-[11px] text-slate-500 py-2 text-center">
                         ยังไม่มีชิ้นส่วนในชุด กรุณาเลือก SKU และกด &quot;+ เพิ่ม&quot;
                       </div>
                     ) : (
                       componentsList.map((c, i) => (
                         <div
                           key={i}
-                          className="flex justify-between items-center bg-[#171c23] px-3 py-1.5 rounded-lg border border-[#30353d] text-[#dee2ec]"
+                          className="flex justify-between items-center bg-white px-3 py-2 rounded-xl border border-slate-200/80 text-slate-900"
                         >
                           <span className="truncate pr-2">
-                            <strong className="text-[#4cd7f6]">{c.componentSku}</strong> - {c.componentName}
+                            <strong className="text-sky-700 font-mono">{c.componentSku}</strong> - {c.componentName}
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="font-bold text-[#57ec7f]">
+                            <span className="font-bold text-emerald-700 tabular-nums">
                               {c.quantity} {c.unit}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleRemoveComponent(i)}
-                              className="p-1 text-[#8a92a6] hover:text-rose-400 transition"
+                              className="p-1 text-slate-400 hover:text-rose-600 transition"
                               title="ลบชิ้นส่วน"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -495,17 +511,17 @@ export default function KittingPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#30353d]">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200/80">
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 bg-[#252a32] text-[#8a92a6] hover:text-white rounded-xl"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-semibold"
                   >
                     ยกเลิก
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#57ec7f] hover:bg-[#43d469] text-[#0a2012] rounded-xl font-black shadow"
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold shadow-xs"
                   >
                     สร้างสูตร BOM
                   </button>

@@ -92,66 +92,129 @@ export default function MobileVoicePickingPage() {
   usePdaScanner({ enabled: !!current, onScan: (code) => confirm(code) });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 shadow-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/mobile" className="p-2 rounded-xl bg-slate-100 text-slate-600 active:scale-95"><ArrowLeft className="w-5 h-5" /></Link>
-          <div>
-            <h1 className="font-bold text-base leading-tight flex items-center gap-1.5"><Mic className="w-4 h-4 text-amber-500" /> สั่งหยิบด้วยเสียง</h1>
-            <p className="text-[11px] text-slate-500">{steps.length > 0 && !done ? `ขั้นที่ ${idx + 1} / ${steps.length}` : 'Voice Picking (ภาษาไทย)'}</p>
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 pb-28 font-sans select-none">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm">
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/mobile"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 shadow-xs active:scale-95 transition-all shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="font-bold text-base text-slate-900 leading-tight flex items-center gap-2 truncate">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-700 shrink-0">
+                  <Mic className="w-4 h-4" />
+                </span>
+                <span className="truncate">สั่งหยิบด้วยเสียง</span>
+              </h1>
+              <p className="text-[11px] text-slate-600 tabular-nums truncate">
+                {steps.length > 0 && !done ? `ขั้นที่ ${idx + 1} / ${steps.length}` : 'Voice Picking (ภาษาไทย)'}
+              </p>
+            </div>
           </div>
+          <button
+            onClick={load}
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs active:scale-95 transition-all shrink-0"
+            aria-label="รีเฟรช"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
-        <button onClick={load} className="p-2 rounded-lg bg-slate-100 text-slate-500 active:scale-95"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
       </header>
 
-      <main className="p-4">
+      <main className="p-4 max-w-lg mx-auto">
         {loading ? (
-          <p className="text-center text-slate-400 text-sm py-10">กำลังโหลด...</p>
+          <div className="nx-glass-card p-10 text-center text-slate-500 text-sm">กำลังโหลด...</div>
         ) : done ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-3" />
-            <p className="font-bold text-lg text-slate-900">หยิบครบทุกงานแล้ว 🎉</p>
-            <button onClick={load} className="mt-5 px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold active:scale-95">โหลดงานใหม่</button>
+          <div className="nx-glass-card flex flex-col items-center justify-center py-16 px-6 text-center space-y-3">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <CheckCircle2 className="w-9 h-9" />
+            </div>
+            <p className="font-bold text-lg text-slate-900">หยิบครบทุกงานแล้ว</p>
+            <button
+              onClick={load}
+              className="mt-2 min-h-[44px] px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold active:scale-95 transition-all shadow-sm"
+            >
+              โหลดงานใหม่
+            </button>
           </div>
         ) : !current ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <Mic className="w-12 h-12 text-slate-300 mb-2" />
-            <p className="text-slate-500 text-sm">ไม่มีงานหยิบในคิว</p>
+          <div className="nx-glass-card flex flex-col items-center justify-center py-16 px-6 text-center space-y-2">
+            <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+              <Mic className="w-7 h-7" />
+            </div>
+            <p className="text-slate-600 font-semibold text-sm">ไม่มีงานหยิบในคิว</p>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className={`rounded-3xl border-2 p-6 shadow-lg transition-colors ${
-              status === 'CORRECT' ? 'bg-emerald-50 border-emerald-300' : status === 'WRONG' ? 'bg-rose-50 border-rose-300' : 'bg-white border-slate-200'
+            <div className={`nx-dark-accent-card p-6 transition-all ${
+              status === 'CORRECT' ? 'ring-2 ring-emerald-400' : status === 'WRONG' ? 'ring-2 ring-rose-400' : ''
             }`}>
-              <button onClick={() => speak(synthesizePickSpeech(current))} className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold active:scale-95">
-                <Volume2 className="w-4 h-4" /> ฟังคำสั่งอีกครั้ง
-              </button>
-              <div className="flex items-center gap-2 text-slate-500 text-sm mb-1"><MapPin className="w-4 h-4" /> ไปที่พิกัด</div>
-              <div className="font-mono font-black text-3xl text-slate-900 tracking-tight">{current.locationCode}</div>
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <div className="text-xl font-bold text-slate-900">{current.productName}</div>
-                <div className="font-mono text-xs text-slate-500">{current.sku}</div>
-                <div className="mt-2 text-2xl font-black text-blue-600">{current.targetQuantity} <span className="text-sm font-normal text-slate-500">{current.unit}</span></div>
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <button
+                  onClick={() => speak(synthesizePickSpeech(current))}
+                  className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-400/20 border border-amber-300/35 text-amber-200 text-xs font-bold active:scale-95 transition-all"
+                >
+                  <Volume2 className="w-4 h-4" /> ฟังคำสั่งอีกครั้ง
+                </button>
+                {status !== 'IDLE' && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                    status === 'CORRECT'
+                      ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40'
+                      : 'bg-rose-500/20 text-rose-200 border-rose-400/40'
+                  }`}>
+                    {status === 'CORRECT' ? 'ยืนยันถูกต้อง' : 'เลขไม่ตรง'}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-300 text-xs font-semibold uppercase tracking-wider mb-1">
+                <MapPin className="w-4 h-4 text-amber-300" /> ไปที่พิกัด
+              </div>
+              <div className="font-mono font-black text-3xl text-amber-300 tracking-tight tabular-nums">
+                {current.locationCode}
+              </div>
+              <div className="mt-4 pt-4 border-t border-white/15">
+                <div className="text-xl font-bold text-white leading-snug">{current.productName}</div>
+                <div className="font-mono text-xs text-slate-300 mt-0.5">{current.sku}</div>
+                <div className="mt-2.5 text-3xl font-black text-emerald-300 tabular-nums">
+                  {current.targetQuantity} <span className="text-sm font-semibold text-slate-300">{current.unit}</span>
+                </div>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
-              💡 สแกนป้ายพิกัด/บาร์โค้ดสินค้า หรือกรอก <b>เลขทวนสอบ</b> หน้าแร็ค (<span className="font-mono font-bold">{current.checkDigit}</span>) เพื่อยืนยัน
+            <div className="nx-glass-card p-3.5 text-xs text-amber-900 bg-amber-50/90 border border-amber-200/80">
+              สแกนป้ายพิกัด/บาร์โค้ดสินค้า หรือกรอก <b className="font-bold">เลขทวนสอบ</b> หน้าแร็ค (<span className="font-mono font-bold tabular-nums">{current.checkDigit}</span>) เพื่อยืนยัน
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); confirm(check); }} className="flex gap-2">
               <div className="relative flex-1">
-                <ScanLine className="w-5 h-5 absolute left-3 top-3.5 text-amber-500" />
+                <ScanLine className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-amber-600" />
                 <input
-                  autoFocus value={check} onChange={e => setCheck(e.target.value)} inputMode="text"
+                  autoFocus
+                  value={check}
+                  onChange={e => setCheck(e.target.value)}
+                  inputMode="text"
                   placeholder="สแกน / กรอกเลขทวนสอบ"
-                  className="w-full pl-10 pr-3 py-3.5 bg-white border-2 border-slate-200 rounded-xl text-base font-bold text-slate-900 outline-none focus:border-amber-500"
+                  className="w-full min-h-[48px] pl-11 pr-4 py-3 bg-white/90 border-2 border-slate-200/80 rounded-full text-base font-bold font-mono text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
-              <button type="submit" disabled={busy} className="px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm active:scale-95 disabled:opacity-50">ยืนยัน</button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="min-h-[48px] px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                ยืนยัน
+              </button>
             </form>
 
-            <button onClick={() => setIdx(i => i + 1)} className="w-full py-2 text-xs text-slate-400 active:text-slate-600">ข้ามงานนี้ →</button>
+            <button
+              onClick={() => setIdx(i => i + 1)}
+              className="w-full min-h-[44px] py-3 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-colors"
+            >
+              ข้ามงานนี้ →
+            </button>
           </div>
         )}
       </main>

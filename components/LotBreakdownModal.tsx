@@ -237,7 +237,7 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
     // getExpiryRisk reports a lot with no expiry as HEALTHY / 9999 days.
     if (days === undefined || days >= 9999) {
       return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#252a32] text-[#8a92a6] border border-[#30353d]">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
           ไม่มีวันหมดอายุ
         </span>
       );
@@ -245,25 +245,25 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
     switch (risk) {
       case 'EXPIRED':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#93000a] text-[#ffdad6] border border-[#ffb4ab]/40">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
             หมดอายุแล้ว ({days ?? 0} วัน)
           </span>
         );
       case 'CRITICAL':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#eec200]/20 text-[#facc15] border border-[#facc15]/40 animate-pulse">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
             วิกฤต (เหลือ {days} วัน)
           </span>
         );
       case 'WARNING':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#4cd7f6]/20 text-[#4cd7f6] border border-[#4cd7f6]/40">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
             เตือน (เหลือ {days} วัน)
           </span>
         );
       default:
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#57ec7f]/20 text-[#57ec7f] border border-[#57ec7f]/40">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
             ปกติ (เหลือ {days ?? 0} วัน)
           </span>
         );
@@ -274,29 +274,29 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4">
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-3 sm:p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-4xl overflow-hidden rounded-[24px] border border-white/90 bg-white/95 backdrop-blur-xl shadow-2xl text-slate-900 flex flex-col max-h-[90vh]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#30353d] bg-[#090f15] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-white/90 px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[#4cd7f6]/10 p-2.5 text-[#4cd7f6] border border-[#4cd7f6]/20">
+              <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 border border-emerald-200">
                 <Layers className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-headline text-base sm:text-lg font-bold text-[#dee2ec] flex items-center gap-2">
+                <h3 className="font-headline text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <span>{product ? 'FEFO Lot Detail — รายการ Lot ของสินค้า' : 'ภาพรวมระบบ FEFO & Lot Control'}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#4cd7f6]/10 text-[#4cd7f6] border border-[#4cd7f6]/30">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     First-Expired, First-Out
                   </span>
                 </h3>
-                <p className="font-mono text-xs text-[#d1c6ab]">
+                <p className="font-mono text-xs text-slate-500">
                   {product ? (
-                    <>SKU: <span className="font-bold text-[#facc15]">{product.id}</span> | {product.name}</>
+                    <>SKU: <span className="font-bold text-emerald-700">{product.id}</span> | {product.name}</>
                   ) : (
                     'จัดการและตรวจสอบอายุการเก็บรักษาสินค้าทุก Lot ในคลังสินค้า'
                   )}
@@ -305,54 +305,54 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 text-[#d1c6ab] hover:bg-[#252a32] hover:text-[#dee2ec] transition-colors"
+              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Metric Summary Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4 bg-[#090f15]/60 border-b border-[#30353d] font-mono text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4 bg-slate-50/70 border-b border-slate-100 font-mono text-xs">
             <div 
               onClick={() => setFilterRisk('ALL')}
-              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'ALL' ? "bg-[#252a32] border-[#facc15]" : "bg-[#171c23] border-[#30353d] hover:border-[#8a92a6]")}
+              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'ALL' ? "bg-slate-900 border-slate-900 text-white shadow-sm" : "bg-white border-slate-200 hover:border-slate-300")}
             >
-              <span className="text-[#8a92a6] block text-[10px]">Lots ทั้งหมด</span>
-              <span className="text-lg font-bold text-[#dee2ec]">{metrics.total}</span>
+              <span className={cn("block text-[10px]", filterRisk === 'ALL' ? "text-slate-300" : "text-slate-500")}>Lots ทั้งหมด</span>
+              <span className={cn("text-lg font-bold", filterRisk === 'ALL' ? "text-white" : "text-slate-900")}>{metrics.total}</span>
             </div>
             <div 
               onClick={() => setFilterRisk('CRITICAL')}
-              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'CRITICAL' ? "bg-[#eec200]/10 border-[#facc15]" : "bg-[#171c23] border-[#30353d] hover:border-[#facc15]/50")}
+              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'CRITICAL' ? "bg-amber-50 border-amber-400" : "bg-white border-slate-200 hover:border-amber-300")}
             >
-              <span className="text-[#facc15] block text-[10px]">⏰ วิกฤต (≤15 วัน)</span>
-              <span className="text-lg font-bold text-[#facc15]">{metrics.critical}</span>
+              <span className="text-amber-600 block text-[10px]">⏰ วิกฤต (≤15 วัน)</span>
+              <span className="text-lg font-bold text-amber-600">{metrics.critical}</span>
             </div>
             <div 
               onClick={() => setFilterRisk('EXPIRED')}
-              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'EXPIRED' ? "bg-[#93000a]/20 border-[#ffb4ab]" : "bg-[#171c23] border-[#30353d] hover:border-[#ffb4ab]/50")}
+              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'EXPIRED' ? "bg-rose-50 border-rose-400" : "bg-white border-slate-200 hover:border-rose-300")}
             >
-              <span className="text-[#ffdad6] block text-[10px]">❌ หมดอายุแล้ว</span>
-              <span className="text-lg font-bold text-[#ffdad6]">{metrics.expired}</span>
+              <span className="text-rose-600 block text-[10px]">❌ หมดอายุแล้ว</span>
+              <span className="text-lg font-bold text-rose-600">{metrics.expired}</span>
             </div>
             <div 
               onClick={() => setFilterRisk('HEALTHY')}
-              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'HEALTHY' ? "bg-[#57ec7f]/10 border-[#57ec7f]" : "bg-[#171c23] border-[#30353d] hover:border-[#57ec7f]/50")}
+              className={cn("p-2.5 rounded-xl border cursor-pointer transition-all", filterRisk === 'HEALTHY' ? "bg-emerald-50 border-emerald-400" : "bg-white border-slate-200 hover:border-emerald-300")}
             >
-              <span className="text-[#57ec7f] block text-[10px]">✅ ปกติ (ปลอดภัย)</span>
-              <span className="text-lg font-bold text-[#57ec7f]">{metrics.healthy}</span>
+              <span className="text-emerald-600 block text-[10px]">✅ ปกติ (ปลอดภัย)</span>
+              <span className="text-lg font-bold text-emerald-600">{metrics.healthy}</span>
             </div>
           </div>
 
           {/* Filter / Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 p-4 border-b border-[#30353d] bg-[#171c23]">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 p-4 border-b border-slate-100 bg-white/70">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#8a92a6]" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="ค้นหา SKU หรือหมายเลข Lot..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-[#090f15] border border-[#30353d] rounded-lg font-mono text-xs text-[#dee2ec] placeholder-[#8a92a6] outline-none focus:border-[#4cd7f6]"
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500"
               />
             </div>
 
@@ -360,7 +360,7 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
               <button
                 type="button"
                 onClick={fetchLots}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#30353d] bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec]"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
                 <span>รีเฟรช</span>
@@ -369,7 +369,7 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
               <button
                 type="button"
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-[#facc15] font-bold text-[#1b1600] hover:bg-[#eec200] transition-colors"
+                className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>{showAddForm ? 'ปิดฟอร์ม' : '+ เพิ่ม Lot'}</span>
@@ -383,22 +383,22 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
             {showAddForm && (
               <form
                 onSubmit={handleAddLot}
-                className="rounded-xl border border-[#facc15]/40 bg-[#090f15] p-4 space-y-3 font-mono text-xs mb-4 shadow-lg"
+                className="rounded-2xl border border-emerald-200 bg-slate-50 p-4 space-y-3 font-mono text-xs mb-4 shadow-sm"
               >
-                <div className="font-bold text-[#facc15] flex items-center gap-2">
+                <div className="font-bold text-emerald-700 flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   <span>ลงทะเบียน Lot ใหม่เข้าสู่ระบบ FEFO</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   {!product && (
                     <div>
-                      <label className="block text-[#8a92a6] mb-1">เลือก SKU สินค้า *</label>
+                      <label className="block text-slate-600 mb-1 font-bold">เลือก SKU สินค้า *</label>
                       {allProducts.length > 0 ? (
                         <select
                           required
                           value={newSku}
                           onChange={(e) => setNewSku(e.target.value)}
-                          className="w-full rounded-lg border border-[#30353d] bg-[#171c23] px-3 py-1.5 text-[#dee2ec] outline-none focus:border-[#facc15]"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-900 outline-none focus:border-emerald-500"
                         >
                           <option value="">-- เลือก SKU --</option>
                           {allProducts.map(p => (
@@ -412,44 +412,44 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                           placeholder="รหัส SKU เช่น SKU-001"
                           value={newSku}
                           onChange={(e) => setNewSku(e.target.value)}
-                          className="w-full rounded-lg border border-[#30353d] bg-[#171c23] px-3 py-1.5 text-[#dee2ec] outline-none focus:border-[#facc15]"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-900 outline-none focus:border-emerald-500"
                         />
                       )}
                     </div>
                   )}
-                  <p className="sm:col-span-full text-[11px] text-amber-400">
+                  <p className="sm:col-span-full text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
                     ใช้บันทึกข้อมูลล็อต<strong>ใหม่</strong>เท่านั้น — ไม่เพิ่มสต็อก (รับของจริงให้ใช้หน้ารับเข้า GRN ซึ่งกรอกเลขล็อต+วันหมดอายุได้) · ล็อตเดิมให้กด &quot;แก้วันหมดอายุ&quot; ที่รายการ
                   </p>
                   <div>
-                    <label className="block text-[#8a92a6] mb-1">หมายเลข Lot / Batch *</label>
+                    <label className="block text-slate-600 mb-1 font-bold">หมายเลข Lot / Batch *</label>
                     <input
                       type="text"
                       required
                       placeholder="เช่น LOT-2026-09A"
                       value={newLotNumber}
                       onChange={(e) => setNewLotNumber(e.target.value)}
-                      className="w-full rounded-lg border border-[#30353d] bg-[#171c23] px-3 py-1.5 text-[#dee2ec] outline-none focus:border-[#facc15]"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-900 outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] mb-1">วันหมดอายุ (Expiry) *</label>
+                    <label className="block text-slate-600 mb-1 font-bold">วันหมดอายุ (Expiry) *</label>
                     <input
                       type="date"
                       required
                       value={newExpiryDate}
                       onChange={(e) => setNewExpiryDate(e.target.value)}
-                      className="w-full rounded-lg border border-[#30353d] bg-[#171c23] px-3 py-1.5 text-[#dee2ec] outline-none focus:border-[#facc15]"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-900 outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] mb-1">จำนวนสินค้าใน Lot *</label>
+                    <label className="block text-slate-600 mb-1 font-bold">จำนวนสินค้าใน Lot *</label>
                     <input
                       type="number"
                       min="1"
                       required
                       value={newQuantity || ''}
                       onChange={(e) => setNewQuantity(parseInt(e.target.value) || 0)}
-                      className="w-full rounded-lg border border-[#30353d] bg-[#171c23] px-3 py-1.5 text-[#dee2ec] outline-none focus:border-[#facc15]"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-900 outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
@@ -457,14 +457,14 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="rounded-lg border border-[#30353d] px-3 py-1 text-[#d1c6ab] hover:text-[#dee2ec]"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-600 hover:bg-slate-100 font-bold"
                   >
                     ยกเลิก
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="rounded-lg bg-[#facc15] px-4 py-1 font-bold text-[#1b1600] disabled:opacity-50 hover:bg-[#eec200]"
+                    className="rounded-xl bg-emerald-600 px-4 py-1.5 font-bold text-white disabled:opacity-50 hover:bg-emerald-700"
                   >
                     {submitting ? 'กำลังบันทึก...' : 'บันทึก Lot เข้าสู่ระบบ'}
                   </button>
@@ -474,14 +474,14 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
 
             {/* Lot Table / Cards */}
             {loading ? (
-              <div className="py-12 text-center font-mono text-xs text-[#8a92a6]">
-                <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-[#4cd7f6]" />
+              <div className="py-12 text-center font-mono text-xs text-slate-500">
+                <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-emerald-600" />
                 กำลังโหลดข้อมูล FEFO Lots...
               </div>
             ) : filteredLots.length === 0 ? (
-              <div className="rounded-xl border border-[#30353d] bg-[#090f15] p-8 text-center font-mono text-xs text-[#8a92a6]">
-                <Layers className="mx-auto mb-3 h-10 w-10 text-[#8a92a6]" />
-                <p className="text-sm font-bold text-[#dee2ec] mb-1">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center font-mono text-xs text-slate-500">
+                <Layers className="mx-auto mb-3 h-10 w-10 text-slate-400" />
+                <p className="text-sm font-bold text-slate-900 mb-1">
                   {search ? 'ไม่พบรายการ Lot ที่ตรงกับคำค้นหา' : 'ยังไม่มีข้อมูล Lots ในระบบ'}
                 </p>
                 <p className="text-[11px] max-w-md mx-auto mb-4">
@@ -489,7 +489,7 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                 </p>
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="px-4 py-2 rounded-lg bg-[#facc15] text-[#1b1600] font-bold text-xs hover:bg-[#eec200] transition-colors"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors"
                 >
                   + เพิ่ม Lot แรกเลย
                 </button>
@@ -506,54 +506,54 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                   return (
                     <div
                       key={lot.id || idx}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-[#30353d] bg-[#090f15] p-3.5 gap-2 hover:border-[#4cd7f6]/60 transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 gap-2 hover:border-emerald-300 hover:bg-white transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#252a32] font-mono text-xs font-bold text-[#4cd7f6]">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 font-mono text-xs font-bold text-emerald-700 shadow-xs">
                           #{idx + 1}
                         </div>
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-[#dee2ec] text-sm">
+                            <span className="font-bold text-slate-900 text-sm">
                               {lotNum}
                             </span>
                             {getRiskBadge(risk, days)}
-                            <span className="text-[10px] text-[#8a92a6] bg-[#171c23] px-2 py-0.5 rounded border border-[#30353d]">
-                              SKU: <strong className="text-[#facc15]">{lot.sku}</strong>
+                            <span className="text-[10px] text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                              SKU: <strong className="text-slate-900">{lot.sku}</strong>
                             </span>
                           </div>
-                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#8a92a6] mt-1">
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 mt-1">
                             {lot.productName && (
-                              <span className="text-[#dee2ec] font-sans font-medium">
+                              <span className="text-slate-800 font-sans font-semibold">
                                 {lot.productName}
                               </span>
                             )}
                             {editingKey === `${lot.sku}|${lotNum}` ? (
                               <span className="flex items-center gap-1.5">
-                                <Calendar className="h-3 w-3 text-[#4cd7f6]" />
+                                <Calendar className="h-3 w-3 text-emerald-600" />
                                 <input
                                   type="date"
                                   value={editExp}
                                   onChange={(e) => setEditExp(e.target.value)}
-                                  className="rounded border border-[#30353d] bg-[#171c23] px-2 py-0.5 text-[#dee2ec] outline-none focus:border-[#facc15] [color-scheme:dark]"
+                                  className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-slate-900 outline-none focus:border-emerald-500 [color-scheme:light]"
                                 />
                                 <button
                                   disabled={savingExp}
                                   onClick={() => saveExpiry(lot.sku, lotNum)}
-                                  className="rounded bg-[#facc15] px-2 py-0.5 font-bold text-[#1b1600] disabled:opacity-50"
+                                  className="rounded-lg bg-emerald-600 px-2.5 py-0.5 font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                                 >
                                   {savingExp ? '...' : 'บันทึก'}
                                 </button>
-                                <button onClick={() => setEditingKey(null)} className="px-1 text-[#8a92a6] hover:text-[#dee2ec]">ยกเลิก</button>
+                                <button onClick={() => setEditingKey(null)} className="px-1 text-slate-500 hover:text-slate-900">ยกเลิก</button>
                               </span>
                             ) : (
                               <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 text-[#4cd7f6]" />
-                                วันหมดอายุ: <strong className={expDate === '-' ? 'text-amber-400' : 'text-[#dee2ec]'}>{expDate === '-' ? 'ยังไม่ได้ตั้ง' : expDate}</strong>
+                                <Calendar className="h-3 w-3 text-emerald-600" />
+                                วันหมดอายุ: <strong className={expDate === '-' ? 'text-amber-600' : 'text-slate-900'}>{expDate === '-' ? 'ยังไม่ได้ตั้ง' : expDate}</strong>
                                 {isRealLot(lot) && (
                                   <button
                                     onClick={() => { setEditingKey(`${lot.sku}|${lotNum}`); setEditExp(expDate === '-' ? '' : String(expDate).slice(0, 10)); }}
-                                    className="ml-1 rounded border border-[#30353d] px-1.5 py-px text-[10px] font-bold text-[#4cd7f6] hover:border-[#4cd7f6]"
+                                    className="ml-1 rounded-md border border-slate-200 bg-white px-1.5 py-px text-[10px] font-bold text-emerald-700 hover:border-emerald-400"
                                   >
                                     แก้วันหมดอายุ
                                   </button>
@@ -564,10 +564,10 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-[#30353d]/50">
+                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
                         <div className="text-right">
-                          <span className="text-[10px] text-[#8a92a6] block">จำนวนคงเหลือ</span>
-                          <span className="text-base font-bold text-[#57ec7f]">
+                          <span className="text-[10px] text-slate-500 block">จำนวนคงเหลือ</span>
+                          <span className="text-base font-bold text-emerald-600">
                             {qty.toLocaleString()} ชิ้น
                           </span>
                         </div>
@@ -580,11 +580,11 @@ export function LotBreakdownModal({ isOpen, onClose, product, allProducts = [], 
           </div>
 
           {/* Footer */}
-          <div className="border-t border-[#30353d] bg-[#090f15] px-6 py-3 flex items-center justify-between font-mono text-xs text-[#8a92a6]">
+          <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-3 flex items-center justify-between font-mono text-xs text-slate-500">
             <span>Algorithm: FEFO (First-Expired, First-Out) ISO 9001 / 21 CFR Part 11</span>
             <button
               onClick={onClose}
-              className="rounded-lg border border-[#30353d] bg-[#252a32] px-4 py-1.5 text-[#dee2ec] hover:text-[#facc15] transition-colors"
+              className="rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-1.5 text-white font-bold transition-colors"
             >
               ปิดหน้าต่าง
             </button>

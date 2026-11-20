@@ -5,7 +5,6 @@ import { QrCode, Barcode, Printer, Download, ArrowLeft, Package, Search } from '
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { getApiUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/providers/LanguageProvider';
@@ -97,178 +96,193 @@ export default function BarcodeGeneratorPage() {
   };
 
   return (
-    <div className="relative min-h-screen">
+    <div className="theme-nexus-hybrid relative min-h-screen text-slate-900 print:bg-white">
       <div className="p-4 md:p-8 pb-32 print:hidden">
-        <AmbientBackground />
-
-      <div className="max-w-4xl mx-auto space-y-6 relative z-10">
-        {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="max-w-5xl mx-auto space-y-6 relative z-10">
           <Link
             href="/admin"
-            className="p-2 bg-[#171c23] border border-[#30353d] rounded-xl text-[#8a92a6] hover:text-indigo-600 hover:border-indigo-500/30 hover:shadow-lg transition-all"
+            className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            กลับหน้าแอดมิน
           </Link>
-          <div>
-            <h1 className="text-2xl font-black text-[#dee2ec] flex items-center gap-2">
-              <Barcode className="w-6 h-6 text-[#facc15]" />
-              {t('barcode_title')}
-            </h1>
-            <p className="text-sm text-[#d1c6ab]">{t('barcode_subtitle')}</p>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Product Selection */}
-          <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-[#30353d] bg-[#1b2027]">
-              <h2 className="font-bold text-[#d1c6ab] flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                {t('select_product')}
-              </h2>
+          {/* Open Page Header */}
+          <div className="pt-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                Barcode &amp; QR Studio
+              </span>
             </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <Barcode className="w-7 h-7 text-emerald-600 shrink-0" />
+              <span>{t('barcode_title')}</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('barcode_subtitle')}</p>
+          </div>
 
-            <div className="p-4">
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8a92a6]" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t('search_product')}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#1b2027] border border-[#30353d] rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Product Selection */}
+            <div className="nx-glass-card overflow-hidden">
+              <div className="p-4 border-b border-slate-200/70 bg-white/50 flex items-center justify-between">
+                <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+                  <Package className="w-4 h-4 text-emerald-600" />
+                  {t('select_product')}
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/12 text-emerald-800 border border-emerald-500/20 tabular-nums">
+                  {filteredProducts.length.toLocaleString()} SKUs
+                </span>
               </div>
 
-              <div className="max-h-80 overflow-y-auto space-y-2">
-                {loading ? (
-                  <p className="text-center text-[#8a92a6] py-8">{t('loading')}</p>
-                ) : filteredProducts.length === 0 ? (
-                  <p className="text-center text-[#8a92a6] py-8">{t('no_products_found')}</p>
-                ) : (
-                  filteredProducts.slice(0, 20).map(product => (
-                    <button
-                      key={product.id}
-                      onClick={() => setSelectedProduct(product)}
-                      className={cn(
-                        "w-full p-3 rounded-xl border text-left transition-all",
-                        selectedProduct?.id === product.id
-                          ? "border-indigo-500 bg-indigo-500/10"
-                          : "border-[#30353d] hover:border-[#30353d] hover:bg-[#1b2027]"
-                      )}
+              <div className="p-4">
+                <div className="relative mb-4">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t('search_product')}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/85 border border-slate-200 rounded-full text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+                  {loading ? (
+                    <p className="text-center text-slate-500 py-8 text-sm">{t('loading')}</p>
+                  ) : filteredProducts.length === 0 ? (
+                    <p className="text-center text-slate-500 py-8 text-sm">{t('no_products_found')}</p>
+                  ) : (
+                    filteredProducts.slice(0, 20).map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => setSelectedProduct(product)}
+                        className={cn(
+                          "w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between gap-2",
+                          selectedProduct?.id === product.id
+                            ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/30"
+                            : "border-slate-200/80 bg-white/65 hover:bg-white hover:border-slate-300"
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900 text-sm truncate">{product.name}</p>
+                          <p className="text-xs text-slate-500 font-mono mt-0.5">
+                            {product.id} • {product.location || '-'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 tabular-nums shrink-0">
+                          ฿{product.price?.toLocaleString()}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Code Preview */}
+            <div className="nx-glass-card overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-slate-200/70 bg-white/50 flex items-center justify-between">
+                <h2 className="font-bold text-slate-900 text-sm">{t('preview')}</h2>
+                
+                {/* Type Toggle */}
+                <div className="flex bg-slate-200/70 rounded-full p-1">
+                  <button
+                    onClick={() => setCodeType('qrcode')}
+                    className={cn(
+                      "px-3.5 py-1 rounded-full text-xs font-semibold transition-all",
+                      codeType === 'qrcode' 
+                        ? "bg-slate-900 text-white shadow-xs" 
+                        : "text-slate-600 hover:text-slate-900"
+                    )}
+                  >
+                    QR Code
+                  </button>
+                  <button
+                    onClick={() => setCodeType('barcode')}
+                    className={cn(
+                      "px-3.5 py-1 rounded-full text-xs font-semibold transition-all",
+                      codeType === 'barcode' 
+                        ? "bg-slate-900 text-white shadow-xs" 
+                        : "text-slate-600 hover:text-slate-900"
+                    )}
+                  >
+                    Barcode
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                {selectedProduct ? (
+                  <>
+                    {/* Printable Area — crisp black-on-white */}
+                    <div
+                      ref={printRef}
+                      className="bg-white text-black p-6 border border-dashed border-slate-300 rounded-2xl text-center shadow-xs"
                     >
-                      <p className="font-medium text-[#dee2ec] text-sm truncate">{product.name}</p>
-                      <p className="text-xs text-[#8a92a6]">{product.location || '-'}</p>
-                    </button>
-                  ))
+                      <p className="text-sm font-bold text-black mb-4">{selectedProduct.name}</p>
+                      
+                      {codeType === 'qrcode' ? (
+                        <div className="flex justify-center">
+                          <QRCodeSVG
+                            id="qr-code-svg"
+                            value={JSON.stringify({
+                              loc: selectedProduct.location || '-',
+                              name: selectedProduct.name,
+                              stock: selectedProduct.stock
+                            })}
+                            size={180}
+                            level="M"
+                            includeMargin
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex justify-center">
+                          <svg ref={barcodeRef}></svg>
+                        </div>
+                      )}
+
+                      <p className="text-xs font-mono text-slate-700 mt-4">{selectedProduct.location || '-'}</p>
+                      <p className="text-sm font-bold text-black tabular-nums mt-0.5">฿{selectedProduct.price?.toLocaleString()}</p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={handlePrint}
+                        className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-full transition-colors flex items-center justify-center gap-2 shadow-sm text-sm"
+                      >
+                        <Printer className="w-4 h-4" />
+                        {t('print_btn')}
+                      </button>
+                      {codeType === 'qrcode' && (
+                        <button
+                          onClick={handleDownload}
+                          className="px-5 py-3 bg-white/85 hover:bg-white border border-slate-200 text-slate-700 hover:text-slate-900 font-semibold rounded-full transition-colors shadow-xs"
+                          title="ดาวน์โหลด PNG"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-12 text-center my-auto">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-white/80 border border-slate-200/80 rounded-2xl flex items-center justify-center shadow-xs">
+                      <QrCode className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <p className="text-slate-600 text-sm font-medium">{t('select_product')}</p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-
-          {/* Code Preview */}
-          <div className="bg-[#171c23] rounded-3xl border border-[#30353d] overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-[#30353d] bg-[#1b2027] flex items-center justify-between">
-              <h2 className="font-bold text-[#d1c6ab]">{t('preview')}</h2>
-              
-              {/* Type Toggle */}
-              <div className="flex bg-[#252a32] rounded-lg p-1">
-                <button
-                  onClick={() => setCodeType('qrcode')}
-                  className={cn(
-                    "px-3 py-1 rounded-md text-xs font-bold transition-all",
-                    codeType === 'qrcode' 
-                      ? "bg-[#171c23] text-indigo-600 shadow-sm" 
-                      : "text-[#8a92a6] hover:text-[#d1c6ab]"
-                  )}
-                >
-                  QR Code
-                </button>
-                <button
-                  onClick={() => setCodeType('barcode')}
-                  className={cn(
-                    "px-3 py-1 rounded-md text-xs font-bold transition-all",
-                    codeType === 'barcode' 
-                      ? "bg-[#171c23] text-indigo-600 shadow-sm" 
-                      : "text-[#8a92a6] hover:text-[#d1c6ab]"
-                  )}
-                >
-                  Barcode
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {selectedProduct ? (
-                <>
-                  {/* Printable Area */}
-                  <div
-                    ref={printRef}
-                    className="bg-white p-6 border border-dashed border-slate-300 rounded-2xl text-center"
-                  >
-                    <p className="text-sm font-bold text-slate-800 mb-4">{selectedProduct.name}</p>
-                    
-                    {codeType === 'qrcode' ? (
-                      <div className="flex justify-center">
-                        <QRCodeSVG
-                          id="qr-code-svg"
-                          value={JSON.stringify({
-                            loc: selectedProduct.location || '-',
-                            name: selectedProduct.name,
-                            stock: selectedProduct.stock
-                          })}
-                          size={180}
-                          level="M"
-                          includeMargin
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex justify-center">
-                        <svg ref={barcodeRef}></svg>
-                      </div>
-                    )}
-
-                    <p className="text-xs text-slate-500 mt-4">{selectedProduct.location || '-'}</p>
-                    <p className="text-xs text-slate-500">฿{selectedProduct.price?.toLocaleString()}</p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      onClick={handlePrint}
-                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Printer className="w-4 h-4" />
-                      {t('print_btn')}
-                    </button>
-                    {codeType === 'qrcode' && (
-                      <button
-                        onClick={handleDownload}
-                        className="px-4 py-3 bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab] font-bold rounded-xl transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="py-12 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-[#1b2027] rounded-2xl flex items-center justify-center">
-                    <QrCode className="w-8 h-8 text-slate-300" />
-                  </div>
-                  <p className="text-[#8a92a6]">{t('select_product')}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
         </div>
       </div>
 
-      {/* Print Only Section */}
+      {/* Print Only Section — pure black-on-white */}
       {selectedProduct && (
-        <div className="hidden print:flex flex-col items-center justify-center min-h-screen bg-white text-center p-10">
+        <div className="hidden print:flex flex-col items-center justify-center min-h-screen bg-white text-black text-center p-10">
           <div className="w-full max-w-[400px]">
              <p className="text-xl font-bold text-black mb-6">{selectedProduct.name}</p>
              
@@ -309,7 +323,7 @@ export default function BarcodeGeneratorPage() {
 
              <div className="mt-8">
                  <p className="text-lg font-bold text-black uppercase tracking-widest">{selectedProduct.location || '-'}</p>
-                 <p className="text-2xl font-black text-black mt-2">฿{selectedProduct.price?.toLocaleString()}</p>
+                 <p className="text-2xl font-black text-black mt-2 tabular-nums">฿{selectedProduct.price?.toLocaleString()}</p>
              </div>
           </div>
         </div>

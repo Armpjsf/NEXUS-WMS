@@ -30,7 +30,6 @@ import {
   Pencil,
 } from 'lucide-react';
 import AddItemsModal, { AddItemsOrder } from '@/components/orders/AddItemsModal';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import CameraScannerModal from '@/components/CameraScannerModal';
 import { exportToExcel } from '@/lib/export/excel';
@@ -39,42 +38,90 @@ import { errorMessage } from '@/lib/errors';
 
 type Status = 'NEW' | 'PICKING' | 'PICKED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
-interface Line { sku: string; name: string; qty: number; picked?: number; packed?: number; location?: string; price?: number; uom?: string; drop?: number; }
-interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
+interface Line {
+  sku: string;
+  name: string;
+  qty: number;
+  picked?: number;
+  packed?: number;
+  location?: string;
+  price?: number;
+  uom?: string;
+  drop?: number;
+}
+interface UomOpt {
+  code: string;
+  name?: string;
+  factor: number;
+  isBase?: boolean;
+}
 interface Order {
-  id: string; orderNo: string; channel: string; customerName: string; status: Status;
-  priority: string; items: Line[]; totalQty: number; totalAmount: number; freightCost?: number; refNo?: string; deliveryMode?: 'DELIVERY' | 'SELF_PICKUP';
-  carrier: string; trackingNo: string; createdAt: string; shipAddress: string; phone: string;
+  id: string;
+  orderNo: string;
+  channel: string;
+  customerName: string;
+  status: Status;
+  priority: string;
+  items: Line[];
+  totalQty: number;
+  totalAmount: number;
+  freightCost?: number;
+  refNo?: string;
+  deliveryMode?: 'DELIVERY' | 'SELF_PICKUP';
+  carrier: string;
+  trackingNo: string;
+  createdAt: string;
+  shipAddress: string;
+  phone: string;
   vehicleType?: string;
   dockBay?: string;
   vehiclePlate?: string;
   driverName?: string;
   notes?: string;
-  podSignature?: string; podPhoto?: string; podNote?: string; deliveredAt?: string | null;
-  tmsJobId?: string; tmsStatus?: string; tmsSyncedAt?: string | null; branchCode?: string;
+  podSignature?: string;
+  podPhoto?: string;
+  podNote?: string;
+  deliveredAt?: string | null;
+  tmsJobId?: string;
+  tmsStatus?: string;
+  tmsSyncedAt?: string | null;
+  branchCode?: string;
   destinations?: DeliveryDestination[];
   qcSignatures?: QCSignatures;
 }
 interface Carrier {
-  id: string; code: string; name: string; trackingUrlTemplate: string; isDefault: boolean;
+  id: string;
+  code: string;
+  name: string;
+  trackingUrlTemplate: string;
+  isDefault: boolean;
 }
 
 const FLOW: Status[] = ['NEW', 'PICKING', 'PICKED', 'PACKED', 'SHIPPED', 'DELIVERED'];
 const NEXT_LABEL: Record<string, string> = {
-  NEW: 'เริ่มหยิบ', PICKING: 'หยิบเสร็จ', PICKED: 'แพ็กเสร็จ', PACKED: 'จัดส่งพัสดุ', SHIPPED: 'ยืนยันส่งถึง',
+  NEW: 'เริ่มหยิบ',
+  PICKING: 'หยิบเสร็จ',
+  PICKED: 'แพ็กเสร็จ',
+  PACKED: 'จัดส่งพัสดุ',
+  SHIPPED: 'ยืนยันส่งถึง',
 };
 const STATUS_STYLE: Record<Status, string> = {
-  NEW: 'bg-[#252a32] text-[#d1c6ab] ring-slate-200',
-  PICKING: 'bg-amber-500/20 text-amber-700 ring-amber-500/30',
-  PICKED: 'bg-blue-500/20 text-blue-700 ring-blue-500/30',
-  PACKED: 'bg-violet-500/20 text-violet-700 ring-violet-500/30',
-  SHIPPED: 'bg-cyan-500/20 text-cyan-700 ring-cyan-500/30',
-  DELIVERED: 'bg-emerald-500/20 text-emerald-700 ring-emerald-500/30',
-  CANCELLED: 'bg-rose-500/20 text-rose-600 ring-rose-500/30',
+  NEW: 'bg-slate-200/75 text-slate-700 border-slate-300/80',
+  PICKING: 'bg-amber-500/15 text-amber-800 border-amber-500/25',
+  PICKED: 'bg-sky-500/15 text-sky-800 border-sky-500/25',
+  PACKED: 'bg-violet-500/15 text-violet-800 border-violet-500/25',
+  SHIPPED: 'bg-cyan-500/15 text-cyan-800 border-cyan-500/25',
+  DELIVERED: 'bg-emerald-500/15 text-emerald-800 border-emerald-500/25',
+  CANCELLED: 'bg-rose-500/15 text-rose-700 border-rose-500/25',
 };
 const STATUS_TH: Record<Status, string> = {
-  NEW: 'ใหม่', PICKING: 'กำลังหยิบ', PICKED: 'หยิบแล้ว', PACKED: 'แพ็กแล้ว',
-  SHIPPED: 'จัดส่งแล้ว', DELIVERED: 'ส่งถึงแล้ว', CANCELLED: 'ยกเลิก',
+  NEW: 'ใหม่',
+  PICKING: 'กำลังหยิบ',
+  PICKED: 'หยิบแล้ว',
+  PACKED: 'แพ็กแล้ว',
+  SHIPPED: 'จัดส่งแล้ว',
+  DELIVERED: 'ส่งถึงแล้ว',
+  CANCELLED: 'ยกเลิก',
 };
 
 export default function OrdersPage() {
@@ -99,9 +146,7 @@ export default function OrdersPage() {
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const toggleSelectOrder = (id: string) => {
-    setSelectedOrderIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+    setSelectedOrderIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   // PDA Scanner for Order lookup
@@ -125,11 +170,16 @@ export default function OrdersPage() {
       const jsonCarriers = await resCarriers.json();
       setOrders(jsonOrders.orders || []);
       setCarriers(jsonCarriers.carriers || []);
-    } catch { toast.error('โหลดข้อมูลออเดอร์ไม่สำเร็จ'); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error('โหลดข้อมูลออเดอร์ไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const syncTms = async (orderId: string) => {
     setSyncingId(orderId);
@@ -152,7 +202,9 @@ export default function OrdersPage() {
   };
 
   const syncAllTms = async () => {
-    const activeTmsOrders = orders.filter(o => (o.tmsJobId || o.trackingNo?.startsWith('JOB-')) && o.status !== 'CANCELLED');
+    const activeTmsOrders = orders.filter(
+      (o) => (o.tmsJobId || o.trackingNo?.startsWith('JOB-')) && o.status !== 'CANCELLED'
+    );
     if (activeTmsOrders.length === 0) {
       toast('ไม่มีออเดอร์ที่มีรหัสงาน TMS ให้ซิงค์');
       return;
@@ -162,7 +214,7 @@ export default function OrdersPage() {
       const res = await fetch('/api/orders/sync-tms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderIds: activeTmsOrders.map(o => o.id) }),
+        body: JSON.stringify({ orderIds: activeTmsOrders.map((o) => o.id) }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'ซิงค์ไม่สำเร็จ');
@@ -195,43 +247,59 @@ export default function OrdersPage() {
     const t = toast.loading('กำลังอัปเดต...');
     try {
       const res = await fetch('/api/orders', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'อัปเดตไม่สำเร็จ');
       toast.success(`→ ${STATUS_TH[next]}`, { id: t });
       load();
-    } catch (e) { toast.error(errorMessage(e), { id: t }); }
+    } catch (e) {
+      toast.error(errorMessage(e), { id: t });
+    }
   };
 
   const cancelOrder = async (o: Order) => {
     if (!confirm(`ยกเลิกออเดอร์ ${o.orderNo}?`)) return;
     const res = await fetch('/api/orders', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: o.id, status: 'CANCELLED' }),
     });
-    if (res.ok) { toast.success('ยกเลิกแล้ว'); load(); } else toast.error('ยกเลิกไม่สำเร็จ');
+    if (res.ok) {
+      toast.success('ยกเลิกแล้ว');
+      load();
+    } else toast.error('ยกเลิกไม่สำเร็จ');
   };
 
   // Delivery-mode filter (ส่งขนส่ง vs ลูกค้ารับเอง)
-  const modeScoped = deliveryFilter === 'ALL' ? orders : orders.filter(o => (o.deliveryMode || 'DELIVERY') === deliveryFilter);
+  const modeScoped =
+    deliveryFilter === 'ALL' ? orders : orders.filter((o) => (o.deliveryMode || 'DELIVERY') === deliveryFilter);
   const modeCounts = {
     ALL: orders.length,
-    DELIVERY: orders.filter(o => (o.deliveryMode || 'DELIVERY') === 'DELIVERY').length,
-    SELF_PICKUP: orders.filter(o => o.deliveryMode === 'SELF_PICKUP').length,
+    DELIVERY: orders.filter((o) => (o.deliveryMode || 'DELIVERY') === 'DELIVERY').length,
+    SELF_PICKUP: orders.filter((o) => o.deliveryMode === 'SELF_PICKUP').length,
   };
 
-  const counts = FLOW.reduce((acc, s) => { acc[s] = modeScoped.filter(o => o.status === s).length; return acc; }, {} as Record<string, number>);
-  const tabFiltered = tab === 'ALL' ? modeScoped.filter(o => o.status !== 'CANCELLED') : modeScoped.filter(o => o.status === tab);
+  const counts = FLOW.reduce((acc, s) => {
+    acc[s] = modeScoped.filter((o) => o.status === s).length;
+    return acc;
+  }, {} as Record<string, number>);
+  const tabFiltered =
+    tab === 'ALL' ? modeScoped.filter((o) => o.status !== 'CANCELLED') : modeScoped.filter((o) => o.status === tab);
   const filtered = searchQuery.trim()
-    ? tabFiltered.filter(o =>
-        o.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.trackingNo || '').toLowerCase().includes(searchQuery.toLowerCase())
+    ? tabFiltered.filter(
+        (o) =>
+          o.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (o.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (o.trackingNo || '').toLowerCase().includes(searchQuery.toLowerCase())
       )
     : tabFiltered;
 
-  const tmsAppBaseUrl = (process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').trim().replace(/\/$/, '');
+  const tmsAppBaseUrl = (process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '')
+    .trim()
+    .replace(/\/$/, '');
 
   const getTrackingUrl = (carrierName: string, trackingNo: string, tmsJobId?: string) => {
     if (tmsJobId && tmsAppBaseUrl) {
@@ -241,7 +309,11 @@ export default function OrdersPage() {
     if (tmsAppBaseUrl && (trackingNo.startsWith('JOB-') || carrierName.includes('บริษัท') || carrierName.includes('OWN_FLEET'))) {
       return `${tmsAppBaseUrl}/track/${encodeURIComponent(trackingNo.trim())}`;
     }
-    const c = carriers.find(item => item.name.toLowerCase().includes(carrierName.toLowerCase()) || carrierName.toLowerCase().includes(item.name.toLowerCase()));
+    const c = carriers.find(
+      (item) =>
+        item.name.toLowerCase().includes(carrierName.toLowerCase()) ||
+        carrierName.toLowerCase().includes(item.name.toLowerCase())
+    );
     if (c?.trackingUrlTemplate) {
       return c.trackingUrlTemplate.replace('{trackingNo}', encodeURIComponent(trackingNo.trim()));
     }
@@ -249,27 +321,34 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
-      <AmbientBackground />
-      <div className="relative z-10 max-w-[1400px] mx-auto space-y-6">
-        <Link href="/ops" className="inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]">
-          <ArrowLeft className="w-4 h-4" /> ปฏิบัติการ
+    <div className="theme-nexus-hybrid min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-[1400px] mx-auto space-y-6">
+        <Link
+          href="/ops"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <span>ปฏิบัติการ</span>
         </Link>
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
-              <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25"><Package className="w-6 h-6" /></span>
-              ออเดอร์ขาออก (Outbound Orders)
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+              <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-600 to-blue-600 text-white shadow-md shadow-sky-500/20">
+                <Package className="w-6 h-6" />
+              </span>
+              <span>ออเดอร์ขาออก (Outbound Orders)</span>
             </h1>
-            <p className="text-[#d1c6ab] font-medium mt-1">ครบ loop: เบิก → หยิบ → แพ็ก → จัดส่ง (พร้อมเลขพัสดุ) → ส่งถึง (POD)</p>
+            <p className="text-slate-600 text-sm font-medium mt-1">
+              ครบ loop: เบิก → หยิบ → แพ็ก → จัดส่ง (พร้อมเลขพัสดุ) → ส่งถึง (POD)
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={syncAllTms}
               title="ตรวจสอบและซิงค์สถานะงานขนส่งทั้งหมดจากระบบ TMS อัตโนมัติ"
-              className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 active:scale-95 transition-all"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm shadow-indigo-600/20 active:scale-95 transition-all"
             >
               <RefreshCw className="w-4 h-4" />
               <span>ซิงค์สถานะ TMS</span>
@@ -281,45 +360,50 @@ export default function OrdersPage() {
                   return;
                 }
                 const rows = filtered.map((o: Order) => ({
-                  'เลขที่ออเดอร์': o.orderNo,
-                  'ชื่อลูกค้า': o.customerName,
-                  'เบอร์โทร': o.phone,
-                  'ที่อยู่จัดส่ง': o.shipAddress,
-                  'สถานะ': STATUS_TH[o.status as Status] || o.status,
-                  'จำนวนชิ้นรวม': o.totalQty,
-                  'ผู้ให้บริการขนส่ง': o.carrier || '-',
+                  เลขที่ออเดอร์: o.orderNo,
+                  ชื่อลูกค้า: o.customerName,
+                  เบอร์โทร: o.phone,
+                  ที่อยู่จัดส่ง: o.shipAddress,
+                  สถานะ: STATUS_TH[o.status as Status] || o.status,
+                  จำนวนชิ้นรวม: o.totalQty,
+                  ผู้ให้บริการขนส่ง: o.carrier || '-',
                   'เลขพัสดุ (Tracking)': o.trackingNo || '-',
                   'รหัสงาน TMS (ePOD)': o.tmsJobId || '-',
                   'สถานะ TMS': o.tmsStatus || '-',
-                  'วันที่สร้าง': new Date(o.createdAt).toLocaleString('th-TH'),
+                  วันที่สร้าง: new Date(o.createdAt).toLocaleString('th-TH'),
                 }));
                 exportToExcel(rows, `ออเดอร์ขาออก_${new Date().toISOString().slice(0, 10)}`, 'Orders');
                 toast.success('ส่งออกไฟล์ Excel สำเร็จ!');
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 active:scale-95 transition-all"
             >
               <Download className="w-4 h-4" />
               <span>ส่งออก Excel</span>
             </button>
-            <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition-all">
-              <Plus className="w-5 h-5" /> สร้างออเดอร์
+            <button
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white text-sm font-bold shadow-md hover:bg-slate-800 active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4" /> สร้างออเดอร์
             </button>
           </div>
         </div>
 
         {/* Trip Creation Banner */}
         {createdTripId && (
-          <div className="p-4 rounded-2xl bg-indigo-950/70 border border-indigo-500/50 text-indigo-200 flex items-center justify-between flex-wrap gap-3 shadow-lg">
+          <div className="p-4 rounded-2xl bg-indigo-50/90 border border-indigo-200 text-indigo-900 flex items-center justify-between flex-wrap gap-3 shadow-sm">
             <div className="flex items-center gap-2 text-xs font-bold">
-              <CheckCircle2 className="w-5 h-5 text-indigo-400" />
-              <span>จัดทริปจัดส่งสำเร็จ: <b className="font-mono text-white text-sm">{createdTripId}</b></span>
+              <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+              <span>
+                จัดทริปจัดส่งสำเร็จ: <b className="font-mono text-indigo-950 text-sm">{createdTripId}</b>
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <a
                 href={`/print/manifest?trip=${encodeURIComponent(createdTripId)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-md transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 shadow-xs transition-colors"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>พิมพ์ใบกำกับทริป (Manifest Run Sheet)</span>
@@ -327,7 +411,7 @@ export default function OrdersPage() {
               </a>
               <button
                 onClick={() => setCreatedTripId(null)}
-                className="text-xs text-indigo-300 hover:text-white px-2 py-1"
+                className="text-xs text-indigo-700 hover:text-indigo-950 px-2.5 py-1 rounded-full hover:bg-indigo-100"
               >
                 ปิด
               </button>
@@ -336,15 +420,24 @@ export default function OrdersPage() {
         )}
 
         {/* Delivery mode filter: ส่งขนส่ง vs ลูกค้ารับเอง */}
-        <div className="flex gap-2 flex-wrap">
-          {([
-            { key: 'ALL', label: 'ทั้งหมด', icon: '📦' },
-            { key: 'DELIVERY', label: 'ส่งขนส่ง', icon: '🚚' },
-            { key: 'SELF_PICKUP', label: 'ลูกค้ารับเอง', icon: '🏭' },
-          ] as const).map(m => (
-            <button key={m.key} onClick={() => setDeliveryFilter(m.key)}
-              className={`px-3.5 py-1.5 rounded-xl text-sm font-bold border transition-all ${deliveryFilter === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#171c23]/70 text-[#8a92a6] hover:bg-[#171c23]'}`}>
-              {m.icon} {m.label} <span className="ml-1 opacity-70">({modeCounts[m.key]})</span>
+        <div className="bg-white/65 backdrop-blur-md border border-white/85 p-1 rounded-full flex gap-1 flex-wrap w-fit shadow-xs">
+          {(
+            [
+              { key: 'ALL', label: 'ทั้งหมด', icon: '📦' },
+              { key: 'DELIVERY', label: 'ส่งขนส่ง', icon: '🚚' },
+              { key: 'SELF_PICKUP', label: 'ลูกค้ารับเอง', icon: '🏭' },
+            ] as const
+          ).map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setDeliveryFilter(m.key)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all tabular-nums ${
+                deliveryFilter === m.key
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/75'
+              }`}
+            >
+              {m.icon} {m.label} <span className="ml-1 opacity-75">({modeCounts[m.key]})</span>
             </button>
           ))}
         </div>
@@ -352,29 +445,36 @@ export default function OrdersPage() {
         {/* Pipeline counts */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
           {FLOW.map((s) => (
-            <button key={s} onClick={() => setTab(tab === s ? 'ALL' : s)}
-              className={`text-left rounded-2xl border p-4 transition-all ${tab === s ? 'border-slate-900 bg-[#171c23] shadow-md' : 'border-[#30353d] bg-[#171c23]/70 hover:bg-[#171c23]'}`}>
-              <div className="text-2xl font-black tabular-nums text-[#dee2ec]">{counts[s] || 0}</div>
-              <div className="text-xs font-bold text-[#8a92a6] mt-0.5">{STATUS_TH[s]}</div>
+            <button
+              key={s}
+              onClick={() => setTab(tab === s ? 'ALL' : s)}
+              className={`nx-glass-card text-left p-4 transition-all ${
+                tab === s
+                  ? 'ring-2 ring-slate-900 bg-white shadow-md'
+                  : 'hover:bg-white/90'
+              }`}
+            >
+              <div className="text-2xl font-black tabular-nums text-slate-900">{counts[s] || 0}</div>
+              <div className="text-xs font-bold text-slate-600 mt-0.5">{STATUS_TH[s]}</div>
             </button>
           ))}
         </div>
 
         {/* Search Bar with Camera Scanner & PDA */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <div className="nx-glass-card p-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3.5 top-3 text-[#8a92a6]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="ค้นหา Order No., ชื่อลูกค้า หรือเลขพัสดุ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-[#171c23] border border-[#30353d] rounded-2xl font-medium outline-none focus:border-cyan-500 shadow-sm text-sm"
+              className="w-full pl-10 pr-10 py-2 bg-white/85 border border-slate-200/80 rounded-full font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 shadow-2xs text-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-3 text-[#8a92a6] hover:text-[#d1c6ab]"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -383,40 +483,44 @@ export default function OrdersPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowSearchCam(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 transition-all shrink-0 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-xs transition-all shrink-0 active:scale-95"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-3.5 h-3.5" />
               <span>สแกนหาออเดอร์</span>
             </button>
-            <div className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-[#252a32] text-[#d1c6ab] text-xs font-bold rounded-2xl border border-[#30353d] shrink-0">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/12 text-amber-800 text-xs font-bold rounded-full border border-amber-500/25 shrink-0">
+              <Zap className="w-3.5 h-3.5 text-amber-600" />
               <span className="hidden sm:inline">PDA พร้อมยิง</span>
             </div>
           </div>
         </div>
 
         {/* List */}
-        <div className="rounded-2xl border border-[#30353d] bg-[#171c23] backdrop-blur overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-[#30353d]">
-            <span className="font-bold text-[#d1c6ab]">
+        <div className="nx-glass-card overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/80">
+            <span className="font-bold text-sm text-slate-900 tabular-nums">
               {tab === 'ALL' ? 'ทั้งหมด' : STATUS_TH[tab as Status]} · {filtered.length} ออเดอร์
-              {searchQuery && <span className="text-cyan-600 ml-1 text-xs font-normal">(`{searchQuery}`)</span>}
+              {searchQuery && <span className="text-sky-600 ml-1 text-xs font-normal">(`{searchQuery}`)</span>}
             </span>
-            {tab !== 'ALL' && <button onClick={() => setTab('ALL')} className="text-xs font-bold text-cyan-600">ดูทั้งหมด</button>}
+            {tab !== 'ALL' && (
+              <button onClick={() => setTab('ALL')} className="text-xs font-bold text-sky-600 hover:text-sky-800">
+                ดูทั้งหมด
+              </button>
+            )}
           </div>
 
           {loading ? (
-            <div className="p-16 text-center text-[#8a92a6]">กำลังโหลด...</div>
+            <div className="p-16 text-center text-slate-500 text-sm">กำลังโหลด...</div>
           ) : filtered.length === 0 ? (
-            <div className="p-16 text-center text-[#8a92a6]">
-              <Package className="w-10 h-10 mx-auto mb-3 opacity-40" />
+            <div className="p-16 text-center text-slate-500 text-sm">
+              <Package className="w-10 h-10 mx-auto mb-3 opacity-35 text-slate-400" />
               ยังไม่มีออเดอร์ในสถานะนี้
             </div>
           ) : (
-            <div className="divide-y divide-[#30353d]">
+            <div className="divide-y divide-slate-200/75">
               {/* Select All Bar */}
-              <div className="px-5 py-2.5 bg-[#1b2027]/70 flex items-center justify-between text-xs text-[#8a92a6] border-b border-[#30353d]">
-                <label className="flex items-center gap-2 cursor-pointer font-bold hover:text-white transition-colors">
+              <div className="px-5 py-2.5 bg-slate-50/85 flex items-center justify-between text-xs text-slate-600 border-b border-slate-200/80">
+                <label className="flex items-center gap-2 cursor-pointer font-bold hover:text-slate-900 transition-colors tabular-nums">
                   <input
                     type="checkbox"
                     checked={filtered.length > 0 && selectedOrderIds.length === filtered.length}
@@ -424,15 +528,15 @@ export default function OrdersPage() {
                       if (selectedOrderIds.length === filtered.length) {
                         setSelectedOrderIds([]);
                       } else {
-                        setSelectedOrderIds(filtered.map(o => o.id));
+                        setSelectedOrderIds(filtered.map((o) => o.id));
                       }
                     }}
-                    className="w-4 h-4 rounded border-[#30353d] bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
+                    className="w-4 h-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-0 cursor-pointer"
                   />
                   <span>เลือกทั้งหมด ({filtered.length} ออเดอร์)</span>
                 </label>
                 {selectedOrderIds.length > 0 && (
-                  <span className="text-indigo-400 font-bold">
+                  <span className="text-indigo-700 font-bold tabular-nums">
                     เลือกอยู่ {selectedOrderIds.length} รายการ (พร้อมจัดทริป)
                   </span>
                 )}
@@ -445,78 +549,117 @@ export default function OrdersPage() {
                 const hasPodProof = Boolean(o.podSignature || o.podPhoto);
 
                 return (
-                  <div key={o.id} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-[#1b2027] transition-colors">
+                  <div
+                    key={o.id}
+                    className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-white/60 transition-colors"
+                  >
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       <input
                         type="checkbox"
                         checked={selectedOrderIds.includes(o.id)}
                         onChange={() => toggleSelectOrder(o.id)}
-                        className="mt-1 w-4 h-4 rounded border-[#30353d] bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer shrink-0"
+                        className="mt-1 w-4 h-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-0 cursor-pointer shrink-0"
                         title="เลือกสำหรับจัดทริปรวมส่ง"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-[#dee2ec]">{o.orderNo}</span>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${STATUS_STYLE[o.status]}`}>{STATUS_TH[o.status]}</span>
-                          {o.channel !== 'MANUAL' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#252a32] text-[#8a92a6]">{o.channel}</span>}
-                          {o.priority === 'URGENT' && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600">ด่วน</span>}
-                          {o.branchCode && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 ring-1 ring-indigo-500/30">สาขา: {o.branchCode}</span>}
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${o.deliveryMode === 'SELF_PICKUP' ? 'bg-orange-500/10 text-orange-600 ring-orange-500/30' : 'bg-cyan-500/10 text-cyan-700 ring-cyan-500/30'}`}>
+                          <span className="font-mono font-bold text-slate-900 tabular-nums">{o.orderNo}</span>
+                          <span
+                            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${STATUS_STYLE[o.status]}`}
+                          >
+                            {STATUS_TH[o.status]}
+                          </span>
+                          {o.channel !== 'MANUAL' && (
+                            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700">
+                              {o.channel}
+                            </span>
+                          )}
+                          {o.priority === 'URGENT' && (
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-700 border border-rose-500/25">
+                              ด่วน
+                            </span>
+                          )}
+                          {o.branchCode && (
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-500/25">
+                              สาขา: {o.branchCode}
+                            </span>
+                          )}
+                          <span
+                            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                              o.deliveryMode === 'SELF_PICKUP'
+                                ? 'bg-amber-500/12 text-amber-800 border-amber-500/25'
+                                : 'bg-sky-500/12 text-sky-800 border-sky-500/25'
+                            }`}
+                          >
                             {o.deliveryMode === 'SELF_PICKUP' ? '🏭 รับเอง' : '🚚 ส่งขนส่ง'}
                           </span>
                         </div>
-                      <div className="text-sm text-[#8a92a6] mt-1 truncate">
-                        <span className="font-semibold text-[#d1c6ab]">{o.customerName || 'ไม่ระบุลูกค้า'}</span> · {o.totalQty} ชิ้น
-                        {o.freightCost ? <span className="text-amber-700"> · ค่าขนส่ง ฿{o.freightCost.toLocaleString()}</span> : null}
-                        {o.shipAddress ? <span className="text-[#8a92a6]"> · 📍{o.shipAddress}</span> : null}
-                        {o.trackingNo && (
-                          <span className="text-cyan-700 font-medium ml-2 inline-flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded text-xs ring-1 ring-cyan-500/30">
-                            <Truck className="w-3 h-3 text-cyan-600" />
-                            {o.carrier}: {o.trackingNo}
-                            {trackUrl && (
-                              <a href={trackUrl} target="_blank" rel="noopener noreferrer" title="เช็กสถานะพัสดุ" className="text-blue-600 hover:text-blue-800 ml-1">
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </span>
-                        )}
-                        {o.dockBay && (
-                          <span className="text-amber-800 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/15 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/30">
-                            ⚓ ท่า: {o.dockBay}
-                          </span>
-                        )}
-                        {o.vehiclePlate && (
-                          <span className="text-emerald-800 font-bold ml-2 inline-flex items-center gap-1 bg-emerald-500/15 px-2 py-0.5 rounded text-xs ring-1 ring-emerald-500/30">
-                            🚛 {o.vehiclePlate} {o.driverName ? `(${o.driverName})` : ''}
-                          </span>
-                        )}
-                        {o.vehicleType && (
-                          <span className="text-amber-900 font-semibold ml-2 inline-flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/30">
-                            🚗 {o.vehicleType}
-                          </span>
-                        )}
-                        {hasTmsJob && (
-                          <span className="text-indigo-700 font-semibold ml-2 inline-flex items-center gap-1.5 bg-indigo-500/10 px-2 py-0.5 rounded text-xs ring-1 ring-indigo-500/30">
-                            <Truck className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>TMS: {tmsId}</span>
-                            {o.tmsStatus && (
-                              <span className="bg-indigo-500/20 text-indigo-800 px-1.5 py-0.2 rounded text-[10px] font-bold">{o.tmsStatus}</span>
-                            )}
-                          </span>
-                        )}
-                        {o.podNote && o.podNote.includes('⚠️') && (
-                          <Link
-                            href="/ops/returns"
-                            className="text-amber-300 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/20 px-2 py-0.5 rounded text-xs ring-1 ring-amber-500/40 hover:bg-amber-500/30 transition-colors"
-                            title="คลิกเพื่อไปที่หน้าใบคืนสินค้า (RMA) / พื้นที่กักกัน"
-                          >
-                            <span>⚠️ แจ้งชำรุด/ปัญหาขนส่ง (เปิด RMA)</span>
-                          </Link>
-                        )}
+                        <div className="text-sm text-slate-600 mt-1.5 flex flex-wrap items-center gap-y-1 tabular-nums">
+                          <span className="font-semibold text-slate-900">{o.customerName || 'ไม่ระบุลูกค้า'}</span>
+                          <span className="mx-1.5">·</span>
+                          <span>{o.totalQty} ชิ้น</span>
+                          {o.freightCost ? (
+                            <span className="text-amber-700 font-semibold ml-1.5">
+                              · ค่าขนส่ง ฿{o.freightCost.toLocaleString()}
+                            </span>
+                          ) : null}
+                          {o.shipAddress ? <span className="text-slate-500 ml-1.5">· 📍{o.shipAddress}</span> : null}
+                          {o.trackingNo && (
+                            <span className="text-sky-800 font-semibold ml-2 inline-flex items-center gap-1 bg-sky-500/10 px-2.5 py-0.5 rounded-full text-xs border border-sky-500/25">
+                              <Truck className="w-3 h-3 text-sky-600" />
+                              {o.carrier}: {o.trackingNo}
+                              {trackUrl && (
+                                <a
+                                  href={trackUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="เช็กสถานะพัสดุ"
+                                  className="text-blue-600 hover:text-blue-800 ml-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </span>
+                          )}
+                          {o.dockBay && (
+                            <span className="text-amber-800 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/15 px-2.5 py-0.5 rounded-full text-xs border border-amber-500/25">
+                              ⚓ ท่า: {o.dockBay}
+                            </span>
+                          )}
+                          {o.vehiclePlate && (
+                            <span className="text-emerald-800 font-bold ml-2 inline-flex items-center gap-1 bg-emerald-500/15 px-2.5 py-0.5 rounded-full text-xs border border-emerald-500/25">
+                              🚛 {o.vehiclePlate} {o.driverName ? `(${o.driverName})` : ''}
+                            </span>
+                          )}
+                          {o.vehicleType && (
+                            <span className="text-amber-800 font-semibold ml-2 inline-flex items-center gap-1 bg-amber-500/10 px-2.5 py-0.5 rounded-full text-xs border border-amber-500/25">
+                              🚗 {o.vehicleType}
+                            </span>
+                          )}
+                          {hasTmsJob && (
+                            <span className="text-indigo-800 font-semibold ml-2 inline-flex items-center gap-1.5 bg-indigo-500/10 px-2.5 py-0.5 rounded-full text-xs border border-indigo-500/25">
+                              <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>TMS: {tmsId}</span>
+                              {o.tmsStatus && (
+                                <span className="bg-indigo-500/15 text-indigo-900 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                                  {o.tmsStatus}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          {o.podNote && o.podNote.includes('⚠️') && (
+                            <Link
+                              href="/ops/returns"
+                              className="text-amber-800 font-bold ml-2 inline-flex items-center gap-1 bg-amber-500/15 px-2.5 py-0.5 rounded-full text-xs border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                              title="คลิกเพื่อไปที่หน้าใบคืนสินค้า (RMA) / พื้นที่กักกัน"
+                            >
+                              <span>⚠️ แจ้งชำรุด/ปัญหาขนส่ง (เปิด RMA)</span>
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       {/* TMS Sync & Live Tracking Actions */}
                       {hasTmsJob && (
                         <>
@@ -524,7 +667,7 @@ export default function OrdersPage() {
                             onClick={() => syncTms(o.id)}
                             disabled={syncingId === o.id}
                             title="ซิงค์สถานะและหลักฐาน POD ล่าสุดจากระบบ TMS"
-                            className="p-2 rounded-xl text-[#8a92a6] hover:text-indigo-600 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+                            className="p-2 rounded-full text-slate-500 hover:text-indigo-600 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
                           >
                             <RefreshCw className={`w-4 h-4 ${syncingId === o.id ? 'animate-spin text-indigo-600' : ''}`} />
                           </button>
@@ -534,7 +677,7 @@ export default function OrdersPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               title="เปิดดูแผนที่สดติดตามรถขนส่ง (TMS Live Tracking)"
-                              className="p-2 rounded-xl text-[#8a92a6] hover:text-cyan-600 hover:bg-cyan-500/10 transition-colors"
+                              className="p-2 rounded-full text-slate-500 hover:text-sky-600 hover:bg-sky-500/10 transition-colors"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -547,7 +690,7 @@ export default function OrdersPage() {
                         <button
                           onClick={() => setEditOrder(o)}
                           title="แก้ไขข้อมูลออเดอร์ (ค่าขนส่ง / โหมดจัดส่ง / ลูกค้า / ที่อยู่ / PO) — เฉพาะแอดมิน"
-                          className="p-2 rounded-xl text-[#8a92a6] hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                          className="p-2 rounded-full text-slate-500 hover:text-sky-600 hover:bg-sky-500/10 transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -556,15 +699,17 @@ export default function OrdersPage() {
                       {/* เพิ่มสินค้าเข้าออเดอร์ (ลูกค้าเพิ่มของหลังแพ็ก/ส่งงาน) */}
                       {(o.status === 'PACKED' || o.status === 'SHIPPED') && (
                         <button
-                          onClick={() => setAddItemsOrder({
-                            id: o.id,
-                            orderNo: o.orderNo,
-                            status: o.status,
-                            tmsJobId: o.tmsJobId || (o.trackingNo?.startsWith('JOB-') ? o.trackingNo : undefined),
-                            destinations: (o as any).destinations,
-                          })}
+                          onClick={() =>
+                            setAddItemsOrder({
+                              id: o.id,
+                              orderNo: o.orderNo,
+                              status: o.status,
+                              tmsJobId: o.tmsJobId || (o.trackingNo?.startsWith('JOB-') ? o.trackingNo : undefined),
+                              destinations: (o as any).destinations,
+                            })
+                          }
                           title="เพิ่มสินค้าเข้าออเดอร์นี้ (สแกนของเพิ่ม)"
-                          className="p-2 rounded-xl text-[#8a92a6] hover:text-[#facc15] hover:bg-[#facc15]/10 transition-colors"
+                          className="p-2 rounded-full text-slate-500 hover:text-amber-700 hover:bg-amber-500/12 transition-colors"
                         >
                           <PackagePlus className="w-4 h-4" />
                         </button>
@@ -575,44 +720,71 @@ export default function OrdersPage() {
                         <button
                           onClick={() => setViewPodOrder(o)}
                           title="ดูหลักฐานการจัดส่ง (ภาพถ่ายและลายเซ็น POD)"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-bold transition-all active:scale-95"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/12 text-emerald-800 hover:bg-emerald-500/20 border border-emerald-500/25 text-xs font-bold transition-all active:scale-95"
                         >
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                           <span>ดู POD</span>
                         </button>
                       )}
 
                       {/* Documents Print Suite */}
-                      <a href={`/print/picking-slip?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบหยิบสินค้า (Picking Slip)"
-                        className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
+                      <a
+                        href={`/print/picking-slip?id=${o.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="พิมพ์ใบหยิบสินค้า (Picking Slip)"
+                        className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                      >
                         <ClipboardCheck className="w-4 h-4" />
                       </a>
-                      <a href={`/print/shipping-label?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบปะหน้ากล่อง 4x6 (Shipping Label)"
-                        className="p-2 rounded-xl text-[#8a92a6] hover:text-amber-600 hover:bg-amber-500/10 transition-colors">
+                      <a
+                        href={`/print/shipping-label?id=${o.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="พิมพ์ใบปะหน้ากล่อง 4x6 (Shipping Label)"
+                        className="p-2 rounded-full text-slate-500 hover:text-amber-700 hover:bg-amber-500/10 transition-colors"
+                      >
                         <Printer className="w-4 h-4" />
                       </a>
-                      <a href={`/print/delivery-note?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบส่งสินค้า (Delivery Note / POD)"
-                        className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
+                      <a
+                        href={`/print/delivery-note?id=${o.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="พิมพ์ใบส่งสินค้า (Delivery Note / POD)"
+                        className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                      >
                         <FileText className="w-4 h-4" />
                       </a>
-                      <a href={`/print/qc-handover?id=${o.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจปล่อยสินค้าและส่งมอบ (Dispatch Handover)"
-                        className="p-2 rounded-xl text-[#8a92a6] hover:text-teal-600 hover:bg-teal-500/10 transition-colors">
+                      <a
+                        href={`/print/qc-handover?id=${o.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="พิมพ์ใบตรวจปล่อยสินค้าและส่งมอบ (Dispatch Handover)"
+                        className="p-2 rounded-full text-slate-500 hover:text-teal-700 hover:bg-teal-500/10 transition-colors"
+                      >
                         <ShieldCheck className="w-4 h-4 text-teal-600" />
                       </a>
 
                       {/* Advance & QC Action buttons */}
-                      {(o.status === 'PICKED' || o.status === 'PACKED' || o.qcSignatures?.clientSignature || o.qcSignatures?.staffSignature) && (
+                      {(o.status === 'PICKED' ||
+                        o.status === 'PACKED' ||
+                        o.qcSignatures?.clientSignature ||
+                        o.qcSignatures?.staffSignature) && (
                         <button
                           onClick={() => setQcOrder(o)}
                           title="ตรวจปล่อยสินค้าพร้อมลงนาม 2 ฝ่าย (QC คลัง + คนขับรถ)"
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-xs active:scale-95 ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-2xs active:scale-95 ${
                             o.qcSignatures?.clientSignature
-                              ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 border-emerald-300'
-                              : 'bg-teal-500/10 hover:bg-teal-500/20 text-teal-800 border-teal-300'
+                              ? 'bg-emerald-500/12 hover:bg-emerald-500/20 text-emerald-800 border-emerald-500/30'
+                              : 'bg-teal-500/12 hover:bg-teal-500/20 text-teal-800 border-teal-500/30'
                           }`}
                         >
                           <UserCheck className="w-3.5 h-3.5 text-teal-600" />
-                          <span>{(o.qcSignatures?.clientSignature || o.qcSignatures?.staffSignature) ? 'ตรวจปล่อยแล้ว' : 'ตรวจปล่อย QC (ลงนาม)'}</span>
+                          <span>
+                            {o.qcSignatures?.clientSignature || o.qcSignatures?.staffSignature
+                              ? 'ตรวจปล่อยแล้ว'
+                              : 'ตรวจปล่อย QC (ลงนาม)'}
+                          </span>
                         </button>
                       )}
 
@@ -636,22 +808,29 @@ export default function OrdersPage() {
                                 }
                               }}
                               title="ลูกค้าเตรียมของไว้แล้ว ข้ามไปสถานี QC & แพ็กทันที"
-                              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 text-xs font-bold transition-all border border-blue-500/30 shadow-xs"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-sky-500/12 hover:bg-sky-500/20 text-sky-800 text-xs font-bold transition-all border border-sky-500/25 shadow-2xs"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" /> ลูกค้าหยิบแล้ว (ไป QC)
                             </button>
                           )}
-                          <button onClick={() => advance(o)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 active:scale-95 transition-all">
-                            {NEXT_LABEL[o.status]} <ArrowRight className="w-4 h-4" />
+                          <button
+                            onClick={() => advance(o)}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 active:scale-95 transition-all shadow-xs"
+                          >
+                            {NEXT_LABEL[o.status]} <ArrowRight className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => cancelOrder(o)} title="ยกเลิก" className="p-2 rounded-xl text-[#8a92a6] hover:text-rose-600 hover:bg-rose-500/10 transition-colors">
+                          <button
+                            onClick={() => cancelOrder(o)}
+                            title="ยกเลิก"
+                            className="p-2 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                          >
                             <X className="w-4 h-4" />
                           </button>
                         </>
                       )}
                       {o.status === 'DELIVERED' && !hasPodProof && (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-sm px-3">
-                          <CheckCircle2 className="w-5 h-5" /> เสร็จสิ้น
+                        <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-500/12 border border-emerald-500/25 rounded-full font-bold text-xs px-3 py-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> เสร็จสิ้น
                         </span>
                       )}
                     </div>
@@ -663,23 +842,23 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Floating Batch Trip Action Bar */}
+      {/* Floating Batch Trip Action Bar (1 Hero Dark Accent Card) */}
       {selectedOrderIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#171c23]/95 border border-indigo-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 backdrop-blur-md">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 nx-dark-accent-card px-5 py-3.5 flex items-center gap-4">
           <div className="text-xs">
-            <span className="font-bold text-white">เลือกอยู่ {selectedOrderIds.length} ออเดอร์</span>
-            <p className="text-[#8a92a6] text-[11px]">พร้อมจัดรวมเป็น 1 ทริปส่ง (Multi-Drop)</p>
+            <span className="font-bold text-white tabular-nums">เลือกอยู่ {selectedOrderIds.length} ออเดอร์</span>
+            <p className="text-slate-300 text-[11px]">พร้อมจัดรวมเป็น 1 ทริปส่ง (Multi-Drop)</p>
           </div>
           <button
             onClick={() => setShowCreateTrip(true)}
-            className="px-5 py-2.5 rounded-xl bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] font-black text-xs flex items-center gap-2 shadow-lg shadow-[#facc15]/20 active:scale-95 transition-all"
+            className="px-5 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg active:scale-95 transition-all"
           >
             <Truck className="w-4 h-4" />
             <span>จัดทริปรวมส่ง (Multi-Drop Manifest)</span>
           </button>
           <button
             onClick={() => setSelectedOrderIds([])}
-            className="text-xs text-[#8a92a6] hover:text-white underline cursor-pointer"
+            className="text-xs text-slate-300 hover:text-white underline cursor-pointer"
           >
             ยกเลิกเลือก
           </button>
@@ -690,7 +869,7 @@ export default function OrdersPage() {
       <AnimatePresence>
         {showCreateTrip && (
           <CreateTripModal
-            selectedOrders={orders.filter(o => selectedOrderIds.includes(o.id))}
+            selectedOrders={orders.filter((o) => selectedOrderIds.includes(o.id))}
             carriers={carriers}
             onClose={() => setShowCreateTrip(false)}
             onDone={(tripId) => {
@@ -710,19 +889,17 @@ export default function OrdersPage() {
             order={dispatchOrder}
             carriers={carriers}
             onClose={() => setDispatchOrder(null)}
-            onDone={() => { setDispatchOrder(null); load(); }}
+            onDone={() => {
+              setDispatchOrder(null);
+              load();
+            }}
           />
         )}
       </AnimatePresence>
 
       {/* Proof of Delivery (POD) Preview Modal */}
       <AnimatePresence>
-        {viewPodOrder && (
-          <PodProofModal
-            order={viewPodOrder}
-            onClose={() => setViewPodOrder(null)}
-          />
-        )}
+        {viewPodOrder && <PodProofModal order={viewPodOrder} onClose={() => setViewPodOrder(null)} />}
       </AnimatePresence>
 
       {/* QC Handover Dual Signature Modal */}
@@ -732,15 +909,37 @@ export default function OrdersPage() {
             isOpen={Boolean(qcOrder)}
             order={qcOrder}
             onClose={() => setQcOrder(null)}
-            onSaveSuccess={() => { setQcOrder(null); load(); }}
+            onSaveSuccess={() => {
+              setQcOrder(null);
+              load();
+            }}
           />
         )}
       </AnimatePresence>
 
       {/* Create Order Modal */}
       <AnimatePresence>
-        {showCreate && <CreateOrderModal carriers={carriers} onClose={() => setShowCreate(false)} onDone={() => { setShowCreate(false); load(); }} />}
-        {editOrder && <EditOrderModal order={editOrder} carriers={carriers} onClose={() => setEditOrder(null)} onDone={() => { setEditOrder(null); load(); }} />}
+        {showCreate && (
+          <CreateOrderModal
+            carriers={carriers}
+            onClose={() => setShowCreate(false)}
+            onDone={() => {
+              setShowCreate(false);
+              load();
+            }}
+          />
+        )}
+        {editOrder && (
+          <EditOrderModal
+            order={editOrder}
+            carriers={carriers}
+            onClose={() => setEditOrder(null)}
+            onDone={() => {
+              setEditOrder(null);
+              load();
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Camera Scanner for Order Search */}
@@ -757,23 +956,29 @@ export default function OrdersPage() {
       />
 
       {/* เพิ่มสินค้าเข้าออเดอร์ (ลูกค้าเพิ่มของ) */}
-      <AddItemsModal
-        order={addItemsOrder}
-        onClose={() => setAddItemsOrder(null)}
-        onDone={() => load()}
-      />
+      <AddItemsModal order={addItemsOrder} onClose={() => setAddItemsOrder(null)} onDone={() => load()} />
     </div>
   );
 }
 
-function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; carriers: Carrier[]; onClose: () => void; onDone: () => void }) {
-  const defaultCarrier = carriers.find(c => c.isDefault)?.name || carriers[0]?.name || 'Flash Express';
+function DispatchModal({
+  order,
+  carriers,
+  onClose,
+  onDone,
+}: {
+  order: Order;
+  carriers: Carrier[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const defaultCarrier = carriers.find((c) => c.isDefault)?.name || carriers[0]?.name || 'Flash Express';
   const [carrier, setCarrier] = useState(order.carrier || defaultCarrier);
   const [vehicleType, setVehicleType] = useState(order.vehicleType || '4-Wheel');
   const [dockBay, setDockBay] = useState(order.dockBay || '');
   const [vehiclePlate, setVehiclePlate] = useState(order.vehiclePlate || '');
   const [driverName, setDriverName] = useState(order.driverName || '');
-  const [sendToTms, setSendToTms] = useState(true);
+  const [sendToTms] = useState(true);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
   const [submitting, setSubmitting] = useState(false);
@@ -781,8 +986,8 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
 
   useEffect(() => {
     fetch('/api/fleet-vehicles?active=1')
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (d.vehicles && Array.isArray(d.vehicles)) {
           setVehicles(d.vehicles);
           if (!order.vehiclePlate && d.vehicles[0]) {
@@ -795,12 +1000,17 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
       .catch(() => {});
   }, [order.vehiclePlate]);
 
-  const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
+  const isCompanyFleet =
+    carrier.includes('บริษัท') ||
+    carrier.includes('จัดส่งเอง') ||
+    carrier.toLowerCase().includes('fleet') ||
+    carrier === 'OWN_FLEET';
 
-  const selectedCarrierObj = carriers.find(c => c.name === carrier);
-  const previewUrl = selectedCarrierObj?.trackingUrlTemplate && trackingNo
-    ? selectedCarrierObj.trackingUrlTemplate.replace('{trackingNo}', trackingNo.trim())
-    : null;
+  const selectedCarrierObj = carriers.find((c) => c.name === carrier);
+  const previewUrl =
+    selectedCarrierObj?.trackingUrlTemplate && trackingNo
+      ? selectedCarrierObj.trackingUrlTemplate.replace('{trackingNo}', trackingNo.trim())
+      : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -834,32 +1044,42 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[#171c23] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden text-slate-900"
+      >
         <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex justify-between items-center">
           <div className="font-black text-lg flex items-center gap-2">
             <Truck className="w-5 h-5" /> บันทึกการจัดส่งพัสดุ
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="bg-[#1b2027] p-3.5 rounded-2xl border border-[#30353d] text-sm">
-            <div className="font-mono font-bold text-[#dee2ec]">{order.orderNo}</div>
-            <div className="text-[#d1c6ab] mt-0.5">{order.customerName} · {order.totalQty} ชิ้น</div>
-            {order.shipAddress && <div className="text-xs text-[#8a92a6] mt-1 line-clamp-1">{order.shipAddress}</div>}
+          <div className="bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80 text-sm">
+            <div className="font-mono font-bold text-slate-900 tabular-nums">{order.orderNo}</div>
+            <div className="text-slate-700 mt-0.5 tabular-nums">
+              {order.customerName} · {order.totalQty} ชิ้น
+            </div>
+            {order.shipAddress && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{order.shipAddress}</div>}
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">ผู้ให้บริการขนส่ง *</label>
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ผู้ให้บริการขนส่ง *</label>
             <select
               value={carrier}
               onChange={(e) => setCarrier(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-medium text-sm bg-[#171c23]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 font-medium text-sm bg-white text-slate-900"
             >
-              {carriers.map(c => (
-                <option key={c.id} value={c.name}>{c.name} {c.isDefault ? '(ค่าเริ่มต้น)' : ''}</option>
+              {carriers.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name} {c.isDefault ? '(ค่าเริ่มต้น)' : ''}
+                </option>
               ))}
               <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
               <option value="อื่นๆ">อื่นๆ</option>
@@ -868,13 +1088,13 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
 
           {/* Dock Bay Selection */}
           <div>
-            <label className="block text-xs font-bold text-[#d1c6ab] uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
               ⚓ ท่าเทียบ / จุดวางพักรอขึ้นรถ (Dock Bay / Staging)
             </label>
             <select
               value={dockBay}
               onChange={(e) => setDockBay(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-bold text-sm bg-[#171c23] text-amber-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 font-bold text-sm bg-white text-amber-700"
             >
               <option value="">-- ไม่ระบุ Dock (จัดส่งทั่วไป) --</option>
               <option value="BAY-01">BAY-01 (Inbound / จุดรับเข้า)</option>
@@ -888,7 +1108,7 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
           </div>
 
           {isCompanyFleet && (
-            <div className="space-y-3 p-3.5 bg-indigo-500/10/80 border border-indigo-500/20 rounded-2xl">
+            <div className="space-y-3 p-3.5 bg-indigo-50/80 border border-indigo-200 rounded-2xl">
               {vehicles.length > 0 && (
                 <div>
                   <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">
@@ -896,18 +1116,20 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                   </label>
                   <select
                     onChange={(e) => {
-                      const v = vehicles.find(x => x.id === e.target.value);
+                      const v = vehicles.find((x) => x.id === e.target.value);
                       if (v) {
                         setVehiclePlate(v.plate || v.plateNumber || '');
                         setDriverName(v.driverName || v.assignedDriverName || '');
                         if (v.vehicleType) setVehicleType(v.vehicleType);
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 font-bold text-sm bg-[#171c23] text-indigo-300"
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-200 font-bold text-sm bg-white text-indigo-900"
                   >
-                    {vehicles.map(v => (
+                    {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.plate || v.plateNumber} {(v.driverName || v.assignedDriverName) ? `- ${v.driverName || v.assignedDriverName}` : ''} ({v.vehicleType || '4-Wheel'}) {v.statusLabel ? `[${v.statusLabel}]` : ''}
+                        {v.plate || v.plateNumber}{' '}
+                        {v.driverName || v.assignedDriverName ? `- ${v.driverName || v.assignedDriverName}` : ''} (
+                        {v.vehicleType || '4-Wheel'}) {v.statusLabel ? `[${v.statusLabel}]` : ''}
                       </option>
                     ))}
                   </select>
@@ -922,7 +1144,7 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                     value={vehiclePlate}
                     onChange={(e) => setVehiclePlate(e.target.value)}
                     placeholder="เช่น กก-4321"
-                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 text-xs font-mono font-bold bg-[#171c23] text-[#dee2ec]"
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-200 text-xs font-mono font-bold bg-white text-slate-900"
                   />
                 </div>
                 <div>
@@ -932,7 +1154,7 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                     value={driverName}
                     onChange={(e) => setDriverName(e.target.value)}
                     placeholder="เช่น นายเอ"
-                    className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 text-xs font-bold bg-[#171c23] text-[#dee2ec]"
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-200 text-xs font-bold bg-white text-slate-900"
                   />
                 </div>
               </div>
@@ -944,7 +1166,7 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                 <select
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-indigo-500/30 focus:ring-2 focus:ring-indigo-500 font-bold text-sm bg-[#171c23] text-indigo-950"
+                  className="w-full px-3 py-2 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 font-bold text-sm bg-white text-indigo-950"
                 >
                   <option value="4-Wheel">รถกระบะ 4 ล้อ (4-Wheel)</option>
                   <option value="6-Wheel">รถบรรทุก 6 ล้อ (6-Wheel)</option>
@@ -960,7 +1182,8 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                   <span>เชื่อมโยงระบบ TMS ePOD อัตโนมัติ</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-indigo-700">
-                  ระบบจะนำเลข Order ({order.orderNo}) ไปสร้างเป็นเลข Job ใน TMS ทันที พร้อมระบุประเภทรถ {vehicleType} สำหรับมอบหมายคนขับ
+                  ระบบจะนำเลข Order ({order.orderNo}) ไปสร้างเป็นเลข Job ใน TMS ทันที พร้อมระบุประเภทรถ {vehicleType}{' '}
+                  สำหรับมอบหมายคนขับ
                 </p>
               </div>
             </div>
@@ -968,11 +1191,11 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block text-xs font-bold text-[#d1c6ab] uppercase">เลขพัสดุ (Tracking Number)</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase">เลขพัสดุ (Tracking Number)</label>
               <button
                 type="button"
                 onClick={() => setShowCamera(true)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 active:scale-95 transition-transform"
+                className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-800 active:scale-95 transition-transform"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>สแกนบาร์โค้ดใบส่ง</span>
@@ -984,12 +1207,12 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
                 placeholder="เช่น TH0123456789A หรือสแกนจากบาร์โค้ด"
                 value={trackingNo}
                 onChange={(e) => setTrackingNo(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#30353d] focus:ring-2 focus:ring-amber-500 font-mono text-sm"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:ring-2 focus:ring-amber-500 font-mono text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowCamera(true)}
-                className="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 rounded-xl border border-amber-500/30 transition-colors"
+                className="px-3 py-2 bg-amber-500/12 hover:bg-amber-500/20 text-amber-700 rounded-xl border border-amber-500/30 transition-colors"
                 title="เปิดกล้องสแกนเลข Tracking"
               >
                 <Camera className="w-5 h-5" />
@@ -998,17 +1221,25 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
           </div>
 
           {previewUrl && (
-            <div className="p-3 bg-amber-500/10/70 border border-amber-500/20 rounded-xl text-xs text-amber-800">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-800">
               <span className="font-bold">ลิงก์ติดตามพัสดุ:</span>
               <div className="truncate font-mono text-[11px] text-blue-600 mt-0.5">{previewUrl}</div>
             </div>
           )}
 
-          <div className="pt-3 flex justify-end gap-3 border-t border-[#30353d]">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl border border-[#30353d] text-[#d1c6ab] font-bold hover:bg-[#1b2027]">
+          <div className="pt-3 flex justify-end gap-2.5 border-t border-slate-200/80">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors"
+            >
               ยกเลิก
             </button>
-            <button type="submit" disabled={submitting} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-lg shadow-orange-500/25 active:scale-95 transition-all">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+            >
               {submitting ? 'กำลังบันทึก...' : 'ยืนยันการจัดส่ง'}
             </button>
           </div>
@@ -1031,7 +1262,15 @@ function DispatchModal({ order, carriers, onClose, onDone }: { order: Order; car
   );
 }
 
-function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; onClose: () => void; onDone: () => void }) {
+function CreateOrderModal({
+  carriers,
+  onClose,
+  onDone,
+}: {
+  carriers: Carrier[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [products, setProducts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -1043,7 +1282,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [deliveryMode, setDeliveryMode] = useState<'DELIVERY' | 'SELF_PICKUP'>('DELIVERY');
-  const [carrier, setCarrier] = useState(carriers.find(c => c.isDefault)?.name || 'Flash Express');
+  const [carrier, setCarrier] = useState(carriers.find((c) => c.isDefault)?.name || 'Flash Express');
   const [vehicleType, setVehicleType] = useState('4-Wheel');
   const [prePicked, setPrePicked] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1063,41 +1302,49 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products', { cache: 'no-store' }).then(r => r.json()),
-      fetch('/api/customers', { cache: 'no-store' }).then(r => r.json()),
-    ]).then(([dProd, dCust]) => {
-      setProducts(Array.isArray(dProd) ? dProd : []);
-      setCustomers(dCust.customers || []);
-    }).catch(() => {});
+      fetch('/api/products', { cache: 'no-store' }).then((r) => r.json()),
+      fetch('/api/customers', { cache: 'no-store' }).then((r) => r.json()),
+    ])
+      .then(([dProd, dCust]) => {
+        setProducts(Array.isArray(dProd) ? dProd : []);
+        setCustomers(dCust.customers || []);
+      })
+      .catch(() => {});
   }, []);
 
   const onSelectCustomer = (custId: string) => {
     setSelectedCustId(custId);
-    const found = customers.find(c => c.id === custId);
+    const found = customers.find((c) => c.id === custId);
     if (found) {
       setCustomer(found.name);
       setPhone(found.phone || '');
       setAddress(found.address || '');
       if (found.defaultCarrier) setCarrier(found.defaultCarrier);
-      setDestinations([
-        { drop: 1, name: found.name, phone: found.phone || '', address: found.address || '', notes: '' },
-      ]);
+      setDestinations([{ drop: 1, name: found.name, phone: found.phone || '', address: found.address || '', notes: '' }]);
     }
   };
 
   const addLine = (p: any) => {
-    if (lines.some(l => l.sku === p.id)) { toast('มีในรายการแล้ว'); return; }
+    if (lines.some((l) => l.sku === p.id)) {
+      toast('มีในรายการแล้ว');
+      return;
+    }
     setLines([...lines, { sku: p.id, name: p.name, qty: 1, location: p.location, price: p.price }]);
     // A-UI #3: fetch ATP so the form can flag backorders before submit
     fetch(`/api/stock/available?sku=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
-      .then(r => r.json()).then(d => setAvailMap(m => ({ ...m, [p.id]: Number(d.available ?? d.onHand ?? 0) }))).catch(() => {});
+      .then((r) => r.json())
+      .then((d) => setAvailMap((m) => ({ ...m, [p.id]: Number(d.available ?? d.onHand ?? 0) })))
+      .catch(() => {});
     // A-UI: fetch pack units so the order can be placed in ลัง/พาเลท
     fetch(`/api/products/uoms?sku=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
-      .then(r => r.json()).then(d => setUomMap(m => ({ ...m, [p.id]: Array.isArray(d.uoms) ? d.uoms : [] }))).catch(() => {});
+      .then((r) => r.json())
+      .then((d) => setUomMap((m) => ({ ...m, [p.id]: Array.isArray(d.uoms) ? d.uoms : [] })))
+      .catch(() => {});
   };
-  const setQty = (sku: string, qty: number) => setLines(lines.map(l => l.sku === sku ? { ...l, qty: Math.max(1, qty) } : l));
-  const setUom = (sku: string, uom: string) => setLines(lines.map(l => l.sku === sku ? { ...l, uom } : l));
-  const removeLine = (sku: string) => setLines(lines.filter(l => l.sku !== sku));
+  const setQty = (sku: string, qty: number) =>
+    setLines(lines.map((l) => (l.sku === sku ? { ...l, qty: Math.max(1, qty) } : l)));
+  const setUom = (sku: string, uom: string) => setLines(lines.map((l) => (l.sku === sku ? { ...l, uom } : l)));
+  const removeLine = (sku: string) => setLines(lines.filter((l) => l.sku !== sku));
 
   const addCustomItem = () => {
     if (!customName.trim()) {
@@ -1105,13 +1352,16 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       return;
     }
     const sku = customSku.trim() || `CUS-${Date.now().toString().slice(-6)}`;
-    if (lines.some(l => l.sku === sku)) {
+    if (lines.some((l) => l.sku === sku)) {
       toast.error('รหัส SKU นี้มีอยู่ในรายการแล้ว');
       return;
     }
     // Reuse catalog price/location when the SKU is a real product.
-    const match = products.find(p => String(p.id).trim().toLowerCase() === sku.toLowerCase());
-    setLines([...lines, { sku, name: customName.trim(), qty: Math.max(1, customQty), price: match?.price || 0, location: match?.location }]);
+    const match = products.find((p) => String(p.id).trim().toLowerCase() === sku.toLowerCase());
+    setLines([
+      ...lines,
+      { sku, name: customName.trim(), qty: Math.max(1, customQty), price: match?.price || 0, location: match?.location },
+    ]);
     setCustomSku('');
     setCustomName('');
     setCustomQty(1);
@@ -1121,7 +1371,12 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 
   const handleScanProduct = (scanned: string) => {
     const q = scanned.trim().toLowerCase();
-    const matched = products.find(p => (p.id || '').toLowerCase() === q || (p.name || '').toLowerCase() === q || (p.barcode || '').toLowerCase() === q);
+    const matched = products.find(
+      (p) =>
+        (p.id || '').toLowerCase() === q ||
+        (p.name || '').toLowerCase() === q ||
+        (p.barcode || '').toLowerCase() === q
+    );
     if (matched) {
       addLine(matched);
       toast.success(`เพิ่ม ${matched.name} ลงออเดอร์แล้ว`);
@@ -1132,30 +1387,45 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
   };
 
   const total = lines.reduce((s, l) => s + l.qty * (l.price || 0), 0);
-  const shown = search ? products.filter(p => (p.name || '').toLowerCase().includes(search.toLowerCase()) || (p.id || '').toLowerCase().includes(search.toLowerCase())).slice(0, 8) : [];
+  const shown = search
+    ? products
+        .filter(
+          (p) =>
+            (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            (p.id || '').toLowerCase().includes(search.toLowerCase())
+        )
+        .slice(0, 8)
+    : [];
 
   const submit = async () => {
-    if (lines.length === 0) { toast.error('เพิ่มสินค้าอย่างน้อย 1 รายการ'); return; }
+    if (lines.length === 0) {
+      toast.error('เพิ่มสินค้าอย่างน้อย 1 รายการ');
+      return;
+    }
     setSaving(true);
     try {
       // Tag the order with the branch currently selected in the URL so shipped
       // orders route to the right branch (in TMS too). Empty = no branch.
       const defaultBranch = (process.env.NEXT_PUBLIC_DEFAULT_BRANCH_CODE || '').trim();
-      const branchCode = typeof window !== 'undefined'
-        ? (new URLSearchParams(window.location.search).get('branchId') || defaultBranch)
-        : defaultBranch;
-      const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
+      const branchCode =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('branchId') || defaultBranch
+          : defaultBranch;
+      const isCompanyFleet =
+        carrier.includes('บริษัท') ||
+        carrier.includes('จัดส่งเอง') ||
+        carrier.toLowerCase().includes('fleet') ||
+        carrier === 'OWN_FLEET';
 
       const finalDestinations = multiDrop
-        ? destinations.filter(d => d.address.trim() || d.name.trim())
+        ? destinations.filter((d) => d.address.trim() || d.name.trim())
         : [{ drop: 1, name: customer, phone, address, notes: '' }];
 
-      const finalAddress = multiDrop && destinations[0]?.address
-        ? destinations[0].address
-        : address;
+      const finalAddress = multiDrop && destinations[0]?.address ? destinations[0].address : address;
 
       const res = await fetch('/api/orders', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: customer,
           phone,
@@ -1175,53 +1445,103 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
       // A-UI #3: warn if any line couldn't be fully reserved (backorder)
       const bo = json.order?.backorders as { sku: string; backorder: number }[] | undefined;
       if (bo && bo.length > 0) {
-        toast(`⚠️ ของไม่พอ ${bo.length} รายการ (backorder): ${bo.map(b => `${b.sku}×${b.backorder}`).join(', ')}`,
-          { duration: 7000, icon: '📦', style: { background: '#7c2d12', color: '#fff' } });
+        toast(`⚠️ ของไม่พอ ${bo.length} รายการ (backorder): ${bo.map((b) => `${b.sku}×${b.backorder}`).join(', ')}`, {
+          duration: 7000,
+          icon: '📦',
+          style: { background: '#7c2d12', color: '#fff' },
+        });
       }
       onDone();
-    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const isCompanyFleet = carrier.includes('บริษัท') || carrier.includes('จัดส่งเอง') || carrier.toLowerCase().includes('fleet') || carrier === 'OWN_FLEET';
+  const isCompanyFleet =
+    carrier.includes('บริษัท') ||
+    carrier.includes('จัดส่งเอง') ||
+    carrier.toLowerCase().includes('fleet') ||
+    carrier === 'OWN_FLEET';
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[#171c23] rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-[#30353d] flex justify-between items-center sticky top-0 bg-[#171c23] z-10">
-          <h2 className="text-xl font-black text-[#dee2ec]">สร้างออเดอร์ขาออก</h2>
-          <button onClick={onClose} className="p-2 hover:bg-[#252a32] rounded-full text-[#8a92a6]"><X className="w-5 h-5" /></button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl text-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-slate-200/80 flex justify-between items-center sticky top-0 bg-white/95 z-10">
+          <h2 className="text-xl font-black text-slate-900">สร้างออเดอร์ขาออก</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <div className="p-6 space-y-5">
           {/* Customer Selection */}
           <div>
-            <label className="block text-xs font-bold text-[#8a92a6] uppercase mb-1">เลือกลูกค้าจากฐานข้อมูล (หรือกรอกเอง)</label>
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              เลือกลูกค้าจากฐานข้อมูล (หรือกรอกเอง)
+            </label>
             <select
               value={selectedCustId}
               onChange={(e) => onSelectCustomer(e.target.value)}
-              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-slate-900 outline-none focus:border-sky-500 text-sm"
             >
               <option value="">-- พิมพ์กรอกข้อมูลเอง --</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>{c.code} - {c.name} ({c.phone || 'ไม่มีเบอร์'})</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} - {c.name} ({c.phone || 'ไม่มีเบอร์'})
+                </option>
               ))}
             </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="ชื่อลูกค้า *" className="bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
-            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="เบอร์โทรศัพท์" className="bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
+            <input
+              value={customer}
+              onChange={(e) => setCustomer(e.target.value)}
+              placeholder="ชื่อลูกค้า *"
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 text-sm"
+            />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="เบอร์โทรศัพท์"
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 text-sm"
+            />
           </div>
 
           {/* Delivery mode: ส่งขนส่ง vs ลูกค้ารับเอง */}
           <div className="flex gap-2">
-            {([
-              { key: 'DELIVERY', label: '🚚 ส่งขนส่ง' },
-              { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' },
-            ] as const).map(m => (
-              <button key={m.key} type="button" onClick={() => setDeliveryMode(m.key)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${deliveryMode === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#1b2027] text-[#8a92a6]'}`}>
+            {(
+              [
+                { key: 'DELIVERY', label: '🚚 ส่งขนส่ง' },
+                { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setDeliveryMode(m.key)}
+                className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all ${
+                  deliveryMode === m.key
+                    ? 'border-sky-600 bg-sky-600 text-white shadow-xs'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
                 {m.label}
               </button>
             ))}
@@ -1229,43 +1549,61 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <input value={address} onChange={e => setAddress(e.target.value)} placeholder={deliveryMode === 'SELF_PICKUP' ? 'หมายเหตุการรับ (ไม่บังคับ)...' : 'ที่อยู่จัดส่งสินค้า...'} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500" />
+              <input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder={deliveryMode === 'SELF_PICKUP' ? 'หมายเหตุการรับ (ไม่บังคับ)...' : 'ที่อยู่จัดส่งสินค้า...'}
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 text-sm"
+              />
             </div>
             <div>
               <select
                 value={carrier}
-                onChange={e => setCarrier(e.target.value)}
+                onChange={(e) => setCarrier(e.target.value)}
                 disabled={deliveryMode === 'SELF_PICKUP'}
-                className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm disabled:opacity-40"
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-900 outline-none focus:border-sky-500 text-sm disabled:opacity-40"
               >
-                {deliveryMode === 'SELF_PICKUP'
-                  ? <option>— ลูกค้ารับเอง —</option>
-                  : <>{carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                     <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option></>}
+                {deliveryMode === 'SELF_PICKUP' ? (
+                  <option>— ลูกค้ารับเอง —</option>
+                ) : (
+                  <>
+                    {carriers.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                    <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
 
           {/* Multi-Drop Destinations Toggle */}
-          <div className="bg-cyan-500/10/50 border border-cyan-500/30/80 rounded-2xl p-3.5 space-y-3">
+          <div className="bg-sky-50/80 border border-sky-200 rounded-2xl p-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <label
-                className="flex items-center gap-2 cursor-pointer text-xs font-black text-cyan-900 select-none"
+                className="flex items-center gap-2 cursor-pointer text-xs font-black text-sky-900 select-none"
                 onClick={() => setMultiDrop(!multiDrop)}
               >
                 <input
                   type="checkbox"
                   checked={multiDrop}
                   onChange={(e) => setMultiDrop(e.target.checked)}
-                  className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
                 />
                 <span>📍 จัดส่งปลายทางหลายดรอป (Multi-Drop)</span>
               </label>
               {multiDrop && (
                 <button
                   type="button"
-                  onClick={() => setDestinations([...destinations, { drop: destinations.length + 1, name: '', phone: '', address: '', notes: '' }])}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs active:scale-95"
+                  onClick={() =>
+                    setDestinations([
+                      ...destinations,
+                      { drop: destinations.length + 1, name: '', phone: '', address: '', notes: '' },
+                    ])
+                  }
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95"
                 >
                   <Plus className="w-3.5 h-3.5" /> เพิ่มดรอป
                 </button>
@@ -1275,9 +1613,12 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             {multiDrop && (
               <div className="space-y-2.5 pt-1">
                 {destinations.map((d, idx) => (
-                  <div key={idx} className="bg-[#171c23] border border-cyan-500/20 rounded-xl p-3 text-xs shadow-xs relative">
+                  <div
+                    key={idx}
+                    className="bg-white border border-sky-200/80 rounded-xl p-3 text-xs shadow-2xs relative"
+                  >
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="font-bold text-cyan-800 bg-cyan-500/20 px-2 py-0.5 rounded text-[11px]">
+                      <span className="font-bold text-sky-800 bg-sky-500/15 px-2.5 py-0.5 rounded-full text-[11px]">
                         ดรอปที่ {d.drop}
                       </span>
                       {destinations.length > 1 && (
@@ -1287,7 +1628,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                             const filtered = destinations.filter((_, i) => i !== idx);
                             setDestinations(filtered.map((item, i) => ({ ...item, drop: i + 1 })));
                           }}
-                          className="text-[#8a92a6] hover:text-rose-600 text-[11px] flex items-center gap-0.5"
+                          className="text-slate-400 hover:text-rose-600 text-[11px] flex items-center gap-0.5"
                         >
                           <Trash2 className="w-3 h-3" /> ลบ
                         </button>
@@ -1302,7 +1643,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                           copy[idx] = { ...copy[idx], name: e.target.value };
                           setDestinations(copy);
                         }}
-                        className="bg-[#1b2027] border border-[#30353d] rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-500"
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-sky-500"
                       />
                       <input
                         placeholder="เบอร์โทรผู้รับ"
@@ -1312,7 +1653,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                           copy[idx] = { ...copy[idx], phone: e.target.value };
                           setDestinations(copy);
                         }}
-                        className="bg-[#1b2027] border border-[#30353d] rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-500"
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-sky-500"
                       />
                     </div>
                     <textarea
@@ -1324,7 +1665,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                         copy[idx] = { ...copy[idx], address: e.target.value };
                         setDestinations(copy);
                       }}
-                      className="w-full bg-[#1b2027] border border-[#30353d] rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-sky-500"
                     />
                   </div>
                 ))}
@@ -1333,14 +1674,14 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
           </div>
 
           {isCompanyFleet && (
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-between gap-3">
+            <div className="p-3 bg-indigo-50/80 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
               <label className="text-xs font-bold text-indigo-900 whitespace-nowrap">
                 🚗 ประเภทรถขนส่ง (TMS):
               </label>
               <select
                 value={vehicleType}
-                onChange={e => setVehicleType(e.target.value)}
-                className="flex-1 bg-[#171c23] border border-indigo-500/30 rounded-lg px-3 py-1.5 font-bold outline-none text-xs text-indigo-950 focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => setVehicleType(e.target.value)}
+                className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 font-bold outline-none text-xs text-indigo-950 focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="4-Wheel">รถกระบะ 4 ล้อ (4-Wheel)</option>
                 <option value="6-Wheel">รถบรรทุก 6 ล้อ (6-Wheel)</option>
@@ -1353,7 +1694,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 
           {/* Pre-picked by customer toggle */}
           <div
-            className="p-3.5 bg-[#1b2027] border border-[#30353d] rounded-2xl flex items-center justify-between gap-3 cursor-pointer hover:bg-[#252a32]/70 transition-colors"
+            className="p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-100/80 transition-colors"
             onClick={() => setPrePicked(!prePicked)}
           >
             <div className="flex items-center gap-2.5">
@@ -1361,15 +1702,19 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                 type="checkbox"
                 checked={prePicked}
                 onChange={(e) => setPrePicked(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
               />
               <div>
-                <span className="text-xs font-bold text-[#dee2ec] block">ลูกค้าจัดเตรียมสินค้าเรียบร้อยแล้ว (Pre-picked)</span>
-                <span className="text-[11px] text-[#8a92a6] block">ข้ามขั้นตอนเบิกหยิบในคลัง ➔ ส่งต่อไปยังสถานีตรวจสอบ QC & แพ็กทันที</span>
+                <span className="text-xs font-bold text-slate-900 block">
+                  ลูกค้าจัดเตรียมสินค้าเรียบร้อยแล้ว (Pre-picked)
+                </span>
+                <span className="text-[11px] text-slate-500 block">
+                  ข้ามขั้นตอนเบิกหยิบในคลัง ➔ ส่งต่อไปยังสถานีตรวจสอบ QC &amp; แพ็กทันที
+                </span>
               </div>
             </div>
             {prePicked && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-700 shrink-0">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 border border-sky-500/25 shrink-0">
                 พร้อม QC
               </span>
             )}
@@ -1377,14 +1722,29 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 
           <div className="flex gap-2 flex-wrap sm:flex-nowrap">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3.5 top-3 w-5 h-5 text-[#8a92a6]" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้าเพื่อเพิ่มลงออเดอร์..." className="w-full pl-11 bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-cyan-500 text-sm" />
+              <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ค้นหาสินค้าเพื่อเพิ่มลงออเดอร์..."
+                className="w-full pl-10 bg-white border border-slate-200 rounded-full px-4 py-2.5 font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 text-sm"
+              />
               {shown.length > 0 && (
-                <div className="absolute z-20 left-0 right-0 mt-1 bg-[#171c23] border border-[#30353d] rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
-                  {shown.map(p => (
-                    <button key={p.id} onClick={() => { addLine(p); setSearch(''); }} className="w-full text-left px-4 py-2.5 hover:bg-cyan-500/10 flex items-center justify-between">
-                      <span className="font-medium text-[#d1c6ab] truncate">{p.name}</span>
-                      <span className="text-xs text-[#8a92a6] flex items-center gap-1"><MapPin className="w-3 h-3" />{p.location} · สต็อก {p.stock}</span>
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                  {shown.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        addLine(p);
+                        setSearch('');
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-sky-500/10 flex items-center justify-between transition-colors"
+                    >
+                      <span className="font-medium text-slate-900 truncate">{p.name}</span>
+                      <span className="text-xs text-slate-500 flex items-center gap-1 tabular-nums">
+                        <MapPin className="w-3 h-3" />
+                        {p.location} · สต็อก {p.stock}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1393,7 +1753,7 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             <button
               type="button"
               onClick={() => setShowCustomItem(!showCustomItem)}
-              className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
+              className="inline-flex items-center gap-1 px-3.5 py-2.5 rounded-full bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
               title="เพิ่มสินค้านอกแคตตาล็อกที่ลูกค้าจัดเตรียมมา"
             >
               <Plus className="w-4 h-4" />
@@ -1402,19 +1762,23 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
             <button
               type="button"
               onClick={() => setShowCameraScanner(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
             >
-              <Camera className="w-4 h-4 text-cyan-400" />
+              <Camera className="w-4 h-4 text-sky-400" />
               <span>สแกน</span>
             </button>
           </div>
 
           {/* Custom Item Form */}
           {showCustomItem && (
-            <div className="p-3.5 bg-teal-500/10/80 border border-teal-500/30 rounded-2xl space-y-2.5">
+            <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-2xl space-y-2.5">
               <div className="text-xs font-bold text-teal-900 flex justify-between items-center">
                 <span>➕ เพิ่มสินค้านอกแคตตาล็อก (Cross-Docking / ลูกค้าส่งมา)</span>
-                <button type="button" onClick={() => setShowCustomItem(false)} className="text-[#8a92a6] hover:text-[#d1c6ab]">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomItem(false)}
+                  className="text-slate-500 hover:text-slate-900"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1423,21 +1787,21 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                   type="text"
                   placeholder="รหัส SKU (เว้นว่างเพื่อสร้างอัตโนมัติ)"
                   value={customSku}
-                  onChange={e => {
+                  onChange={(e) => {
                     const v = e.target.value;
                     setCustomSku(v);
                     // Auto-fill name from the catalog when the SKU matches a product.
-                    const match = products.find(p => String(p.id).trim().toLowerCase() === v.trim().toLowerCase());
+                    const match = products.find((p) => String(p.id).trim().toLowerCase() === v.trim().toLowerCase());
                     if (match) setCustomName(match.name || '');
                   }}
-                  className="bg-[#171c23] border border-teal-500/30 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500"
+                  className="bg-white border border-teal-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:ring-2 focus:ring-teal-500"
                 />
                 <input
                   type="text"
                   placeholder="ชื่อสินค้า *"
                   value={customName}
-                  onChange={e => setCustomName(e.target.value)}
-                  className="bg-[#171c23] border border-teal-500/30 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500 sm:col-span-2"
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="bg-white border border-teal-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:ring-2 focus:ring-teal-500 sm:col-span-2"
                 />
               </div>
               <div className="flex items-center justify-between gap-2">
@@ -1447,15 +1811,15 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
                     type="number"
                     min={1}
                     value={customQty}
-                    onChange={e => setCustomQty(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 bg-[#171c23] border border-teal-500/30 rounded-lg px-2.5 py-1 text-center text-xs font-bold"
+                    onChange={(e) => setCustomQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 bg-white border border-teal-200 rounded-lg px-2.5 py-1 text-center text-xs font-bold text-slate-900 tabular-nums"
                   />
-                  <span className="text-xs text-[#8a92a6]">ชิ้น</span>
+                  <span className="text-xs text-slate-600">ชิ้น</span>
                 </div>
                 <button
                   type="button"
                   onClick={addCustomItem}
-                  className="px-4 py-1.5 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-xs active:scale-95 transition-all"
+                  className="px-4 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded-full text-xs font-bold shadow-2xs active:scale-95 transition-all"
                 >
                   เพิ่มลงออเดอร์
                 </button>
@@ -1465,43 +1829,87 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 
           <div className="space-y-2">
             {lines.length === 0 ? (
-              <div className="text-center text-[#8a92a6] py-8 border-2 border-dashed border-[#30353d] rounded-xl">ยังไม่มีสินค้าในออเดอร์</div>
-            ) : lines.map(l => {
+              <div className="text-center text-slate-500 text-sm py-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
+                ยังไม่มีสินค้าในออเดอร์
+              </div>
+            ) : (
+              lines.map((l) => {
                 const opts = uomMap[l.sku] || [];
-                const sel = opts.find(u => u.code === (l.uom || opts.find(x => x.isBase)?.code));
+                const sel = opts.find((u) => u.code === (l.uom || opts.find((x) => x.isBase)?.code));
                 const factor = sel && !sel.isBase ? sel.factor : 1;
-                const base = opts.find(u => u.isBase);
+                const base = opts.find((u) => u.isBase);
                 const baseQty = l.qty * factor;
                 const avail = availMap[l.sku];
                 const short = avail !== undefined && baseQty > avail;
                 return (
-                  <div key={l.sku} className="flex items-center gap-3 bg-[#1b2027] rounded-xl px-4 py-2.5">
+                  <div
+                    key={l.sku}
+                    className="flex items-center gap-3 bg-slate-50/90 border border-slate-200/80 rounded-2xl px-4 py-2.5"
+                  >
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[#dee2ec] truncate">{l.name}</div>
-                      <div className="text-xs text-[#8a92a6]">
+                      <div className="font-semibold text-slate-900 truncate">{l.name}</div>
+                      <div className="text-xs text-slate-500 tabular-nums">
                         {l.location || '-'} · ฿{(l.price || 0).toLocaleString()}
-                        {factor > 1 && <span className="ml-2 text-indigo-300">= {baseQty} {base?.name || 'ชิ้น'}</span>}
-                        {avail !== undefined && (short
-                          ? <span className="ml-2 text-rose-400 font-bold">ใช้ได้ {avail} · ขาด {baseQty - avail} (backorder)</span>
-                          : <span className="ml-2 text-emerald-400">ใช้ได้ {avail}</span>)}
+                        {factor > 1 && (
+                          <span className="ml-2 text-indigo-700 font-semibold">
+                            = {baseQty} {base?.name || 'ชิ้น'}
+                          </span>
+                        )}
+                        {avail !== undefined &&
+                          (short ? (
+                            <span className="ml-2 text-rose-600 font-bold">
+                              ใช้ได้ {avail} · ขาด {baseQty - avail} (backorder)
+                            </span>
+                          ) : (
+                            <span className="ml-2 text-emerald-700 font-semibold">ใช้ได้ {avail}</span>
+                          ))}
                       </div>
                     </div>
-                    <input type="number" min={1} value={l.qty} onChange={e => setQty(l.sku, parseInt(e.target.value) || 1)} className={`w-16 bg-[#171c23] border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:border-cyan-500 ${short ? 'border-rose-500/60 text-rose-300' : 'border-[#30353d]'}`} />
+                    <input
+                      type="number"
+                      min={1}
+                      value={l.qty}
+                      onChange={(e) => setQty(l.sku, parseInt(e.target.value) || 1)}
+                      className={`w-16 bg-white border rounded-lg px-2 py-1.5 text-center font-bold tabular-nums outline-none focus:border-sky-500 ${
+                        short ? 'border-rose-400 text-rose-700' : 'border-slate-200 text-slate-900'
+                      }`}
+                    />
                     {opts.length > 1 && (
-                      <select value={l.uom || base?.code || ''} onChange={e => setUom(l.sku, e.target.value)}
-                        className="bg-[#171c23] border border-[#30353d] rounded-lg px-2 py-1.5 text-xs font-bold text-[#dee2ec] outline-none focus:border-cyan-500">
-                        {opts.map(u => <option key={u.code} value={u.code}>{u.name || u.code}{!u.isBase ? ` (×${u.factor})` : ''}</option>)}
+                      <select
+                        value={l.uom || base?.code || ''}
+                        onChange={(e) => setUom(l.sku, e.target.value)}
+                        className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900 outline-none focus:border-sky-500"
+                      >
+                        {opts.map((u) => (
+                          <option key={u.code} value={u.code}>
+                            {u.name || u.code}
+                            {!u.isBase ? ` (×${u.factor})` : ''}
+                          </option>
+                        ))}
                       </select>
                     )}
-                    <button onClick={() => removeLine(l.sku)} className="p-1.5 text-[#8a92a6] hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
+                    <button
+                      onClick={() => removeLine(l.sku)}
+                      className="p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 );
-            })}
+              })
+            )}
           </div>
         </div>
-        <div className="p-6 border-t border-[#30353d] flex items-center justify-between sticky bottom-0 bg-[#171c23]">
-          <div className="text-sm text-[#8a92a6]">รวม <b className="text-[#dee2ec] text-lg">฿{total.toLocaleString()}</b> · {lines.reduce((s, l) => s + l.qty, 0)} ชิ้น</div>
-          <button onClick={submit} disabled={saving || lines.length === 0} className="px-6 py-3 rounded-xl bg-cyan-600 text-white font-bold shadow-lg hover:bg-cyan-500 active:scale-95 transition-all disabled:opacity-50">
+        <div className="p-5 border-t border-slate-200/80 flex items-center justify-between sticky bottom-0 bg-slate-50/95 backdrop-blur-md">
+          <div className="text-sm text-slate-600 tabular-nums">
+            รวม <b className="text-slate-900 text-lg">฿{total.toLocaleString()}</b> ·{' '}
+            {lines.reduce((s, l) => s + l.qty, 0)} ชิ้น
+          </div>
+          <button
+            onClick={submit}
+            disabled={saving || lines.length === 0}
+            className="px-6 py-2.5 rounded-full bg-slate-900 text-white text-sm font-bold shadow-md hover:bg-slate-800 active:scale-95 transition-all disabled:opacity-50"
+          >
             {saving ? 'กำลังสร้าง...' : 'สร้างออเดอร์'}
           </button>
         </div>
@@ -1520,18 +1928,21 @@ function CreateOrderModal({ carriers, onClose, onDone }: { carriers: Carrier[]; 
 }
 
 function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const photoList = order.podPhoto ? order.podPhoto.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const photoList = order.podPhoto ? order.podPhoto.split(',').map((s) => s.trim()).filter(Boolean) : [];
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(photoList[0] || null);
   const tmsId = order.tmsJobId || (order.trackingNo?.startsWith('JOB-') ? order.trackingNo : null);
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[#171c23] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
+        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-slate-900"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center">
@@ -1546,36 +1957,60 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
 
         <div className="p-6 space-y-5 overflow-y-auto flex-1">
           {/* Summary Info */}
-          <div className="bg-[#1b2027] p-4 rounded-2xl border border-[#30353d] space-y-2">
+          <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80 space-y-2">
             <div className="flex justify-between items-center flex-wrap gap-2">
-              <span className="font-mono font-black text-[#dee2ec] text-base">{order.orderNo}</span>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-800 ring-1 ring-emerald-300">
+              <span className="font-mono font-black text-slate-900 text-base tabular-nums">{order.orderNo}</span>
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/25">
                 จัดส่งถึงแล้ว (DELIVERED)
               </span>
             </div>
-            <div className="text-xs text-[#d1c6ab] space-y-1">
-              <div><b>ลูกค้า:</b> {order.customerName} {order.phone ? `(${order.phone})` : ''}</div>
-              {order.shipAddress && <div><b>ที่อยู่ส่งมอบ:</b> {order.shipAddress}</div>}
-              {order.deliveredAt && <div><b>วันเวลาส่งมอบ:</b> {new Date(order.deliveredAt).toLocaleString('th-TH')}</div>}
+            <div className="text-xs text-slate-700 space-y-1">
+              <div>
+                <b>ลูกค้า:</b> {order.customerName} {order.phone ? `(${order.phone})` : ''}
+              </div>
+              {order.shipAddress && (
+                <div>
+                  <b>ที่อยู่ส่งมอบ:</b> {order.shipAddress}
+                </div>
+              )}
+              {order.deliveredAt && (
+                <div className="tabular-nums">
+                  <b>วันเวลาส่งมอบ:</b> {new Date(order.deliveredAt).toLocaleString('th-TH')}
+                </div>
+              )}
               {(order.driverName || order.vehiclePlate) && (
-                <div className="flex items-center gap-2 pt-1">
-                  {order.driverName && <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700">👤 คนขับ: {order.driverName}</span>}
-                  {order.vehiclePlate && <span className="bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700">🚚 ทะเบียน: {order.vehiclePlate}</span>}
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  {order.driverName && (
+                    <span className="bg-white text-slate-800 px-2.5 py-1 rounded-full text-xs font-bold border border-slate-200">
+                      👤 คนขับ: {order.driverName}
+                    </span>
+                  )}
+                  {order.vehiclePlate && (
+                    <span className="bg-white text-slate-800 px-2.5 py-1 rounded-full text-xs font-bold border border-slate-200">
+                      🚚 ทะเบียน: {order.vehiclePlate}
+                    </span>
+                  )}
                 </div>
               )}
               {order.podNote && (
-                <div className={`p-3 rounded-xl border font-medium mt-2 text-xs leading-relaxed ${
-                  order.podNote.includes('⚠️')
-                    ? 'bg-amber-950/40 border-amber-600/40 text-amber-200'
-                    : 'bg-[#171c23] border-[#30353d] text-[#d1c6ab]'
-                }`}>
-                  <div><b>บันทึกหลักฐาน POD:</b> {order.podNote}</div>
+                <div
+                  className={`p-3 rounded-xl border font-medium mt-2 text-xs leading-relaxed ${
+                    order.podNote.includes('⚠️')
+                      ? 'bg-amber-50 border-amber-200 text-amber-900'
+                      : 'bg-white border-slate-200 text-slate-700'
+                  }`}
+                >
+                  <div>
+                    <b>บันทึกหลักฐาน POD:</b> {order.podNote}
+                  </div>
                   {order.podNote.includes('⚠️') && (
-                    <div className="mt-2 pt-2 border-t border-amber-600/30 flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-[11px] text-amber-300">ระบบเชื่อมโยงใบคืนสินค้า (RMA/Quarantine) อัตโนมัติแล้ว</span>
+                    <div className="mt-2 pt-2 border-t border-amber-200 flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[11px] text-amber-800">
+                        ระบบเชื่อมโยงใบคืนสินค้า (RMA/Quarantine) อัตโนมัติแล้ว
+                      </span>
                       <a
                         href="/ops/returns"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold text-[11px] hover:bg-amber-700 transition-colors shadow-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-600 text-white font-bold text-[11px] hover:bg-amber-500 transition-colors shadow-2xs"
                       >
                         <span>ไปที่จัดการของคืน (RMA)</span>
                         <ExternalLink className="w-3 h-3" />
@@ -1589,20 +2024,16 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
 
           {/* Digital Signature */}
           <div>
-            <div className="text-xs font-bold text-[#d1c6ab] uppercase mb-2 flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">
               <span>ลายเซ็นดิจิทัลผู้รับ (e-Signature)</span>
             </div>
             {order.podSignature ? (
-              <div className="border border-[#30353d] rounded-2xl bg-[#171c23] p-3 flex items-center justify-center">
+              <div className="border border-slate-200 rounded-2xl bg-white p-3 flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={order.podSignature}
-                  alt="ลายเซ็นผู้รับสินค้า"
-                  className="max-h-40 object-contain rounded"
-                />
+                <img src={order.podSignature} alt="ลายเซ็นผู้รับสินค้า" className="max-h-40 object-contain rounded" />
               </div>
             ) : (
-              <div className="p-6 text-center text-xs text-[#8a92a6] border-2 border-dashed border-[#30353d] rounded-2xl">
+              <div className="p-6 text-center text-xs text-slate-500 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
                 ไม่มีข้อมูลลายเซ็น
               </div>
             )}
@@ -1610,24 +2041,20 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
 
           {/* Photo Proofs */}
           <div>
-            <div className="text-xs font-bold text-[#d1c6ab] uppercase mb-2 flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">
               <span>ภาพถ่ายหลักฐานส่งมอบ ({photoList.length} รูป)</span>
             </div>
             {photoList.length > 0 ? (
               <div className="space-y-3">
                 {selectedPhoto && (
-                  <div className="border border-[#30353d] rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center aspect-video relative group">
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center aspect-video relative group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={selectedPhoto}
-                      alt="รูปหลักฐานการส่งมอบสินค้า"
-                      className="max-h-80 w-full object-contain"
-                    />
+                    <img src={selectedPhoto} alt="รูปหลักฐานการส่งมอบสินค้า" className="max-h-80 w-full object-contain" />
                     <a
                       href={selectedPhoto}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="absolute top-3 right-3 bg-black/60 text-white p-2 rounded-xl hover:bg-black/90 transition-colors"
+                      className="absolute top-3 right-3 bg-slate-900/75 text-white p-2 rounded-full hover:bg-slate-900 transition-colors"
                       title="ดูภาพต้นฉบับขนาดเต็ม"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -1641,7 +2068,9 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
                         key={idx}
                         onClick={() => setSelectedPhoto(url)}
                         className={`w-16 h-16 rounded-xl border-2 overflow-hidden shrink-0 transition-all ${
-                          selectedPhoto === url ? 'border-emerald-500 scale-95 shadow-md' : 'border-[#30353d] opacity-70 hover:opacity-100'
+                          selectedPhoto === url
+                            ? 'border-emerald-500 scale-95 shadow-md'
+                            : 'border-slate-200 opacity-70 hover:opacity-100'
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1652,7 +2081,7 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
                 )}
               </div>
             ) : (
-              <div className="p-6 text-center text-xs text-[#8a92a6] border-2 border-dashed border-[#30353d] rounded-2xl">
+              <div className="p-6 text-center text-xs text-slate-500 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
                 ไม่มีรูปถ่ายหลักฐาน
               </div>
             )}
@@ -1660,10 +2089,13 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#30353d] flex items-center justify-between bg-[#1b2027]">
+        <div className="px-6 py-4 border-t border-slate-200/80 flex items-center justify-between bg-slate-50/90">
           {tmsId && (process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL) ? (
             <a
-              href={`${(process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').replace(/\/$/, '')}/track/${encodeURIComponent(tmsId)}`}
+              href={`${(process.env.NEXT_PUBLIC_TMS_APP_URL || process.env.NEXT_PUBLIC_TMS_URL || '').replace(
+                /\/$/,
+                ''
+              )}/track/${encodeURIComponent(tmsId)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"
@@ -1671,10 +2103,12 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
               <ExternalLink className="w-3.5 h-3.5" />
               <span>เปิดใบงานในระบบ TMS ({tmsId})</span>
             </a>
-          ) : <div />}
+          ) : (
+            <div />
+          )}
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 active:scale-95 transition-all"
+            className="px-5 py-2 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 active:scale-95 transition-all"
           >
             ปิดหน้าต่าง
           </button>
@@ -1684,10 +2118,19 @@ function PodProofModal({ order, onClose }: { order: Order; onClose: () => void }
   );
 }
 
-
 // Management-only order editor — fix a mis-entered order's shipping details and items (SKU/Qty/Price)
 // Guarded server-side. Resyncs stock reservations automatically when items are updated.
-function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; carriers: Carrier[]; onClose: () => void; onDone: () => void }) {
+function EditOrderModal({
+  order,
+  carriers,
+  onClose,
+  onDone,
+}: {
+  order: Order;
+  carriers: Carrier[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [activeTab, setActiveTab] = useState<'items' | 'info'>('items');
   const [deliveryMode, setDeliveryMode] = useState<'DELIVERY' | 'SELF_PICKUP'>(order.deliveryMode || 'DELIVERY');
   const [freightCost, setFreightCost] = useState(String(order.freightCost || ''));
@@ -1700,7 +2143,7 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
 
   // Line items state
   const [items, setItems] = useState<Line[]>(() =>
-    (order.items || []).map(l => ({
+    (order.items || []).map((l) => ({
       sku: l.sku || '',
       name: l.name || '',
       qty: Number(l.qty) || 1,
@@ -1718,17 +2161,17 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
   const [catalog, setCatalog] = useState<{ id: string; name: string; price?: number; location?: string }[]>([]);
   useEffect(() => {
     fetch('/api/products')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
         if (Array.isArray(data)) setCatalog(data);
       })
       .catch(() => {});
   }, []);
 
   const handleSkuChange = (index: number, newSku: string) => {
-    setItems(prev => {
+    setItems((prev) => {
       const next = [...prev];
-      const match = catalog.find(p => p.id?.toLowerCase() === newSku.trim().toLowerCase());
+      const match = catalog.find((p) => p.id?.toLowerCase() === newSku.trim().toLowerCase());
       next[index] = {
         ...next[index],
         sku: newSku,
@@ -1742,7 +2185,7 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
 
   const handleQtyChange = (index: number, val: string) => {
     const q = Math.max(1, parseInt(val, 10) || 1);
-    setItems(prev => {
+    setItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], qty: q };
       return next;
@@ -1750,28 +2193,23 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
   };
 
   const handleNameChange = (index: number, name: string) => {
-    setItems(prev => {
+    setItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], name };
       return next;
     });
   };
 
-
-
   const handleRemoveLine = (index: number) => {
     if (items.length <= 1) {
       toast.error('ต้องมีรายการสินค้าอย่างน้อย 1 รายการ');
       return;
     }
-    setItems(prev => prev.filter((_, i) => i !== index));
+    setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleAddLine = () => {
-    setItems(prev => [
-      ...prev,
-      { sku: '', name: '', qty: 1, price: 0, location: '', drop: 1, picked: 0, packed: 0 },
-    ]);
+    setItems((prev) => [...prev, { sku: '', name: '', qty: 1, price: 0, location: '', drop: 1, picked: 0, packed: 0 }]);
   };
 
   const totalItemQty = items.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
@@ -1805,11 +2243,14 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
         deliveryMode,
         freightCost: Number(freightCost) || 0,
         carrier: deliveryMode === 'SELF_PICKUP' ? 'ลูกค้ารับเอง' : carrier,
-        customerName, phone, shipAddress, refNo,
+        customerName,
+        phone,
+        shipAddress,
+        refNo,
       };
 
       if (canEditItems) {
-        payload.items = items.map(l => ({
+        payload.items = items.map((l) => ({
           sku: l.sku.trim().toUpperCase(),
           name: l.name.trim() || l.sku.trim().toUpperCase(),
           qty: Number(l.qty) || 1,
@@ -1827,7 +2268,7 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error === 'Forbidden' ? 'เฉพาะแอดมินขึ้นไปเท่านั้น' : (json.error || 'บันทึกไม่สำเร็จ'));
+      if (!res.ok) throw new Error(json.error === 'Forbidden' ? 'เฉพาะแอดมินขึ้นไปเท่านั้น' : json.error || 'บันทึกไม่สำเร็จ');
       toast.success('แก้ไขออเดอร์และรายการสินค้าเรียบร้อยแล้ว');
       onDone();
     } catch (e) {
@@ -1838,44 +2279,57 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl bg-[#171c23] border border-[#30353d] rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden text-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#30353d] bg-[#171c23] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white/90 shrink-0">
           <div>
-            <h3 className="font-bold text-[#dee2ec] text-sm flex items-center gap-2">
-              <Pencil className="w-4 h-4 text-cyan-400" />
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-sky-600" />
               แก้ไขออเดอร์ {order.orderNo}
             </h3>
-            <p className="text-[11px] text-[#8a92a6]">แก้ไขรหัสสินค้าที่พิมพ์ผิด หรือแก้ข้อมูลจัดส่ง/ลูกค้า (เฉพาะแอดมิน)</p>
+            <p className="text-[11px] text-slate-500">
+              แก้ไขรหัสสินค้าที่พิมพ์ผิด หรือแก้ข้อมูลจัดส่ง/ลูกค้า (เฉพาะแอดมิน)
+            </p>
           </div>
-          <button onClick={onClose} className="p-2 text-[#8a92a6] hover:text-[#dee2ec]"><X className="w-5 h-5" /></button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-[#30353d] bg-[#13171d] px-5 pt-2 shrink-0">
+        <div className="flex gap-1.5 border-b border-slate-200/80 bg-slate-50/90 px-6 py-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('items')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeTab === 'items'
-                ? 'border-cyan-400 text-cyan-300'
-                : 'border-transparent text-[#8a92a6] hover:text-white'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white'
             }`}
           >
-            <Package className="w-4 h-4" />
+            <Package className="w-3.5 h-3.5" />
             <span>รายการสินค้า ({items.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('info')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeTab === 'info'
-                ? 'border-cyan-400 text-cyan-300'
-                : 'border-transparent text-[#8a92a6] hover:text-white'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white'
             }`}
           >
-            <Truck className="w-4 h-4" />
+            <Truck className="w-3.5 h-3.5" />
             <span>ข้อมูลจัดส่ง / ลูกค้า</span>
           </button>
         </div>
@@ -1883,33 +2337,37 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
         {/* Body Content */}
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
           <datalist id="catalog-skus">
-            {catalog.map(p => (
-              <option key={p.id} value={p.id}>{p.name} {p.location ? `(${p.location})` : ''}</option>
+            {catalog.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} {p.location ? `(${p.location})` : ''}
+              </option>
             ))}
           </datalist>
 
           {activeTab === 'items' && (
             <div className="space-y-3">
               {canEditItems ? (
-                <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 text-xs">
-                  💡 <b>แก้ไขรหัสสินค้า (SKU):</b> พิมพ์แก้รหัสเดิมที่ผิดได้ทันที ระบบจะปลดการจองสต็อกเดิม และจองสต็อกของ SKU ตัวใหม่ให้อัตโนมัติ โดยใบส่งสินค้าจะอัปเดตเป็นรหัสที่ถูกต้องทันที
+                <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs">
+                  💡 <b>แก้ไขรหัสสินค้า (SKU):</b> พิมพ์แก้รหัสเดิมที่ผิดได้ทันที ระบบจะปลดการจองสต็อกเดิม
+                  และจองสต็อกของ SKU ตัวใหม่ให้อัตโนมัติ โดยใบส่งสินค้าจะอัปเดตเป็นรหัสที่ถูกต้องทันที
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs">
-                  🔒 ออเดอร์นี้อยู่ในสถานะ <b>{STATUS_TH[order.status] || order.status}</b> (ตัดสต็อกแล้ว) ไม่สามารถแก้ไขรายการสินค้าได้โดยตรง หากต้องการสลับของกรุณาทำรับคืนเข้าคลัง (Return)
+                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                  🔒 ออเดอร์นี้อยู่ในสถานะ <b>{STATUS_TH[order.status] || order.status}</b> (ตัดสต็อกแล้ว)
+                  ไม่สามารถแก้ไขรายการสินค้าได้โดยตรง หากต้องการสลับของกรุณาทำรับคืนเข้าคลัง (Return)
                 </div>
               )}
 
               <div className="space-y-2">
                 {items.map((it, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-[#1b2027] border border-[#30353d] space-y-2">
+                  <div key={idx} className="p-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-[#8a92a6]">รายการที่ {idx + 1}</span>
+                      <span className="text-[11px] font-bold text-slate-500">รายการที่ {idx + 1}</span>
                       {canEditItems && items.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveLine(idx)}
-                          className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-0.5 rounded-lg hover:bg-rose-500/10"
+                          className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 px-2.5 py-0.5 rounded-full hover:bg-rose-500/10"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>ลบ</span>
@@ -1919,37 +2377,37 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-[#8a92a6] block mb-1">รหัสสินค้า (SKU) *</label>
+                        <label className="text-[10px] font-semibold text-slate-500 block mb-1">รหัสสินค้า (SKU) *</label>
                         <input
                           type="text"
                           list="catalog-skus"
                           value={it.sku}
                           disabled={!canEditItems}
-                          onChange={e => handleSkuChange(idx, e.target.value)}
+                          onChange={(e) => handleSkuChange(idx, e.target.value)}
                           placeholder="เช่น A08842NT..."
-                          className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-[#dee2ec] font-mono text-xs font-bold outline-none focus:border-cyan-500 disabled:opacity-50"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-xs font-bold outline-none focus:border-sky-500 disabled:opacity-50"
                         />
                       </div>
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-[#8a92a6] block mb-1">ชื่อสินค้า</label>
+                        <label className="text-[10px] font-semibold text-slate-500 block mb-1">ชื่อสินค้า</label>
                         <input
                           type="text"
                           value={it.name}
                           disabled={!canEditItems}
-                          onChange={e => handleNameChange(idx, e.target.value)}
+                          onChange={(e) => handleNameChange(idx, e.target.value)}
                           placeholder="ชื่อสินค้า"
-                          className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-[#dee2ec] text-xs outline-none focus:border-cyan-500 disabled:opacity-50"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-sky-500 disabled:opacity-50"
                         />
                       </div>
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-[#8a92a6] block mb-1">จำนวน *</label>
+                        <label className="text-[10px] font-semibold text-slate-500 block mb-1">จำนวน *</label>
                         <input
                           type="number"
                           min="1"
                           value={it.qty}
                           disabled={!canEditItems}
-                          onChange={e => handleQtyChange(idx, e.target.value)}
-                          className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-[#dee2ec] font-bold text-xs text-right outline-none focus:border-cyan-500 disabled:opacity-50"
+                          onChange={(e) => handleQtyChange(idx, e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-xs text-right tabular-nums outline-none focus:border-sky-500 disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -1961,17 +2419,18 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
                 <button
                   type="button"
                   onClick={handleAddLine}
-                  className="w-full py-2.5 rounded-xl border border-dashed border-[#30353d] hover:border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2.5 rounded-full border border-dashed border-slate-300 hover:border-sky-500 text-sky-700 hover:bg-sky-500/5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   <span>เพิ่มรายการสินค้า (+ Add Item)</span>
                 </button>
               )}
 
-              <div className="flex justify-between items-center p-3 rounded-xl bg-[#13171d] border border-[#30353d] text-xs">
-                <span className="text-[#8a92a6]">สรุปรวมสินค้า:</span>
-                <span className="font-bold text-[#dee2ec] font-mono">
-                  รวม <span className="text-cyan-400">{totalItemQty.toLocaleString()}</span> ชิ้น {totalItemAmount > 0 ? ` (฿${totalItemAmount.toLocaleString()})` : ''}
+              <div className="flex justify-between items-center p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs tabular-nums">
+                <span className="text-slate-600 font-medium">สรุปรวมสินค้า:</span>
+                <span className="font-bold text-slate-900 font-mono">
+                  รวม <span className="text-sky-600">{totalItemQty.toLocaleString()}</span> ชิ้น{' '}
+                  {totalItemAmount > 0 ? ` (฿${totalItemAmount.toLocaleString()})` : ''}
                 </span>
               </div>
             </div>
@@ -1980,64 +2439,110 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
           {activeTab === 'info' && (
             <div className="space-y-3">
               <div className="flex gap-2">
-                {([{ key: 'DELIVERY', label: '🚚 ส่งขนส่ง' }, { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' }] as const).map(m => (
-                  <button key={m.key} type="button" onClick={() => setDeliveryMode(m.key)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${deliveryMode === m.key ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300' : 'border-[#30353d] bg-[#1b2027] text-[#8a92a6]'}`}>
+                {(
+                  [
+                    { key: 'DELIVERY', label: '🚚 ส่งขนส่ง' },
+                    { key: 'SELF_PICKUP', label: '🏭 ลูกค้ารับเอง' },
+                  ] as const
+                ).map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setDeliveryMode(m.key)}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all ${
+                      deliveryMode === m.key
+                        ? 'border-sky-600 bg-sky-600 text-white shadow-xs'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
                     {m.label}
                   </button>
                 ))}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <label className="text-xs text-[#8a92a6] space-y-1">
+                <label className="text-xs font-semibold text-slate-600 space-y-1">
                   <span>ค่าขนส่ง (บาท)</span>
-                  <input type="number" value={freightCost} onChange={e => setFreightCost(e.target.value)} placeholder="0"
-                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-bold outline-none focus:border-cyan-500" />
+                  <input
+                    type="number"
+                    value={freightCost}
+                    onChange={(e) => setFreightCost(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-bold tabular-nums outline-none focus:border-sky-500"
+                  />
                 </label>
-                <label className="text-xs text-[#8a92a6] space-y-1">
+                <label className="text-xs font-semibold text-slate-600 space-y-1">
                   <span>ขนส่ง</span>
-                  <select value={carrier} onChange={e => setCarrier(e.target.value)} disabled={deliveryMode === 'SELF_PICKUP'}
-                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] text-sm outline-none focus:border-cyan-500 disabled:opacity-40">
-                    {deliveryMode === 'SELF_PICKUP' ? <option>— ลูกค้ารับเอง —</option> : <>
-                      <option value="">— เลือก —</option>
-                      {carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                      <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
-                    </>}
+                  <select
+                    value={carrier}
+                    onChange={(e) => setCarrier(e.target.value)}
+                    disabled={deliveryMode === 'SELF_PICKUP'}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-sm outline-none focus:border-sky-500 disabled:opacity-40"
+                  >
+                    {deliveryMode === 'SELF_PICKUP' ? (
+                      <option>— ลูกค้ารับเอง —</option>
+                    ) : (
+                      <>
+                        <option value="">— เลือก —</option>
+                        {carriers.map((c) => (
+                          <option key={c.id} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                        <option value="รถขนส่งบริษัท">รถขนส่งบริษัท (จัดส่งเอง)</option>
+                      </>
+                    )}
                   </select>
                 </label>
               </div>
 
-              <label className="text-xs text-[#8a92a6] space-y-1 block">
+              <label className="text-xs font-semibold text-slate-600 space-y-1 block">
                 <span>ชื่อลูกค้า</span>
-                <input value={customerName} onChange={e => setCustomerName(e.target.value)}
-                  className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-medium outline-none focus:border-cyan-500" />
+                <input
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-medium outline-none focus:border-sky-500"
+                />
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <label className="text-xs text-[#8a92a6] space-y-1">
+                <label className="text-xs font-semibold text-slate-600 space-y-1">
                   <span>เบอร์โทร</span>
-                  <input value={phone} onChange={e => setPhone(e.target.value)}
-                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 outline-none focus:border-sky-500"
+                  />
                 </label>
-                <label className="text-xs text-[#8a92a6] space-y-1">
+                <label className="text-xs font-semibold text-slate-600 space-y-1">
                   <span>อ้างอิง/PO</span>
-                  <input value={refNo} onChange={e => setRefNo(e.target.value)}
-                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] font-mono outline-none focus:border-cyan-500" />
+                  <input
+                    value={refNo}
+                    onChange={(e) => setRefNo(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-mono outline-none focus:border-sky-500"
+                  />
                 </label>
               </div>
-              <label className="text-xs text-[#8a92a6] space-y-1 block">
+              <label className="text-xs font-semibold text-slate-600 space-y-1 block">
                 <span>ที่อยู่ / ปลายทาง</span>
-                <input value={shipAddress} onChange={e => setShipAddress(e.target.value)}
-                  className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-3 py-2.5 text-[#dee2ec] outline-none focus:border-cyan-500" />
+                <input
+                  value={shipAddress}
+                  onChange={(e) => setShipAddress(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 outline-none focus:border-sky-500"
+                />
               </label>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#30353d] bg-[#171c23] shrink-0">
-          <button onClick={save} disabled={saving}
-            className="w-full py-2.5 rounded-xl bg-cyan-500 text-[#062028] font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-cyan-400 transition-colors">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} บันทึกการแก้ไขออเดอร์
+        <div className="p-4 border-t border-slate-200/80 bg-slate-50/90 shrink-0">
+          <button
+            onClick={save}
+            disabled={saving}
+            className="w-full py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors shadow-md"
+          >
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}{' '}
+            บันทึกการแก้ไขออเดอร์
           </button>
         </div>
       </div>
@@ -2047,7 +2552,7 @@ function EditOrderModal({ order, carriers, onClose, onDone }: { order: Order; ca
 
 function CreateTripModal({
   selectedOrders,
-  carriers,
+  carriers: _carriers,
   onClose,
   onDone,
 }: {
@@ -2056,6 +2561,7 @@ function CreateTripModal({
   onClose: () => void;
   onDone: (tripId: string) => void;
 }) {
+  void _carriers;
   const [orders, setOrders] = useState<Order[]>(selectedOrders);
   const [driverName, setDriverName] = useState(orders[0]?.driverName || '');
   const [vehiclePlate, setVehiclePlate] = useState(orders[0]?.vehiclePlate || '');
@@ -2068,8 +2574,8 @@ function CreateTripModal({
 
   useEffect(() => {
     fetch('/api/fleet-vehicles')
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (d.vehicles && Array.isArray(d.vehicles)) {
           setVehicles(d.vehicles);
           if (!driverName && !vehiclePlate && d.vehicles[0]) {
@@ -2106,7 +2612,7 @@ function CreateTripModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderIds: orders.map(o => o.id),
+          orderIds: orders.map((o) => o.id),
           driverName: driverName.trim(),
           vehiclePlate: vehiclePlate.trim(),
           vehicleType,
@@ -2126,18 +2632,21 @@ function CreateTripModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[#171c23] border border-[#30353d] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
+        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-slate-900"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 bg-[#1b2027] border-b border-[#30353d] text-white flex justify-between items-center">
+        <div className="px-6 py-5 bg-slate-900 text-white flex justify-between items-center">
           <div className="font-black text-lg flex items-center gap-2">
-            <Truck className="w-6 h-6 text-[#facc15]" />
+            <Truck className="w-6 h-6 text-amber-400" />
             <span>จัดทริปส่งสินค้ารวม (Multi-Drop Trip Manifest)</span>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
@@ -2147,10 +2656,10 @@ function CreateTripModal({
 
         <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
           {/* Dispatcher Form */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#1b2027] p-4 rounded-2xl border border-[#30353d]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80">
             {vehicles.length > 0 && (
               <div className="col-span-1 sm:col-span-2">
-                <label className="block text-[#d1c6ab] font-bold mb-1">
+                <label className="block text-slate-700 font-bold mb-1">
                   🚛 เลือกรถจากกองยาน (TMS / Fleet Sync)
                 </label>
                 <select
@@ -2164,43 +2673,45 @@ function CreateTripModal({
                       if (v.vehicleType) setVehicleType(v.vehicleType);
                     }
                   }}
-                  className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-indigo-500/40 text-indigo-300 font-bold focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-indigo-200 text-indigo-900 font-bold focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="">-- ระบุข้อมูลเอง หรือเลือกจากรายการด้านล่าง --</option>
                   {vehicles.map((v: any) => (
                     <option key={v.id} value={v.id}>
-                      {v.plate || v.plateNumber} {(v.driverName || v.assignedDriverName) ? `- ${v.driverName || v.assignedDriverName}` : ''} ({v.vehicleType || '4-Wheel'}) {v.statusLabel ? `[${v.statusLabel}]` : ''}
+                      {v.plate || v.plateNumber}{' '}
+                      {v.driverName || v.assignedDriverName ? `- ${v.driverName || v.assignedDriverName}` : ''} (
+                      {v.vehicleType || '4-Wheel'}) {v.statusLabel ? `[${v.statusLabel}]` : ''}
                     </option>
                   ))}
                 </select>
               </div>
             )}
             <div>
-              <label className="block text-[#d1c6ab] font-bold mb-1">👤 ชื่อพนักงานขับรถ *</label>
+              <label className="block text-slate-700 font-bold mb-1">👤 ชื่อพนักงานขับรถ *</label>
               <input
                 type="text"
                 value={driverName}
-                onChange={e => setDriverName(e.target.value)}
+                onChange={(e) => setDriverName(e.target.value)}
                 placeholder="เช่น สมชาย หรือ คนขับบริษัท"
-                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:border-indigo-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-[#d1c6ab] font-bold mb-1">🚚 ทะเบียนรถ *</label>
+              <label className="block text-slate-700 font-bold mb-1">🚚 ทะเบียนรถ *</label>
               <input
                 type="text"
                 value={vehiclePlate}
-                onChange={e => setVehiclePlate(e.target.value)}
+                onChange={(e) => setVehiclePlate(e.target.value)}
                 placeholder="เช่น กก-4321 หรือ 70-1234"
-                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:border-indigo-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-[#d1c6ab] font-bold mb-1">🚗 ประเภทรถ</label>
+              <label className="block text-slate-700 font-bold mb-1">🚗 ประเภทรถ</label>
               <select
                 value={vehicleType}
-                onChange={e => setVehicleType(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+                onChange={(e) => setVehicleType(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:border-indigo-500 focus:outline-none"
               >
                 <option value="4-Wheel">กระบะ 4 ล้อ (4-Wheel)</option>
                 <option value="6-Wheel">รถบรรทุก 6 ล้อ (6-Wheel)</option>
@@ -2209,58 +2720,60 @@ function CreateTripModal({
               </select>
             </div>
             <div>
-              <label className="block text-[#d1c6ab] font-bold mb-1">⚓ ท่าโหลดสินค้า (Dock Bay)</label>
+              <label className="block text-slate-700 font-bold mb-1">⚓ ท่าโหลดสินค้า (Dock Bay)</label>
               <input
                 type="text"
                 value={dockBay}
-                onChange={e => setDockBay(e.target.value)}
+                onChange={(e) => setDockBay(e.target.value)}
                 placeholder="เช่น BAY-01 หรือ BAY-02"
-                className="w-full px-3 py-2 rounded-xl bg-[#171c23] border border-[#30353d] text-white font-bold focus:border-indigo-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:border-indigo-500 focus:outline-none"
               />
             </div>
           </div>
 
           {/* TMS Integration Toggle */}
-          <div className="bg-[#1b2027] p-4 rounded-2xl border border-[#30353d] flex items-center justify-between">
+          <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-4">
             <div>
-              <b className="text-white text-sm">🌐 ส่งงานเข้าแอปคนขับ NEXUS-TMS</b>
-              <p className="text-[#8a92a6] text-[11px] mt-0.5">
+              <b className="text-slate-900 text-sm">🌐 ส่งงานเข้าแอปคนขับ NEXUS-TMS</b>
+              <p className="text-slate-600 text-[11px] mt-0.5">
                 สร้างงาน Multi-Drop ใน TMS ให้คนขับเห็นจุดส่งตามลำดับ (ปิดสวิตช์นี้ได้หากใช้งาน WMS แบบ Standalone)
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
               <input
                 type="checkbox"
                 checked={sendToTms}
-                onChange={e => setSendToTms(e.target.checked)}
+                onChange={(e) => setSendToTms(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
             </label>
           </div>
 
           {/* Stops List (Re-orderable) */}
           <div className="space-y-2">
-            <div className="text-[#d1c6ab] font-bold uppercase tracking-wider flex justify-between items-center">
+            <div className="text-slate-700 font-bold uppercase tracking-wider flex justify-between items-center tabular-nums">
               <span>ลำดับจุดส่งสินค้าในทริปนี้ ({orders.length} จุดแวะ):</span>
-              <span className="text-[11px] text-[#8a92a6]">กดลูกศรขึ้น/ลง เพื่อสลับลำดับจุดส่ง</span>
+              <span className="text-[11px] text-slate-500 font-medium normal-case">
+                กดลูกศรขึ้น/ลง เพื่อสลับลำดับจุดส่ง
+              </span>
             </div>
 
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {orders.map((o, idx) => (
                 <div
                   key={o.id}
-                  className="bg-[#1b2027] p-3 rounded-2xl border border-[#30353d] flex items-center justify-between gap-3"
+                  className="bg-slate-50/90 p-3 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black grid place-items-center text-xs shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-indigo-600 text-white font-black grid place-items-center text-xs shrink-0 tabular-nums">
                       #{idx + 1}
                     </span>
                     <div className="min-w-0">
-                      <div className="font-bold text-white truncate">
-                        <span className="font-mono text-indigo-300">{o.orderNo}</span> · {o.customerName}
+                      <div className="font-bold text-slate-900 truncate">
+                        <span className="font-mono text-indigo-700">{o.orderNo}</span> · {o.customerName}
                       </div>
-                      <div className="text-[11px] text-[#8a92a6] truncate">
+                      <div className="text-[11px] text-slate-500 truncate tabular-nums">
                         📍 {o.shipAddress || 'ไม่ระบุที่อยู่'} ({o.totalQty} ชิ้น)
                       </div>
                     </div>
@@ -2271,7 +2784,7 @@ function CreateTripModal({
                       type="button"
                       disabled={idx === 0}
                       onClick={() => moveOrder(idx, 'UP')}
-                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 disabled:opacity-30 text-slate-700"
                       title="เลื่อนขึ้น"
                     >
                       ▲
@@ -2280,7 +2793,7 @@ function CreateTripModal({
                       type="button"
                       disabled={idx === orders.length - 1}
                       onClick={() => moveOrder(idx, 'DOWN')}
-                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 disabled:opacity-30 text-slate-700"
                       title="เลื่อนลง"
                     >
                       ▼
@@ -2293,10 +2806,10 @@ function CreateTripModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#30353d] flex items-center justify-between bg-[#1b2027]">
+        <div className="px-6 py-4 border-t border-slate-200/80 flex items-center justify-between bg-slate-50/90">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-[#30353d] text-[#d1c6ab] text-xs font-bold hover:bg-[#171c23]"
+            className="px-5 py-2 rounded-full border border-slate-200 text-slate-700 text-xs font-bold hover:bg-white transition-colors"
           >
             ยกเลิก
           </button>
@@ -2304,7 +2817,7 @@ function CreateTripModal({
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-6 py-2.5 rounded-xl bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] text-xs font-black shadow-lg shadow-[#facc15]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 tabular-nums"
           >
             {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
             <span>ยืนยันจัดทริปส่ง ({orders.length} ออเดอร์)</span>

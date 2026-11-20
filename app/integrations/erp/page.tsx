@@ -13,7 +13,6 @@ import {
   Download,
   Info,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { errorMessage } from '@/lib/errors';
 
@@ -23,7 +22,7 @@ export default function ErpIntegrationPage() {
   const [zplOutput, setZplOutput] = useState<string>('');
   const [loadingZpl, setLoadingZpl] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+
   // Simulation states
   const [simulatingAsn, setSimulatingAsn] = useState(false);
   const [asnResult, setAsnResult] = useState<any>(null);
@@ -168,47 +167,45 @@ export default function ErpIntegrationPage() {
   };
 
   return (
-    <div className="relative min-h-screen p-4 md:p-8 pb-32 font-mono">
-      <AmbientBackground />
-
-      <div className="max-w-6xl mx-auto space-y-6 relative z-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#30353d] pb-6">
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Open Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-1">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#4cd7f6] animate-pulse" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6]">
-                ENTERPRISE INTEGRATION HUB & CARRIER GATEWAY
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+                Enterprise Integration Hub &amp; Carrier Gateway
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#dee2ec] tracking-tight">
-              ศูนย์เชื่อมต่อระบบองค์กร (ERP & Hardware Console)
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+              ศูนย์เชื่อมต่อระบบองค์กร (ERP &amp; Hardware Console)
             </h1>
-            <p className="text-xs text-[#8a92a6] mt-1">
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
               ระบบเชื่อมต่อ 2 ทิศทาง: SAP, Odoo, Dynamics 365, e-Logistics Carriers และเครื่องพิมพ์ ZPL อุตสาหกรรม
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-lg border border-[#57ec7f]/40 bg-[#57ec7f]/10 text-[#57ec7f] text-xs font-bold flex items-center gap-1.5">
+            <span className="px-3.5 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/12 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Open API Ready
             </span>
           </div>
         </div>
 
         {/* Explain Box */}
-        <div className="flex items-start gap-3 p-3.5 rounded-xl border border-[#4cd7f6]/30 bg-[#4cd7f6]/5 text-xs text-[#dee2ec]">
-          <Info className="w-5 h-5 text-[#4cd7f6] flex-shrink-0 mt-0.5" />
+        <div className="nx-glass-card flex items-start gap-3 p-4 text-xs text-slate-700 border-l-4 border-l-sky-500">
+          <Info className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-bold text-[#4cd7f6]">คำแนะนำสำหรับผู้ใช้งาน:</p>
-            <p className="text-[#8a92a6] leading-relaxed">
-              หน้านี้จัดทำขึ้นสำหรับ <strong>ฝ่าย IT, วิศวกรระบบ และผู้ดูแล ERP</strong> เพื่อดู <strong>API Payload Schemas (รูปแบบ JSON)</strong> สำหรับนำไปเชื่อมโยงกับ SAP / Odoo ให้ส่งข้อมูลเข้า WMS อัตโนมัติ รวมถึงสร้าง <strong>โค้ดคำสั่ง ZPL II</strong> ส่งตรงเข้าเครื่องพิมพ์สลากความร้อนระดับอุตสาหกรรม (Zebra/TSC) ผ่านระบบเครือข่าย
+            <p className="font-bold text-slate-900">คำแนะนำสำหรับผู้ใช้งาน:</p>
+            <p className="text-slate-600 leading-relaxed">
+              หน้านี้จัดทำขึ้นสำหรับ <strong className="text-slate-900">ฝ่าย IT, วิศวกรระบบ และผู้ดูแล ERP</strong> เพื่อดู <strong className="text-slate-900">API Payload Schemas (รูปแบบ JSON)</strong> สำหรับนำไปเชื่อมโยงกับ SAP / Odoo ให้ส่งข้อมูลเข้า WMS อัตโนมัติ รวมถึงสร้าง <strong className="text-slate-900">โค้ดคำสั่ง ZPL II</strong> ส่งตรงเข้าเครื่องพิมพ์สลากความร้อนระดับอุตสาหกรรม (Zebra/TSC) ผ่านระบบเครือข่าย
             </p>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 border-b border-[#30353d] pb-3 text-xs">
+        <div className="nx-glass-card p-2 flex flex-wrap gap-1.5 text-xs">
           {[
             { id: 'status', label: 'สถานะเชื่อมต่อ (ERP Status)', icon: Network },
             { id: 'asn', label: 'รับเข้า ASN (Inbound API)', icon: ArrowDownLeft },
@@ -220,13 +217,13 @@ export default function ErpIntegrationPage() {
               <button
                 key={tab.id}
                 onClick={() => setSelectedTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all font-semibold ${
                   selectedTab === tab.id
-                    ? 'bg-[#facc15] text-[#1b1600] border-[#facc15] font-bold shadow-md'
-                    : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#252a32]'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
               </button>
             );
@@ -244,21 +241,25 @@ export default function ErpIntegrationPage() {
               { name: 'e-Logistics Carriers (Flash/Kerry)', status: 'ACTIVE', ping: '45ms', type: 'Carrier AWB' },
               { name: 'Zebra / TSC Network Printers', status: 'READY (PORT 9100)', ping: '2ms', type: 'Raw TCP Socket' }
             ].map((conn, idx) => (
-              <div key={idx} className="p-5 rounded-xl border border-[#30353d] bg-[#171c23] shadow-lg flex flex-col justify-between">
+              <div key={idx} className="nx-glass-card p-5 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-3">
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#4cd7f6]/10 text-[#4cd7f6] border border-[#4cd7f6]/30 font-bold">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-500/12 text-sky-700 border border-sky-500/20 font-bold">
                       {conn.type}
                     </span>
-                    <span className="text-[10px] text-[#57ec7f] flex items-center gap-1 font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#57ec7f]" /> {conn.ping}
+                    <span className="text-[11px] text-emerald-700 flex items-center gap-1.5 font-bold tabular-nums">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {conn.ping}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-[#dee2ec]">{conn.name}</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{conn.name}</h3>
                 </div>
-                <div className="pt-4 border-t border-[#30353d] mt-4 flex justify-between items-center text-xs">
-                  <span className="text-[#8a92a6]">สถานะ:</span>
-                  <span className="text-[#57ec7f] font-bold">{conn.status}</span>
+                <div className="pt-3 border-t border-slate-200/70 mt-4 flex justify-between items-center text-xs">
+                  <span className="text-slate-500">สถานะ:</span>
+                  <span className={`font-bold px-2.5 py-0.5 rounded-full border text-[11px] ${
+                    conn.status === 'STANDBY'
+                      ? 'bg-amber-500/15 text-amber-800 border-amber-500/25'
+                      : 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
+                  }`}>{conn.status}</span>
                 </div>
               </div>
             ))}
@@ -267,39 +268,39 @@ export default function ErpIntegrationPage() {
 
         {/* Tab Content: ASN */}
         {selectedTab === 'asn' && (
-          <div className="p-6 rounded-xl border border-[#30353d] bg-[#171c23] space-y-4 shadow-xl">
+          <div className="nx-glass-card p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[#dee2ec]">Inbound ASN Ingestion Endpoint (รับตู้คอนเทนเนอร์เข้าคลัง)</h3>
-                <p className="text-xs text-[#8a92a6]">
+                <h3 className="text-base font-bold text-slate-900">Inbound ASN Ingestion Endpoint (รับตู้คอนเทนเนอร์เข้าคลัง)</h3>
+                <p className="text-xs text-slate-600 mt-0.5">
                   ส่งข้อมูลตู้สินค้าและใบส่งของล่วงหน้า (Advanced Shipping Notice) จาก ERP เข้าสู่ระบบ WMS
                 </p>
               </div>
               <button
                 onClick={handleSimulateAsn}
                 disabled={simulatingAsn}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#57ec7f] text-[#090f15] font-bold text-xs hover:bg-[#48cb6d] transition-all shadow-md disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-sm disabled:opacity-50"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>{simulatingAsn ? 'กำลังส่งข้อมูล...' : '🚀 ทดสอบยิงข้อมูล ASN เข้า WMS จริง'}</span>
               </button>
             </div>
 
-            <div className="flex items-center justify-between bg-[#090f15] p-3 rounded-lg border border-[#30353d] text-xs">
-              <span className="text-[#4cd7f6] font-bold">POST /api/erp/asn</span>
-              <span className="text-[10px] text-[#8a92a6]">Format: application/json · Header: x-api-key</span>
+            <div className="flex items-center justify-between bg-slate-50/90 p-3 rounded-xl border border-slate-200/80 text-xs font-mono">
+              <span className="text-sky-700 font-bold">POST /api/erp/asn</span>
+              <span className="text-[11px] text-slate-500">Format: application/json · Header: x-api-key</span>
             </div>
 
-            <div className="bg-[#090f15] p-4 rounded-lg border border-[#30353d] text-xs text-[#dee2ec] overflow-x-auto">
+            <div className="nx-dark-accent-card p-4 text-xs font-mono overflow-x-auto">
               <pre>{JSON.stringify(sampleAsn, null, 2)}</pre>
             </div>
 
             {asnResult && (
-              <div className="p-4 rounded-lg border border-[#57ec7f]/40 bg-[#57ec7f]/10 text-xs space-y-1">
-                <div className="font-bold text-[#57ec7f] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" /> ผลลัพธ์การตอบกลับจาก WMS Backend (200 OK):
+              <div className="p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/12 text-xs space-y-1">
+                <div className="font-bold text-emerald-800 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" /> ผลลัพธ์การตอบกลับจาก WMS Backend (200 OK):
                 </div>
-                <pre className="text-[#dee2ec] overflow-x-auto">{JSON.stringify(asnResult, null, 2)}</pre>
+                <pre className="text-slate-800 font-mono overflow-x-auto">{JSON.stringify(asnResult, null, 2)}</pre>
               </div>
             )}
           </div>
@@ -307,39 +308,39 @@ export default function ErpIntegrationPage() {
 
         {/* Tab Content: Orders */}
         {selectedTab === 'orders' && (
-          <div className="p-6 rounded-xl border border-[#30353d] bg-[#171c23] space-y-4 shadow-xl">
+          <div className="nx-glass-card p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[#dee2ec]">Outbound Sales Orders Ingestion (คำสั่งขายจาก ERP)</h3>
-                <p className="text-xs text-[#8a92a6]">
+                <h3 className="text-base font-bold text-slate-900">Outbound Sales Orders Ingestion (คำสั่งขายจาก ERP)</h3>
+                <p className="text-xs text-slate-600 mt-0.5">
                   ส่งใบสั่งขายจาก ERP / OMS เพื่อนำไปจัดกลุ่ม Wave Picking และพิมพ์ใบปะหน้าอัตโนมัติ
                 </p>
               </div>
               <button
                 onClick={handleSimulateOrder}
                 disabled={simulatingOrder}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#57ec7f] text-[#090f15] font-bold text-xs hover:bg-[#48cb6d] transition-all shadow-md disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-sm disabled:opacity-50"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>{simulatingOrder ? 'กำลังส่งข้อมูล...' : '🚀 ทดสอบยิงคำสั่งขายเข้า WMS จริง'}</span>
               </button>
             </div>
 
-            <div className="flex items-center justify-between bg-[#090f15] p-3 rounded-lg border border-[#30353d] text-xs">
-              <span className="text-[#57ec7f] font-bold">POST /api/erp/orders</span>
-              <span className="text-[10px] text-[#8a92a6]">Format: application/json · Header: x-api-key</span>
+            <div className="flex items-center justify-between bg-slate-50/90 p-3 rounded-xl border border-slate-200/80 text-xs font-mono">
+              <span className="text-emerald-700 font-bold">POST /api/erp/orders</span>
+              <span className="text-[11px] text-slate-500">Format: application/json · Header: x-api-key</span>
             </div>
 
-            <div className="bg-[#090f15] p-4 rounded-lg border border-[#30353d] text-xs text-[#dee2ec] overflow-x-auto">
+            <div className="nx-dark-accent-card p-4 text-xs font-mono overflow-x-auto">
               <pre>{JSON.stringify(sampleOrder, null, 2)}</pre>
             </div>
 
             {orderResult && (
-              <div className="p-4 rounded-lg border border-[#57ec7f]/40 bg-[#57ec7f]/10 text-xs space-y-1">
-                <div className="font-bold text-[#57ec7f] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" /> ผลลัพธ์การตอบกลับจาก WMS Backend (200 OK):
+              <div className="p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/12 text-xs space-y-1">
+                <div className="font-bold text-emerald-800 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" /> ผลลัพธ์การตอบกลับจาก WMS Backend (200 OK):
                 </div>
-                <pre className="text-[#dee2ec] overflow-x-auto">{JSON.stringify(orderResult, null, 2)}</pre>
+                <pre className="text-slate-800 font-mono overflow-x-auto">{JSON.stringify(orderResult, null, 2)}</pre>
               </div>
             )}
           </div>
@@ -347,30 +348,30 @@ export default function ErpIntegrationPage() {
 
         {/* Tab Content: ZPL */}
         {selectedTab === 'zpl' && (
-          <div className="p-6 rounded-xl border border-[#30353d] bg-[#171c23] space-y-4 shadow-xl">
+          <div className="nx-glass-card p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[#dee2ec]">ZPL II Thermal Label Generator (เครื่องพิมพ์บาร์โค้ดความร้อน)</h3>
-                <p className="text-xs text-[#8a92a6]">
+                <h3 className="text-base font-bold text-slate-900">ZPL II Thermal Label Generator (เครื่องพิมพ์บาร์โค้ดความร้อน)</h3>
+                <p className="text-xs text-slate-600 mt-0.5">
                   สร้างคำสั่งพิมพ์ ZPL ตรงเข้าเครื่องพิมพ์บาร์โค้ดความร้อนอุตสาหกรรม (Zebra / TSC / Godex)
                 </p>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => { setZplType('PALLET'); setZplOutput(''); }}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                    zplType === 'PALLET' ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]' : 'bg-[#090f15] border-[#30353d] text-[#dee2ec]'
+                  className={`px-4 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                    zplType === 'PALLET' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  ฉลากพาเลท (Pallet 4x6")
+                  ฉลากพาเลท (Pallet 4x6&quot;)
                 </button>
                 <button
                   onClick={() => { setZplType('PRODUCT'); setZplOutput(''); }}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                    zplType === 'PRODUCT' ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]' : 'bg-[#090f15] border-[#30353d] text-[#dee2ec]'
+                  className={`px-4 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                    zplType === 'PRODUCT' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  ฉลากสินค้า (Product 3x2")
+                  ฉลากสินค้า (Product 3x2&quot;)
                 </button>
               </div>
             </div>
@@ -379,7 +380,7 @@ export default function ErpIntegrationPage() {
               <button
                 onClick={handleGenerateZpl}
                 disabled={loadingZpl}
-                className="px-4 py-2 rounded-lg bg-[#facc15] hover:bg-[#ffe083] text-[#1b1600] font-bold text-xs transition-all shadow-md active:scale-95 disabled:opacity-50"
+                className="px-5 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50"
               >
                 {loadingZpl ? 'กำลังประมวลผล...' : 'สร้างโค้ด ZPL อัตโนมัติ (Generate ZPL)'}
               </button>
@@ -387,7 +388,7 @@ export default function ErpIntegrationPage() {
               {zplOutput && (
                 <button
                   onClick={downloadZplFile}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#30353d] bg-[#252a32] text-[#dee2ec] hover:text-[#facc15] text-xs font-bold transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200/80 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>ดาวน์โหลดไฟล์ .zpl</span>
@@ -399,13 +400,13 @@ export default function ErpIntegrationPage() {
             {zplOutput && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
                 {/* Visual Label Mockup */}
-                <div className="p-4 rounded-xl border border-[#30353d] bg-[#090f15] flex flex-col items-center justify-center">
-                  <span className="text-[11px] font-bold text-[#8a92a6] mb-3 self-start">
+                <div className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 flex flex-col items-center justify-center">
+                  <span className="text-[11px] font-bold text-slate-500 mb-3 self-start">
                     👁️ จำลองหน้าตาสลากที่พิมพ์ออกมา (Label Visual Mockup):
                   </span>
-                  
+
                   {zplType === 'PALLET' ? (
-                    <div className="w-72 bg-white text-black p-4 rounded shadow-2xl border-2 border-black font-sans text-[11px] space-y-2">
+                    <div className="w-72 bg-white text-black p-4 rounded shadow-lg border-2 border-black font-sans text-[11px] space-y-2">
                       <div className="border-b-2 border-black pb-1 flex justify-between items-center font-bold">
                         <span className="text-xs">NEXUS LOGISTICS PALLET</span>
                         <span className="text-[9px] bg-black text-white px-1">GS1-128</span>
@@ -426,7 +427,7 @@ export default function ErpIntegrationPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="w-64 bg-white text-black p-3 rounded shadow-2xl border-2 border-black font-sans text-[10px] space-y-1.5">
+                    <div className="w-64 bg-white text-black p-3 rounded shadow-lg border-2 border-black font-sans text-[10px] space-y-1.5">
                       <div className="font-bold text-xs leading-tight">Heavy Duty Solar Inverter 5kW</div>
                       <div className="flex justify-between font-mono text-[9px]">
                         <span>SKU: <strong>SKU-ENT-8840</strong></span>
@@ -446,17 +447,17 @@ export default function ErpIntegrationPage() {
 
                 {/* Raw ZPL Code */}
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs text-[#d1c6ab]">
-                    <span>Raw ZPL II Payload (พร้อมส่ง TCP Port 9100):</span>
+                  <div className="flex justify-between items-center text-xs text-slate-600">
+                    <span className="font-semibold">Raw ZPL II Payload (พร้อมส่ง TCP Port 9100):</span>
                     <button
                       onClick={() => copyToClipboard(zplOutput)}
-                      className="flex items-center gap-1 text-[#facc15] hover:underline"
+                      className="flex items-center gap-1 text-emerald-700 font-semibold hover:underline"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>{copied ? 'คัดลอกแล้ว!' : 'คัดลอกโค้ด'}</span>
                     </button>
                   </div>
-                  <pre className="bg-[#090f15] p-4 rounded-xl border border-[#30353d] text-[11px] text-[#57ec7f] overflow-x-auto max-h-80 font-mono">
+                  <pre className="nx-dark-accent-card p-4 text-[11px] text-emerald-300 overflow-x-auto max-h-80 font-mono">
                     {zplOutput}
                   </pre>
                 </div>

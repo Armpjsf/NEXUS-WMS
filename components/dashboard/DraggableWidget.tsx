@@ -34,7 +34,7 @@ export function DraggableWidget({ id, children, className, editMode = false }: D
         style={style} 
         className={cn(
             "relative group h-full", 
-            editMode && "ring-2 ring-[#facc15]/50 rounded-xl bg-[#171c23]",
+            editMode && "ring-2 ring-emerald-500/50 rounded-[22px]",
             className
         )}
     >
@@ -43,7 +43,7 @@ export function DraggableWidget({ id, children, className, editMode = false }: D
           <div 
             {...attributes} 
             {...listeners}
-            className="absolute top-4 right-4 z-50 p-2 bg-[#090f15]/90 backdrop-blur-sm rounded-lg border border-[#30353d] text-[#d1c6ab] hover:text-[#facc15] hover:border-[#facc15] shadow-lg cursor-grab active:cursor-grabbing transition-colors"
+            className="absolute top-4 right-4 z-50 p-2 bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 text-slate-600 hover:text-emerald-600 hover:border-emerald-300 shadow-md cursor-grab active:cursor-grabbing transition-colors"
           >
              <GripVertical className="w-4 h-4" />
           </div>

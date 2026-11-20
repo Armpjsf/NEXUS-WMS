@@ -12,7 +12,6 @@ import {
   Headphones,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import {
   VoicePickStep,
   synthesizePickSpeech,
@@ -47,7 +46,7 @@ export default function VoicePickingPage() {
         let stepCounter = 1;
 
         for (const order of pendingOrders) {
-          for (const item of (order.items || [])) {
+          for (const item of order.items || []) {
             const loc = item.location || 'A-01-01';
             const numPart = loc.replace(/\D/g, '');
             const checkDigit = numPart.length >= 2 ? numPart.slice(-2) : '12';
@@ -113,7 +112,7 @@ export default function VoicePickingPage() {
           body: JSON.stringify({ id: orderId, status: 'PICKED' }),
         });
         if (res.ok) {
-          setCompletedOrderIds(prev => (prev.includes(orderId) ? prev : [...prev, orderId]));
+          setCompletedOrderIds((prev) => (prev.includes(orderId) ? prev : [...prev, orderId]));
         }
       } catch (err) {
         console.error(`Failed to mark order ${orderId} as PICKED:`, err);
@@ -134,7 +133,7 @@ export default function VoicePickingPage() {
       if (currentStep.orderId) {
         const hasMoreStepsForOrder = tasks
           .slice(currentStepIndex + 1)
-          .some(t => t.orderId === currentStep.orderId);
+          .some((t) => t.orderId === currentStep.orderId);
         if (!hasMoreStepsForOrder) {
           void markOrdersPicked([currentStep.orderId]);
         }
@@ -144,10 +143,10 @@ export default function VoicePickingPage() {
         setCheckDigitInput('');
         setPickStatus('IDLE');
         if (currentStepIndex + 1 < tasks.length) {
-          setCurrentStepIndex(prev => prev + 1);
+          setCurrentStepIndex((prev) => prev + 1);
         } else {
           const allOrderIds = Array.from(
-            new Set(tasks.map(t => t.orderId).filter((id): id is string => Boolean(id)))
+            new Set(tasks.map((t) => t.orderId).filter((id): id is string => Boolean(id)))
           );
           await markOrdersPicked(allOrderIds);
           setIsCompleted(true);
@@ -171,59 +170,54 @@ export default function VoicePickingPage() {
   };
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
-      <AmbientBackground />
-
-      <div className="max-w-5xl mx-auto space-y-6 relative z-10">
-        {/* Header */}
-        <div className="border border-[#30353d] bg-[#171c23]/90 p-5 rounded-xl shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#facc15] animate-pulse" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#facc15] flex items-center gap-1.5">
-                  <Headphones className="w-3.5 h-3.5" /> VOICE-DIRECTED PICKING TERMINAL
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold text-[#dee2ec] tracking-tight flex items-center gap-2.5">
-                <span>ระบบสั่งหยิบด้วยเสียงภาษาไทย (Voice WMS)</span>
-              </h1>
-              <p className="text-xs text-[#8a92a6]">
-                ระบบหยิบสินค้าแบบ Hands-Free ทำงานได้เร็วขึ้น ไม่ต้องก้มมองจอ ยืนยันพิกัดด้วยเลขทวนสอบ 2 หลัก (Check Digits)
-              </p>
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Open Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-1">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-white/70 backdrop-blur-md border border-white/85 px-2.5 py-0.5 rounded-full shadow-xs">
+                <Headphones className="w-3 h-3 text-amber-600" />
+                Voice-Directed Picking Terminal
+              </span>
             </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              ระบบสั่งหยิบด้วยเสียงภาษาไทย (Voice WMS)
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600">
+              ระบบหยิบสินค้าแบบ Hands-Free ทำงานได้เร็วขึ้น ไม่ต้องก้มมองจอ ยืนยันพิกัดด้วยเลขทวนสอบ 2 หลัก (Check Digits)
+            </p>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => { handleRestart(); fetchPickTasks(); }}
-                className="px-3.5 py-2 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] hover:border-[#facc15] text-[#dee2ec] hover:text-[#facc15] rounded-xl transition flex items-center gap-1.5 text-xs font-semibold"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> รีเซ็ตงาน
-              </button>
-              <Link
-                href="/ops/tasks"
-                className="px-3.5 py-2 bg-[#12161d] hover:bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] rounded-xl transition text-xs font-semibold"
-              >
-                กลับคิวงาน
-              </Link>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                handleRestart();
+                fetchPickTasks();
+              }}
+              className="px-4 py-2 bg-white/85 hover:bg-white border border-slate-200/80 text-slate-700 hover:text-slate-900 rounded-full shadow-xs transition flex items-center gap-1.5 text-xs font-semibold"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-amber-600" /> รีเซ็ตงาน
+            </button>
+            <Link
+              href="/ops/tasks"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-sm transition text-xs font-semibold"
+            >
+              กลับคิวงาน
+            </Link>
           </div>
         </div>
 
         {loadingTasks ? (
-          <div className="p-12 text-center text-xs text-[#8a92a6] bg-[#171c23]/90 rounded-2xl border border-[#30353d]">
-            กำลังค้นหาคิวงานหยิบสินค้า...
-          </div>
+          <div className="nx-glass-card p-12 text-center text-xs text-slate-600">กำลังค้นหาคิวงานหยิบสินค้า...</div>
         ) : tasks.length === 0 ? (
-          <div className="p-12 text-center text-xs text-[#8a92a6] bg-[#171c23]/90 rounded-2xl border border-[#30353d] space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-[#57ec7f] mx-auto" />
-            <h3 className="text-base font-bold text-[#dee2ec]">ไม่มีรายการคำสั่งซื้อค้างรอหยิบในระบบ</h3>
+          <div className="nx-glass-card p-12 text-center text-xs text-slate-600 space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
+            <h3 className="text-base font-bold text-slate-900">ไม่มีรายการคำสั่งซื้อค้างรอหยิบในระบบ</h3>
             <p>เมื่อมีคำสั่งซื้อใหม่เข้ามา ระบบเสียงสังเคราะห์จะแนะนำตำแหน่งหยิบและเลขทวนสอบโดยอัตโนมัติ</p>
             <button
               onClick={fetchPickTasks}
-              className="mt-2 px-4 py-2 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] rounded-xl font-bold"
+              className="mt-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-semibold shadow-xs transition"
             >
               รีเฟรชคิวงาน
             </button>
@@ -232,92 +226,103 @@ export default function VoicePickingPage() {
           <div className="space-y-6">
             {/* Main Giant Pick Card for Warehouse Operators */}
             <div
-              className={`p-6 md:p-8 rounded-2xl border-2 transition-all shadow-2xl backdrop-blur-xl ${
+              className={`nx-glass-card p-6 md:p-8 transition-all ${
                 pickStatus === 'CORRECT'
-                  ? 'bg-[#0a2012]/95 text-[#57ec7f] border-[#57ec7f] shadow-[0_0_50px_rgba(87,236,127,0.25)]'
+                  ? 'ring-2 ring-emerald-500 bg-emerald-50/90'
                   : pickStatus === 'WRONG'
-                  ? 'bg-[#2d0e14]/95 text-[#ff6e80] border-[#ff6e80] shadow-[0_0_50px_rgba(255,110,128,0.25)]'
-                  : 'bg-[#171c23]/95 text-[#dee2ec] border-[#30353d]'
+                  ? 'ring-2 ring-rose-500 bg-rose-50/90'
+                  : ''
               }`}
             >
-              <div className="flex items-center justify-between border-b border-[#30353d] pb-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-[#252a32] border border-[#30353d] rounded-full text-xs font-mono font-bold tracking-widest uppercase text-[#facc15]">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-4 mb-6">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-3.5 py-1 bg-amber-500/15 border border-amber-500/25 rounded-full text-xs font-mono font-bold tracking-wider uppercase text-amber-800 tabular-nums">
                     งานที่ {currentStepIndex + 1} จาก {tasks.length}
                   </span>
-                  {currentStep && <span className="text-xs text-[#8a92a6]">SKU: {currentStep.sku}</span>}
+                  {currentStep && <span className="text-xs font-mono text-slate-500">SKU: {currentStep.sku}</span>}
                 </div>
                 <button
                   onClick={handlePlayPrompt}
-                  className="px-4 py-2 bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow transition active:scale-95"
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95"
                 >
-                  <Volume2 className="w-4 h-4" /> {isSpeaking ? 'กำลังอ่าน...' : 'ฟังสั่งเสียงซ้ำ (Audio Repeat)'}
+                  <Volume2 className="w-4 h-4" />{' '}
+                  {isSpeaking ? 'กำลังอ่าน...' : 'ฟังสั่งเสียงซ้ำ (Audio Repeat)'}
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                {/* Target Location & Visual Light */}
-                <div className="space-y-4">
-                  <span className="text-xs uppercase tracking-widest text-[#facc15] font-bold block">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                {/* Target Location & Visual Light (1 Dark Accent Card for ultra-high bay contrast) */}
+                <div className="nx-dark-accent-card p-6 space-y-4">
+                  <span className="text-xs uppercase tracking-widest text-amber-300 font-bold block">
                     พิกัดที่ต้องเดินไป (Target Location)
                   </span>
-                  <div className="text-5xl md:text-6xl font-black font-mono tracking-tight text-[#dee2ec] flex items-center gap-3">
-                    <MapPin className="w-10 h-10 text-[#facc15] shrink-0" />
+                  <div className="text-4xl md:text-5xl font-bold font-mono tracking-tight text-white flex items-center gap-3 tabular-nums">
+                    <MapPin className="w-9 h-9 text-amber-400 shrink-0" />
                     <span>{currentStep.locationCode}</span>
                   </div>
 
                   {/* Simulated Pick-To-Light Indicator Bar */}
-                  <div className="p-3 bg-[#12161d] rounded-xl border border-[#30353d] flex items-center justify-between">
+                  <div className="p-3 bg-white/10 rounded-2xl border border-white/15 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="relative flex h-3.5 w-3.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#57ec7f] opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#57ec7f]"></span>
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400"></span>
                       </span>
-                      <span className="text-xs font-semibold text-[#57ec7f]">Pick-to-Light Bay LED Active</span>
-                      <span className="rounded bg-[#facc15]/15 px-1.5 py-px text-[9px] font-bold text-[#facc15]" title="ยังไม่ได้ต่อไฟชั้นวางจริง">ทดลอง</span>
+                      <span className="text-xs font-semibold text-emerald-300">Pick-to-Light Bay LED Active</span>
+                      <span
+                        className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-bold text-amber-300"
+                        title="ยังไม่ได้ต่อไฟชั้นวางจริง"
+                      >
+                        ทดลอง
+                      </span>
                     </div>
-                    <span className="font-mono text-xs px-2.5 py-0.5 bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30 rounded font-bold">
+                    <span className="font-mono text-xs px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full font-bold tabular-nums">
                       BAY #{currentStep.checkDigit}
                     </span>
                   </div>
                 </div>
 
                 {/* Product SKU & Pick Quantity */}
-                <div className="bg-[#12161d] p-6 rounded-xl border border-[#30353d] space-y-4">
+                <div className="bg-white/85 p-6 rounded-2xl border border-slate-200/80 space-y-4">
                   <div>
-                    <span className="text-xs text-[#8a92a6] block mb-1">รหัสสินค้า & ชื่อ</span>
-                    <div className="text-xl font-bold text-[#dee2ec]">{currentStep.productName}</div>
-                    <div className="text-xs font-mono text-[#4cd7f6] mt-0.5">{currentStep.sku}</div>
+                    <span className="text-xs text-slate-500 font-medium block mb-1">รหัสสินค้า & ชื่อ</span>
+                    <div className="text-xl font-bold text-slate-900">{currentStep.productName}</div>
+                    <div className="text-xs font-mono text-sky-700 font-semibold mt-0.5">{currentStep.sku}</div>
                   </div>
 
-                  <div className="pt-4 border-t border-[#30353d] flex items-baseline justify-between">
-                    <span className="text-sm font-semibold text-[#8a92a6]">จำนวนที่ต้องหยิบ:</span>
+                  <div className="pt-4 border-t border-slate-200/70 flex items-baseline justify-between">
+                    <span className="text-sm font-semibold text-slate-600">จำนวนที่ต้องหยิบ:</span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-black text-[#57ec7f] font-mono">{currentStep.targetQuantity}</span>
-                      <span className="text-sm text-[#8a92a6] font-medium">{currentStep.unit}</span>
+                      <span className="text-5xl font-bold text-emerald-700 font-mono tabular-nums">
+                        {currentStep.targetQuantity}
+                      </span>
+                      <span className="text-sm text-slate-600 font-medium">{currentStep.unit}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Operator Voice / Check Digit Confirmation */}
-              <div className="mt-8 pt-6 border-t border-[#30353d] flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs text-[#8a92a6]">
-                  💡 <strong className="text-[#dee2ec]">คำแนะนำ Hands-Free:</strong> สังเกตป้ายเลขทวนสอบสีเหลืองหน้าแร็ค (Check Digit: <span className="font-mono text-[#facc15] font-bold">"{currentStep.checkDigit}"</span>) แล้วพิมพ์หรือยืนยัน
+              <div className="mt-8 pt-6 border-t border-slate-200/70 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs text-slate-600">
+                  💡 <strong className="text-slate-900">คำแนะนำ Hands-Free:</strong> สังเกตป้ายเลขทวนสอบหน้าแร็ค
+                  (Check Digit:{' '}
+                  <span className="font-mono text-amber-700 font-bold">&quot;{currentStep.checkDigit}&quot;</span>)
+                  แล้วพิมพ์หรือยืนยัน
                 </div>
 
-                <form onSubmit={handleConfirmPick} className="flex items-center gap-2 w-full sm:w-auto">
+                <form onSubmit={handleConfirmPick} className="flex items-center gap-2.5 w-full sm:w-auto">
                   <input
                     type="text"
                     placeholder="เลขทวนสอบ"
                     value={checkDigitInput}
                     onChange={(e) => setCheckDigitInput(e.target.value)}
-                    className="px-4 py-3 bg-[#090f15] border-2 border-[#facc15] text-[#dee2ec] placeholder-[#8a92a6] rounded-xl font-mono font-bold text-center text-lg w-40 focus:outline-none focus:ring-4 focus:ring-[#facc15]/30"
+                    className="px-4 py-2.5 bg-white border-2 border-amber-500 text-slate-900 placeholder-slate-400 rounded-full font-mono font-bold text-center text-lg w-40 tabular-nums focus:outline-none focus:ring-4 focus:ring-amber-500/20"
                     autoFocus
                   />
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] font-bold rounded-xl text-sm shadow-lg transition active:scale-95 flex items-center gap-2 whitespace-nowrap"
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full text-sm shadow-sm transition active:scale-95 flex items-center gap-2 whitespace-nowrap"
                   >
                     <CheckCircle2 className="w-5 h-5" /> ยืนยันหยิบ (Confirm)
                   </button>
@@ -326,38 +331,48 @@ export default function VoicePickingPage() {
             </div>
 
             {/* Next Queue Steps Preview */}
-            <div className="bg-[#171c23]/90 rounded-xl border border-[#30353d] p-5 shadow-xl space-y-3">
+            <div className="nx-glass-card p-6 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-[#dee2ec] text-sm flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#4cd7f6]" /> คิวหยิบถัดไปในรอบงานนี้
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-sky-600" /> คิวหยิบถัดไปในรอบงานนี้
                 </h3>
-                <span className="text-xs text-[#8a92a6]">{tasks.length} รายการ</span>
+                <span className="text-xs text-slate-500 tabular-nums">{tasks.length} รายการ</span>
               </div>
-              <div className="divide-y divide-[#30353d]/50">
+              <div className="divide-y divide-slate-200/70">
                 {tasks.map((t, idx) => (
                   <div
                     key={t.stepIndex}
                     className={`py-3 flex items-center justify-between text-xs transition ${
                       idx === currentStepIndex
-                        ? 'font-bold text-[#facc15]'
+                        ? 'font-bold text-amber-800'
                         : idx < currentStepIndex
-                        ? 'text-[#8a92a6] line-through'
-                        : 'text-[#dee2ec]'
+                        ? 'text-slate-400 line-through'
+                        : 'text-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono border ${
-                        idx === currentStepIndex
-                          ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]'
-                          : idx < currentStepIndex
-                          ? 'bg-[#57ec7f]/20 text-[#57ec7f] border-[#57ec7f]/40'
-                          : 'bg-[#252a32] text-[#8a92a6] border-[#30353d]'
-                      }`}>
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono border tabular-nums ${
+                          idx === currentStepIndex
+                            ? 'bg-amber-500 text-slate-900 border-amber-500 font-bold'
+                            : idx < currentStepIndex
+                            ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}
+                      >
                         {idx < currentStepIndex ? '✓' : idx + 1}
                       </span>
-                      <span>พิกัด: <strong className={idx === currentStepIndex ? 'text-[#facc15]' : 'text-[#4cd7f6]'}>{t.locationCode}</strong> — {t.productName}</span>
+                      <span>
+                        พิกัด:{' '}
+                        <strong
+                          className={`font-mono ${idx === currentStepIndex ? 'text-amber-700' : 'text-sky-700'}`}
+                        >
+                          {t.locationCode}
+                        </strong>{' '}
+                        — {t.productName}
+                      </span>
                     </div>
-                    <div className="font-mono text-[#8a92a6]">
+                    <div className="font-mono text-slate-600 tabular-nums">
                       {t.targetQuantity} {t.unit}
                     </div>
                   </div>
@@ -367,26 +382,29 @@ export default function VoicePickingPage() {
           </div>
         ) : (
           /* Completion Card */
-          <div className="bg-[#171c23]/90 rounded-2xl border border-[#57ec7f]/40 p-12 text-center shadow-2xl space-y-5 backdrop-blur-xl">
-            <div className="w-20 h-20 bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30 rounded-full flex items-center justify-center mx-auto text-3xl">
+          <div className="nx-glass-card p-12 text-center space-y-5">
+            <div className="w-20 h-20 bg-emerald-500/12 text-emerald-600 border border-emerald-500/25 rounded-full flex items-center justify-center mx-auto text-3xl">
               🎉
             </div>
             <div className="space-y-1">
-              <h2 className="text-2xl font-bold text-[#dee2ec]">เสร็จสิ้นการหยิบรอบนี้ครบ 100%!</h2>
-              <p className="text-xs text-[#8a92a6]">
+              <h2 className="text-2xl font-bold text-slate-900">เสร็จสิ้นการหยิบรอบนี้ครบ 100%!</h2>
+              <p className="text-xs text-slate-600">
                 สินค้าทั้งหมดถูกจัดลงตะกร้าเรียบร้อย สามารถส่งต่อไปยังสถานีตรวจแพ็ค (Packing QA) ได้ทันที
               </p>
             </div>
-            <div className="flex justify-center gap-3 pt-2">
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
               <button
-                onClick={() => { handleRestart(); fetchPickTasks(); }}
-                className="px-5 py-2.5 bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] rounded-xl font-bold text-xs transition"
+                onClick={() => {
+                  handleRestart();
+                  fetchPickTasks();
+                }}
+                className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 rounded-full font-semibold text-xs shadow-xs transition"
               >
                 หยิบรอบถัดไป
               </button>
               <Link
                 href="/ops/packing"
-                className="px-6 py-2.5 bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] rounded-xl font-bold text-xs shadow transition flex items-center gap-1.5"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold text-xs shadow-sm transition flex items-center gap-1.5"
               >
                 ไปแท่นตรวจแพ็ค (Packing QA) <ArrowRight className="w-4 h-4" />
               </Link>

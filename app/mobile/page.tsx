@@ -83,7 +83,7 @@ export default function MobileHubPage() {
     setScannedCode(clean);
 
     // Try finding matching product by SKU, barcode, or name
-    const match = products.find(p => 
+    const match = products.find(p =>
       p.sku?.toLowerCase() === clean.toLowerCase() ||
       p.name?.toLowerCase() === clean.toLowerCase() ||
       (p as any).barcode?.toLowerCase() === clean.toLowerCase()
@@ -121,10 +121,8 @@ export default function MobileHubPage() {
       subtitle: 'สแกนตรวจนับ PO และลงประวัติรับเข้าสินค้า',
       icon: PackagePlus,
       href: '/mobile/receiving',
-      color: 'from-emerald-600 to-teal-700',
       tag: 'รับเข้าคลัง',
-      border: 'border-emerald-200',
-      iconBg: 'bg-emerald-100 text-emerald-600',
+      iconBg: 'bg-emerald-500/12 text-emerald-700 border border-emerald-500/20',
     },
     {
       id: 'putaway',
@@ -133,10 +131,8 @@ export default function MobileHubPage() {
       subtitle: 'แนะนำรวมกอง สแกนชั้นวางยืนยันพิกัดจัดเก็บ (Multi-Bin)',
       icon: Layers,
       href: '/mobile/putaway',
-      color: 'from-teal-600 to-cyan-700',
       tag: 'จัดเก็บขึ้นเชลฟ์',
-      border: 'border-teal-200',
-      iconBg: 'bg-teal-100 text-teal-600',
+      iconBg: 'bg-emerald-500/12 text-emerald-700 border border-emerald-500/20',
     },
     {
       id: 'wave-picking',
@@ -145,10 +141,8 @@ export default function MobileHubPage() {
       subtitle: 'เดินหยิบตาม S-Shape มีเสียงภาษาไทยนำทาง',
       icon: Boxes,
       href: '/mobile/picking',
-      color: 'from-blue-600 to-indigo-700',
       tag: 'คำสั่งหยิบรวม',
-      border: 'border-blue-200',
-      iconBg: 'bg-blue-100 text-blue-600',
+      iconBg: 'bg-sky-500/12 text-sky-700 border border-sky-500/20',
     },
     {
       id: 'qc-orders',
@@ -157,10 +151,8 @@ export default function MobileHubPage() {
       subtitle: 'สแกนตรวจความถูกต้อง QC และแพ็กกล่องพิมพ์ใบปะหน้า',
       icon: ShieldCheck,
       href: '/mobile/orders',
-      color: 'from-teal-600 to-cyan-700',
       tag: 'สถานี QC & แพ็ก',
-      border: 'border-teal-200',
-      iconBg: 'bg-teal-100 text-teal-600',
+      iconBg: 'bg-sky-500/12 text-sky-700 border border-sky-500/20',
     },
     {
       id: 'cross-dock',
@@ -169,10 +161,8 @@ export default function MobileHubPage() {
       subtitle: 'กรอกของที่ลูกค้านำมา (ไม่ต้องมีในคลัง) เช็ค แล้วส่งเข้า TMS',
       icon: Truck,
       href: '/mobile/dispatch',
-      color: 'from-cyan-600 to-blue-700',
       tag: 'Cross-Dock',
-      border: 'border-cyan-200',
-      iconBg: 'bg-cyan-100 text-cyan-600',
+      iconBg: 'bg-sky-500/12 text-sky-700 border border-sky-500/20',
     },
     {
       id: 'dispatch',
@@ -181,10 +171,8 @@ export default function MobileHubPage() {
       subtitle: 'ยิงเลขพัสดุ ส่ง Kerry/Flash/SPX และบันทึกเวลาส่ง',
       icon: Truck,
       href: '/mobile/orders?tab=dispatch',
-      color: 'from-orange-600 to-amber-700',
       tag: 'ส่งมอบขนส่ง',
-      border: 'border-orange-200',
-      iconBg: 'bg-orange-100 text-orange-600',
+      iconBg: 'bg-amber-500/15 text-amber-800 border border-amber-500/25',
     },
     {
       id: 'cycle-count',
@@ -193,10 +181,8 @@ export default function MobileHubPage() {
       subtitle: 'ตรวจนับสินค้าตามโซน/เชลฟ์ บันทึกส่วนต่าง',
       icon: ClipboardCheck,
       href: '/mobile/cycle-count',
-      color: 'from-amber-600 to-orange-700',
       tag: 'เช็กสต็อก',
-      border: 'border-amber-200',
-      iconBg: 'bg-amber-100 text-amber-600',
+      iconBg: 'bg-amber-500/15 text-amber-800 border border-amber-500/25',
     },
     {
       id: 'inventory-lookup',
@@ -205,10 +191,8 @@ export default function MobileHubPage() {
       subtitle: 'สแกนหรือพิมพ์เพื่อดู Location และยอดคงเหลือ',
       icon: Search,
       href: '/mobile/inventory',
-      color: 'from-teal-600 to-cyan-700',
       tag: 'ค้นหาด่วน',
-      border: 'border-teal-500/30',
-      iconBg: 'bg-teal-500/20 text-teal-400',
+      iconBg: 'bg-emerald-500/12 text-emerald-700 border border-emerald-500/20',
     },
     {
       id: 'smart-tasks',
@@ -217,10 +201,8 @@ export default function MobileHubPage() {
       subtitle: 'รับงานหยิบ/จัดเก็บ/เติมสต็อกตามลำดับความสำคัญ',
       icon: Zap,
       href: '/mobile/tasks',
-      color: 'from-amber-500 to-orange-600',
       tag: 'คิวงาน',
-      border: 'border-amber-200',
-      iconBg: 'bg-amber-100 text-amber-600',
+      iconBg: 'bg-amber-500/15 text-amber-800 border border-amber-500/25',
     },
     {
       id: 'voice-picking',
@@ -229,18 +211,13 @@ export default function MobileHubPage() {
       subtitle: 'หยิบแบบมือว่าง มีเสียงภาษาไทยนำทาง + ยืนยันด้วยสแกน',
       icon: Mic,
       href: '/mobile/voice-picking',
-      color: 'from-amber-500 to-orange-600',
       tag: 'Hands-Free',
-      border: 'border-amber-200',
-      iconBg: 'bg-amber-100 text-amber-600',
+      iconBg: 'bg-amber-500/15 text-amber-800 border border-amber-500/25',
     },
   ];
 
   // Re-order based on role
   const isSectionStaff = userRole.startsWith('Staff - ');
-  // เปิดเมนูได้จริงตามสิทธิ์ section (ตรงกับที่ proxy บังคับ) — กันโชว์ tile ที่กดแล้วเด้งกลับ
-  // สำหรับ section staff: ถ้า map section ไม่ได้ (unknown) ให้ซ่อนไว้เลย ไม่ปล่อยผ่าน
-  // เพื่อให้การจำกัดสิทธิ์ตาม role มีผลจริง (ไม่งั้นสร้าง user ตาม role ก็ไม่มีประโยชน์)
   const canOpen = (href: string) => {
     if (!isSectionStaff) return true;
     const section = sectionForPath(href);
@@ -330,33 +307,36 @@ export default function MobileHubPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      {/* Top App Bar - NEXUS Tactical Command Header */}
-      <header className="sticky top-0 z-30 bg-[#171c23] border-b border-[#30353d] px-4 py-3 shadow-xl overflow-hidden text-[#dee2ec]">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl overflow-hidden p-0.5 flex items-center justify-center bg-[#1b2027] border border-[#30353d]">
-              <img src="/nexus-icon.png" alt="NEXUS WMS" className="w-full h-full object-contain drop-shadow" />
+    <div className="min-h-screen text-slate-900 pb-28 font-sans select-none">
+      {/* Top App Bar - Frosted Hybrid Header */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl overflow-hidden p-1 flex items-center justify-center bg-slate-900 shadow-sm shrink-0">
+              <img src="/nexus-icon.png" alt="NEXUS WMS" className="w-full h-full object-contain" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-headline font-black text-base text-[#facc15] tracking-wide leading-tight">NEXUS Mobile</h1>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#57ec7f] animate-pulse mr-1" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="font-black text-base text-slate-900 tracking-tight leading-tight">NEXUS Mobile</h1>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  isOnline
+                    ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/25'
+                    : 'bg-rose-500/12 text-rose-700 border-rose-500/25'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full mr-1 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                   {isOnline ? 'Online' : 'Offline'}
                 </span>
               </div>
-              <p className="text-xs text-[#8a92a6] font-mono flex items-center gap-1 mt-0.5">
-                <Clock className="w-3 h-3 text-[#8a92a6]" /> อัปเดต {lastSync || 'กำลังซิงค์...'}
+              <p className="text-[11px] text-slate-500 tabular-nums flex items-center gap-1 mt-0.5">
+                <Clock className="w-3 h-3 text-slate-400" /> อัปเดต {lastSync || 'กำลังซิงค์...'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setCameraOpen(true)}
-              className="px-3 py-1.5 bg-[#facc15] hover:bg-[#eec200] active:scale-95 text-[#1b1600] text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#facc15]/20 transition-all font-mono"
+              className="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all"
             >
               <Camera className="w-4 h-4" />
               <span>สแกนกล้อง</span>
@@ -364,7 +344,7 @@ export default function MobileHubPage() {
             <button
               onClick={loadData}
               title="รีเฟรชข้อมูล"
-              className="p-2 rounded-lg bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95 transition-all"
+              className="min-h-[44px] min-w-[44px] p-2.5 rounded-full bg-white/90 border border-slate-200 text-slate-600 hover:text-slate-900 active:scale-95 transition-all flex items-center justify-center shadow-xs"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -372,29 +352,31 @@ export default function MobileHubPage() {
         </div>
       </header>
 
-      <main className="p-4 space-y-4 max-w-lg mx-auto">
-        {/* User Role & Department Badge */}
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-slate-200 text-xs shadow-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center font-bold">
+      <main className="p-4 space-y-5 max-w-lg mx-auto">
+        {/* User Role & Department Card */}
+        <div className="nx-glass-card flex items-center justify-between gap-2 p-3.5 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-2xl bg-sky-500/12 text-sky-700 border border-sky-500/20 flex items-center justify-center font-bold shrink-0">
               <UserCheck className="w-4 h-4" />
             </div>
-            <div>
-              <p className="font-bold text-slate-900 text-xs leading-tight">{userName}</p>
-              <p className="text-[11px] text-slate-500">บทบาท: <strong className="text-blue-600">{userRole}</strong></p>
+            <div className="min-w-0">
+              <p className="font-bold text-slate-900 text-xs leading-tight truncate">{userName}</p>
+              <p className="text-[11px] text-slate-500 truncate">
+                บทบาท: <strong className="text-sky-700">{userRole}</strong>
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-              {isSectionStaff ? userRole.replace('Staff - ', 'แผนก: ') : 'ทุกแผนก (All Sections)'}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/12 text-sky-700 border border-sky-500/25">
+              {isSectionStaff ? userRole.replace('Staff - ', 'แผนก: ') : 'ทุกแผนก'}
             </span>
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
               title="ออกจากระบบ"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 border border-red-200 active:scale-95 transition-all"
+              className="min-h-[38px] flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold bg-rose-500/12 text-rose-700 border border-rose-500/25 active:scale-95 transition-all"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>ออกจากระบบ</span>
+              <span>ออก</span>
             </button>
           </div>
         </div>
@@ -402,10 +384,10 @@ export default function MobileHubPage() {
         {/* Core Operations Cards */}
         <div>
           <div className="flex items-center justify-between mb-2.5 px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
               {isSectionStaff ? 'งานประจำแผนกของคุณ' : 'งานปฏิบัติการหลักคลังสินค้า'}
             </span>
-            <span className="text-[11px] text-slate-500">
+            <span className="px-2.5 py-0.5 rounded-full bg-white/75 border border-white/85 text-[11px] font-bold text-slate-600 tabular-nums">
               {myWorkflows.length} รายการ
             </span>
           </div>
@@ -417,24 +399,22 @@ export default function MobileHubPage() {
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`group relative flex items-center justify-between p-4 rounded-2xl bg-white border ${item.border} hover:bg-slate-100 active:scale-[0.98] transition-all shadow-md`}
+                  className="nx-glass-card group relative flex items-center justify-between p-4 hover:bg-white/95 active:scale-[0.98] transition-all"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className={`w-12 h-12 rounded-xl ${item.iconBg} flex items-center justify-center shrink-0 shadow-inner`}>
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className={`w-12 h-12 rounded-2xl ${item.iconBg} flex items-center justify-center shrink-0`}>
                       <Icon className="w-6 h-6" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-700 transition-colors">
-                          {item.title}
-                        </h3>
-                      </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                        {item.title}
+                      </h3>
                       <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
                         {item.subtitle}
                       </p>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:text-slate-900 group-hover:bg-slate-200 transition-all shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-slate-100/90 flex items-center justify-center text-slate-500 group-hover:text-slate-900 group-hover:bg-slate-200 transition-all shrink-0 ml-2">
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 </Link>
@@ -446,9 +426,9 @@ export default function MobileHubPage() {
         {/* Other Sections (if section staff) */}
         {otherWorkflows.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-2.5 px-1 mt-6">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">งานแผนกอื่นๆ</span>
-              <span className="text-[11px] text-slate-600">สลับดูตามต้องการ</span>
+            <div className="flex items-center justify-between mb-2.5 px-1 mt-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">งานแผนกอื่นๆ</span>
+              <span className="text-[11px] text-slate-500">สลับดูตามต้องการ</span>
             </div>
 
             <div className="grid grid-cols-1 gap-2">
@@ -458,13 +438,13 @@ export default function MobileHubPage() {
                   <Link
                     key={item.id}
                     href={item.href}
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-all text-xs"
+                    className="nx-glass-card flex items-center justify-between p-3.5 text-slate-700 hover:text-slate-900 transition-all text-xs min-h-[48px]"
                   >
                     <div className="flex items-center gap-2.5">
                       <Icon className="w-4 h-4 text-slate-500" />
-                      <span className="font-medium">{item.title}</span>
+                      <span className="font-semibold">{item.title}</span>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </Link>
                 );
               })}
@@ -474,47 +454,47 @@ export default function MobileHubPage() {
 
         {/* Secondary Floor Actions */}
         {secondaryWorkflows.filter(a => canOpen(a.href)).length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2.5 px-1 mt-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">งานเสริม & ขนส่ง</span>
-            <span className="text-[11px] text-slate-500">ขั้นตอนเพิ่มเติม</span>
-          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2.5 px-1 mt-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">งานเสริม & ขนส่ง</span>
+              <span className="text-[11px] text-slate-500">ขั้นตอนเพิ่มเติม</span>
+            </div>
 
-          <div className="grid grid-cols-1 gap-2.5">
-            {secondaryWorkflows.filter(a => canOpen(a.href)).map(action => {
-              const ActionIcon = action.icon;
-              return (
-                <Link
-                  key={action.id}
-                  href={action.href}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-white border border-slate-200 hover:border-slate-200 active:scale-[0.99] transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                      <ActionIcon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-900">{action.title}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
-                          {action.badge}
-                        </span>
+            <div className="grid grid-cols-1 gap-2.5">
+              {secondaryWorkflows.filter(a => canOpen(a.href)).map(action => {
+                const ActionIcon = action.icon;
+                return (
+                  <Link
+                    key={action.id}
+                    href={action.href}
+                    className="nx-glass-card flex items-center justify-between p-3.5 hover:bg-white/95 active:scale-[0.99] transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                        <ActionIcon className="w-4 h-4" />
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{action.desc}</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-slate-900">{action.title}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
+                            {action.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{action.desc}</p>
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
-                </Link>
-              );
-            })}
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
         )}
 
         {/* Quick Shift Tips */}
-        <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 text-xs text-slate-500 space-y-1.5">
-          <div className="flex items-center gap-1.5 font-bold text-slate-600">
-            <CheckCircle2 className="w-4 h-4 text-blue-600" />
+        <div className="nx-glass-card p-4 text-xs text-slate-600 space-y-1.5">
+          <div className="flex items-center gap-1.5 font-bold text-slate-900">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>คำแนะนำสำหรับพนักงานคลัง</span>
           </div>
           <p className="leading-relaxed text-[11px]">
@@ -526,73 +506,73 @@ export default function MobileHubPage() {
 
       {/* Scanned Barcode Result Modal */}
       {scanModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white border border-slate-200 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
               <div className="flex items-center gap-2">
-                <Scan className="w-5 h-5 text-blue-600" />
+                <Scan className="w-5 h-5 text-emerald-600" />
                 <h3 className="font-bold text-slate-900 text-base">ผลการสแกนบาร์โค้ด</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setScanModalOpen(false)}
-                className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900"
+                className="min-h-[36px] min-w-[36px] p-1.5 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 font-mono text-center">
-              <span className="text-xs text-slate-500 block mb-1">รหัสที่ตรวจพบ</span>
-              <span className="text-lg font-black text-amber-600 tracking-wider break-all">{scannedCode}</span>
+            <div className="nx-dark-accent-card p-4 text-center">
+              <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">รหัสที่ตรวจพบ</span>
+              <span className="text-lg font-black text-amber-300 tabular-nums tracking-wider break-all">{scannedCode}</span>
             </div>
 
             {matchedProduct ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2.5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold uppercase">
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 border border-emerald-500/25 font-bold uppercase">
                       พบสินค้าในระบบ
                     </span>
-                    <h4 className="font-bold text-slate-900 text-base mt-1">{matchedProduct.name}</h4>
+                    <h4 className="font-bold text-slate-900 text-base mt-1.5">{matchedProduct.name}</h4>
                     <p className="text-xs text-slate-500 font-mono">SKU: {matchedProduct.sku || matchedProduct.name}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <span className="text-xs text-slate-500 block">คงเหลือ</span>
-                    <span className="text-xl font-black text-emerald-600">
+                    <span className="text-2xl font-black text-emerald-700 tabular-nums">
                       {matchedProduct.stock ?? 0}
                     </span>
                     <span className="text-xs text-slate-500 ml-1">{matchedProduct.unit || 'ชิ้น'}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-emerald-200 text-xs text-emerald-700">
+                <div className="flex items-center gap-2 pt-2 border-t border-emerald-500/20 text-xs text-emerald-800">
                   <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>พิกัดจัดเก็บ: <strong className="text-slate-900 font-mono">{matchedProduct.location || 'ยังไม่ระบุ Bin'}</strong></span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <Link
                     href={`/mobile/receiving?sku=${encodeURIComponent(matchedProduct.sku || matchedProduct.name)}`}
                     onClick={() => setScanModalOpen(false)}
-                    className="p-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs text-center shadow"
+                    className="min-h-[44px] px-3 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center shadow-sm"
                   >
                     📥 รับสินค้านี้เข้า
                   </Link>
                   <Link
                     href={`/mobile/inventory?q=${encodeURIComponent(matchedProduct.sku || matchedProduct.name)}`}
                     onClick={() => setScanModalOpen(false)}
-                    className="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs text-center border border-slate-200"
+                    className="min-h-[44px] px-3 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs flex items-center justify-center border border-slate-200"
                   >
                     🔍 ดูรายละเอียดสต็อก
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 space-y-3 text-center">
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 space-y-3 text-center">
                 <AlertCircle className="w-8 h-8 text-rose-600 mx-auto" />
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">ไม่พบสินค้าจากรหัสนี้โดยตรง</h4>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-600 mt-1">
                     รหัสนี้อาจเป็นเลขที่ PO, เลขที่ออเดอร์ หรือสินค้าที่ยังไม่ได้ลงทะเบียน
                   </p>
                 </div>
@@ -601,14 +581,14 @@ export default function MobileHubPage() {
                   <Link
                     href={`/ops/receiving?po=${encodeURIComponent(scannedCode || '')}`}
                     onClick={() => setScanModalOpen(false)}
-                    className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200"
+                    className="min-h-[44px] px-3 py-2 rounded-full bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center"
                   >
                     ตรวจเป็นเลข PO
                   </Link>
                   <Link
                     href={`/mobile/orders?search=${encodeURIComponent(scannedCode || '')}`}
                     onClick={() => setScanModalOpen(false)}
-                    className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200"
+                    className="min-h-[44px] px-3 py-2 rounded-full bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 flex items-center justify-center"
                   >
                     ตรวจเป็นเลข Order
                   </Link>
@@ -621,7 +601,7 @@ export default function MobileHubPage() {
                 setScanModalOpen(false);
                 setCameraOpen(true);
               }}
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+              className="w-full min-h-[48px] py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5"
             >
               <Camera className="w-4 h-4" /> สแกนบาร์โค้ดถัดไป
             </button>

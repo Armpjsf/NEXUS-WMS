@@ -58,54 +58,74 @@ export default function MobileAdjustmentsPage() {
   const pending = items.filter(a => (a.status || 'PENDING') === 'PENDING');
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 font-sans select-none">
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 shadow-md flex items-center justify-between">
+    <div className="min-h-screen text-slate-900 pb-28 font-sans select-none">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/mobile" className="p-2 rounded-xl bg-slate-100 text-slate-600 active:scale-95"><ArrowLeft className="w-5 h-5" /></Link>
+          <Link href="/mobile" className="min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/90 border border-slate-200 text-slate-700 active:scale-95 flex items-center justify-center">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
           <div>
-            <h1 className="font-bold text-base leading-tight flex items-center gap-1.5"><ClipboardCheck className="w-4 h-4 text-rose-500" /> อนุมัติปรับยอด</h1>
+            <h1 className="font-bold text-base leading-tight flex items-center gap-1.5 text-slate-900">
+              <ClipboardCheck className="w-4 h-4 text-rose-600" /> อนุมัติปรับยอด
+            </h1>
             <p className="text-[11px] text-slate-500">ตรวจ & อนุมัติคำขอปรับสต็อก (Checker)</p>
           </div>
         </div>
-        <button onClick={load} className="p-2 rounded-lg bg-slate-100 text-slate-500 active:scale-95"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
+        <button onClick={load} className="min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/90 border border-slate-200 text-slate-600 active:scale-95 flex items-center justify-center">
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </header>
 
-      <main className="p-4 space-y-3">
+      <main className="p-4 space-y-3 max-w-lg mx-auto">
         {loading ? (
-          <p className="text-center text-slate-400 text-sm py-10">กำลังโหลด...</p>
+          <p className="text-center text-slate-500 text-sm py-10">กำลังโหลด...</p>
         ) : pending.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <ClipboardCheck className="w-12 h-12 text-emerald-400 mb-2" />
-            <p className="text-slate-500 text-sm">ไม่มีคำขอรออนุมัติ</p>
+          <div className="nx-glass-card flex flex-col items-center justify-center py-14 text-center px-6">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/12 border border-emerald-500/25 flex items-center justify-center mb-3">
+              <ClipboardCheck className="w-7 h-7 text-emerald-600" />
+            </div>
+            <p className="text-slate-700 font-bold text-sm">ไม่มีคำขอรออนุมัติ</p>
           </div>
         ) : pending.map((a, i) => {
           const rid = a.requestId || a.id || String(i);
           const diff = a.diffQty ?? ((a.countedQty ?? 0) - (a.systemQty ?? 0));
           return (
-            <div key={rid} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+            <div key={rid} className="nx-glass-card p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 truncate">{a.sku}</p>
-                  <p className="text-xs text-slate-500 font-mono flex items-center gap-1"><MapPin className="w-3 h-3" />{a.location || '-'}</p>
+                  <p className="font-bold text-slate-900 truncate">{a.sku}</p>
+                  <p className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3 h-3 text-slate-400" />{a.location || '-'}
+                  </p>
                 </div>
-                <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${diff < 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                <span className={`text-sm font-black px-3 py-0.5 rounded-full border tabular-nums ${
+                  diff < 0
+                    ? 'bg-rose-500/12 text-rose-700 border-rose-500/25'
+                    : 'bg-emerald-500/12 text-emerald-700 border-emerald-500/25'
+                }`}>
                   {diff > 0 ? '+' : ''}{diff}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-sm font-mono">
-                <span className="px-2 py-1 rounded bg-slate-100 text-slate-500">ระบบ {a.systemQty ?? '-'}</span>
+              <div className="flex items-center gap-2 text-xs font-mono tabular-nums">
+                <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold">ระบบ {a.systemQty ?? '-'}</span>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
-                <span className="px-2 py-1 rounded bg-blue-50 text-blue-700 font-bold">นับได้ {a.countedQty ?? '-'}</span>
+                <span className="px-2.5 py-1 rounded-full bg-sky-500/12 text-sky-700 border border-sky-500/20 font-bold">นับได้ {a.countedQty ?? '-'}</span>
               </div>
-              {(a.reason || a.notes) && <p className="text-xs text-slate-500">เหตุผล: {a.reason || a.notes}</p>}
-              <p className="text-[11px] text-slate-400">ขอโดย: {a.requestedBy || '-'}</p>
+              {(a.reason || a.notes) && <p className="text-xs text-slate-600">เหตุผล: {a.reason || a.notes}</p>}
+              <p className="text-[11px] text-slate-500">ขอโดย: {a.requestedBy || '-'}</p>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => setRejecting(a)} disabled={busyId === rid}
-                  className="flex-1 py-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50">
+                <button
+                  onClick={() => setRejecting(a)}
+                  disabled={busyId === rid}
+                  className="flex-1 min-h-[44px] py-3 rounded-full bg-rose-500/12 text-rose-700 border border-rose-500/25 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                >
                   <X className="w-4 h-4" /> ปฏิเสธ
                 </button>
-                <button onClick={() => decide(a, 'APPROVE')} disabled={busyId === rid}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50">
+                <button
+                  onClick={() => decide(a, 'APPROVE')}
+                  disabled={busyId === rid}
+                  className="flex-1 min-h-[44px] py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 shadow-sm"
+                >
                   <Check className="w-4 h-4" /> {busyId === rid ? 'กำลัง...' : 'อนุมัติ'}
                 </button>
               </div>
@@ -116,8 +136,8 @@ export default function MobileAdjustmentsPage() {
 
       {/* Reject reason sheet */}
       {rejecting && (
-        <div className="fixed inset-0 z-[90] bg-black/40 flex items-end sm:items-center justify-center overflow-y-auto p-0 sm:p-4" onClick={() => setRejecting(null)}>
-          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 pb-28 sm:pb-5 space-y-3 max-h-[85dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-xs flex items-end sm:items-center justify-center overflow-y-auto p-0 sm:p-4" onClick={() => setRejecting(null)}>
+          <div className="w-full max-w-lg bg-white/95 backdrop-blur-xl border border-white/90 rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 pb-28 sm:pb-5 space-y-3 max-h-[85dvh] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
             <h2 className="font-bold text-slate-900">เหตุผลที่ปฏิเสธ</h2>
             <textarea
               value={reason}
@@ -126,12 +146,17 @@ export default function MobileAdjustmentsPage() {
               rows={3}
               autoFocus
               placeholder="ระบุเหตุผล..."
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-rose-400"
+              className="w-full p-3.5 bg-white/90 border border-slate-200 rounded-2xl text-sm text-slate-900 outline-none focus:border-rose-500 placeholder:text-slate-400"
             />
             <div className="flex gap-2">
-              <button onClick={() => setRejecting(null)} className="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">ยกเลิก</button>
-              <button onClick={() => decide(rejecting, 'REJECT', reason)} disabled={!reason.trim() || busyId != null}
-                className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold text-sm active:scale-95 disabled:opacity-50">ยืนยันปฏิเสธ</button>
+              <button onClick={() => setRejecting(null)} className="min-h-[44px] px-5 py-3 rounded-full bg-slate-100 text-slate-700 font-bold text-sm">ยกเลิก</button>
+              <button
+                onClick={() => decide(rejecting, 'REJECT', reason)}
+                disabled={!reason.trim() || busyId != null}
+                className="flex-1 min-h-[44px] py-3 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm active:scale-95 disabled:opacity-50"
+              >
+                ยืนยันปฏิเสธ
+              </button>
             </div>
           </div>
         </div>

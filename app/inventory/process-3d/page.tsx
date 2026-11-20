@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Box, LayoutGrid, Sparkles, RefreshCw, Layers, Building2 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { getApiUrl } from '@/lib/config';
 
 // Three.js simulator dynamic import without SSR
@@ -14,9 +13,9 @@ const WarehouseProcessSimulator3D = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[760px] w-full rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-3">
-        <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
-        <span className="text-slate-600 font-bold text-sm">กำลังโหลด NEXUS 3D Process Simulator & Digital Twin...</span>
+      <div className="nx-glass-card h-[760px] w-full flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin" />
+        <span className="text-slate-700 font-semibold text-sm">กำลังโหลด NEXUS 3D Process Simulator &amp; Digital Twin...</span>
       </div>
     ),
   }
@@ -31,9 +30,9 @@ export default function Process3DPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <div className="text-slate-600 font-bold text-sm flex items-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="theme-nexus-hybrid min-h-screen flex items-center justify-center">
+          <div className="nx-glass-card px-6 py-4 text-slate-700 font-semibold text-sm flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
             กำลังโหลด 3D Digital Twin...
           </div>
         </div>
@@ -100,39 +99,37 @@ function Process3DContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-6 lg:p-8 relative">
-      <AmbientBackground />
-
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 p-4 md:p-6 lg:p-8 relative">
       <div className="max-w-[1700px] mx-auto space-y-4">
-        {/* Top Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/90 backdrop-blur-xl border border-slate-200/90 p-4 lg:p-5 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-3">
+        {/* Top Control HUD */}
+        <header className="nx-glass-card flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 lg:p-5">
+          <div className="flex items-center gap-3.5">
             <Link
               href={`/inventory/map?branchId=${encodeURIComponent(currentBranch)}`}
-              className="p-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 shadow-sm transition-colors"
+              className="p-2.5 bg-white/85 hover:bg-white text-slate-700 hover:text-slate-900 rounded-full border border-slate-200/80 shadow-xs transition-colors"
               title="กลับไปผังคลัง 2D/3D Slotting"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Box className="w-5 h-5 text-white" />
+            <div className="nx-dark-accent-card w-11 h-11 rounded-2xl flex items-center justify-center shrink-0">
+              <Box className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg lg:text-xl font-black text-slate-900 tracking-wide">
-                  3D Process Simulator & Smart AI Digital Twin
+                <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight">
+                  3D Process Simulator &amp; Smart AI Digital Twin
                 </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-800 border border-amber-500/25">
                   Autonomous Fleet
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-300">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/12 text-sky-800 border border-sky-500/25">
                   AI Route Ribbon
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/12 text-rose-700 border border-rose-500/25">
                   Live Heatmap
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 จำลองคลังสินค้าอัจฉริยะ 3D เชื่อมต่อผังแร็คจริง พร้อมฝูงรถโฟล์กลิฟต์อัตโนมัติ (FL-01..03), เส้นทางนำทางหยิบสินค้า, โหมดสแกน Heatmap และคลิกตรวจสอบวัตถุ 3D รายจุด
               </p>
             </div>
@@ -140,13 +137,13 @@ function Process3DContent() {
 
           {/* Branch Selector & Quick Navigation Links */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-100/90 border border-slate-200 rounded-xl px-2.5 py-1.5">
-              <Building2 className="w-3.5 h-3.5 text-amber-600" />
-              <span className="text-[11px] font-bold text-slate-500">สาขา:</span>
+            <div className="flex items-center gap-1.5 bg-white/85 border border-slate-200/90 rounded-full px-3.5 py-1.5 shadow-xs">
+              <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-[11px] font-semibold text-slate-500">สาขา:</span>
               <select
                 value={currentBranch}
                 onChange={(e) => handleBranchChange(e.target.value)}
-                className="bg-transparent text-xs font-black text-slate-800 focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer pr-1"
               >
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -158,23 +155,23 @@ function Process3DContent() {
 
             <Link
               href={`/inventory/map?branchId=${encodeURIComponent(currentBranch)}`}
-              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 border border-white/90 shadow-xs rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <LayoutGrid className="w-4 h-4 text-teal-600" />
+              <LayoutGrid className="w-3.5 h-3.5 text-emerald-600" />
               2D/3D Slotting Map
             </Link>
             <Link
               href="/ops/control-tower"
-              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 border border-white/90 shadow-xs rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
               Control Tower
             </Link>
             <Link
               href="/inventory"
-              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <Layers className="w-4 h-4 text-emerald-600" />
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
               สต็อกสินค้า
             </Link>
           </div>

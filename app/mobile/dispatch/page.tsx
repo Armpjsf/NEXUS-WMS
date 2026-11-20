@@ -18,11 +18,11 @@ interface PickupOpt { id: string; customerId: string | null; name: string; addre
 
 // Full static class strings (Tailwind can't see dynamically-built class names).
 const DROP_STYLES = [
-  { border: 'border-cyan-200', text: 'text-cyan-600', chip: 'bg-cyan-600 text-white', badge: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
-  { border: 'border-violet-200', text: 'text-violet-600', chip: 'bg-violet-600 text-white', badge: 'bg-violet-50 text-violet-600 border-violet-100' },
-  { border: 'border-amber-200', text: 'text-amber-600', chip: 'bg-amber-600 text-white', badge: 'bg-amber-50 text-amber-600 border-amber-100' },
-  { border: 'border-rose-200', text: 'text-rose-600', chip: 'bg-rose-600 text-white', badge: 'bg-rose-50 text-rose-600 border-rose-100' },
-  { border: 'border-emerald-200', text: 'text-emerald-600', chip: 'bg-emerald-600 text-white', badge: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+  { border: 'border-sky-300/70', text: 'text-sky-700', chip: 'bg-sky-600 text-white', badge: 'bg-sky-500/12 text-sky-700 border-sky-500/25' },
+  { border: 'border-emerald-300/70', text: 'text-emerald-700', chip: 'bg-emerald-600 text-white', badge: 'bg-emerald-500/12 text-emerald-700 border-emerald-500/25' },
+  { border: 'border-amber-300/70', text: 'text-amber-700', chip: 'bg-amber-600 text-white', badge: 'bg-amber-500/15 text-amber-800 border-amber-500/25' },
+  { border: 'border-rose-300/70', text: 'text-rose-700', chip: 'bg-rose-600 text-white', badge: 'bg-rose-500/12 text-rose-700 border-rose-500/25' },
+  { border: 'border-slate-300', text: 'text-slate-700', chip: 'bg-slate-800 text-white', badge: 'bg-slate-100 text-slate-700 border-slate-200' },
 ];
 const ds = (i: number) => DROP_STYLES[((i % 5) + 5) % 5];
 const DRAFT_KEY = 'xd-dispatch-draft';
@@ -57,8 +57,6 @@ export default function MobileDispatchPage() {
   const [sigTarget, setSigTarget] = useState<'' | 'customer' | 'checker'>('');
   const [customerStaffSig, setCustomerStaffSig] = useState('');
   const [checkerSig, setCheckerSig] = useState('');
-  // NOTE: the driver does NOT use the WMS app — driver confirms the loaded count
-  // in the TMS app instead. So no driver signature/count here.
 
   const load = useCallback(async () => {
     try {
@@ -75,7 +73,6 @@ export default function MobileDispatchPage() {
       setCustomerOpts((rcu.customers || [])
         .filter((c: any) => c.status !== 'INACTIVE')
         .map((c: any) => ({ id: c.id, name: c.name, phone: c.phone || '', address: c.address || '', defaultCarrier: c.defaultCarrier || '' })));
-      // Load the pickup-point library (origins with coordinates).
       try {
         const rp = await fetch(getApiUrl('/api/pickup-locations'), { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
         setPickupOpts((rp.locations || [])
@@ -86,8 +83,6 @@ export default function MobileDispatchPage() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  // Persist an in-progress draft so a screen lock / app reload doesn't lose the
-  // scanned items. Restore on mount, autosave on change, clear on dispatch.
   const restored = useRef(false);
   useEffect(() => {
     try {
@@ -117,14 +112,12 @@ export default function MobileDispatchPage() {
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
 
-  // Location library: show this customer's saved points + shared (null customer) ones.
   const selectedCustomerId = customerOpts.find(c => c.name === customer)?.id || null;
   const forCustomer = (p: PickupOpt) => !p.customerId || p.customerId === selectedCustomerId;
   const visiblePickups = pickupOpts.filter(p => forCustomer(p) && (p.kind === 'PICKUP' || p.kind === 'BOTH'));
   const dropPoints = pickupOpts.filter(p => forCustomer(p) && (p.kind === 'DROP' || p.kind === 'BOTH'));
   const selectedPickup = pickupOpts.find(p => p.id === pickupId) || null;
 
-  // Pick a saved destination point → fill that drop's fields + carry coordinates.
   const applyDropPoint = (idx: number, pointId: string) => {
     const p = dropPoints.find(x => x.id === pointId);
     if (!p) return;
@@ -158,7 +151,6 @@ export default function MobileDispatchPage() {
     );
   };
 
-  // Save the current drop's fields as a reusable destination point.
   const saveDropAsPoint = async (idx: number) => {
     const d = drops[idx];
     const name = (d.name || d.address).trim();
@@ -202,14 +194,10 @@ export default function MobileDispatchPage() {
     } finally { setSavingPickup(false); }
   };
 
-  // Add qty of an item to the active drop. If the same code/name already exists
-  // in that drop, merge (increment) — so scanning one label twice = qty 2, and
-  // "1 label = N pieces" is just an editable qty on the row.
   const addOrMerge = (itemName: string, itemSku: string, addQty: number, scanned: boolean) => {
     setItems(prev => {
       const idx = prev.findIndex(i => i.drop === activeDrop && (itemSku ? i.sku === itemSku : i.name === itemName));
       if (idx >= 0) {
-        // A scan on an existing row promotes it to scanned (a manual bump never demotes).
         const c = [...prev]; c[idx] = { ...c[idx], qty: c[idx].qty + addQty, scanned: scanned || c[idx].scanned }; return c;
       }
       return [...prev, { sku: itemSku || itemName || `XD-${Date.now().toString().slice(-6)}`, name: itemName, qty: addQty, drop: activeDrop, scanned }];
@@ -227,7 +215,6 @@ export default function MobileDispatchPage() {
   const onScanned = (code: string) => {
     let itemName = (code || '').trim(); if (!itemName) return;
     let itemSku = '';
-    // WMS/old QR labels encode {"loc","name","stock"} — pull out the real name.
     if (itemName.startsWith('{')) {
       try {
         const o = JSON.parse(itemName);
@@ -248,13 +235,10 @@ export default function MobileDispatchPage() {
     if (drops.length <= 1) return;
     const dropNo = idx + 1;
     setDrops(prev => prev.filter((_, i) => i !== idx));
-    // reassign items: remove-drop items → drop 1; shift higher drops down
     setItems(prev => prev.map(it => it.drop === dropNo ? { ...it, drop: 1 } : it.drop > dropNo ? { ...it, drop: it.drop - 1 } : it));
     setActiveDrop(1); setChecked(false);
   };
   const patchDrop = (idx: number, key: keyof Drop, val: string) =>
-    // Manually editing the address invalidates any coordinates that came from a
-    // selected destination point (they'd no longer match the typed address).
     setDrops(prev => prev.map((d, i) => i === idx
       ? { ...d, [key]: val, ...(key === 'address' ? { lat: null, lng: null } : {}) }
       : d));
@@ -263,9 +247,6 @@ export default function MobileDispatchPage() {
 
   const dispatch = async () => {
     if (items.length === 0) { toast.error('ยังไม่มีรายการของ'); return; }
-    // Prefer scanning: hand-typed items must be explicitly confirmed (override)
-    // per row before dispatch, so nothing slips through without either a real
-    // scan or a deliberate manual confirmation.
     const needConfirm = items.filter(i => !i.scanned && !i.override);
     if (needConfirm.length > 0) {
       toast.error(`มีสินค้าที่พิมพ์มือ ${needConfirm.length} รายการ — กด "ยืนยันเอง" ที่รายการนั้น หรือยิงสแกนก่อนส่ง`);
@@ -275,9 +256,6 @@ export default function MobileDispatchPage() {
     if (isFleet && vehicles.length > 0 && !vehicleId) { toast.error('เลือกรถ/ทะเบียนก่อน'); return; }
     if (!customerStaffSig || !checkerSig) { toast.error('ต้องมีลายเซ็น เจ้าหน้าที่คลัง + เช็คเกอร์'); return; }
     if (!checked) { toast.error('กรุณายืนยันว่าเช็คของครบแล้ว'); return; }
-    // Driver signature + load-count confirm are OPTIONAL here: one checker serves
-    // many trucks and often finishes checking before the truck arrives. The
-    // driver confirms/loads later (in the TMS app); don't block the checker.
     setSubmitting(true);
     const t = toast.loading('กำลังสร้างงานและส่งขึ้นรถ...');
     try {
@@ -307,8 +285,6 @@ export default function MobileDispatchPage() {
       const created = await createRes.json();
       if (!createRes.ok || !created.order) throw new Error(created.error || 'สร้างออเดอร์ไม่สำเร็จ');
 
-      // Cross-dock handover signatures (dock): customer staff + checker + driver.
-      // (End-customer POD is captured later in TMS at delivery.)
       const qcSignatures = {
         customerStaffSignature: customerStaffSig || undefined, customerStaffName: 'เจ้าหน้าที่คลัง',
         checkerSignature: checkerSig || undefined, checkerName: 'เจ้าหน้าที่เช็คเกอร์',
@@ -325,7 +301,6 @@ export default function MobileDispatchPage() {
       toast.success(
         `✅ ${created.order.orderNo} ส่งขึ้นรถแล้ว${selectedVehicle ? ` (${selectedVehicle.plate})` : ''}${isFleet ? ' + เข้า TMS' : ''}`,
         { id: t, duration: 5000 });
-      // Keep a link so the checker can open the QC handover slip right away.
       setLastSlip({ id: created.order.id, orderNo: created.order.orderNo });
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
       setActiveDrop(1); setChecked(false); setVehicleId('');
@@ -337,49 +312,59 @@ export default function MobileDispatchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-40 font-sans select-none">
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-cyan-600 to-blue-700 text-white px-5 pt-6 pb-5 shadow-lg">
-        <div className="flex items-center gap-2 text-cyan-100 text-sm font-medium"><Truck className="w-4 h-4" /> เช็คของขึ้นรถ (Cross-Dock)</div>
-        <h1 className="text-2xl font-black mt-0.5">{items.length} รายการ · {totalQty} ชิ้น{multi ? ` · ${drops.length} ดรอป` : ''}</h1>
+    <div className="min-h-screen text-slate-900 pb-44 font-sans select-none">
+      <div className="sticky top-0 z-10 bg-white/75 backdrop-blur-xl border-b border-white/85 px-4 py-3 shadow-xs">
+        <div className="max-w-lg mx-auto nx-dark-accent-card px-5 py-3.5">
+          <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+            <Truck className="w-4 h-4" /> เช็คของขึ้นรถ (Cross-Dock)
+          </div>
+          <h1 className="text-xl font-black text-white mt-1 tabular-nums">
+            {items.length} รายการ · {totalQty} ชิ้น{multi ? ` · ${drops.length} ดรอป` : ''}
+          </h1>
+        </div>
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-lg mx-auto">
         {/* Post-dispatch: open the QC handover slip on this phone */}
         {lastSlip && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
+          <div className="nx-glass-card border-emerald-500/30 bg-emerald-500/10 p-3.5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-700 border border-emerald-500/25 flex items-center justify-center shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-black text-emerald-800">ส่งขึ้นรถแล้ว · {lastSlip.orderNo}</div>
-              <div className="text-[11px] text-emerald-600">เปิดใบตรวจรับมอบ (QC) ได้เลย</div>
+              <div className="text-sm font-black text-emerald-900">ส่งขึ้นรถแล้ว · {lastSlip.orderNo}</div>
+              <div className="text-[11px] text-emerald-700">เปิดใบตรวจรับมอบ (QC) ได้เลย</div>
             </div>
             <a
               href={`/print/qc-handover?id=${lastSlip.id}`}
               target="_blank" rel="noopener noreferrer"
-              className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold active:scale-95 shrink-0"
-            >เปิดใบ</a>
-            <button onClick={() => setLastSlip(null)} className="text-emerald-400 shrink-0"><X className="w-4 h-4" /></button>
+              className="min-h-[40px] px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold active:scale-95 shrink-0 flex items-center"
+            >
+              เปิดใบ
+            </a>
+            <button onClick={() => setLastSlip(null)} className="p-1.5 text-emerald-600 shrink-0"><X className="w-4 h-4" /></button>
           </div>
         )}
 
         {/* Vehicle */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
+        <div className="nx-glass-card p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">รถ / ทะเบียน + คนขับ</div>
           {vehicles.length === 0 ? (
-            <p className="text-xs text-amber-600">ยังไม่มีรถในระบบ — ให้แอดมินเพิ่มที่เมนู “รถบริษัท (Fleet)”</p>
+            <p className="text-xs text-amber-700 font-semibold">ยังไม่มีรถในระบบ — ให้แอดมินเพิ่มที่เมนู “รถบริษัท (Fleet)”</p>
           ) : (
             <div className="relative">
               <select value={vehicleId} onChange={e => setVehicleId(e.target.value)}
-                className="w-full appearance-none bg-slate-100 rounded-xl px-3 py-3 text-sm font-semibold outline-none">
+                className="w-full min-h-[44px] appearance-none bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500">
                 <option value="">— เลือกรถ —</option>
                 {vehicles.map(v => <option key={v.id} value={v.id}>{v.plate} · {v.driverName || 'ไม่ระบุคนขับ'} ({v.vehicleType})</option>)}
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           )}
         </div>
 
-        {/* Overall customer — pick from Customer Master or type free text */}
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl px-3 py-2.5 shadow-sm">
+        {/* Overall customer */}
+        <div className="nx-glass-card flex items-center gap-2.5 px-4 py-2.5">
           <User className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             value={customer}
@@ -387,8 +372,6 @@ export default function MobileDispatchPage() {
             onChange={e => {
               const v = e.target.value;
               setCustomer(v);
-              // If they picked an exact match from the list, prefill drop 1's
-              // contact/address when those fields are still empty.
               const hit = customerOpts.find(c => c.name === v);
               if (hit) setDrops(prev => prev.map((d, i) => i === 0 ? {
                 name: d.name || hit.name,
@@ -397,151 +380,157 @@ export default function MobileDispatchPage() {
               } : d));
             }}
             placeholder="ชื่อลูกค้า/งาน — เลือกจากรายชื่อหรือพิมพ์เอง (ไม่บังคับ)"
-            className="w-full bg-transparent text-sm outline-none"
+            className="w-full min-h-[40px] bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
           />
           <datalist id="dispatch-customers">
             {customerOpts.map(c => <option key={c.id} value={c.name} />)}
           </datalist>
         </div>
 
-        {/* Pickup point (origin) — chosen per job, coords pushed to TMS */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-2.5">
+        {/* Pickup point (origin) */}
+        <div className="nx-glass-card p-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Warehouse className="w-3.5 h-3.5" /> จุดรับสินค้า (ต้นทาง)
+              <Warehouse className="w-3.5 h-3.5 text-slate-500" /> จุดรับสินค้า (ต้นทาง)
             </div>
-            <button onClick={() => setAddingPickup(v => !v)} className="text-xs font-bold text-cyan-600 active:scale-95 flex items-center gap-1">
+            <button onClick={() => setAddingPickup(v => !v)} className="px-3 py-1 rounded-full bg-sky-500/12 text-sky-700 border border-sky-500/20 text-xs font-bold active:scale-95 flex items-center gap-1">
               <Plus className="w-3.5 h-3.5" /> เพิ่มจุด
             </button>
           </div>
           <div className="relative">
             <select value={pickupId} onChange={e => setPickupId(e.target.value)}
-              className="w-full appearance-none bg-slate-100 rounded-xl px-3 py-3 text-sm font-semibold outline-none">
+              className="w-full min-h-[44px] appearance-none bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500">
               <option value="">— ใช้คลังสาขา (ค่าเริ่มต้น) —</option>
               {visiblePickups.map(p => (
                 <option key={p.id} value={p.id}>{p.name}{p.lat != null ? ' 📍' : ' (ไม่มีพิกัด)'}</option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
           {selectedPickup && (
-            <p className="text-[11px] text-slate-400 flex items-start gap-1">
+            <p className="text-[11px] text-slate-500 flex items-start gap-1 tabular-nums">
               <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
               {selectedPickup.address || 'ไม่มีที่อยู่'}{selectedPickup.lat != null ? ` · ${selectedPickup.lat},${selectedPickup.lng}` : ' · ยังไม่มีพิกัด'}
             </p>
           )}
 
           {addingPickup && (
-            <div className="border-t border-slate-100 pt-2.5 space-y-2">
-              <input value={newPickup.name} onChange={e => setNewPickup(p => ({ ...p, name: e.target.value }))} placeholder="ชื่อจุดรับ *" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
-              <input value={newPickup.address} onChange={e => setNewPickup(p => ({ ...p, address: e.target.value }))} placeholder="ที่อยู่ (ไม่บังคับ)" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
+            <div className="border-t border-slate-200/80 pt-3 space-y-2.5">
+              <input value={newPickup.name} onChange={e => setNewPickup(p => ({ ...p, name: e.target.value }))} placeholder="ชื่อจุดรับ *" className="w-full min-h-[44px] bg-white/90 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500" />
+              <input value={newPickup.address} onChange={e => setNewPickup(p => ({ ...p, address: e.target.value }))} placeholder="ที่อยู่ (ไม่บังคับ)" className="w-full min-h-[44px] bg-white/90 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500" />
               <div className="flex gap-2">
-                <input value={newPickup.lat} onChange={e => setNewPickup(p => ({ ...p, lat: e.target.value }))} placeholder="lat" inputMode="decimal" className="w-1/2 bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
-                <input value={newPickup.lng} onChange={e => setNewPickup(p => ({ ...p, lng: e.target.value }))} placeholder="lng" inputMode="decimal" className="w-1/2 bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
+                <input value={newPickup.lat} onChange={e => setNewPickup(p => ({ ...p, lat: e.target.value }))} placeholder="lat" inputMode="decimal" className="w-1/2 min-h-[44px] bg-white/90 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 tabular-nums outline-none focus:border-emerald-500" />
+                <input value={newPickup.lng} onChange={e => setNewPickup(p => ({ ...p, lng: e.target.value }))} placeholder="lng" inputMode="decimal" className="w-1/2 min-h-[44px] bg-white/90 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 tabular-nums outline-none focus:border-emerald-500" />
               </div>
               <div className="flex gap-2">
-                <button onClick={useGpsForNewPickup} className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 rounded-lg py-2 text-xs font-bold active:scale-95">
-                  <LocateFixed className="w-4 h-4 text-cyan-600" /> ใช้ตำแหน่งปัจจุบัน (GPS)
+                <button onClick={useGpsForNewPickup} className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 rounded-full py-2 text-xs font-bold active:scale-95">
+                  <LocateFixed className="w-4 h-4 text-sky-600" /> ใช้ตำแหน่ง GPS
                 </button>
-                <button onClick={savePickup} disabled={savingPickup} className="flex-1 bg-cyan-600 text-white rounded-lg py-2 text-xs font-bold active:scale-95 disabled:opacity-50">
+                <button onClick={savePickup} disabled={savingPickup} className="flex-1 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-full py-2 text-xs font-bold active:scale-95 disabled:opacity-50">
                   {savingPickup ? 'กำลังบันทึก...' : 'บันทึกจุดรับ'}
                 </button>
               </div>
               {selectedCustomerId
-                ? <p className="text-[10px] text-slate-400">จะผูกกับลูกค้าที่เลือก · เลือกซ้ำได้ในงานถัดไป</p>
-                : <p className="text-[10px] text-amber-500">ยังไม่ได้เลือกลูกค้า → จะบันทึกเป็นจุดกลาง (ใช้ได้ทุกลูกค้า)</p>}
+                ? <p className="text-[10px] text-slate-500">จะผูกกับลูกค้าที่เลือก · เลือกซ้ำได้ในงานถัดไป</p>
+                : <p className="text-[10px] text-amber-700">ยังไม่ได้เลือกลูกค้า → จะบันทึกเป็นจุดกลาง (ใช้ได้ทุกลูกค้า)</p>}
             </div>
           )}
         </div>
 
         {/* Drops */}
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {drops.map((d, idx) => (
-            <div key={idx} className={`bg-white border rounded-2xl p-3.5 shadow-sm space-y-2 ${ds(idx).border}`}>
+            <div key={idx} className={`nx-glass-card p-4 space-y-2.5 ${ds(idx).border}`}>
               <div className="flex items-center justify-between">
                 <span className={`text-xs font-black ${ds(idx).text}`}>📍 ดรอป {idx + 1}{multi ? '' : ' (จุดส่ง)'}</span>
-                {drops.length > 1 && <button onClick={() => removeDrop(idx)} className="text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>}
+                {drops.length > 1 && <button onClick={() => removeDrop(idx)} className="p-1.5 text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>}
               </div>
               {dropPoints.length > 0 && (
                 <div className="relative">
                   <select
                     value=""
                     onChange={e => { if (e.target.value) applyDropPoint(idx, e.target.value); }}
-                    className="w-full appearance-none bg-cyan-50 text-cyan-700 rounded-lg px-3 py-2 text-xs font-bold outline-none border border-cyan-100"
+                    className="w-full min-h-[40px] appearance-none bg-sky-500/12 text-sky-800 rounded-xl px-3 py-2 text-xs font-bold outline-none border border-sky-500/25"
                   >
                     <option value="">📍 เลือกจุดส่งที่บันทึกไว้ (ไม่ต้องพิมพ์)</option>
                     {dropPoints.map(p => <option key={p.id} value={p.id}>{p.name}{p.lat != null ? ' 📍' : ''}</option>)}
                   </select>
-                  <ChevronDown className="w-4 h-4 text-cyan-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-sky-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               )}
-              <input value={d.name} onChange={e => patchDrop(idx, 'name', e.target.value)} placeholder="ชื่อผู้รับ" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
-              <input value={d.phone} onChange={e => patchDrop(idx, 'phone', e.target.value)} placeholder="เบอร์โทร" inputMode="tel" className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none" />
-              <textarea value={d.address} onChange={e => patchDrop(idx, 'address', e.target.value)} placeholder="ที่อยู่จัดส่ง *" rows={2} className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm outline-none resize-none" />
-              <div className="flex items-center gap-2">
-                <button onClick={() => captureGpsForDrop(idx)} className="flex items-center gap-1 text-[11px] font-bold text-slate-500 active:scale-95">
-                  <LocateFixed className="w-3.5 h-3.5 text-cyan-600" /> ปักพิกัด GPS
+              <input value={d.name} onChange={e => patchDrop(idx, 'name', e.target.value)} placeholder="ชื่อผู้รับ" className="w-full min-h-[44px] bg-white/90 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500" />
+              <input value={d.phone} onChange={e => patchDrop(idx, 'phone', e.target.value)} placeholder="เบอร์โทร" inputMode="tel" className="w-full min-h-[44px] bg-white/90 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 tabular-nums outline-none focus:border-emerald-500" />
+              <textarea value={d.address} onChange={e => patchDrop(idx, 'address', e.target.value)} placeholder="ที่อยู่จัดส่ง *" rows={2} className="w-full bg-white/90 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none resize-none focus:border-emerald-500" />
+              <div className="flex items-center gap-3 pt-0.5">
+                <button onClick={() => captureGpsForDrop(idx)} className="flex items-center gap-1 text-[11px] font-bold text-slate-600 active:scale-95">
+                  <LocateFixed className="w-3.5 h-3.5 text-sky-600" /> ปักพิกัด GPS
                 </button>
-                <button onClick={() => saveDropAsPoint(idx)} className="flex items-center gap-1 text-[11px] font-bold text-cyan-600 active:scale-95">
+                <button onClick={() => saveDropAsPoint(idx)} className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 active:scale-95">
                   <Plus className="w-3.5 h-3.5" /> บันทึกเป็นจุดส่ง
                 </button>
                 {d.lat != null && d.lng != null && (
-                  <span className="ml-auto text-[10px] text-emerald-600 font-bold flex items-center gap-0.5"><MapPin className="w-3 h-3" />มีพิกัด</span>
+                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/12 text-emerald-700 font-bold flex items-center gap-0.5">
+                    <MapPin className="w-3 h-3" /> มีพิกัด
+                  </span>
                 )}
               </div>
             </div>
           ))}
-          <button onClick={addDrop} className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 text-slate-500 rounded-2xl py-2.5 text-sm font-bold active:scale-[0.99]">
+          <button onClick={addDrop} className="w-full min-h-[46px] flex items-center justify-center gap-2 bg-white/60 border-2 border-dashed border-slate-300 text-slate-600 rounded-full py-2.5 text-sm font-bold active:scale-[0.99]">
             <Plus className="w-4 h-4" /> เพิ่มจุดส่ง (ดรอป)
           </button>
         </div>
 
         {/* Item entry */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
+        <div className="nx-glass-card p-4">
+          <div className="flex items-center justify-between mb-2.5">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">เพิ่มของ (ไม่ต้องมีในคลัง)</span>
-            <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-bold text-cyan-600 active:scale-95"><ScanLine className="w-4 h-4" /> สแกนยิงของ</button>
+            <button onClick={() => setScanOpen(true)} className="min-h-[36px] px-3 py-1 rounded-full bg-slate-900 text-white flex items-center gap-1 text-xs font-bold active:scale-95">
+              <ScanLine className="w-3.5 h-3.5" /> สแกนยิงของ
+            </button>
           </div>
           {multi && (
-            <div className="flex items-center gap-1.5 mb-2 overflow-x-auto">
-              <span className="text-xs text-slate-400 shrink-0">ใส่ลงดรอป:</span>
+            <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto">
+              <span className="text-xs text-slate-500 shrink-0">ใส่ลงดรอป:</span>
               {drops.map((_, i) => (
-                <button key={i} onClick={() => setActiveDrop(i + 1)} className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${activeDrop === i + 1 ? ds(i).chip : 'bg-slate-100 text-slate-500'}`}>{i + 1}</button>
+                <button key={i} onClick={() => setActiveDrop(i + 1)} className={`px-3.5 py-1 rounded-full text-xs font-bold shrink-0 ${activeDrop === i + 1 ? ds(i).chip : 'bg-white border border-slate-200 text-slate-600'}`}>{i + 1}</button>
               ))}
             </div>
           )}
           <div className="flex gap-2">
-            <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addItem(); }} placeholder="ชื่อ/รายการของ หรือกดสแกน" className="flex-1 bg-slate-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-300" />
-            <input value={qty} onChange={e => setQty(e.target.value)} type="number" inputMode="numeric" className="w-16 bg-slate-100 rounded-xl px-2 py-2.5 text-sm text-center outline-none focus:ring-2 focus:ring-cyan-300" />
-            <button onClick={addItem} className="px-3 rounded-xl bg-cyan-600 text-white active:scale-95"><Plus className="w-5 h-5" /></button>
+            <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addItem(); }} placeholder="ชื่อ/รายการของ หรือกดสแกน" className="flex-1 min-h-[44px] bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-500" />
+            <input value={qty} onChange={e => setQty(e.target.value)} type="number" inputMode="numeric" className="w-16 min-h-[44px] bg-white/90 border border-slate-200 rounded-2xl px-2 py-2.5 text-sm text-center font-bold text-slate-900 tabular-nums outline-none focus:border-emerald-500" />
+            <button onClick={addItem} className="min-h-[44px] min-w-[44px] px-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 flex items-center justify-center"><Plus className="w-5 h-5" /></button>
           </div>
         </div>
 
         {/* Items list */}
         {items.length === 0 ? (
-          <div className="text-center py-8 text-slate-400"><PackageCheck className="w-11 h-11 mx-auto mb-2 text-slate-300" /><p className="text-sm font-semibold text-slate-500">ยังไม่มีรายการ</p></div>
+          <div className="nx-glass-card text-center py-8 text-slate-400">
+            <PackageCheck className="w-11 h-11 mx-auto mb-2 text-slate-300" />
+            <p className="text-sm font-semibold text-slate-500">ยังไม่มีรายการ</p>
+          </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {items.map((it, i) => (
-              <div key={i} className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm flex items-center gap-3">
+              <div key={i} className="nx-glass-card p-3.5 flex items-center gap-3">
                 {multi ? (
-                  <select value={it.drop} onChange={e => setItemDrop(i, Number(e.target.value))} className={`w-12 h-9 rounded-xl text-center font-bold text-sm border outline-none ${ds(it.drop - 1).badge}`}>
+                  <select value={it.drop} onChange={e => setItemDrop(i, Number(e.target.value))} className={`w-12 h-9 rounded-full text-center font-bold text-sm border outline-none ${ds(it.drop - 1).badge}`}>
                     {drops.map((_, di) => <option key={di} value={di + 1}>{di + 1}</option>)}
                   </select>
-                ) : <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center font-bold shrink-0">{i + 1}</div>}
+                ) : <div className="w-9 h-9 rounded-full bg-sky-500/12 text-sky-700 border border-sky-500/20 flex items-center justify-center font-bold tabular-nums shrink-0">{i + 1}</div>}
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-900 truncate">{it.name}</div>
                   {it.scanned
-                    ? <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-0.5"><Check className="w-3 h-3" />ยิงแล้ว · 1 ลาเบล = ใส่จำนวนได้</div>
+                    ? <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-0.5"><Check className="w-3 h-3" />ยิงแล้ว · 1 ลาเบล = ใส่จำนวนได้</div>
                     : it.override
-                      ? <div className="text-[11px] text-amber-600 font-semibold flex items-center gap-0.5"><Check className="w-3 h-3" />ยืนยันเอง (ไม่ได้ยิง)</div>
-                      : <button onClick={() => overrideItem(i)} className="text-[11px] text-rose-500 font-bold underline underline-offset-2 active:scale-95">⚠ พิมพ์มือ — แตะเพื่อยืนยันเอง</button>}
+                      ? <div className="text-[11px] text-amber-700 font-semibold flex items-center gap-0.5"><Check className="w-3 h-3" />ยืนยันเอง (ไม่ได้ยิง)</div>
+                      : <button onClick={() => overrideItem(i)} className="text-[11px] text-rose-600 font-bold underline underline-offset-2 active:scale-95">⚠ พิมพ์มือ — แตะเพื่อยืนยันเอง</button>}
                 </div>
-                {/* Qty stepper — supports "1 label = N pieces" */}
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => bumpQty(i, -1)} className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
-                  <input value={it.qty} onChange={e => setQtyVal(i, Number(e.target.value))} type="number" inputMode="numeric" className="w-11 h-7 text-center text-sm font-bold text-cyan-600 bg-slate-50 border border-slate-200 rounded-lg outline-none" />
-                  <button onClick={() => bumpQty(i, 1)} className="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => bumpQty(i, -1)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
+                  <input value={it.qty} onChange={e => setQtyVal(i, Number(e.target.value))} type="number" inputMode="numeric" className="w-11 h-8 text-center text-sm font-bold text-slate-900 tabular-nums bg-white border border-slate-200 rounded-xl outline-none" />
+                  <button onClick={() => bumpQty(i, 1)} className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
                 </div>
                 <button onClick={() => removeItem(i)} className="p-1.5 text-slate-400 hover:text-rose-600 active:scale-90 shrink-0"><Trash2 className="w-4 h-4" /></button>
               </div>
@@ -550,40 +539,39 @@ export default function MobileDispatchPage() {
         )}
 
         {/* Carrier */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
+        <div className="nx-glass-card p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">ขนส่ง</div>
-          <select value={carrier} onChange={e => setCarrier(e.target.value)} className="w-full bg-slate-100 rounded-xl px-3 py-2.5 text-sm outline-none">
+          <select value={carrier} onChange={e => setCarrier(e.target.value)} className="w-full min-h-[44px] bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500">
             {carriers.length === 0 && <option>{carrier}</option>}
             {carriers.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
           </select>
-          {isFleet ? <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> รถบริษัท — สร้างงานเข้า TMS อัตโนมัติ</p>
-            : <p className="text-xs text-slate-400 mt-1.5">ขนส่งเอกชน — ไม่เข้า TMS</p>}
+          {isFleet ? <p className="text-xs text-emerald-700 font-semibold mt-1.5 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> รถบริษัท — สร้างงานเข้า TMS อัตโนมัติ</p>
+            : <p className="text-xs text-slate-500 mt-1.5">ขนส่งเอกชน — ไม่เข้า TMS</p>}
         </div>
 
-        {/* ขั้น 2: ตรวจรับจากคลังลูกค้า — ลายเซ็น พนักงานจัดของ + เช็คเกอร์ */}
+        {/* Signatures */}
         {items.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-3">
-            <div className="text-[11px] font-bold text-cyan-700 uppercase tracking-wider">ขั้น 2 · ตรวจรับจากคลังลูกค้า</div>
+          <div className="nx-glass-card p-4 space-y-3">
+            <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">ขั้น 2 · ตรวจรับจากคลังลูกค้า</div>
             <div className="grid grid-cols-2 gap-3">
               {([['customer', 'พนักงานจัดของ (ลูกค้า)', customerStaffSig], ['checker', 'เช็คเกอร์ (เรา)', checkerSig]] as const).map(([role, label, sig]) => (
-                <button key={role} onClick={() => setSigTarget(role as any)} className={`rounded-2xl p-3 border flex flex-col items-center gap-1 ${sig ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
+                <button key={role} onClick={() => setSigTarget(role as any)} className={`min-h-[72px] rounded-2xl p-3 border flex flex-col items-center justify-center gap-1 ${sig ? 'bg-emerald-500/12 border-emerald-500/30' : 'bg-white/80 border-slate-200'}`}>
                   <PenLine className={`w-5 h-5 ${sig ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  <span className="text-[11px] font-bold text-slate-700 text-center leading-tight">{label}</span>
-                  <span className={`text-[10px] font-bold ${sig ? 'text-emerald-600' : 'text-slate-400'}`}>{sig ? '✓ เซ็นแล้ว' : 'แตะเพื่อเซ็น'}</span>
+                  <span className="text-[11px] font-bold text-slate-800 text-center leading-tight">{label}</span>
+                  <span className={`text-[10px] font-bold ${sig ? 'text-emerald-700' : 'text-slate-400'}`}>{sig ? '✓ เซ็นแล้ว' : 'แตะเพื่อเซ็น'}</span>
                 </button>
               ))}
             </div>
-            <button onClick={() => setChecked(v => !v)} className={`w-full flex items-center gap-3 rounded-xl p-3 border ${checked ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
-              <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${checked ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-300'}`}>{checked && <Check className="w-4 h-4" />}</div>
-              <span className="text-sm font-semibold text-left text-slate-700">เช็คของครบถ้วนตามที่ลูกค้าจัดเตรียม</span>
+            <button onClick={() => setChecked(v => !v)} className={`w-full min-h-[48px] flex items-center gap-3 rounded-2xl p-3 border ${checked ? 'bg-emerald-500/12 border-emerald-500/30' : 'bg-white/80 border-slate-200'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${checked ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 border border-slate-300'}`}>{checked && <Check className="w-4 h-4" />}</div>
+              <span className="text-sm font-semibold text-left text-slate-800">เช็คของครบถ้วนตามที่ลูกค้าจัดเตรียม</span>
             </button>
           </div>
         )}
 
-        {/* คนขับยืนยันจำนวนที่โหลด → ทำในแอป TMS (คนขับไม่ใช้แอป WMS) */}
         {items.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-xs text-blue-700 flex items-start gap-2">
-            <Truck className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="nx-glass-card border-sky-500/25 bg-sky-500/10 p-3.5 text-xs text-sky-900 flex items-start gap-2">
+            <Truck className="w-4 h-4 shrink-0 mt-0.5 text-sky-700" />
             <span>คนขับยืนยันจำนวนที่โหลดจริงในแอป TMS ตอนขึ้นของ — เช็คเกอร์ไม่ต้องรอคนขับที่นี่</span>
           </div>
         )}
@@ -592,7 +580,7 @@ export default function MobileDispatchPage() {
       {items.length > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
           <div className="max-w-lg mx-auto">
-            <button onClick={dispatch} disabled={submitting} className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 active:scale-[0.99] text-white font-black rounded-2xl py-4 shadow-xl shadow-cyan-600/30">
+            <button onClick={dispatch} disabled={submitting} className="w-full min-h-[52px] flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 active:scale-[0.99] text-white font-black rounded-full py-3.5 shadow-xl shadow-emerald-600/30 tabular-nums">
               <Truck className="w-5 h-5" />{submitting ? 'กำลังส่ง...' : `ส่งขึ้นรถ (${totalQty} ชิ้น)`}
             </button>
           </div>

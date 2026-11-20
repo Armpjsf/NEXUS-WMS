@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { ProductModal } from '@/components/ProductModal';
 import { ProductImportModal } from '@/components/ProductImportModal';
 import { HistoryImportModal } from '@/components/HistoryImportModal';
@@ -8,12 +8,29 @@ import { LotBreakdownModal } from '@/components/LotBreakdownModal';
 import { LocationSwapModal } from '@/components/LocationSwapModal';
 import { UomModal } from '@/components/UomModal';
 import { LotTraceModal } from '@/components/LotTraceModal';
-import { Search, Plus, Download, RefreshCcw, X, Package, ArrowLeftRight, History, Printer, Pencil, Maximize2, Camera, Layers, FileSpreadsheet, Boxes, GitBranch } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Download,
+  RefreshCcw,
+  X,
+  Package,
+  ArrowLeftRight,
+  History,
+  Printer,
+  Pencil,
+  Maximize2,
+  Camera,
+  Layers,
+  FileSpreadsheet,
+  Boxes,
+  GitBranch,
+  Sparkles,
+  MapPin,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/config';
@@ -26,7 +43,7 @@ import { errorMessage } from '@/lib/errors';
 
 export default function InventoryPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-transparent p-8 text-sm text-slate-600">Loading...</div>}>
        <InventoryContent />
     </Suspense>
   );
@@ -39,7 +56,7 @@ function InventoryContent() {
   const [search, setSearch] = useState('');
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get('status')?.toUpperCase() || 'ALL';
-  const [filterStatus, setFilterStatus] = useState(initialStatus); // ALL, LOW, OK
+  const [filterStatus, setFilterStatus] = useState(initialStatus); // ALL, LOW, OK, OUT, EXPIRING, EXPIRED, INACTIVE
   const [filterMovement, setFilterMovement] = useState('ALL');
   const [showInactive, setShowInactive] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
@@ -77,7 +94,7 @@ function InventoryContent() {
     },
     enabled: true,
   });
-  
+
   // CRUD State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -88,13 +105,14 @@ function InventoryContent() {
   };
 
   const openEditModal = (p: any, e: React.MouseEvent) => {
-      e.preventDefault(); 
+      e.preventDefault();
       e.stopPropagation();
       setEditingProduct(p);
       setIsModalOpen(true);
   };
-  
+
   const { sendNotification } = useNotification();
+  void sendNotification;
 
   // Sync URL Params to State (Always) with Fallback
   useEffect(() => {
@@ -116,7 +134,7 @@ function InventoryContent() {
          setFilterStatus('LOW');
          setSearch(''); // Clear search so filter works
      } else {
-         setFilterStatus(s?.toUpperCase() || 'ALL'); 
+         setFilterStatus(s?.toUpperCase() || 'ALL');
          if (q) setSearch(q);
      }
      setFilterMovement(m || 'ALL');
@@ -127,7 +145,7 @@ function InventoryContent() {
     const urlParams = new URLSearchParams(window.location.search);
     const branchId = urlParams.get('branchId') || 'hq';
     const url = getApiUrl(`/api/products?branchId=${branchId}`);
-    
+
     fetch(url)
       .then(async (res) => {
         if (!res.ok) {
@@ -138,22 +156,7 @@ function InventoryContent() {
       })
       .then(data => {
         if (Array.isArray(data)) {
-            console.log("Inventory Page Data:", data);
-            if (data.length > 0) {
-                console.log("Sample Item:", {
-                    name: data[0].name,
-                    movementStatus: data[0].movementStatus
-                });
-            }
             setProducts(data);
-            
-            // Check for Low Stock and Notify
-            const lowStockItems = data.filter((p: any) => p.stock <= p.minStock);
-            if (lowStockItems.length > 0) {
-                // In a real app, you might want to debounce this or check if already notified
-                // For now, we rely on the backend pushed/polled notifications or user manual trigger
-                // But we can show a toast here if desired.
-            }
         } else {
             console.error("API returned non-array data:", data);
             setProducts([]);
@@ -176,7 +179,7 @@ function InventoryContent() {
       if (!status) return false;
       const s = status.toLowerCase().trim();
       return s === 'inactive' || s === 'discontinued' || s === 'ยกเลิก';
-  }
+  };
 
   // Filter Logic
   const filtered = products.filter(p => {
@@ -188,52 +191,91 @@ function InventoryContent() {
     const normalize = (val: string) => val ? val.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() : '';
     const term = normalize(search);
 
-    const matchSearch = normalize(p.name).includes(term) || 
+    const matchSearch = normalize(p.name).includes(term) ||
                         normalize(p.id).includes(term) ||
                         normalize(p.location).includes(term);
-    const stockStatus = p.stock <= p.minStock ? 'LOW' : 'OK'; 
+    const stockStatus = p.stock <= p.minStock ? 'LOW' : 'OK';
     const now = Date.now();
     const expTime = p.expiryDate ? new Date(p.expiryDate).getTime() : null;
     const isExpiringSoon = expTime !== null && expTime > now && (expTime - now) <= 30 * 86400000;
     const isExpired = expTime !== null && expTime <= now;
 
-    const matchStatus = filterStatus === 'ALL' || 
+    const matchStatus = filterStatus === 'ALL' ||
                       (filterStatus === 'LOW' && stockStatus === 'LOW') ||
                       (filterStatus === 'OUT' && p.stock <= 0) ||
                       (filterStatus === 'OK' && stockStatus === 'OK') ||
                       (filterStatus === 'INACTIVE') ||
                       (filterStatus === 'EXPIRING' && isExpiringSoon) ||
-                      (filterStatus === 'EXPIRED' && isExpired);
-    
+                      (filterStatus === 'EXPIRED' && isExpired) ||
+                      (filterStatus === 'OUT_EXPIRING' && (p.stock <= 0 || isExpiringSoon || isExpired));
+
     // Robust movement matching (Trim + Case Insensitive + Handle Empty)
     const pMovement = (p.movementStatus || '').trim().toLowerCase();
     const filterVal = filterMovement.trim().toLowerCase();
     const matchMovement = filterMovement === 'ALL' || pMovement === filterVal;
-    
+
     return matchSearch && matchStatus && matchMovement;
   });
 
-  // Debug Filtering
-  useEffect(() => {
-    if (products.length > 0) {
-        console.log(`[FilterDebug] Filter: ${filterMovement}, First Item Status: '${products[0].movementStatus}' -> Parsed: '${(products[0].movementStatus || '').trim()}'`);
-        console.log(`[FilterDebug] Visible Items: ${filtered.length} / ${products.length}`);
-    }
-  }, [filterMovement, products, filtered.length]);
+  // Quick summary counts from active catalog
+  const activeProducts = products.filter(p => !isInactive(p.status));
+  const totalCount = activeProducts.length;
+  const lowCount = activeProducts.filter(p => p.stock <= p.minStock).length;
+  const okCount = activeProducts.filter(p => p.stock > p.minStock).length;
+  const nowMs = Date.now();
+  const outCount = activeProducts.filter(p => p.stock <= 0).length;
+  const expiringCount = activeProducts.filter(p => {
+    if (!p.expiryDate) return false;
+    const exp = new Date(p.expiryDate).getTime();
+    return exp <= nowMs || (exp - nowMs) <= 30 * 86400000;
+  }).length;
+  const outOrExpiringCount = activeProducts.filter(p => {
+    const isOut = p.stock <= 0;
+    const exp = p.expiryDate ? new Date(p.expiryDate).getTime() : null;
+    const isExp = exp !== null && (exp <= nowMs || (exp - nowMs) <= 30 * 86400000);
+    return isOut || isExp;
+  }).length;
+  const outExpiringFilterKey = outCount > 0 && expiringCount === 0
+    ? 'OUT'
+    : expiringCount > 0 && outCount === 0
+      ? 'EXPIRING'
+      : 'OUT_EXPIRING';
 
   // Calculate Status dynamically for display
   const getStatus = (p: any) => {
-    if (isInactive(p.status)) return { label: 'Inactive', color: 'text-white', bg: 'bg-gradient-to-r from-slate-500 to-slate-600', border: 'border-transparent shadow-lg shadow-slate-200/50' };
-    if (p.stock <= p.minStock) return { label: 'Low Stock', color: 'text-white', bg: 'bg-gradient-to-r from-rose-500 to-pink-600', border: 'border-transparent shadow-lg shadow-rose-200/50' };
-    if (p.stock === 0) return { label: 'Out of Stock', color: 'text-white', bg: 'bg-gradient-to-r from-slate-800 to-slate-900', border: 'border-transparent shadow-lg shadow-slate-900/10' };
-    return { label: 'In Stock', color: 'text-white', bg: 'bg-gradient-to-r from-emerald-500 to-teal-600', border: 'border-transparent shadow-lg shadow-emerald-200/50' };
+    if (isInactive(p.status)) {
+      return {
+        label: 'Inactive',
+        badge: 'bg-slate-100 text-slate-600 border-slate-200',
+        dot: 'bg-slate-400',
+      };
+    }
+    if (p.stock <= 0) {
+      return {
+        label: 'Out of Stock',
+        badge: 'bg-rose-50 text-rose-700 border-rose-200',
+        dot: 'bg-rose-500',
+      };
+    }
+    if (p.stock <= p.minStock) {
+      return {
+        label: 'Low Stock',
+        badge: 'bg-amber-50 text-amber-800 border-amber-200',
+        dot: 'bg-amber-500',
+      };
+    }
+    return {
+      label: 'In Stock',
+      badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      dot: 'bg-emerald-500',
+    };
   };
 
   const exportCSV = () => {
     // Added BOM for Excel UTF-8 compatibility
-    const BOM = "\uFEFF"; 
+    const BOM = "\uFEFF";
     const headers = ['ID,Name,Category,Location,Movement Status,Stock,MinStock,Price,Stock Status,Master Status'];
-    const rows = filtered.map(p => 
+    const rows = filtered.map(p =>
         `"${p.id}","${p.name.replace(/"/g, '""')}","${p.category}","${p.location || '-'}","${p.movementStatus || 'Unknown'}",${p.stock},${p.minStock},${p.price},"${getStatus(p).label}","${p.status}"`
     );
     const csvContent = BOM + headers.concat(rows).join('\n');
@@ -246,155 +288,265 @@ function InventoryContent() {
     link.click();
   };
 
-  // Animation variants
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.01
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+  const statusPills = [
+    { key: 'ALL', label: t('filter_all_status'), count: totalCount },
+    { key: 'OK', label: t('filter_in_stock'), count: okCount },
+    { key: 'LOW', label: t('filter_low_stock'), count: lowCount },
+    { key: 'OUT', label: t('filter_out_of_stock') },
+    { key: 'EXPIRING', label: 'ใกล้หมดอายุ (≤30d)' },
+    { key: 'EXPIRED', label: 'หมดอายุแล้ว' },
+    { key: 'INACTIVE', label: t('filter_inactive') },
+  ];
 
   return (
-    <div className="min-h-screen relative px-4 py-6 pb-32 sm:px-6 lg:p-8">
-        <AmbientBackground />
-        
-        <motion.div 
-            initial={{ opacity: 0, y: -20 }}
+    <div className="min-h-screen relative px-4 py-6 pb-32 sm:px-6 lg:p-8 bg-transparent text-[#0f172a]">
+        {/* V7 Open Header Row + Pill Action Toolbar */}
+        <motion.div
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative mx-auto mb-6 flex max-w-[1500px] flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between"
+            className="mx-auto mb-6 max-w-[1500px] pt-1"
         >
-           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-           
-           <div className="relative z-10">
-              <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6]">
-                Tactical Inventory Control & Stock Master
-              </p>
-              <h1 className="font-headline text-2xl md:text-3xl font-black text-[#dee2ec] tracking-tight mb-1 flex items-center gap-3">
-                <div className="bg-[#facc15] text-[#1b1600] p-2.5 rounded-lg shadow-md">
-                    <Package className="w-6 h-6" />
+           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+             <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider text-emerald-800 bg-white/65 backdrop-blur-md border border-white/85 shadow-xs">
+                    <Package className="w-3 h-3 text-emerald-600" />
+                    Inventory Control &amp; Stock Master
+                  </span>
                 </div>
-                {t('inventory_title')}
-              </h1>
-              <p className="text-[#d1c6ab] font-mono text-xs ml-1">{t('inventory_subtitle')}</p>
-           </div>
-           
-           <div className="flex flex-wrap gap-2.5 relative z-10">
-              <button 
-                  onClick={openAddModal}
-                  className="flex items-center gap-2 bg-[#facc15] text-[#1b1600] px-5 py-2.5 rounded-lg font-mono text-xs font-bold hover:bg-[#eec200] transition-all shadow-sm active:translate-y-px"
-              >
-                  <Plus className="w-4 h-4" />
-                  {t('add_product')}
-              </button>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+                  {t('inventory_title')}
+                </h1>
+                <p className="text-slate-600 text-xs sm:text-sm mt-0.5">{t('inventory_subtitle')}</p>
+             </div>
 
-              <button
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#57ec7f] hover:border-[#57ec7f]/50 px-4 py-2.5 rounded-lg font-mono text-xs font-bold transition-all shadow-sm"
-                  title="นำเข้ารายการสินค้าจากไฟล์ Excel หรือ CSV"
-              >
-                  <FileSpreadsheet className="w-4 h-4 text-[#57ec7f]" />
-                  <span>นำเข้า Excel / CSV</span>
-              </button>
+             {/* Primary Pill CTA + Compact Secondary Action Pills */}
+             <div className="flex flex-wrap items-center gap-2">
+                <button
+                    onClick={openAddModal}
+                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-sm active:scale-[0.98]"
+                >
+                    <Plus className="w-4 h-4" />
+                    <span>{t('add_product')}</span>
+                </button>
 
-              <button
-                  onClick={() => setIsHistoryImportOpen(true)}
-                  className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-amber-300 hover:border-amber-400/50 px-4 py-2.5 rounded-lg font-mono text-xs font-bold transition-all shadow-sm"
-                  title="นำเข้าประวัติรับ/จ่าย/ชำรุด (ย้ายระบบ)"
-              >
-                  <History className="w-4 h-4 text-amber-300" />
-                  <span>นำเข้าประวัติ</span>
-              </button>
+                <button
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="flex items-center gap-1.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/90 text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-xs"
+                    title="นำเข้ารายการสินค้าจากไฟล์ Excel หรือ CSV"
+                >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Excel / CSV</span>
+                </button>
 
-              <button 
-                  onClick={() => setShowGlobalLotsModal(true)}
-                  className="flex items-center gap-2 bg-[#252a32] border border-[#4cd7f6]/40 text-[#4cd7f6] px-4 py-2.5 rounded-lg font-mono text-xs font-bold hover:bg-[#4cd7f6]/10 hover:border-[#4cd7f6] transition-all shadow-sm"
-                  title="เปิดภาพรวมและการจัดการ Lot / FEFO ทั้งคลัง"
-              >
-                  <Layers className="w-4 h-4" />
-                  <span>ภาพรวม Lots & FEFO</span>
-              </button>
+                <button
+                    onClick={() => setIsHistoryImportOpen(true)}
+                    className="flex items-center gap-1.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/90 text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-xs"
+                    title="นำเข้าประวัติรับ/จ่าย/ชำรุด (ย้ายระบบ)"
+                >
+                    <History className="w-3.5 h-3.5 text-amber-600" />
+                    <span>นำเข้าประวัติ</span>
+                </button>
 
-              <Link
-                  href="/ops/cycle-count"
-                  className="hidden xl:flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#57ec7f] px-4 py-2.5 rounded-lg font-mono text-xs font-bold hover:border-[#57ec7f]/50 transition-all"
-              >
-                  <RefreshCcw className="w-4 h-4" />
-                  ตรวจนับ Cycle Count
-              </Link>
+                <button
+                    onClick={() => setShowGlobalLotsModal(true)}
+                    className="flex items-center gap-1.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/90 text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-xs"
+                    title="เปิดภาพรวมและการจัดการ Lot / FEFO ทั้งคลัง"
+                >
+                    <Layers className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Lots &amp; FEFO</span>
+                </button>
 
-              <button 
-                onClick={fetchData} 
-                className={cn("p-2.5 rounded-lg transition-all border border-[#30353d]", loading ? "bg-[#1b2027] text-[#8a92a6]" : "bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15]")}
-                title="รีเฟรชข้อมูลสต็อก"
-              >
-                  <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
-              </button>
-              
-               <button 
-                  onClick={exportCSV}
-                  className="flex items-center gap-2 bg-[#252a32] border border-[#30353d] text-[#dee2ec] px-4 py-2.5 rounded-lg font-mono text-xs font-bold hover:text-[#facc15] transition-all"
-               >
-                  <Download className="w-4 h-4" />
-                  {t('export_csv')}
-               </button>
+                <Link
+                    href="/ops/cycle-count"
+                    className="hidden xl:flex items-center gap-1.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/90 text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-xs"
+                >
+                    <RefreshCcw className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Cycle Count</span>
+                </Link>
+
+                <button
+                    onClick={seedDemoProducts}
+                    disabled={seeding}
+                    className="flex items-center gap-1.5 bg-amber-50/90 hover:bg-amber-100 border border-amber-200/90 text-amber-800 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-xs disabled:opacity-50"
+                    title="โหลดสินค้าตัวอย่างพร้อม FEFO Lots (Demo)"
+                >
+                    <Sparkles className={cn("w-3.5 h-3.5 text-amber-600", seeding && "animate-spin")} />
+                    <span>{seeding ? 'กำลังโหลด...' : 'Seed Demo'}</span>
+                </button>
+
+                <button
+                  onClick={fetchData}
+                  className={cn(
+                    "p-2 rounded-full transition-all border border-white/90 backdrop-blur-md shadow-xs",
+                    loading ? "bg-white/50 text-slate-400" : "bg-white/80 text-slate-600 hover:text-slate-900 hover:bg-white"
+                  )}
+                  title="รีเฟรชข้อมูลสต็อก"
+                >
+                    <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
+                </button>
+
+                 <button
+                    onClick={exportCSV}
+                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-sm"
+                 >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{t('export_csv')}</span>
+                 </button>
+             </div>
            </div>
         </motion.div>
 
-        <motion.div 
-             initial={{ opacity: 0, y: 20 }}
+        {/* 4-Card Bento Summary Strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+          className="mx-auto mb-5 max-w-[1500px] grid grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          {/* 1. Total SKUs */}
+          <button
+            type="button"
+            onClick={() => setFilterStatus('ALL')}
+            className={cn(
+              "nx-glass-card p-5 text-left transition-all hover:-translate-y-0.5 flex flex-col justify-between gap-2.5",
+              filterStatus === 'ALL' && "ring-2 ring-slate-900/20"
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-xs font-semibold text-slate-600">Total SKUs</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900/8 text-slate-700 border border-slate-900/10">
+                Active
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2 w-full">
+              <span className="text-3xl font-bold text-slate-900 tabular-nums tracking-tight">
+                {totalCount.toLocaleString()}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">รายการ</span>
+            </div>
+          </button>
+
+          {/* 2. Healthy (OK) */}
+          <button
+            type="button"
+            onClick={() => setFilterStatus('OK')}
+            className={cn(
+              "nx-glass-card p-5 text-left transition-all hover:-translate-y-0.5 flex flex-col justify-between gap-2.5",
+              filterStatus === 'OK' && "ring-2 ring-emerald-500/45"
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-xs font-semibold text-slate-600">Healthy (OK)</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/12 text-emerald-700 border border-emerald-500/20 tabular-nums">
+                {totalCount > 0 ? `${Math.round((okCount / totalCount) * 100)}%` : '0%'}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2 w-full">
+              <span className="text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">
+                {okCount.toLocaleString()}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">พร้อมใช้งาน</span>
+            </div>
+          </button>
+
+          {/* 3. Low Stock (Amber accent) */}
+          <button
+            type="button"
+            onClick={() => setFilterStatus('LOW')}
+            className={cn(
+              "nx-glass-card p-5 text-left transition-all hover:-translate-y-0.5 flex flex-col justify-between gap-2.5",
+              filterStatus === 'LOW' && "ring-2 ring-amber-500/50"
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-xs font-semibold text-slate-600">Low Stock</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/25">
+                Reorder
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2 w-full">
+              <span className="text-3xl font-bold text-amber-600 tabular-nums tracking-tight">
+                {lowCount.toLocaleString()}
+              </span>
+              <span className="text-[11px] font-medium text-amber-700/80">ต่ำกว่า Min</span>
+            </div>
+          </button>
+
+          {/* 4. Out / Expiring (Rose accent) */}
+          <button
+            type="button"
+            onClick={() => setFilterStatus(outExpiringFilterKey)}
+            className={cn(
+              "nx-glass-card p-5 text-left transition-all hover:-translate-y-0.5 flex flex-col justify-between gap-2.5",
+              (filterStatus === 'OUT_EXPIRING' || filterStatus === 'OUT' || filterStatus === 'EXPIRING' || filterStatus === 'EXPIRED') && "ring-2 ring-rose-500/45"
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-xs font-semibold text-slate-600">Out / Expiring</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/12 text-rose-700 border border-rose-500/25 tabular-nums">
+                Out {outCount} · Exp {expiringCount}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2 w-full">
+              <span className="text-3xl font-bold text-rose-600 tabular-nums tracking-tight">
+                {outOrExpiringCount.toLocaleString()}
+              </span>
+              <span className="text-[11px] font-medium text-rose-700/80">ต้องรีบจัดการ</span>
+            </div>
+          </button>
+        </motion.div>
+
+        {/* Search + Barcode/PDA Scan Bar + Segmented Pill Filters */}
+        <motion.div
+             initial={{ opacity: 0, y: 12 }}
              animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.1 }}
-             className="mx-auto mb-6 flex max-w-[1500px] flex-col gap-3 rounded-xl border border-[#30353d] bg-[#171c23]/80 p-3 shadow-xl backdrop-blur-xl md:flex-row md:items-center"
+             transition={{ delay: 0.05 }}
+             className="mx-auto mb-6 max-w-[1500px] nx-glass-card p-4 space-y-3.5"
          >
-            <div className="flex-1 relative group w-full flex gap-2.5 items-center">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-3 w-4 h-4 text-[#d1c6ab]" />
-                    <input 
-                       type="text" 
-                       placeholder={t('search_placeholder')}
-                       value={search}
-                       onChange={e => setSearch(e.target.value)}
-                       className="w-full pl-9 pr-24 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-xs font-mono text-[#dee2ec] placeholder-[#d1c6ab]/50 focus:border-[#facc15] outline-none transition-all"
-                    />
-                    <div className="absolute right-2 top-1.5 flex items-center gap-1">
-                      {search && (
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex-1 relative flex items-center gap-2.5">
+                  <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                         type="text"
+                         placeholder={t('search_placeholder')}
+                         value={search}
+                         onChange={e => setSearch(e.target.value)}
+                         className="w-full pl-10 pr-28 py-2.5 bg-white/85 border border-white/90 rounded-full text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all"
+                      />
+                      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {search && (
+                          <button
+                            type="button"
+                            onClick={() => setSearch('')}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+                            aria-label="Clear search"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => setSearch('')}
-                          className="p-1 text-[#d1c6ab] hover:text-[#dee2ec] rounded"
+                          onClick={() => setShowCamScan(true)}
+                          title="สแกนบาร์โค้ดสินค้า"
+                          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>สแกน</span>
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setShowCamScan(true)}
-                        title="สแกนบาร์โค้ดสินค้า"
-                        className="px-2 py-1 bg-[#252a32] border border-[#30353d] hover:border-[#facc15] text-[#facc15] rounded text-[11px] font-mono font-bold flex items-center gap-1 transition-all"
-                      >
-                        <Camera className="w-3 h-3" />
-                        <span>สแกน</span>
-                      </button>
-                    </div>
-                </div>
-                <span className="px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-[#d1c6ab] font-mono text-xs whitespace-nowrap">
-                    {search ? `ค้นพบ ${filtered.length.toLocaleString()} รายการ` : `ทั้งหมด ${filtered.length.toLocaleString()} รายการ`}
-                </span>
-            </div>
-           
-           <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 font-mono text-xs">
-                <select 
+                      </div>
+                  </div>
+                  <span className="px-4 py-2.5 bg-white/75 border border-white/90 rounded-full text-slate-700 text-xs font-semibold whitespace-nowrap tabular-nums">
+                      {search ? `ค้นพบ ${filtered.length.toLocaleString()} รายการ` : `ทั้งหมด ${filtered.length.toLocaleString()} รายการ`}
+                  </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
                     value={filterMovement}
                     onChange={e => setFilterMovement(e.target.value)}
-                    className="px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-[#dee2ec] outline-none focus:border-[#facc15] cursor-pointer"
+                    className="px-4 py-2.5 bg-white/80 border border-white/90 rounded-full text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer shadow-xs"
                 >
                     <option value="ALL">{t('filter_all_movements')}</option>
                     <option value="Fast Moving">{t('filter_fast_moving')}</option>
@@ -403,297 +555,323 @@ function InventoryContent() {
                     <option value="Deadstock">{t('filter_deadstock')}</option>
                 </select>
 
-                <select 
-                    value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
-                    className="px-3 py-2 bg-[#090f15] border border-[#30353d] rounded-lg text-[#dee2ec] outline-none focus:border-[#facc15] cursor-pointer"
-                >
-                    <option value="ALL">{t('filter_all_status')}</option>
-                    <option value="LOW">{t('filter_low_stock')}</option>
-                    <option value="OUT">{t('filter_out_of_stock')}</option>
-                    <option value="EXPIRING">⏰ ใกล้หมดอายุ (≤ 30 วัน)</option>
-                    <option value="EXPIRED">❌ หมดอายุแล้ว</option>
-                    <option value="OK">{t('filter_in_stock')}</option>
-                    <option value="INACTIVE">{t('filter_inactive')}</option>
-                </select>
-                
-                <button 
+                <button
                   onClick={() => setShowInactive(!showInactive)}
                   className={cn(
-                    "px-3 py-2 rounded-lg border font-mono text-xs whitespace-nowrap transition-all",
-                    showInactive 
-                        ? "bg-[#facc15] text-[#1b1600] border-[#facc15] font-bold" 
-                        : "bg-[#090f15] text-[#d1c6ab] border-[#30353d] hover:text-[#dee2ec]"
+                    "px-4 py-2.5 rounded-full border text-xs font-semibold whitespace-nowrap transition-all",
+                    showInactive
+                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                        : "bg-white/80 text-slate-600 border-white/90 hover:text-slate-900 hover:bg-white shadow-xs"
                   )}
                 >
                     {showInactive ? t('show_active_only') : t('show_inactive')}
                 </button>
-           </div>
+              </div>
+            </div>
+
+            {/* Segmented Status Pill Filters */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
+              {statusPills.map((pill) => {
+                const isActive = filterStatus === pill.key;
+                return (
+                  <button
+                    key={pill.key}
+                    type="button"
+                    onClick={() => setFilterStatus(pill.key)}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border",
+                      isActive
+                        ? pill.key === 'LOW' || pill.key === 'OUT' || pill.key === 'EXPIRED'
+                          ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                          : "bg-slate-900 text-white border-slate-900 shadow-xs"
+                        : "bg-white/70 text-slate-600 border-white/90 hover:bg-white hover:text-slate-900"
+                    )}
+                  >
+                    <span>{pill.label}</span>
+                    {typeof pill.count === 'number' && (
+                      <span className={cn(
+                        "px-1.5 py-0.2 rounded-full text-[10px] font-bold tabular-nums",
+                        isActive ? "bg-white/20 text-white" : "bg-slate-900/8 text-slate-700"
+                      )}>
+                        {pill.count.toLocaleString()}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
         </motion.div>
 
+        {/* High-Legibility Frosted SKU Table */}
         {loading ? (
-            <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-               {[...Array(12)].map((_, i) => (
-                   <Skeleton key={i} className="h-[280px] w-full rounded-[2rem]" />
+            <div className="mx-auto max-w-[1500px] nx-glass-card !rounded-[24px] p-5 space-y-3">
+               <Skeleton className="h-10 w-full rounded-xl bg-white/70" />
+               {[...Array(8)].map((_, i) => (
+                   <Skeleton key={i} className="h-14 w-full rounded-xl bg-white/50" />
                ))}
             </div>
-        ) : (
-           <motion.div 
-             variants={container}
-             initial="hidden"
-             animate="show"
-             className="mx-auto grid max-w-[1500px] grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-           >
-              <AnimatePresence mode='popLayout'>
-              {filtered.map((product) => {
-                  const status = getStatus(product);
-                  return (
-                    <motion.div
-                        key={product.id}
-                        variants={item}
-                        layout
-                        className="group relative overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23] p-4 shadow-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#facc15]/60"
-                    >
-                        <div className="h-full relative z-10 flex flex-col justify-between">
-                            <div className={cn("absolute inset-x-0 top-0 h-1", product.stock <= product.minStock ? "bg-[#ffb4ab]" : "bg-[#facc15]")} />
-                            
-                            <div>
-                                <div className="flex justify-between items-start mb-3 pt-1">
-                                    <div className="w-14 h-14 rounded-lg bg-[#090f15] border border-[#30353d] p-1 relative group/image">
-                                        <div className="hidden md:flex absolute inset-0 bg-black/60 rounded-lg items-center justify-center gap-1.5 opacity-0 group-hover/image:opacity-100 transition-all duration-150 z-20 backdrop-blur-sm pointer-events-none">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setZoomedImage(product.image);
-                                                }}
-                                                className="p-1.5 bg-[#252a32] hover:bg-[#facc15] text-[#dee2ec] hover:text-[#1b1600] rounded transition-colors pointer-events-auto"
-                                                title="Zoom Image"
-                                            >
-                                                <Maximize2 className="w-3.5 h-3.5" />
-                                            </button>
-                                            <Link 
-                                                href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
-                                                target="_blank"
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="p-1.5 bg-[#252a32] hover:bg-[#facc15] text-[#dee2ec] hover:text-[#1b1600] rounded transition-colors pointer-events-auto"
-                                                title="Print Label"
-                                            >
-                                                <Printer className="w-3.5 h-3.5" />
-                                            </Link>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); 
-                                                    openEditModal(product, e);
-                                                }}
-                                                className="p-1.5 bg-[#252a32] hover:bg-[#facc15] text-[#dee2ec] hover:text-[#1b1600] rounded transition-colors pointer-events-auto"
-                                                title="Edit Product"
-                                            >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
+        ) : filtered.length > 0 ? (
+            <div className="mx-auto max-w-[1500px] nx-glass-card !rounded-[24px] overflow-hidden">
+              <div className="overflow-x-auto max-h-[calc(100vh-290px)]">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 z-10 bg-white/85 backdrop-blur-md border-b border-slate-200/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="py-3.5 px-4 pl-5">สินค้า / SKU</th>
+                      <th className="py-3.5 px-4">{t('col_category')}</th>
+                      <th className="py-3.5 px-4">พิกัด &amp; Lot / Exp</th>
+                      <th className="py-3.5 px-4 text-right">{t('label_stock')}</th>
+                      <th className="py-3.5 px-4 text-right">ราคา</th>
+                      <th className="py-3.5 px-4 text-center">{t('col_status')}</th>
+                      <th className="py-3.5 px-4 pr-5 text-right">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/50 text-sm">
+                    {filtered.map((product) => {
+                      const status = getStatus(product);
+                      const expTime = product.expiryDate ? new Date(product.expiryDate).getTime() : null;
+                      const isExpired = expTime !== null && expTime < Date.now();
+                      const isExpiring = expTime !== null && !isExpired && (expTime - Date.now() <= 30 * 86400000);
 
-                                    {product.image ? (
-                                        <div 
-                                            className="w-full h-full cursor-zoom-in"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setZoomedImage(product.image);
-                                            }}
-                                        >
-                                            <img src={`/api/proxy/image?url=${encodeURIComponent(product.image)}`} alt={product.name} className="w-full h-full object-cover rounded" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[#d1c6ab]/40">
-                                            <Package className="w-6 h-6" />
-                                        </div>
-                                    )}
-                                    </div>
-                                    <span className={cn(
-                                        "px-2.5 py-1 rounded font-mono text-[9px] uppercase font-bold tracking-wider",
-                                        product.stock <= product.minStock
-                                            ? "bg-[#93000a] text-[#ffdad6] border border-[#ffb4ab]/30 animate-pulse"
-                                            : "bg-[#1b2027] text-[#57ec7f] border border-[#57ec7f]/30"
-                                    )}>
-                                        {status.label}
-                                    </span>
-                                </div>
-
-                                <Link href={`/inventory/stock-card?search=${encodeURIComponent(product.name)}&sku=${encodeURIComponent(product.id || '')}`} className="block">
-                                    <div className="mb-3 h-12">
-                                        <h3 className="font-headline font-bold text-sm text-[#dee2ec] line-clamp-2 leading-tight group-hover:text-[#facc15] transition-colors" title={product.name}>
-                                            {product.name}
-                                        </h3>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-3">
-                                        <div className="bg-[#090f15] p-1.5 rounded border border-[#30353d]">
-                                            <span className="block text-[#d1c6ab]/60 text-[9px] uppercase font-bold">{t('col_category')}</span>
-                                            <span className="text-[#dee2ec] truncate block font-semibold" title={product.category}>{product.category}</span>
-                                        </div>
-                                        <div className="bg-[#090f15] p-1.5 rounded border border-[#30353d]">
-                                            <span className="block text-[#d1c6ab]/60 text-[9px] uppercase font-bold">{t('no_loc')}</span>
-                                            <span className="text-[#4cd7f6] truncate block font-bold">{product.location || '-'}</span>
-                                        </div>
-                                    </div>
-
-                                    {(product.lotNo || product.expiryDate) && (
-                                        <div className="flex items-center gap-1.5 text-[10px] font-mono mb-3 px-2 py-1 rounded bg-[#090f15] border border-[#30353d]">
-                                            {product.lotNo && (
-                                                <span className="font-bold text-[#dee2ec] truncate" title={`Lot: ${product.lotNo}`}>
-                                                    Lot: {product.lotNo}
-                                                </span>
-                                            )}
-                                            {product.expiryDate && (
-                                                <span className={cn(
-                                                    "ml-auto font-bold px-1.5 py-0.5 rounded text-[9px] whitespace-nowrap",
-                                                    new Date(product.expiryDate).getTime() < Date.now()
-                                                        ? "bg-[#93000a] text-[#ffdad6]"
-                                                        : (new Date(product.expiryDate).getTime() - Date.now() <= 30 * 86400000)
-                                                        ? "bg-[#eec200]/20 text-[#facc15]"
-                                                        : "bg-[#57ec7f]/20 text-[#57ec7f]"
-                                                )}>
-                                                    Exp: {product.expiryDate}
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
+                      return (
+                        <tr
+                          key={product.id}
+                          className="group hover:bg-emerald-50/40 transition-colors"
+                        >
+                          {/* Product Thumbnail + Name + SKU */}
+                          <td className="py-3.5 px-4 pl-5">
+                            <div className="flex items-center gap-3 min-w-[230px]">
+                              <div className="relative w-11 h-11 rounded-xl bg-slate-100 border border-slate-200/80 shrink-0 overflow-hidden group/img">
+                                {product.image ? (
+                                  <>
+                                    <img
+                                      src={`/api/proxy/image?url=${encodeURIComponent(product.image)}`}
+                                      alt={product.name}
+                                      className="w-full h-full object-cover cursor-zoom-in"
+                                      onClick={() => setZoomedImage(product.image)}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setZoomedImage(product.image)}
+                                      className="hidden md:flex absolute inset-0 bg-slate-900/50 text-white items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                      title="ขยายรูปภาพ"
+                                    >
+                                      <Maximize2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                    <Package className="w-5 h-5" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <Link
+                                  href={`/inventory/stock-card?search=${encodeURIComponent(product.name)}&sku=${encodeURIComponent(product.id || '')}`}
+                                  className="font-semibold text-slate-900 hover:text-emerald-600 transition-colors line-clamp-1"
+                                  title={product.name}
+                                >
+                                  {product.name}
                                 </Link>
-                            </div>
-
-                            <Link href={`/inventory/stock-card?search=${encodeURIComponent(product.name)}&sku=${encodeURIComponent(product.id || '')}`} className="block">
-                                <div className="space-y-1.5 pt-2 border-t border-[#30353d]/50 font-mono">
-                                    <div className="flex justify-between items-baseline">
-                                        <span className="text-[10px] font-bold text-[#d1c6ab] uppercase tracking-wider">{t('label_stock')}</span>
-                                        <span className="text-xl font-bold text-white">
-                                            {product.stock.toLocaleString()}
-                                        </span>
-                                    </div>
-                                    {!!product.reserved && (
-                                        <div className="flex justify-between items-center text-[10px]" title="สต็อกถูกตัดจริงตอนส่งออก (SHIPPED) — ระหว่างนี้ออเดอร์ที่เปิดอยู่จองไว้">
-                                            <span className="text-[#4cd7f6]">จองแล้ว {product.reserved.toLocaleString()}</span>
-                                            <span className={cn('font-bold', (product.available ?? 0) <= 0 ? 'text-[#ffb4ab]' : 'text-[#57ec7f]')}>
-                                                พร้อมขาย {(product.available ?? 0).toLocaleString()}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between items-center text-[10px] text-[#d1c6ab]">
-                                        <span>{t('label_min')} {product.minStock}</span>
-                                        <div className="flex items-center gap-1 font-bold text-[#facc15] bg-[#090f15] px-1.5 py-0.5 rounded border border-[#30353d]">
-                                            <span>฿</span>
-                                            <span>{product.price.toLocaleString()}</span>
-                                        </div>
-                                    </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="font-mono text-[11px] text-slate-500">{product.id}</span>
+                                  {product.movementStatus && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 font-medium">
+                                      {product.movementStatus}
+                                    </span>
+                                  )}
                                 </div>
-                            </Link>
-
-                            <div className="mt-2.5 pt-2 border-t border-[#30353d]/40 flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                    <Link 
-                                        href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
-                                        target="_blank"
-                                        className="h-7 px-2 flex items-center gap-1 bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15] rounded border border-[#30353d] font-mono text-[10px] transition-colors"
-                                    >
-                                        <Printer className="w-3 h-3" />
-                                        <span>พิมพ์บาร์โค้ด</span>
-                                    </Link>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setSelectedProductForLots(product);
-                                        }}
-                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-[#4cd7f6] hover:text-white rounded border border-[#4cd7f6]/30 font-mono text-[10px] transition-colors"
-                                        title="ตรวจสอบ Lot & FEFO"
-                                    >
-                                        <Layers className="w-3 h-3" />
-                                        <span>FEFO Lots</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setSelectedProductForTrace(product);
-                                        }}
-                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-rose-300 hover:text-white rounded border border-rose-400/30 font-mono text-[10px] transition-colors"
-                                        title="สืบค้นย้อนกลับ & เรียกคืนล็อต (Traceability/Recall)"
-                                    >
-                                        <GitBranch className="w-3 h-3" />
-                                        <span>Trace</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setSelectedProductForSwap(product);
-                                        }}
-                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-[#facc15] hover:text-white rounded border border-[#facc15]/30 font-mono text-[10px] transition-colors"
-                                        title="สลับพิกัดจัดเก็บ (1-Click Location Swap)"
-                                    >
-                                        <ArrowLeftRight className="w-3 h-3" />
-                                        <span>สลับพิกัด</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setSelectedProductForUom(product);
-                                        }}
-                                        className="h-7 px-2 flex items-center gap-1 bg-[#1b2027] text-indigo-300 hover:text-white rounded border border-indigo-400/30 font-mono text-[10px] transition-colors"
-                                        title="ตั้งค่าหน่วยบรรจุ (ชิ้น/ลัง/พาเลท)"
-                                    >
-                                        <Boxes className="w-3 h-3" />
-                                        <span>หน่วย</span>
-                                    </button>
-                                    <button
-                                        onClick={(e) => openEditModal(product, e)}
-                                        className="h-7 w-7 flex items-center justify-center bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] rounded border border-[#30353d] transition-colors"
-                                        title="แก้ไข"
-                                    >
-                                        <Pencil className="w-3 h-3" />
-                                    </button>
-                                </div>
+                              </div>
                             </div>
-                        </div>
-                    </motion.div>
-                  );
-              })}
-              </AnimatePresence>
-           </motion.div>
-        )}
+                          </td>
+
+                          {/* Category */}
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/80 border border-slate-200/70 text-slate-700 text-xs font-medium max-w-[140px] truncate" title={product.category}>
+                              {product.category || '-'}
+                            </span>
+                          </td>
+
+                          {/* Location + Lot / Expiry */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-slate-700">
+                                <MapPin className="w-3 h-3 text-sky-600 shrink-0" />
+                                {product.location || '-'}
+                              </span>
+                              {(product.lotNo || product.expiryDate) && (
+                                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                  {product.lotNo && (
+                                    <span className="font-mono text-slate-500">Lot: {product.lotNo}</span>
+                                  )}
+                                  {product.expiryDate && (
+                                    <span className={cn(
+                                      "font-mono font-semibold px-1.5 py-0.5 rounded-md text-[10px]",
+                                      isExpired
+                                        ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                        : isExpiring
+                                        ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    )}>
+                                      Exp: {product.expiryDate}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Stock & Min / Reserved */}
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex flex-col items-end">
+                              <span className={cn(
+                                "text-base font-bold tabular-nums",
+                                product.stock <= 0
+                                  ? "text-rose-600"
+                                  : product.stock <= product.minStock
+                                  ? "text-amber-600"
+                                  : "text-slate-900"
+                              )}>
+                                {product.stock.toLocaleString()}
+                              </span>
+                              <span className="text-[11px] text-slate-400 tabular-nums">
+                                {t('label_min')} {product.minStock}
+                              </span>
+                              {!!product.reserved && (
+                                <span
+                                  className="text-[10px] text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md mt-1 tabular-nums"
+                                  title="สต็อกถูกตัดจริงตอนส่งออก (SHIPPED) — ระหว่างนี้ออเดอร์ที่เปิดอยู่จองไว้"
+                                >
+                                  จอง {product.reserved.toLocaleString()} · พร้อม {(product.available ?? 0).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Price */}
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="font-semibold text-slate-800 tabular-nums text-xs">
+                              ฿{product.price.toLocaleString()}
+                            </span>
+                          </td>
+
+                          {/* Status Badge */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap",
+                              status.badge
+                            )}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full", status.dot)} />
+                              {status.label}
+                            </span>
+                          </td>
+
+                          {/* Row Action Buttons */}
+                          <td className="py-3.5 px-4 pr-5 text-right">
+                            <div className="inline-flex items-center justify-end gap-1">
+                              <Link
+                                href={`/inventory/print-labels?sku=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}&code=${encodeURIComponent(product.location || product.id)}&stock=${product.stock}&location=${encodeURIComponent(product.location || '')}`}
+                                target="_blank"
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                                title="พิมพ์บาร์โค้ด"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedProductForLots(product);
+                                }}
+                                className="h-8 px-2 inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50/70 text-sky-700 hover:bg-sky-100 text-[11px] font-semibold transition-colors"
+                                title="ตรวจสอบ Lot & FEFO"
+                              >
+                                <Layers className="w-3.5 h-3.5" />
+                                <span className="hidden xl:inline">Lots</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedProductForTrace(product);
+                                }}
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50/70 text-rose-600 hover:bg-rose-100 transition-colors"
+                                title="สืบค้นย้อนกลับ & เรียกคืนล็อต (Traceability/Recall)"
+                              >
+                                <GitBranch className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedProductForSwap(product);
+                                }}
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50/70 text-amber-700 hover:bg-amber-100 transition-colors"
+                                title="สลับพิกัดจัดเก็บ (1-Click Location Swap)"
+                              >
+                                <ArrowLeftRight className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedProductForUom(product);
+                                }}
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                                title="ตั้งค่าหน่วยบรรจุ (ชิ้น/ลัง/พาเลท)"
+                              >
+                                <Boxes className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => openEditModal(product, e)}
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
+                                title="แก้ไขสินค้า"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+        ) : null}
 
         {/* Zoom Modal */}
         <AnimatePresence>
             {zoomedImage && (
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => setZoomedImage(null)}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 cursor-zoom-out"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4 cursor-zoom-out"
                 >
-                    <motion.div 
+                    <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
                         className="relative max-w-5xl max-h-[90vh] w-full h-full flex items-center justify-center"
-                        onClick={(e) => e.stopPropagation()} 
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <button 
+                        <button
                             onClick={() => setZoomedImage(null)}
-                            className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors z-50 backdrop-blur-md"
+                            className="absolute top-4 right-4 bg-white/15 hover:bg-white/25 text-white rounded-full p-2 transition-colors z-50 backdrop-blur-md"
                         >
-                            <X className="w-8 h-8" />
+                            <X className="w-7 h-7" />
                         </button>
                         <div className="w-full h-full p-4 flex items-center justify-center overflow-auto" onClick={() => setZoomedImage(null)}>
-                            <img 
-                                src={`/api/proxy/image?url=${encodeURIComponent(zoomedImage)}`} 
-                                alt="Zoomed" 
-                                className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg shadow-2xl cursor-default"
+                            <img
+                                src={`/api/proxy/image?url=${encodeURIComponent(zoomedImage)}`}
+                                alt="Zoomed"
+                                className="max-w-[95vw] max-h-[95vh] object-contain rounded-2xl shadow-2xl cursor-default"
                                 onClick={(e) => e.stopPropagation()}
                             />
                         </div>
@@ -703,51 +881,51 @@ function InventoryContent() {
         </AnimatePresence>
 
         {filtered.length === 0 && !loading && (
-            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center border border-[#30353d] rounded-2xl bg-[#171c23]/50 p-8 my-8 shadow-xl">
-                <div className="w-16 h-16 bg-[#252a32] border border-[#30353d] rounded-full flex items-center justify-center mb-4 text-[#4cd7f6]">
+            <div className="mx-auto max-w-[1500px] flex flex-col items-center justify-center py-16 text-center nx-glass-card !rounded-[24px] p-8 my-6">
+                <div className="w-16 h-16 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mb-4 text-emerald-600">
                     <Layers className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-headline font-bold text-[#dee2ec] mb-1">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">
                     {search ? 'ไม่พบสินค้าตามคำค้นหา' : 'ยังไม่มีรายการสินค้าในสาขานี้'}
                 </h3>
-                <p className="text-xs font-mono text-[#8a92a6] max-w-md mb-5">
-                    {search 
-                        ? 'ลองปรับตัวกรองหรือคำค้นหาใหม่ หรือล้างตัวกรองทั้งหมด' 
+                <p className="text-xs text-slate-500 max-w-md mb-6">
+                    {search
+                        ? 'ลองปรับตัวกรองหรือคำค้นหาใหม่ หรือล้างตัวกรองทั้งหมด'
                         : 'คุณสามารถกดเพิ่มสินค้าใหม่ หรือคลิกโหลดข้อมูลตัวอย่างเพื่อทดสอบระบบจัดเก็บ, คิวงาน, และการจัดการ Lot / FEFO ได้ทันที'}
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-3 font-mono text-xs">
-                    <button 
-                        onClick={openAddModal} 
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#facc15] text-[#1b1600] font-bold hover:bg-[#eec200] transition-all shadow-md active:translate-y-px"
+                <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+                    <button
+                        onClick={openAddModal}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-all shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
                         <span>เพิ่มสินค้าใหม่</span>
                     </button>
-                    <button 
+                    <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-[#57ec7f]/50 bg-[#57ec7f]/10 text-[#57ec7f] font-bold hover:bg-[#57ec7f]/20 transition-all shadow-md"
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-all shadow-xs"
                     >
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                         <span>นำเข้าไฟล์ Excel / CSV</span>
                     </button>
-                    <button 
-                        onClick={seedDemoProducts} 
+                    <button
+                        onClick={seedDemoProducts}
                         disabled={seeding}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#4cd7f6]/50 bg-[#4cd7f6]/10 text-[#4cd7f6] font-bold hover:bg-[#4cd7f6]/20 transition-all shadow-md disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 font-semibold hover:bg-amber-100 transition-all shadow-xs disabled:opacity-50"
                     >
-                        <RefreshCcw className={cn("w-4 h-4", seeding && "animate-spin")} />
-                        <span>{seeding ? 'กำลังสร้างข้อมูล...' : '📦 โหลดสินค้าตัวอย่างพร้อม FEFO Lots (Demo)'}</span>
+                        <RefreshCcw className={cn("w-4 h-4 text-amber-600", seeding && "animate-spin")} />
+                        <span>{seeding ? 'กำลังสร้างข้อมูล...' : 'โหลดสินค้าตัวอย่างพร้อม FEFO Lots (Demo)'}</span>
                     </button>
-                    <button 
-                        onClick={() => setShowGlobalLotsModal(true)} 
-                        className="px-4 py-2.5 rounded-lg border border-[#30353d] bg-[#252a32] text-[#dee2ec] font-bold hover:border-[#4cd7f6] hover:text-[#4cd7f6] transition-all"
+                    <button
+                        onClick={() => setShowGlobalLotsModal(true)}
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-all shadow-xs"
                     >
-                        เปิดหน้าต่าง Lots & FEFO
+                        เปิดหน้าต่าง Lots &amp; FEFO
                     </button>
-                    {search && (
-                        <button 
-                            onClick={() => { setSearch(''); setFilterStatus('ALL'); setFilterMovement('ALL'); }} 
-                            className="px-4 py-2.5 rounded-lg border border-[#ffb4ab]/30 bg-[#93000a]/20 text-[#ffdad6] font-bold hover:bg-[#93000a]/30 transition-all"
+                    {(search || filterStatus !== 'ALL' || filterMovement !== 'ALL') && (
+                        <button
+                            onClick={() => { setSearch(''); setFilterStatus('ALL'); setFilterMovement('ALL'); }}
+                            className="px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100 transition-all"
                         >
                             ล้างตัวกรอง
                         </button>
@@ -757,11 +935,11 @@ function InventoryContent() {
         )}
 
         {/* Product CRUD Modal */}
-        <ProductModal 
+        <ProductModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             product={editingProduct}
-            onSuccess={fetchData} 
+            onSuccess={fetchData}
             onOpenImport={() => {
                 setIsModalOpen(false);
                 setIsImportModalOpen(true);
@@ -769,7 +947,7 @@ function InventoryContent() {
         />
 
         {/* Batch Product Import Modal (Excel / CSV) */}
-        <ProductImportModal 
+        <ProductImportModal
             isOpen={isImportModalOpen}
             onClose={() => setIsImportModalOpen(false)}
             onSuccess={fetchData}

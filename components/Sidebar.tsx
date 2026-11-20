@@ -163,6 +163,7 @@ export default function Sidebar() {
 
   const userRole = session?.user?.role || 'User';
   const isAdminRole = adminRoles.includes(userRole);
+  const isHybrid = !pathname?.startsWith('/print') && pathname !== '/login' && !pathname?.startsWith('/mobile');
 
   // P1 cleanup: ยุบเมนูซ้ำ (พิมพ์ฉลาก/สแกน/ตรวจนับ/รายงาน/AI) + ย้ายเมนูมือถือ (/mobile/*) ไปไว้ที่ MobileNav
   const navGroups = useMemo<NavGroup[]>(() => ([
@@ -285,7 +286,12 @@ export default function Sidebar() {
 
       <button
         type="button"
-        className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-edge bg-surface-card text-foreground hover:text-accent-gold shadow-lg transition-colors md:hidden"
+        className={cn(
+          'fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-xl border transition-colors md:hidden',
+          isHybrid
+            ? 'border-slate-200 bg-white text-slate-700 hover:text-emerald-600 shadow-sm'
+            : 'border-edge bg-surface-card text-foreground hover:text-accent-gold shadow-lg'
+        )}
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation"
       >
@@ -306,16 +312,29 @@ export default function Sidebar() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-edge/60 bg-surface-lowest text-foreground shadow-2xl transition-[width,transform] duration-300 select-none',
-          collapsed ? 'w-20' : 'w-80',
+          'fixed top-0 bottom-0 left-0 z-50 flex flex-col transition-[width,transform] duration-300 select-none',
+          isHybrid
+            ? 'md:top-3 md:bottom-3 md:left-3 md:rounded-[24px] overflow-hidden bg-[#121817]/95 backdrop-blur-xl border border-white/10 text-slate-100 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.45)]'
+            : 'border-r border-edge/60 bg-surface-lowest text-foreground shadow-2xl',
+          collapsed ? 'w-20' : isHybrid ? 'w-80 md:w-[296px]' : 'w-80',
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        {/* Stitch Brand & Telemetry Header */}
-        <div className="border-b border-edge/60 bg-surface-card/80 p-3.5">
+        {/* Brand & Telemetry Header */}
+        <div
+          className={cn(
+            'border-b p-3.5',
+            isHybrid ? 'border-white/10 bg-white/[0.03]' : 'border-edge/60 bg-surface-card/80'
+          )}
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface-panel border border-edge">
+              <div
+                className={cn(
+                  'flex h-9 w-9 shrink-0 items-center justify-center border',
+                  isHybrid ? 'rounded-xl bg-white/10 border-white/15' : 'rounded bg-surface-panel border-edge'
+                )}
+              >
                 <img
                   src={org.brandingLogo || '/nexus-icon.png'}
                   className="h-7 w-7 object-contain drop-shadow"
@@ -325,10 +344,20 @@ export default function Sidebar() {
 
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <span className="font-headline text-sm font-extrabold tracking-wider text-accent-gold uppercase leading-none block">
+                  <span
+                    className={cn(
+                      'font-headline text-sm font-extrabold tracking-wider uppercase leading-none block',
+                      isHybrid ? 'text-white' : 'text-accent-gold'
+                    )}
+                  >
                     NEXUS WMS
                   </span>
-                  <span className="font-mono text-[9px] text-text-tactical tracking-tight leading-tight block mt-0.5">
+                  <span
+                    className={cn(
+                      'font-mono text-[9px] tracking-tight leading-tight block mt-0.5',
+                      isHybrid ? 'text-slate-400' : 'text-text-tactical'
+                    )}
+                  >
                     COMMAND PLATFORM v4.8
                   </span>
                 </div>
@@ -337,16 +366,26 @@ export default function Sidebar() {
 
             <div className="flex items-center gap-1.5">
               {!collapsed && (
-                <div className="flex items-center gap-1 bg-surface-panel px-1.5 py-0.5 rounded border border-edge text-[10px] font-mono font-bold">
-                  <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse"></span>
-                  <span className="text-accent-emerald">SYNC LIVE</span>
+                <div
+                  className={cn(
+                    'flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-mono font-bold',
+                    isHybrid ? 'bg-emerald-500/10 border-emerald-400/25 rounded-full px-2' : 'bg-surface-panel border-edge'
+                  )}
+                >
+                  <span className={cn('w-2 h-2 rounded-full animate-pulse', isHybrid ? 'bg-emerald-400' : 'bg-accent-emerald')}></span>
+                  <span className={isHybrid ? 'text-emerald-400' : 'text-accent-emerald'}>SYNC LIVE</span>
                 </div>
               )}
 
               <button
                 type="button"
                 onClick={handleToggleCollapse}
-                className="hidden h-7 w-7 shrink-0 items-center justify-center rounded border border-edge bg-surface-steel text-text-tactical hover:text-foreground transition-colors md:inline-flex"
+                className={cn(
+                  'hidden h-7 w-7 shrink-0 items-center justify-center rounded border transition-colors md:inline-flex',
+                  isHybrid
+                    ? 'rounded-lg border-white/15 bg-white/[0.07] text-slate-300 hover:text-white hover:bg-white/15'
+                    : 'border-edge bg-surface-steel text-text-tactical hover:text-foreground'
+                )}
                 aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
               >
                 <ChevronLeft className={cn('h-3.5 w-3.5 transition-transform', collapsed && 'rotate-180')} />
@@ -361,7 +400,12 @@ export default function Sidebar() {
                 <OrgSwitcher />
               </div>
               {/* Branch Selector wrapper */}
-              <div className="mt-2.5 bg-surface-panel p-2 rounded border border-edge/80">
+              <div
+                className={cn(
+                  'mt-2.5 p-2 border',
+                  isHybrid ? 'rounded-xl bg-white/[0.04] border-white/10' : 'rounded bg-surface-panel border-edge/80'
+                )}
+              >
                 <BranchSelector />
               </div>
             </>
@@ -369,13 +413,18 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation Groups */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           <div className="space-y-4">
             {visibleGroups.map((group) => (
               <div key={group.label}>
                 {!collapsed && (
-                  <div className="mb-1.5 flex items-center gap-1.5 px-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-text-tactical/70">
-                    <span className="h-1 w-1 rounded-full bg-accent-gold" />
+                  <div
+                    className={cn(
+                      'mb-1.5 flex items-center gap-1.5 px-2.5 text-[10px] font-mono font-bold uppercase tracking-wider',
+                      isHybrid ? 'text-slate-400/90' : 'text-text-tactical/70'
+                    )}
+                  >
+                    <span className={cn('h-1 w-1 rounded-full', isHybrid ? 'bg-emerald-400' : 'bg-accent-gold')} />
                     <span>{group.label}</span>
                   </div>
                 )}
@@ -392,20 +441,39 @@ export default function Sidebar() {
                         onClick={closeMobile}
                         title={collapsed ? item.label : undefined}
                         className={cn(
-                          'group relative flex min-h-9 items-center gap-2.5 rounded px-2.5 py-1.5 text-xs font-semibold transition-all duration-150',
+                          'group relative flex min-h-9 items-center gap-2.5 px-2.5 py-1.5 text-xs font-semibold transition-all duration-150',
+                          isHybrid ? 'rounded-xl' : 'rounded',
                           collapsed ? 'justify-center' : 'justify-between',
-                          isActive
-                            ? 'bg-surface-steel text-accent-gold font-bold border-l-2 border-accent-gold'
-                            : 'text-text-tactical hover:bg-surface-card hover:text-foreground'
+                          isHybrid
+                            ? isActive
+                              ? 'rounded-xl bg-emerald-500/18 border border-emerald-400/25 text-white font-semibold shadow-xs'
+                              : 'border border-transparent text-slate-300 hover:bg-white/[0.07] hover:text-white'
+                            : isActive
+                              ? 'bg-surface-steel text-accent-gold font-bold border-l-2 border-accent-gold'
+                              : 'text-text-tactical hover:bg-surface-card hover:text-foreground'
                         )}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-accent-gold' : 'text-text-tactical group-hover:text-foreground')} />
+                          <Icon
+                            className={cn(
+                              'h-4 w-4 shrink-0',
+                              isHybrid
+                                ? isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                                : isActive ? 'text-accent-gold' : 'text-text-tactical group-hover:text-foreground'
+                            )}
+                          />
                           {!collapsed && <span className="truncate">{item.label}</span>}
                           {!collapsed && item.experimental && <ExperimentalPill />}
                         </div>
                         {!collapsed && isActive && (
-                          <span className="font-mono text-[9px] bg-accent-gold text-accent-gold-dark px-1 py-0.5 rounded font-bold shrink-0">
+                          <span
+                            className={cn(
+                              'font-mono text-[9px] py-0.5 font-bold shrink-0',
+                              isHybrid
+                                ? 'rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2'
+                                : 'rounded bg-accent-gold text-accent-gold-dark px-1'
+                            )}
+                          >
                             LIVE
                           </span>
                         )}
@@ -418,29 +486,52 @@ export default function Sidebar() {
           </div>
         </nav>
 
-        {/* Bottom Tactical Operator Card & Scanner [F2] */}
-        <div className="border-t border-edge/60 bg-surface-card/90 p-3 flex flex-col gap-2">
+        {/* Bottom Operator Card & Scanner [F2] */}
+        <div
+          className={cn(
+            'border-t p-3 flex flex-col gap-2',
+            isHybrid ? 'border-white/10 bg-white/[0.03]' : 'border-edge/60 bg-surface-card/90'
+          )}
+        >
           {!collapsed && (
             <Link
               href="/barcode/scanner"
-              className="w-full py-2 px-3 bg-accent-gold text-accent-gold-dark font-mono text-xs font-bold rounded flex items-center justify-center gap-1.5 hover:bg-[#eec200] active:translate-y-px transition-all shadow-sm"
+              className={cn(
+                'w-full py-2 px-3 font-mono text-xs font-bold flex items-center justify-center gap-1.5 active:translate-y-px transition-all shadow-sm',
+                isHybrid
+                  ? 'rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                  : 'rounded bg-accent-gold text-accent-gold-dark hover:bg-[#eec200]'
+              )}
             >
               <ScanLine className="w-4 h-4" />
               <span>เปิดสแกนเนอร์บาร์โค้ด [F2]</span>
             </Link>
           )}
 
-          <div className={cn('flex items-center gap-2.5 pt-1 border-t border-edge/40', collapsed && 'justify-center')}>
-            <div className="w-8 h-8 rounded-full bg-accent-gold text-accent-gold-dark flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-[#ffe083]/40">
+          <div
+            className={cn(
+              'flex items-center gap-2.5 pt-1 border-t',
+              isHybrid ? 'border-white/10' : 'border-edge/40',
+              collapsed && 'justify-center'
+            )}
+          >
+            <div
+              className={cn(
+                'w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ring-1',
+                isHybrid
+                  ? 'bg-emerald-500 text-slate-950 ring-emerald-300/40'
+                  : 'bg-accent-gold text-accent-gold-dark ring-[#ffe083]/40'
+              )}
+            >
               {session?.user?.name?.charAt(0) || 'U'}
             </div>
 
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-foreground leading-tight">
+                <p className={cn('truncate text-xs font-bold leading-tight', isHybrid ? 'text-white' : 'text-foreground')}>
                   {session?.user?.name || 'ผู้ใช้งาน'}
                 </p>
-                <p className="truncate font-mono text-[10px] text-text-tactical leading-none mt-0.5">
+                <p className={cn('truncate font-mono text-[10px] leading-none mt-0.5', isHybrid ? 'text-slate-400' : 'text-text-tactical')}>
                   {userRole}
                 </p>
               </div>
@@ -449,7 +540,12 @@ export default function Sidebar() {
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: '/login' })}
-              className="inline-flex h-7 w-7 items-center justify-center rounded border border-edge bg-surface-steel text-text-tactical hover:text-accent-rose hover:border-accent-rose/40 transition-colors"
+              className={cn(
+                'inline-flex h-7 w-7 items-center justify-center rounded border transition-colors',
+                isHybrid
+                  ? 'rounded-lg border-white/15 bg-white/[0.07] text-slate-300 hover:text-rose-400 hover:border-rose-500/40'
+                  : 'border-edge bg-surface-steel text-text-tactical hover:text-accent-rose hover:border-accent-rose/40'
+              )}
               title={t('menu_signout')}
               aria-label={t('menu_signout')}
             >

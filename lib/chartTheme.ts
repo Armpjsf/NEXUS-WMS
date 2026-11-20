@@ -23,3 +23,13 @@ export const TACTICAL_TOOLTIP_STYLE = {
   fontFamily: 'var(--font-mono), monospace',
   fontSize: '12px',
 } as const;
+
+export const HYBRID_TOOLTIP_STYLE = {
+  backgroundColor: '#ffffff',
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 4px 10px -6px rgba(15, 23, 42, 0.05)',
+  color: '#0f172a',
+  fontFamily: 'var(--font-sans), sans-serif',
+  fontSize: '12px',
+} as const;

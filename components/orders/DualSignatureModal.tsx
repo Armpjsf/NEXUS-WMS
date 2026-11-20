@@ -263,22 +263,22 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4 overflow-y-auto">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col my-auto"
+        className="bg-white/95 backdrop-blur-xl border border-white/90 rounded-[24px] w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl text-slate-900 flex flex-col my-auto"
       >
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-teal-700 via-emerald-600 to-cyan-700 text-white flex justify-between items-center sticky top-0 z-20 shadow-md">
+        <div className="px-6 py-5 bg-white/95 backdrop-blur-md border-b border-slate-100 flex justify-between items-center sticky top-0 z-20">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-2xl">
               <ClipboardCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight">ใบตรวจปล่อยสินค้าและส่งมอบขึ้นรถ (Dispatch Handover)</h2>
-              <div className="text-xs text-teal-100 font-mono flex items-center gap-2 mt-0.5">
+              <h2 className="text-lg font-black tracking-tight text-slate-900">ใบตรวจปล่อยสินค้าและส่งมอบขึ้นรถ (Dispatch Handover)</h2>
+              <div className="text-xs text-slate-500 font-mono flex items-center gap-2 mt-0.5">
                 <span>ออเดอร์: {order.orderNo}</span>
                 <span>•</span>
                 <span>ลูกค้าปลายทาง: {order.customerName}</span>
@@ -287,7 +287,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-colors"
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -329,15 +329,15 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
           </div>
 
           {/* Multi-Drop Delivery Destinations */}
-          <div className="bg-cyan-50/40 border border-cyan-200/80 rounded-2xl p-4 space-y-3">
+          <div className="bg-emerald-50/40 border border-emerald-200/80 rounded-2xl p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <div className="text-xs font-black uppercase tracking-wider text-cyan-900 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-cyan-600" /> สถานที่จัดส่งปลายทาง (รองรับหลายดรอป / Multi-Drop)
+              <div className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-emerald-600" /> สถานที่จัดส่งปลายทาง (รองรับหลายดรอป / Multi-Drop)
               </div>
               <button
                 type="button"
                 onClick={addDrop}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" /> เพิ่มดรอปถัดไป
               </button>
@@ -345,9 +345,9 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
 
             <div className="space-y-3">
               {destinations.map((drop, idx) => (
-                <div key={idx} className="bg-white border border-cyan-100 rounded-xl p-3.5 relative shadow-xs">
+                <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3.5 relative shadow-xs">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-black bg-cyan-100 text-cyan-800 px-2.5 py-0.5 rounded-lg">
+                    <span className="text-xs font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-lg">
                       ดรอปที่ {drop.drop}
                     </span>
                     {destinations.length > 1 && (
@@ -368,7 +368,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                         placeholder="เช่น สาขาพระราม 9 หรือ คุณสมหมาย"
                         value={drop.name}
                         onChange={(e) => updateDrop(idx, 'name', e.target.value)}
-                        className="w-full mt-0.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-cyan-500"
+                        className="w-full mt-0.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                     <div>
@@ -378,7 +378,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                         placeholder="081-xxx-xxxx"
                         value={drop.phone}
                         onChange={(e) => updateDrop(idx, 'phone', e.target.value)}
-                        className="w-full mt-0.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-cyan-500"
+                        className="w-full mt-0.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -389,7 +389,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                       placeholder="ระบุที่อยู่จัดส่ง เลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
                       value={drop.address}
                       onChange={(e) => updateDrop(idx, 'address', e.target.value)}
-                      className="w-full mt-0.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-cyan-500"
+                      className="w-full mt-0.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                     value={staffName}
                     onChange={(e) => setStaffName(e.target.value)}
                     placeholder="เช่น เจ้าหน้าที่ QC พรชัย"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 bg-white"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -469,7 +469,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="เช่น นายเอ (คนขับ) หรือ ทะเบียน กก-4321"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-amber-500 bg-white"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -478,11 +478,11 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 sticky bottom-0 z-20">
+        <div className="p-4 bg-slate-50/90 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 sticky bottom-0 z-20">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-xs transition-colors"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold hover:bg-slate-100 text-xs transition-colors"
           >
             ปิดหน้าต่าง
           </button>
@@ -491,7 +491,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
               type="button"
               disabled={saving}
               onClick={() => handleSave(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all active:scale-95"
             >
               <Printer className="w-4 h-4 text-emerald-400" />
               <span>บันทึก & พิมพ์ใบตรวจปล่อย</span>
@@ -500,7 +500,7 @@ export default function DualSignatureModal({ isOpen, onClose, order, onSaveSucce
               type="button"
               disabled={saving}
               onClick={() => handleSave(false)}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95"
             >
               <Check className="w-4 h-4" />
               <span>{saving ? 'กำลังบันทึก...' : 'บันทึกการตรวจรับ'}</span>

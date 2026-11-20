@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   BoxSelect,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
@@ -77,8 +76,8 @@ export default function PackingQAPage() {
             verifiedQty: Number(it.packed || 0),
             isVerified: Number(it.packed || 0) >= Number(it.qty || 1),
             unit: it.unit || 'ชิ้น',
-            weightKg: Number(it.weightKg || 1.0)
-          }))
+            weightKg: Number(it.weightKg || 1.0),
+          })),
         });
         const packable = allOrders
           .filter((o: any) => o.status === 'PICKED' || o.status === 'PACKING')
@@ -152,7 +151,7 @@ export default function PackingQAPage() {
     onScan: (scanned) => {
       handleVerifyBarcode(scanned);
     },
-    enabled: !!selectedOrder
+    enabled: !!selectedOrder,
   });
 
   // Verification Logic
@@ -160,9 +159,8 @@ export default function PackingQAPage() {
     if (!selectedOrder) return;
     const clean = code.trim().toLowerCase();
 
-    const itemIdx = selectedOrder.items.findIndex(it => 
-      it.sku.toLowerCase() === clean || 
-      it.name.toLowerCase().includes(clean)
+    const itemIdx = selectedOrder.items.findIndex(
+      (it) => it.sku.toLowerCase() === clean || it.name.toLowerCase().includes(clean)
     );
 
     if (itemIdx === -1) {
@@ -185,23 +183,23 @@ export default function PackingQAPage() {
     updatedItems[itemIdx] = {
       ...item,
       verifiedQty: newQty,
-      isVerified: newQty >= item.qty
+      isVerified: newQty >= item.qty,
     };
 
     const updatedOrder = { ...selectedOrder, items: updatedItems };
     setSelectedOrder(updatedOrder);
-    setOrders(orders.map(o => o.orderNo === updatedOrder.orderNo ? updatedOrder : o));
+    setOrders(orders.map((o) => (o.orderNo === updatedOrder.orderNo ? updatedOrder : o)));
 
     toast.success(`✅ ตรวจสอบถูกต้อง: ${item.name} (${newQty}/${item.qty})`);
   };
 
   // Weight Calculation
   const estimatedWeight = selectedOrder
-    ? selectedOrder.items.reduce((sum, it) => sum + (it.qty * (it.weightKg || 1)), 0)
+    ? selectedOrder.items.reduce((sum, it) => sum + it.qty * (it.weightKg || 1), 0)
     : 0;
 
   const isAllVerified = selectedOrder
-    ? selectedOrder.items.every(it => it.verifiedQty >= it.qty)
+    ? selectedOrder.items.every((it) => it.verifiedQty >= it.qty)
     : false;
 
   // Live Carrier Rate Shopping (/api/carriers/rate-shop)
@@ -213,8 +211,8 @@ export default function PackingQAPage() {
     const weight = actualWeight > 0 ? actualWeight : estimatedWeight || 1;
     let cancelled = false;
     fetch(`/api/carriers/rate-shop?weight=${encodeURIComponent(String(weight))}&zone=ALL`)
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (!cancelled && d?.success) {
           setRateShop({ cheapest: d.cheapest || null, options: d.options || [] });
         }
@@ -242,7 +240,7 @@ export default function PackingQAPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'อัปเดตสถานะจัดส่งไม่สำเร็จ');
       toast.success(`🚚 ยืนยันส่งมอบขนส่ง (SHIPPED) เรียบร้อย!`);
-      setPackedOrders(prev => prev.filter(o => o.id !== orderId && o.orderNo !== orderId));
+      setPackedOrders((prev) => prev.filter((o) => o.id !== orderId && o.orderNo !== orderId));
       setShipmentResult(null);
       loadPackingOrders();
     } catch (e) {
@@ -272,8 +270,8 @@ export default function PackingQAPage() {
           packedBy: 'Operator Station 01',
           actualWeightKg: actualWeight || estimatedWeight,
           estWeightKg: estimatedWeight,
-          items: selectedOrder.items
-        })
+          items: selectedOrder.items,
+        }),
       });
       const packJson = await packRes.json();
       if (!packRes.ok) throw new Error(packJson.error || 'บันทึกการแพ็คไม่สำเร็จ');
@@ -287,8 +285,8 @@ export default function PackingQAPage() {
           carrierCode: rateShop?.cheapest?.carrier || selectedOrder.carrier,
           recipientName: selectedOrder.customerName,
           packageWeightKg: actualWeight || estimatedWeight,
-          itemCount: selectedOrder.items.reduce((sum, it) => sum + it.qty, 0)
-        })
+          itemCount: selectedOrder.items.reduce((sum, it) => sum + it.qty, 0),
+        }),
       });
       const carrierJson = await carrierRes.json();
 
@@ -300,7 +298,7 @@ export default function PackingQAPage() {
       });
 
       // Remove from pending list & refresh packed orders
-      setOrders(orders.filter(o => o.orderNo !== selectedOrder.orderNo));
+      setOrders(orders.filter((o) => o.orderNo !== selectedOrder.orderNo));
       setSelectedOrder(null);
       loadPackingOrders();
     } catch (e) {
@@ -311,23 +309,21 @@ export default function PackingQAPage() {
   };
 
   return (
-    <div className="relative min-h-screen p-4 md:p-8 pb-32 font-mono">
-      <AmbientBackground />
-
-      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#30353d] pb-6">
+    <div className="theme-nexus-hybrid min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Open Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-5">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#57ec7f] animate-pulse" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#57ec7f]">
-                ZERO-ERROR PACKING QA STATION & WEIGHT CHECK
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-500/12 border border-emerald-500/25 px-3 py-0.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Zero-Error Packing QA Station &amp; Weight Check
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#dee2ec] tracking-tight flex items-center gap-3">
-              <span>สถานีตรวจแพ็คสินค้าและชั่งน้ำหนัก (Packing QA)</span>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+              สถานีตรวจแพ็คสินค้าและชั่งน้ำหนัก (Packing QA)
             </h1>
-            <p className="text-xs text-[#8a92a6] mt-1">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
               สแกนบาร์โค้ดตรวจสอบสินค้าทีละชิ้น 100% ป้องกันหยิบผิด/ส่งของขาด พร้อมระบบตรวจชั่งน้ำหนักกล่องก่อนออกใบปะหน้าขนส่ง
             </p>
           </div>
@@ -336,17 +332,19 @@ export default function PackingQAPage() {
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all",
-                soundEnabled ? "border-[#57ec7f]/40 bg-[#57ec7f]/10 text-[#57ec7f]" : "border-[#30353d] bg-[#171c23] text-[#8a92a6]"
+                'flex items-center gap-1.5 px-4 py-2 rounded-full border text-xs font-bold transition-all shadow-2xs',
+                soundEnabled
+                  ? 'border-emerald-500/30 bg-emerald-500/12 text-emerald-800'
+                  : 'border-slate-200 bg-white/80 text-slate-600 hover:text-slate-900'
               )}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4" />}
               <span>{soundEnabled ? 'เสียงเปิด' : 'เสียงปิด'}</span>
             </button>
 
             <Link
               href="/ops/tasks"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#30353d] bg-[#252a32] text-[#dee2ec] hover:text-[#facc15] text-xs font-bold"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200/80 bg-white/85 text-slate-700 hover:text-slate-900 hover:bg-white text-xs font-bold shadow-2xs transition-all"
             >
               <span>กลับคิวงาน</span>
             </Link>
@@ -357,18 +355,19 @@ export default function PackingQAPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Order Queue */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#dee2ec] flex items-center gap-1.5">
-                <BoxSelect className="w-4 h-4 text-[#facc15]" />
+            <div className="flex items-center justify-between text-xs px-1">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5 tabular-nums">
+                <BoxSelect className="w-4 h-4 text-amber-600" />
                 <span>คำสั่งซื้อรอแพ็ค ({orders.length})</span>
               </span>
+              {loadingOrders && <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-400" />}
             </div>
 
             <div className="space-y-2.5">
               {orders.length === 0 ? (
-                <div className="p-8 rounded-xl border border-[#30353d] bg-[#171c23] text-center text-xs text-[#8a92a6]">
-                  <CheckCircle2 className="w-8 h-8 text-[#57ec7f] mx-auto mb-2" />
-                  <p className="font-bold text-[#dee2ec]">ไม่มีออเดอร์ค้างรอแพ็ค</p>
+                <div className="nx-glass-card p-8 text-center text-xs text-slate-500">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                  <p className="font-bold text-slate-900 text-sm mb-1">ไม่มีออเดอร์ค้างรอแพ็ค</p>
                   <p>สินค้าที่หยิบเสร็จแล้วจะมาแสดงที่นี่โดยอัตโนมัติ</p>
                 </div>
               ) : (
@@ -382,22 +381,22 @@ export default function PackingQAPage() {
                       key={ord.orderNo}
                       onClick={() => setSelectedOrder(ord)}
                       className={cn(
-                        "p-4 rounded-xl border cursor-pointer transition-all shadow-md",
-                        isSelected 
-                          ? "border-[#facc15] bg-[#171c23]" 
-                          : "border-[#30353d] bg-[#090f15]/80 hover:border-[#8a92a6]"
+                        'p-4 rounded-2xl border cursor-pointer transition-all',
+                        isSelected
+                          ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
+                          : 'bg-white/75 border-slate-200/80 hover:bg-white hover:border-slate-300 shadow-2xs'
                       )}
                     >
                       <div className="flex justify-between items-start mb-1.5">
-                        <span className="font-bold text-[#facc15] text-sm">{ord.orderNo}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#4cd7f6]/10 text-[#4cd7f6] border border-[#4cd7f6]/30">
+                        <span className="font-mono font-bold text-slate-900 text-sm tabular-nums">{ord.orderNo}</span>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/12 text-sky-800 border border-sky-500/25">
                           {ord.carrier}
                         </span>
                       </div>
-                      <p className="text-xs text-[#dee2ec] truncate">{ord.customerName}</p>
-                      <div className="mt-3 flex items-center justify-between text-[11px] text-[#8a92a6] pt-2 border-t border-[#30353d]/50">
+                      <p className="text-xs text-slate-700 font-medium truncate">{ord.customerName}</p>
+                      <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-200/70 tabular-nums">
                         <span>ความคืบหน้า:</span>
-                        <span className={cn("font-bold", verifiedItems === totalItems ? "text-[#57ec7f]" : "text-[#dee2ec]")}>
+                        <span className={cn('font-bold', verifiedItems === totalItems ? 'text-emerald-600' : 'text-slate-900')}>
                           {verifiedItems} / {totalItems} ชิ้น
                         </span>
                       </div>
@@ -409,21 +408,21 @@ export default function PackingQAPage() {
 
             {/* Packed Orders Ready to Ship */}
             {packedOrders.length > 0 && (
-              <div className="pt-4 border-t border-[#30353d] space-y-2.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#57ec7f] flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-[#57ec7f]" />
+              <div className="pt-4 border-t border-slate-200/80 space-y-2.5">
+                <div className="flex items-center justify-between text-xs px-1">
+                  <span className="font-bold text-emerald-700 flex items-center gap-1.5 tabular-nums">
+                    <Truck className="w-4 h-4 text-emerald-600" />
                     <span>แพ็คเสร็จรอส่งมอบขนส่ง ({packedOrders.length})</span>
                   </span>
                 </div>
                 {packedOrders.map((ord) => (
                   <div
                     key={ord.id}
-                    className="p-3.5 rounded-xl border border-[#57ec7f]/30 bg-[#171c23] flex items-center justify-between gap-2 text-xs"
+                    className="p-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 flex items-center justify-between gap-2 text-xs"
                   >
                     <div className="min-w-0">
-                      <div className="font-bold text-[#dee2ec]">{ord.orderNo}</div>
-                      <div className="text-[11px] text-[#8a92a6] truncate">
+                      <div className="font-mono font-bold text-slate-900">{ord.orderNo}</div>
+                      <div className="text-[11px] text-slate-600 truncate">
                         {ord.customerName} · {ord.carrier}
                       </div>
                     </div>
@@ -431,7 +430,7 @@ export default function PackingQAPage() {
                       type="button"
                       disabled={shippingId === ord.id}
                       onClick={() => handleMarkShipped(ord.id, ord.trackingNo)}
-                      className="px-3 py-1.5 rounded-lg bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] font-black text-[11px] flex items-center gap-1 shrink-0 disabled:opacity-50"
+                      className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shrink-0 disabled:opacity-50 shadow-xs transition-all"
                     >
                       <Truck className="w-3.5 h-3.5" />
                       {shippingId === ord.id ? 'กำลังส่ง...' : 'ยืนยันส่งออก (SHIP)'}
@@ -445,21 +444,27 @@ export default function PackingQAPage() {
           {/* Column 2 & 3: Packing Station Verification Terminal */}
           <div className="lg:col-span-2 space-y-4">
             {selectedOrder ? (
-              <div className="rounded-2xl border border-[#30353d] bg-[#171c23] p-6 space-y-6 shadow-2xl">
-                {/* Active Order Banner */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[#090f15] border border-[#30353d]">
+              <div className="nx-glass-card p-6 space-y-6">
+                {/* 1 Hero Dark Accent Card for Active Order Banner */}
+                <div className="nx-dark-accent-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] uppercase tracking-wider block">กำลังตรวจสอบออเดอร์:</span>
-                    <h2 className="text-lg font-bold text-[#facc15]">{selectedOrder.orderNo}</h2>
-                    <p className="text-xs text-[#dee2ec] mt-0.5">{selectedOrder.customerName} ({selectedOrder.channel})</p>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      กำลังตรวจสอบออเดอร์:
+                    </span>
+                    <h2 className="text-xl font-black font-mono text-amber-400 tabular-nums mt-0.5">
+                      {selectedOrder.orderNo}
+                    </h2>
+                    <p className="text-xs text-slate-200 mt-0.5">
+                      {selectedOrder.customerName} ({selectedOrder.channel})
+                    </p>
                   </div>
-                  <div className="text-right space-y-1">
+                  <div className="sm:text-right space-y-1.5">
                     <div>
-                      <span className="text-[10px] text-[#8a92a6] block">ขนส่งที่เลือก</span>
-                      <span className="text-xs font-bold text-[#57ec7f]">{selectedOrder.carrier}</span>
+                      <span className="text-[10px] text-slate-400 block">ขนส่งที่เลือก</span>
+                      <span className="text-xs font-bold text-emerald-400">{selectedOrder.carrier}</span>
                     </div>
                     {rateShop?.cheapest && (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#facc15]/15 border border-[#facc15]/40 text-[#facc15] text-[11px] font-bold">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/35 text-amber-300 text-[11px] font-bold tabular-nums">
                         <Truck className="w-3.5 h-3.5" />
                         <span>
                           แนะนำถูกสุด: {rateShop.cheapest.carrier} ฿{rateShop.cheapest.price}
@@ -472,7 +477,7 @@ export default function PackingQAPage() {
 
                 {/* Scan Barcode Input Box */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-[#d1c6ab] uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                     🔫 ยิงสแกนบาร์โค้ดสินค้าที่นี่ (Laser Gun / Bluetooth / พิมพ์ค้นหา)
                   </label>
                   <form
@@ -486,19 +491,19 @@ export default function PackingQAPage() {
                     className="flex gap-2"
                   >
                     <div className="relative flex-1">
-                      <Barcode className="absolute left-3.5 top-3 w-5 h-5 text-[#facc15]" />
+                      <Barcode className="absolute left-3.5 top-3 w-5 h-5 text-amber-600" />
                       <input
                         type="text"
                         autoFocus
                         placeholder="สแกนบาร์โค้ด หรือพิมพ์ SKU แล้วกด Enter..."
                         value={manualBarcode}
                         onChange={(e) => setManualBarcode(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 bg-[#090f15] border border-[#30353d] rounded-xl text-sm font-bold text-[#dee2ec] placeholder-[#8a92a6] outline-none focus:border-[#57ec7f] transition-all"
+                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-full text-sm font-bold text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 shadow-2xs transition-all"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-[#facc15] text-[#1b1600] font-bold text-xs hover:bg-[#eec200] transition-all"
+                      className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition-all"
                     >
                       ตรวจสอบ
                     </button>
@@ -507,7 +512,7 @@ export default function PackingQAPage() {
 
                 {/* Item Verification List */}
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-bold text-[#8a92a6]">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-600 px-1">
                     <span>รายการสินค้าในกล่อง</span>
                     <span>สถานะการตรวจสอบ</span>
                   </div>
@@ -519,33 +524,36 @@ export default function PackingQAPage() {
                         <div
                           key={idx}
                           className={cn(
-                            "p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all",
-                            isComplete 
-                              ? "bg-[#57ec7f]/10 border-[#57ec7f]/40" 
-                              : item.verifiedQty > 0 
-                              ? "bg-[#eec200]/10 border-[#facc15]/40" 
-                              : "bg-[#090f15] border-[#30353d]"
+                            'p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all',
+                            isComplete
+                              ? 'bg-emerald-500/10 border-emerald-500/30'
+                              : item.verifiedQty > 0
+                              ? 'bg-amber-500/10 border-amber-500/30'
+                              : 'bg-white/85 border-slate-200/80'
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs",
-                              isComplete ? "bg-[#57ec7f] text-[#090f15]" : "bg-[#252a32] text-[#8a92a6]"
-                            )}>
-                              {isComplete ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
+                            <div
+                              className={cn(
+                                'w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0',
+                                isComplete ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              )}
+                            >
+                              {isComplete ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
                             </div>
                             <div>
-                              <p className="font-bold text-sm text-[#dee2ec]">{item.name}</p>
-                              <p className="text-xs text-[#8a92a6]">
-                                SKU: <strong className="text-[#facc15]">{item.sku}</strong> | น้ำหนักประเมิน: {item.weightKg} kg/ชิ้น
+                              <p className="font-bold text-sm text-slate-900">{item.name}</p>
+                              <p className="text-xs text-slate-500 tabular-nums">
+                                SKU: <strong className="font-mono text-slate-800">{item.sku}</strong> | น้ำหนักประเมิน:{' '}
+                                {item.weightKg} kg/ชิ้น
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between sm:justify-end gap-3 text-right">
+                          <div className="flex items-center justify-between sm:justify-end gap-3 text-right tabular-nums">
                             <div>
-                              <span className="text-[10px] text-[#8a92a6] block">จำนวนที่ตรวจแล้ว</span>
-                              <span className={cn("text-base font-bold", isComplete ? "text-[#57ec7f]" : "text-[#dee2ec]")}>
+                              <span className="text-[10px] text-slate-500 block">จำนวนที่ตรวจแล้ว</span>
+                              <span className={cn('text-base font-black font-mono', isComplete ? 'text-emerald-700' : 'text-slate-900')}>
                                 {item.verifiedQty} / {item.qty} {item.unit || 'ชิ้น'}
                               </span>
                             </div>
@@ -557,38 +565,42 @@ export default function PackingQAPage() {
                 </div>
 
                 {/* Weight Scale & Tolerance Check */}
-                <div className="p-4 rounded-xl border border-[#30353d] bg-[#090f15] space-y-3">
+                <div className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/90 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-[#dee2ec] flex items-center gap-1.5">
-                      <Scale className="w-4 h-4 text-[#4cd7f6]" />
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Scale className="w-4 h-4 text-sky-600" />
                       <span>ตรวจสอบน้ำหนักกล่องพัสดุ (Digital Scale Tolerance)</span>
                     </span>
-                    <span className="text-[11px] text-[#8a92a6]">เกณฑ์คลาดเคลื่อน: ±15%</span>
+                    <span className="text-[11px] font-semibold text-slate-500 tabular-nums">เกณฑ์คลาดเคลื่อน: ±15%</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 rounded-lg bg-[#171c23] border border-[#30353d]">
-                      <span className="text-[#8a92a6] block text-[10px]">น้ำหนักประเมินจากระบบ (Est. Weight):</span>
-                      <span className="text-base font-bold text-[#4cd7f6]">{estimatedWeight.toFixed(2)} kg</span>
+                    <div className="p-3.5 rounded-xl bg-white border border-slate-200/80">
+                      <span className="text-slate-500 block text-[10px] font-semibold">น้ำหนักประเมินจากระบบ (Est. Weight):</span>
+                      <span className="text-base font-black font-mono text-sky-600 tabular-nums mt-0.5 block">
+                        {estimatedWeight.toFixed(2)} kg
+                      </span>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-[#171c23] border border-[#30353d] flex items-center justify-between gap-2">
+                    <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 flex items-center justify-between gap-2">
                       <div>
-                        <span className="text-[#8a92a6] block text-[10px]">น้ำหนักชั่งจริง (Actual Weight):</span>
+                        <span className="text-slate-500 block text-[10px] font-semibold mb-1">
+                          น้ำหนักชั่งจริง (Actual Weight):
+                        </span>
                         <input
                           type="number"
                           step="0.01"
                           placeholder={estimatedWeight.toFixed(2)}
                           value={actualWeight || ''}
                           onChange={(e) => setActualWeight(parseFloat(e.target.value) || 0)}
-                          className="w-24 bg-[#090f15] border border-[#30353d] px-2 py-1 rounded text-sm font-bold text-[#dee2ec] outline-none focus:border-[#facc15]"
+                          className="w-24 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-sm font-bold font-mono text-slate-900 tabular-nums outline-none focus:border-emerald-500"
                         />
-                        <span className="ml-1 text-[#8a92a6]">kg</span>
+                        <span className="ml-1.5 text-slate-500 font-semibold">kg</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setActualWeight(estimatedWeight)}
-                        className="px-2 py-1 rounded bg-[#252a32] text-[#d1c6ab] hover:text-[#facc15] text-[10px]"
+                        className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors"
                       >
                         ซิงค์ตราชั่ง
                       </button>
@@ -598,10 +610,10 @@ export default function PackingQAPage() {
 
                 {/* Complete Packing Button */}
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-xs text-[#8a92a6]">
+                  <div className="text-xs text-slate-600">
                     {isAllVerified ? (
-                      <span className="text-[#57ec7f] font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> ตรวจสอบสินค้าครบถ้วนทุกรายการ พร้อมปิดกล่อง
+                      <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" /> ตรวจสอบสินค้าครบถ้วนทุกรายการ พร้อมปิดกล่อง
                       </span>
                     ) : (
                       <span>กรุณาสแกนตรวจสอบสินค้าให้ครบตามจำนวนก่อนปิดกล่อง</span>
@@ -611,7 +623,7 @@ export default function PackingQAPage() {
                   <button
                     onClick={handleCompletePacking}
                     disabled={!isAllVerified || submitting}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] font-bold text-sm shadow-xl transition-all active:scale-95 disabled:opacity-50"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
                   >
                     {submitting ? (
                       <>
@@ -621,16 +633,16 @@ export default function PackingQAPage() {
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4" />
-                        <span>ปิดกล่อง & ออกใบปะหน้าขนส่ง (Finalize Packing)</span>
+                        <span>ปิดกล่อง &amp; ออกใบปะหน้าขนส่ง (Finalize Packing)</span>
                       </>
                     )}
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="p-12 rounded-2xl border border-[#30353d] bg-[#171c23] text-center text-xs text-[#8a92a6]">
-                <Package className="w-12 h-12 text-[#8a92a6] mx-auto mb-3" />
-                <h3 className="text-base font-bold text-[#dee2ec] mb-1">เลือกออเดอร์จากแถบด้านซ้ายเพื่อเริ่มตรวจแพ็ค</h3>
+              <div className="nx-glass-card p-12 text-center text-xs text-slate-500">
+                <Package className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-900 mb-1">เลือกออเดอร์จากแถบด้านซ้ายเพื่อเริ่มตรวจแพ็ค</h3>
                 <p>ระบบจะนำรายการสินค้าในบิลมาเปรียบเทียบกับบาร์โค้ดที่สแกนจริงหน้างานแบบ Real-Time</p>
               </div>
             )}
@@ -640,19 +652,22 @@ export default function PackingQAPage() {
         {/* Shipping Label Modal Preview */}
         <AnimatePresence>
           {shipmentResult && (
-            <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/50 backdrop-blur-md p-4">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="relative w-full max-w-lg rounded-2xl border border-[#30353d] bg-[#171c23] p-6 space-y-4 shadow-2xl"
+                className="relative w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white/95 backdrop-blur-xl text-slate-900 p-6 space-y-4 shadow-2xl"
               >
-                <div className="flex justify-between items-start border-b border-[#30353d] pb-3">
+                <div className="flex justify-between items-start border-b border-slate-200/80 pb-3">
                   <div className="flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-[#57ec7f]" />
-                    <h3 className="text-base font-bold text-[#dee2ec]">ใบปะหน้าพัสดุ (AWB Shipping Label)</h3>
+                    <Truck className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-base font-bold text-slate-900">ใบปะหน้าพัสดุ (AWB Shipping Label)</h3>
                   </div>
-                  <button onClick={() => setShipmentResult(null)} className="p-1 text-[#8a92a6] hover:text-[#dee2ec]">
+                  <button
+                    onClick={() => setShipmentResult(null)}
+                    className="p-1.5 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -664,7 +679,7 @@ export default function PackingQAPage() {
                 )}
 
                 {/* White Sticker Mockup */}
-                <div className="bg-white text-black p-4 rounded-lg shadow-xl border-2 border-black font-sans text-xs space-y-2">
+                <div className="bg-white text-black p-4 rounded-xl shadow-md border-2 border-black font-sans text-xs space-y-2">
                   <div className="flex justify-between items-center border-b-2 border-black pb-1.5 font-bold">
                     <span className="text-base">{shipmentResult.carrierName}</span>
                     <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded">EXPRESS AWB</span>
@@ -673,7 +688,9 @@ export default function PackingQAPage() {
                   <div className="py-2 text-center border-b border-black">
                     <div className="font-mono text-base font-bold tracking-widest">{shipmentResult.trackingNumber}</div>
                     <div className="h-12 bg-[repeating-linear-gradient(90deg,#000,#000_2px,#fff_2px,#fff_4px)] w-full my-1 border border-black" />
-                    <span className="text-[10px] font-mono text-gray-700">Ref Order: {shipmentResult.awbLabelPayload?.orderNo}</span>
+                    <span className="text-[10px] font-mono text-gray-700">
+                      Ref Order: {shipmentResult.awbLabelPayload?.orderNo}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[10px] pt-1">
@@ -695,7 +712,7 @@ export default function PackingQAPage() {
                     onClick={() => {
                       toast.success('สั่งพิมพ์ใบปะหน้าเข้าเครื่องพิมพ์เรียบร้อย');
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] font-bold"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold transition-colors"
                   >
                     <Printer className="w-4 h-4" />
                     <span>พิมพ์ใบปะหน้า (Print AWB)</span>
@@ -704,13 +721,11 @@ export default function PackingQAPage() {
                     <button
                       disabled={shippingId === shipmentResult.orderId}
                       onClick={() => handleMarkShipped(shipmentResult.orderId, shipmentResult.trackingNumber)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#57ec7f] hover:bg-[#46c368] text-[#090f15] font-black shadow-lg disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md disabled:opacity-50 transition-all"
                     >
                       <Truck className="w-4 h-4" />
                       <span>
-                        {shippingId === shipmentResult.orderId
-                          ? 'กำลังยืนยัน...'
-                          : 'ยืนยันส่งมอบขนส่ง (Mark SHIPPED)'}
+                        {shippingId === shipmentResult.orderId ? 'กำลังยืนยัน...' : 'ยืนยันส่งมอบขนส่ง (Mark SHIPPED)'}
                       </span>
                     </button>
                   )}

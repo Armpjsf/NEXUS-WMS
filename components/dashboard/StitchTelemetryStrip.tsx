@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, ArrowDownToLine, ArrowUpFromLine, Boxes, DollarSign, AlertOctagon } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Boxes, DollarSign, AlertOctagon } from 'lucide-react';
 
 interface StitchTelemetryStripProps {
   summary?: any;
@@ -29,112 +29,98 @@ export default function StitchTelemetryStrip({ summary }: StitchTelemetryStripPr
   const exceptions = lowStock + outOfStock;
 
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 bg-[#090f15] p-3 rounded-xl border border-[#30353d]/70 shadow-xl mb-6">
-      {/* Card 1: Inbound (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#57ec7f]/50 transition-colors">
-        <div className="absolute top-0 left-0 w-1 h-full bg-[#57ec7f]" />
+    <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 1. Inbound */}
+      <div className="nx-glass-card p-5 flex flex-col justify-between gap-3 transition-all hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10px] text-[#d1c6ab] uppercase tracking-wider font-semibold">
-            รับเข้า (INBOUND)
+          <span className="text-xs font-semibold text-slate-600">
+            รับเข้า (Inbound)
           </span>
-          <ArrowDownToLine className="w-3.5 h-3.5 text-[#57ec7f]" />
+          <ArrowDownToLine className="w-4 h-4 text-emerald-600 shrink-0" />
         </div>
-        <div className="my-2 flex items-baseline gap-1.5">
-          <span className="font-mono text-2xl text-[#dee2ec] font-bold tabular-nums">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-2xl text-slate-900 font-bold tabular-nums tracking-tight">
             {inbound.toLocaleString()}
           </span>
-          <span className="font-mono text-xs text-[#d1c6ab]">ชิ้น</span>
-        </div>
-        <div className="w-full bg-[#252a32] h-1.5 rounded-full overflow-hidden">
-          <div className="bg-[#57ec7f] h-full transition-all duration-700 rounded-full" style={{ width: `${inboundShare}%` }} />
-        </div>
-        <div className="mt-2 text-[#d1c6ab] font-mono text-[10px]">
-          {flowTotal > 0 ? `${inboundShare}% ของยอดเคลื่อนไหว` : 'ยังไม่มีรายการเคลื่อนไหว'}
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/12 text-emerald-700 border border-emerald-500/20 tabular-nums shrink-0">
+            {flowTotal > 0 ? `${inboundShare}% flow` : '0 ชิ้น'}
+          </span>
         </div>
       </div>
 
-      {/* Card 2: Outbound (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#4cd7f6]/50 transition-colors">
-        <div className="absolute top-0 left-0 w-1 h-full bg-[#4cd7f6]" />
+      {/* 2. Outbound */}
+      <div className="nx-glass-card p-5 flex flex-col justify-between gap-3 transition-all hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10px] text-[#d1c6ab] uppercase tracking-wider font-semibold">
-            จ่ายออก (OUTBOUND)
+          <span className="text-xs font-semibold text-slate-600">
+            จ่ายออก (Outbound)
           </span>
-          <ArrowUpFromLine className="w-3.5 h-3.5 text-[#4cd7f6]" />
+          <ArrowUpFromLine className="w-4 h-4 text-sky-600 shrink-0" />
         </div>
-        <div className="my-2 flex items-baseline gap-1.5">
-          <span className="font-mono text-2xl text-[#dee2ec] font-bold tabular-nums">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-2xl text-slate-900 font-bold tabular-nums tracking-tight">
             {outbound.toLocaleString()}
           </span>
-          <span className="font-mono text-xs text-[#d1c6ab]">ชิ้น</span>
-        </div>
-        <div className="w-full bg-[#252a32] h-1.5 rounded-full overflow-hidden">
-          <div className="bg-[#4cd7f6] h-full transition-all duration-700 rounded-full" style={{ width: `${outboundShare}%` }} />
-        </div>
-        <div className="mt-2 text-[#d1c6ab] font-mono text-[10px]">
-          {flowTotal > 0 ? `${outboundShare}% ของยอดเคลื่อนไหว` : 'ยังไม่มีรายการเคลื่อนไหว'}
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/12 text-sky-700 border border-sky-500/20 tabular-nums shrink-0">
+            {flowTotal > 0 ? `${outboundShare}% flow` : '0 ชิ้น'}
+          </span>
         </div>
       </div>
 
-      {/* Card 3: Active SKU (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#facc15]/50 transition-colors">
-        <div className="absolute top-0 left-0 w-1 h-full bg-[#facc15]" />
+      {/* 3. Active SKU */}
+      <div className="nx-glass-card p-5 flex flex-col justify-between gap-3 transition-all hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10px] text-[#d1c6ab] uppercase tracking-wider font-semibold">
-            SKU ที่มีสต็อก (ACTIVE)
+          <span className="text-xs font-semibold text-slate-600">
+            Active SKUs
           </span>
-          <Boxes className="w-3.5 h-3.5 text-[#facc15]" />
+          <Boxes className="w-4 h-4 text-amber-600 shrink-0" />
         </div>
-        <div className="my-2 flex items-baseline gap-1.5">
-          <span className="font-mono text-2xl text-[#dee2ec] font-bold tabular-nums">{activeSku.toLocaleString()}</span>
-          <span className="font-mono text-xs text-[#d1c6ab]">/ {totalSku.toLocaleString()} รายการ</span>
-        </div>
-        <div className="w-full bg-[#252a32] h-1.5 rounded-full overflow-hidden">
-          <div className="bg-[#facc15] h-full rounded-full transition-all duration-700" style={{ width: `${activeShare}%` }} />
-        </div>
-        <div className="mt-2 text-[#d1c6ab] font-mono text-[10px]">
-          {totalSku > 0 ? `${activeShare}% ของสินค้าทั้งหมด` : 'ยังไม่มีสินค้าในระบบ'}
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-2xl text-slate-900 font-bold tabular-nums tracking-tight">
+            {activeSku.toLocaleString()}
+          </span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/12 text-amber-700 border border-amber-500/20 tabular-nums shrink-0">
+            {activeShare}% / {totalSku.toLocaleString()}
+          </span>
         </div>
       </div>
 
-      {/* Card 4: Stock Value (จริง) */}
-      <div className="bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group hover:border-[#eec200]/50 transition-colors">
-        <div className="absolute top-0 left-0 w-1 h-full bg-[#eec200]" />
+      {/* 4. Stock Units / Value */}
+      <div className="nx-glass-card p-5 flex flex-col justify-between gap-3 transition-all hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10px] text-[#d1c6ab] uppercase tracking-wider font-semibold">
-            มูลค่าสต็อกรวม (VALUE)
+          <span className="text-xs font-semibold text-slate-600">
+            คงคลังรวม (On-Hand)
           </span>
-          <DollarSign className="w-3.5 h-3.5 text-[#eec200]" />
+          <DollarSign className="w-4 h-4 text-emerald-700 shrink-0" />
         </div>
-        <div className="my-2 flex items-baseline gap-1.5">
-          <span className="font-mono text-2xl text-[#dee2ec] font-bold tabular-nums">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-2xl text-slate-900 font-bold tabular-nums tracking-tight">
+            {totalStock.toLocaleString()}
+          </span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-900/8 text-slate-700 border border-slate-900/10 tabular-nums shrink-0">
             ฿{totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </span>
         </div>
-        <div className="mt-auto flex items-center gap-1.5 text-[#d1c6ab] font-mono text-[10px]">
-          <TrendingUp className="w-3 h-3 text-[#eec200]" />
-          <span>คงคลังรวม {totalStock.toLocaleString()} ชิ้น</span>
-        </div>
       </div>
 
-      {/* Card 5: Exceptions (จริง) */}
-      <div className={`bg-[#171c23] p-4 rounded-lg flex flex-col justify-between relative overflow-hidden border border-[#30353d]/40 group ${exceptions > 0 ? 'hover:border-[#ff5449]/50' : 'hover:border-[#57ec7f]/50'} transition-colors`}>
-        <div className={`absolute top-0 left-0 w-1 h-full ${exceptions > 0 ? 'bg-[#ff5449]' : 'bg-[#57ec7f]'}`} />
+      {/* 5. Exceptions */}
+      <div className="nx-glass-card p-5 flex flex-col justify-between gap-3 transition-all hover:-translate-y-0.5">
         <div className="flex items-center justify-between gap-2">
-          <span className={`font-mono text-[10px] uppercase tracking-wider font-semibold ${exceptions > 0 ? 'text-[#ffb4ab]' : 'text-[#d1c6ab]'}`}>
-            ต้องจัดการ (EXCEPTIONS)
+          <span className="text-xs font-semibold text-slate-600">
+            Exceptions
           </span>
-          <AlertOctagon className={`w-3.5 h-3.5 ${exceptions > 0 ? 'text-[#ff5449]' : 'text-[#57ec7f]'}`} />
+          <AlertOctagon className={`w-4 h-4 shrink-0 ${exceptions > 0 ? 'text-rose-600' : 'text-emerald-600'}`} />
         </div>
-        <div className="my-2 flex items-baseline gap-1.5">
-          <span className={`font-mono text-2xl font-bold tabular-nums ${exceptions > 0 ? 'text-[#ffb4ab]' : 'text-[#57ec7f]'}`}>
+        <div className="flex items-baseline justify-between gap-2">
+          <span className={`text-2xl font-bold tabular-nums tracking-tight ${exceptions > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
             {exceptions.toLocaleString()}
           </span>
-          <span className="font-mono text-xs text-[#d1c6ab]">รายการ</span>
-        </div>
-        <div className="mt-auto flex items-center justify-between text-[#d1c6ab] font-mono text-[10px]">
-          <span>ใกล้หมด {lowStock.toLocaleString()}</span>
-          <span className={outOfStock > 0 ? 'text-[#ffb4ab] font-semibold' : ''}>หมดสต็อก {outOfStock.toLocaleString()}</span>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border tabular-nums shrink-0 ${
+            exceptions > 0
+              ? 'bg-rose-500/12 text-rose-700 border-rose-500/20'
+              : 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
+          }`}>
+            {exceptions > 0 ? `Low ${lowStock} · Out ${outOfStock}` : 'Healthy'}
+          </span>
         </div>
       </div>
     </div>

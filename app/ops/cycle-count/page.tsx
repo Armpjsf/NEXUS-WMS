@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { getApiUrl } from '@/lib/config';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { toast } from 'react-hot-toast';
@@ -217,54 +216,50 @@ export default function CycleCountPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1b2027]">
-        <Loader2 className="w-12 h-12 animate-spin text-teal-600" />
+      <div className="theme-nexus-hybrid min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-20 sm:px-6 lg:p-8 bg-[#1b2027]">
-      <AmbientBackground />
-
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-20 sm:px-6 lg:p-8 text-slate-900">
       <div className="max-w-[1500px] mx-auto relative z-10 space-y-6">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Open Header */}
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-xs font-bold text-[#d1c6ab] shadow-sm transition-colors hover:bg-teal-500/10 hover:text-teal-700 mb-4"
+            className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
           >
-            <ArrowLeft className="w-4 h-4" /> กลับ Dashboard
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> กลับ Dashboard
           </Link>
 
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-teal-500/30 bg-[#171c23] p-6 shadow-xl shadow-teal-900/5 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-amber-500" />
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-gradient-to-br from-teal-600 to-emerald-600 rounded-2xl shadow-lg text-white">
-                <ClipboardCheck className="w-8 h-8" />
-              </div>
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-700">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-1">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-700 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Counting Workstation
-                </p>
-                <h1 className="text-2xl sm:text-3xl font-black text-[#dee2ec] tracking-tight">
-                  Cycle Count & Blind Audit
-                </h1>
-                <p className="text-[#8a92a6] text-xs mt-0.5">
-                  ตรวจนับสต๊อกจริง • โหมด Blind Count ปิดยอดในระบบป้องกันความเอนเอียง • บันทึกผลต่าง (Variance)
-                </p>
+                </span>
               </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+                <ClipboardCheck className="w-7 h-7 text-emerald-600 shrink-0" />
+                <span>Cycle Count &amp; Blind Audit</span>
+              </h1>
+              <p className="text-slate-600 text-xs sm:text-sm font-medium mt-0.5">
+                ตรวจนับสต๊อกจริง • โหมด Blind Count ปิดยอดในระบบป้องกันความเอนเอียง • บันทึกผลต่าง (Variance)
+              </p>
             </div>
 
             {/* Actions: Print and Blind Count Switch */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <a
                 href="/print/cycle-count"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border border-[#30353d] bg-[#171c23] text-[#d1c6ab] hover:bg-[#1b2027] transition-all shadow-sm"
+                className="px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-2 border border-white/90 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 transition-all shadow-xs"
               >
-                <Printer className="w-4 h-4 text-[#8a92a6]" />
+                <Printer className="w-3.5 h-3.5 text-slate-600" />
                 พิมพ์รายงานผลตรวจนับ
               </a>
               <button
@@ -273,13 +268,13 @@ export default function CycleCountPage() {
                   setIsBlindCount(!isBlindCount);
                   toast.success(isBlindCount ? 'ปิดโหมด Blind (แสดงยอดในระบบ)' : 'เปิดโหมด Blind Count (ซ่อนยอดระบบ)');
                 }}
-                className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all ${
+                className={`px-4 py-2 rounded-full font-semibold text-xs flex items-center gap-2 border transition-all shadow-xs ${
                   isBlindCount
-                    ? 'bg-slate-900 text-amber-300 border-slate-800 shadow-md font-black'
-                    : 'bg-[#171c23] text-[#d1c6ab] border-[#30353d] hover:bg-[#1b2027]'
+                    ? 'bg-slate-900 text-amber-300 border-slate-900'
+                    : 'bg-white/80 text-slate-700 border-white/90 hover:bg-white'
                 }`}
               >
-                {isBlindCount ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
+                {isBlindCount ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5" />}
                 {isBlindCount ? 'โหมด Blind Count: เปิด (ซ่อนยอด)' : 'โหมดปกติ (แสดงยอด)'}
               </button>
             </div>
@@ -288,59 +283,59 @@ export default function CycleCountPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className="bg-[#171c23] border border-[#30353d] rounded-2xl p-4 text-center shadow-sm">
-            <p className="text-2xl sm:text-3xl font-black text-[#dee2ec]">{summary.total}</p>
-            <p className="text-xs text-[#8a92a6] mt-0.5">สินค้าทั้งหมด</p>
+          <div className="nx-glass-card p-5 text-center">
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">{summary.total.toLocaleString()}</p>
+            <p className="text-xs font-semibold text-slate-600 mt-1">สินค้าทั้งหมด</p>
           </div>
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 text-center shadow-sm">
-            <p className="text-2xl sm:text-3xl font-black text-blue-600">{summary.counted}</p>
-            <p className="text-xs text-blue-600 mt-0.5">นับแล้ว</p>
+          <div className="nx-glass-card p-5 text-center">
+            <p className="text-2xl sm:text-3xl font-bold text-sky-700 tabular-nums">{summary.counted.toLocaleString()}</p>
+            <p className="text-xs font-semibold text-sky-700 mt-1">นับแล้ว</p>
           </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-center shadow-sm">
-            <p className="text-2xl sm:text-3xl font-black text-emerald-600">
-              {isBlindCount ? '🔒' : summary.matches}
+          <div className="nx-glass-card p-5 text-center">
+            <p className="text-2xl sm:text-3xl font-bold text-emerald-700 tabular-nums">
+              {isBlindCount ? '🔒' : summary.matches.toLocaleString()}
             </p>
-            <p className="text-xs text-emerald-600 mt-0.5">✓ ตรงกัน</p>
+            <p className="text-xs font-semibold text-emerald-700 mt-1">✓ ตรงกัน</p>
           </div>
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 text-center shadow-sm">
-            <p className="text-2xl sm:text-3xl font-black text-rose-600">
-              {isBlindCount ? '🔒' : summary.variances}
+          <div className="nx-dark-accent-card p-5 text-center">
+            <p className="text-2xl sm:text-3xl font-bold text-rose-400 tabular-nums">
+              {isBlindCount ? '🔒' : summary.variances.toLocaleString()}
             </p>
-            <p className="text-xs text-rose-600 mt-0.5">⚠ มีผลต่าง</p>
+            <p className="text-xs font-semibold text-slate-300 mt-1">⚠ มีผลต่าง</p>
           </div>
         </div>
 
         {/* Barcode Quick Count Bar */}
-        <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-md">
-          <form onSubmit={handleBarcodeScan} className="flex flex-col sm:flex-row gap-2">
+        <div className="nx-glass-card p-4">
+          <form onSubmit={handleBarcodeScan} className="flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
-              <Barcode className="w-5 h-5 absolute left-3.5 top-2.5 text-[#8a92a6]" />
+              <Barcode className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 ref={barcodeRef}
                 type="text"
                 placeholder="สแกนบาร์โค้ดสินค้าหรือพิกัด เพื่อเพิ่มยอดนับทีละ 1 (+1)..."
                 value={barcodeInput}
                 onChange={e => setBarcodeInput(e.target.value)}
-                className="w-full pl-11 pr-4 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl text-xs font-medium focus:outline-none focus:border-teal-500 focus:bg-[#171c23] transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/85 border border-slate-200 rounded-full text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap">
               <button
                 type="button"
                 onClick={() => setShowCountCam(true)}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shrink-0"
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-full text-xs flex items-center gap-1.5 transition-all active:scale-95 shrink-0"
               >
-                <Camera className="w-3.5 h-3.5 text-teal-400" />
+                <Camera className="w-3.5 h-3.5 text-emerald-400" />
                 <span>เปิดกล้องสแกน</span>
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition-colors shrink-0"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full text-xs transition-colors shrink-0 shadow-xs"
               >
                 สแกนบาร์โค้ด
               </button>
-              <div className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#252a32] text-[#d1c6ab] text-[11px] font-bold rounded-xl border border-[#30353d] shrink-0">
-                <Zap className="w-3 h-3 text-amber-500" />
+              <div className="hidden sm:inline-flex items-center gap-1 px-3 py-2 bg-amber-500/15 text-amber-800 text-[11px] font-bold rounded-full border border-amber-500/25 shrink-0">
+                <Zap className="w-3 h-3 text-amber-600" />
                 <span>PDA พร้อม</span>
               </div>
             </div>
@@ -348,30 +343,30 @@ export default function CycleCountPage() {
         </div>
 
         {/* Info & Actions */}
-        <div className="flex flex-wrap gap-4 items-center justify-between rounded-2xl border border-[#30353d] bg-[#171c23] p-4 shadow-sm backdrop-blur-xl">
+        <div className="nx-glass-card flex flex-wrap gap-4 items-center justify-between p-4">
           <div className="flex flex-wrap gap-3 items-center">
             <input
               type="date"
               value={countDate}
               onChange={e => setCountDate(e.target.value)}
-              className="px-3 py-2 border border-[#30353d] rounded-xl bg-[#1b2027] font-bold text-xs text-[#d1c6ab]"
+              className="px-3.5 py-2 border border-slate-200 rounded-xl bg-white/85 font-semibold text-xs text-slate-900 tabular-nums outline-none focus:border-emerald-500"
             />
             <input
               type="text"
               value={countNote}
               onChange={e => setCountNote(e.target.value)}
               placeholder="หมายเหตุรอบตรวจนับ (ถ้ามี)"
-              className="px-3 py-2 border border-[#30353d] rounded-xl w-60 bg-[#1b2027] font-medium text-xs text-[#d1c6ab]"
+              className="px-3.5 py-2 border border-slate-200 rounded-xl w-60 bg-white/85 font-medium text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {!isBlindCount && (
               <button
                 onClick={() => setShowOnlyVariance(!showOnlyVariance)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all border ${
                   showOnlyVariance
-                    ? 'bg-rose-500/20 text-rose-700 border border-rose-500/30'
-                    : 'bg-[#252a32] text-[#d1c6ab] border border-[#30353d]'
+                    ? 'bg-rose-500/12 text-rose-700 border-rose-500/25'
+                    : 'bg-white/80 text-slate-700 border-slate-200 hover:bg-white'
                 }`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -382,7 +377,7 @@ export default function CycleCountPage() {
             <button
               onClick={handleSave}
               disabled={saving || summary.counted === 0}
-              className="px-5 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 disabled:opacity-50 transition-all shadow-md"
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full text-xs flex items-center gap-2 disabled:opacity-50 transition-all shadow-xs"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               บันทึกผลการนับ
@@ -391,16 +386,16 @@ export default function CycleCountPage() {
         </div>
 
         {lastSavedVariances > 0 && (
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200">
-            <div className="flex items-center gap-2 font-bold">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/12 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
-                ระบบได้ส่งรายการที่มีผลต่าง ({lastSavedVariances} รายการ) ไปยังคิวขออนุมัติปรับยอดสต็อก (Maker-Checker Adjustments) เรียบร้อยแล้ว
+                ระบบได้ส่งรายการที่มีผลต่าง (<span className="tabular-nums font-bold">{lastSavedVariances}</span> รายการ) ไปยังคิวขออนุมัติปรับยอดสต็อก (Maker-Checker Adjustments) เรียบร้อยแล้ว
               </span>
             </div>
             <Link
               href="/ops/adjustments"
-              className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1b1600] font-black transition shrink-0 text-center"
+              className="px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-semibold transition shrink-0 text-center shadow-xs"
             >
               ไปที่ Maker-Checker Adjustments →
             </Link>
@@ -411,35 +406,35 @@ export default function CycleCountPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-hidden shadow-lg"
+          className="nx-glass-card overflow-hidden"
         >
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto max-h-[60vh]">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 text-xs">
+            <table className="w-full text-sm text-slate-700">
+              <thead className="bg-slate-50/90 text-slate-600 border-b border-slate-200/80 sticky top-0 text-[11px] uppercase tracking-wider font-semibold">
                 <tr>
-                  <th className="text-left px-4 py-3 font-bold text-slate-300 w-1/3">สินค้า</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-300">พิกัดจัดเก็บ</th>
-                  <th className="text-right px-4 py-3 font-bold text-slate-300">
+                  <th className="text-left px-4 py-3.5 w-1/3">สินค้า</th>
+                  <th className="text-left px-4 py-3.5">พิกัดจัดเก็บ</th>
+                  <th className="text-right px-4 py-3.5">
                     {isBlindCount ? 'ยอดในระบบ (Blind)' : 'ยอดในระบบ'}
                   </th>
-                  <th className="text-center px-4 py-3 font-bold text-slate-300 w-32">นับจริง</th>
-                  <th className="text-right px-4 py-3 font-bold text-slate-300">ผลต่าง</th>
-                  <th className="text-center px-4 py-3 font-bold text-slate-300">สถานะ</th>
+                  <th className="text-center px-4 py-3.5 w-32">นับจริง</th>
+                  <th className="text-right px-4 py-3.5">ผลต่าง</th>
+                  <th className="text-center px-4 py-3.5">สถานะ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#30353d] text-xs">
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {displayItems.map(item => (
-                  <tr key={item.sku} className="hover:bg-[#1b2027]/75 transition-colors">
-                    <td className="px-4 py-3 font-bold text-[#dee2ec]">{item.sku}</td>
+                  <tr key={item.sku} className="hover:bg-emerald-50/35 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-slate-900">{item.sku}</td>
                     <td className="px-4 py-3 text-left">
-                      <span className="bg-[#252a32] px-2 py-1 rounded text-xs font-mono font-bold text-[#d1c6ab] border border-[#30353d] inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-teal-600" /> {item.location}
+                      <span className="bg-slate-100 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold text-slate-700 border border-slate-200/80 inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-emerald-600" /> {item.location}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-bold text-[#d1c6ab]">
+                    <td className="px-4 py-3 text-right font-mono font-bold text-slate-700 tabular-nums">
                       {isBlindCount ? (
-                        <span className="text-[#8a92a6] italic">🔒 ซ่อนไว้</span>
+                        <span className="text-slate-400 italic font-sans font-medium">🔒 ซ่อนไว้</span>
                       ) : (
                         item.systemQty.toLocaleString()
                       )}
@@ -450,22 +445,22 @@ export default function CycleCountPage() {
                         value={item.actualQty}
                         onChange={e => updateActualQty(item.sku, e.target.value)}
                         placeholder="กรอกยอดนับ"
-                        className="w-full text-center px-2 py-1.5 border border-[#30353d] rounded-lg font-mono font-bold text-xs focus:border-teal-500 focus:bg-teal-500/10/20"
+                        className="w-full text-center px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white text-slate-900 font-mono font-bold text-xs tabular-nums outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
                       />
                     </td>
                     <td
-                      className={`px-4 py-3 text-right font-mono font-bold ${
+                      className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${
                         isBlindCount
-                          ? 'text-[#8a92a6]'
+                          ? 'text-slate-400'
                           : item.variance > 0
-                          ? 'text-emerald-600'
+                          ? 'text-emerald-700'
                           : item.variance < 0
                           ? 'text-rose-600'
-                          : 'text-[#8a92a6]'
+                          : 'text-slate-400'
                       }`}
                     >
                       {isBlindCount ? (
-                        <span className="text-[#8a92a6]">🔒</span>
+                        <span className="text-slate-400">🔒</span>
                       ) : item.actualQty !== '' ? (
                         item.variance > 0 ? (
                           `+${item.variance}`
@@ -478,11 +473,11 @@ export default function CycleCountPage() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {item.actualQty !== '' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-500/20 text-blue-800 rounded-full text-xs font-bold">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-sky-500/12 text-sky-700 border border-sky-500/20 rounded-full text-[11px] font-bold">
                           <Check className="w-3 h-3" /> นับแล้ว
                         </span>
                       ) : (
-                        <span className="text-[#8a92a6] text-xs">รอนับ</span>
+                        <span className="text-slate-400 text-[11px] font-medium">รอนับ</span>
                       )}
                     </td>
                   </tr>
@@ -496,46 +491,46 @@ export default function CycleCountPage() {
             {displayItems.map(item => (
               <div
                 key={item.sku}
-                className="bg-[#171c23] border border-[#30353d] rounded-2xl p-4 shadow-sm space-y-3"
+                className="bg-white/85 border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-3"
               >
                 <div className="flex justify-between items-start gap-2">
-                  <div className="font-bold text-[#dee2ec] text-sm">{item.sku}</div>
+                  <div className="font-bold text-slate-900 text-sm">{item.sku}</div>
                   <div>
                     {item.actualQty !== '' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-500/20 text-blue-800 rounded-full text-xs font-bold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-sky-500/12 text-sky-700 border border-sky-500/20 rounded-full text-[11px] font-bold">
                         <Check className="w-3 h-3" /> นับแล้ว
                       </span>
                     ) : (
-                      <span className="text-[#8a92a6] text-xs bg-[#252a32] px-2.5 py-0.5 rounded-full font-bold">
+                      <span className="text-slate-500 text-[11px] bg-slate-100 px-2.5 py-0.5 rounded-full font-semibold">
                         รอนับ
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex gap-2 items-center text-xs text-[#8a92a6]">
-                  <span className="bg-[#252a32] px-2 py-0.5 rounded font-mono font-bold border border-[#30353d] text-[#d1c6ab]">
+                <div className="flex gap-2 items-center text-xs text-slate-600">
+                  <span className="bg-slate-100 px-2.5 py-0.5 rounded-full font-mono font-semibold border border-slate-200/80 text-slate-700">
                     📍 {item.location}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#30353d] items-center">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/80 items-center">
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] block font-bold">
+                    <span className="text-[10px] text-slate-500 block font-semibold">
                       {isBlindCount ? 'ยอดในระบบ (Blind)' : 'ยอดในระบบ'}
                     </span>
-                    <span className="font-bold text-[#d1c6ab] text-sm">
+                    <span className="font-bold text-slate-800 text-sm tabular-nums">
                       {isBlindCount ? '🔒 ซ่อนไว้' : item.systemQty.toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] block font-bold">นับจริง (Actual)</span>
+                    <span className="text-[10px] text-slate-500 block font-semibold">นับจริง (Actual)</span>
                     <input
                       type="number"
                       value={item.actualQty}
                       onChange={e => updateActualQty(item.sku, e.target.value)}
                       placeholder="กรอกยอด"
-                      className="w-full text-center px-2 py-1.5 border border-[#30353d] rounded-lg bg-[#1b2027] font-bold text-[#dee2ec] text-sm focus:border-teal-500 focus:bg-[#171c23]"
+                      className="w-full text-center px-2 py-1.5 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 text-sm tabular-nums outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>

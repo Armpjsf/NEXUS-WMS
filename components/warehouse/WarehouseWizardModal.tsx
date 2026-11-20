@@ -218,90 +218,90 @@ export default function WarehouseWizardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#171c23] border border-[#30353d] w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-3xl rounded-[24px] shadow-2xl text-slate-900 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-[#30353d] flex items-center justify-between bg-[#1f242c]/50">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#facc15]/10 border border-[#facc15]/30 flex items-center justify-center text-[#facc15]">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
               <Wand2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#dee2ec] flex items-center gap-2">
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
                 Warehouse Setup Wizard (ระบบสร้างผังคลังและรหัส Location ด่วน)
               </h3>
-              <p className="text-xs text-[#8a92a6]">
+              <p className="text-xs text-slate-500">
                 ตอบคำถามสำรวจหน้างาน 4 ข้อ ระบบจะคำนวณและสร้างโมเดล 3D พร้อมรหัส Bin ให้อัตโนมัติทันที
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Survey Form Body */}
-        <div className="p-6 overflow-y-auto space-y-6 text-[#dee2ec]">
+        <div className="p-6 overflow-y-auto space-y-6 text-slate-900">
           {/* Step 1: Branch & Building Dimensions */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+            <div className="flex items-center gap-2 text-sm font-bold text-emerald-700 uppercase tracking-wider font-mono">
               <Building2 className="w-4 h-4" /> 1. มิติอาคารคลังสินค้า (Physical Dimensions)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="sm:col-span-1">
-                <label className="text-xs text-[#8a92a6] block mb-1">ชื่อผัง / สาขา</label>
+                <label className="text-xs text-slate-600 block mb-1 font-semibold">ชื่อผัง / สาขา</label>
                 <input
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-3 py-2 text-xs font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs text-[#8a92a6] block mb-1">ความกว้าง (เมตร)</label>
+                <label className="text-xs text-slate-600 block mb-1 font-semibold">ความกว้าง (เมตร)</label>
                 <input
                   type="number"
                   min={10}
                   max={200}
                   value={widthM}
                   onChange={e => setWidthM(Number(e.target.value))}
-                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs text-[#8a92a6] block mb-1">ความยาว (เมตร)</label>
+                <label className="text-xs text-slate-600 block mb-1 font-semibold">ความยาว (เมตร)</label>
                 <input
                   type="number"
                   min={15}
                   max={400}
                   value={lengthM}
                   onChange={e => setLengthM(Number(e.target.value))}
-                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs text-[#8a92a6] block mb-1">ความสูงเพดาน (เมตร)</label>
+                <label className="text-xs text-slate-600 block mb-1 font-semibold">ความสูงเพดาน (เมตร)</label>
                 <input
                   type="number"
                   min={4}
                   max={25}
                   value={heightM}
                   onChange={e => setHeightM(Number(e.target.value))}
-                  className="w-full bg-[#12161d] border border-[#30353d] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#dee2ec] focus:border-[#facc15] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
             </div>
-            <p className="text-[11px] text-[#8a92a6]">
-              พื้นที่รวม: <span className="font-mono font-bold text-[#dee2ec]">{(widthM * lengthM).toLocaleString()} ตร.ม.</span> • สงวนพื้นที่ด้านหน้า {stagingLength.toFixed(0)}m สำหรับลานรับของ (Inbound Dock) และจุดแพ็ก (Packing Station)
+            <p className="text-[11px] text-slate-500">
+              พื้นที่รวม: <span className="font-mono font-bold text-slate-900">{(widthM * lengthM).toLocaleString()} ตร.ม.</span> • สงวนพื้นที่ด้านหน้า {stagingLength.toFixed(0)}m สำหรับลานรับของ (Inbound Dock) และจุดแพ็ก (Packing Station)
             </p>
           </div>
 
           {/* Step 2: Storage Type */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+            <div className="flex items-center gap-2 text-sm font-bold text-emerald-700 uppercase tracking-wider font-mono">
               <Layers className="w-4 h-4" /> 2. รูปแบบการจัดวางสินค้า (Storage Structure)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -332,13 +332,13 @@ export default function WarehouseWizardModal({
                   onClick={() => setStorageType(opt.id as any)}
                   className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                     storageType === opt.id
-                      ? 'bg-[#facc15]/10 border-[#facc15] text-[#dee2ec]'
-                      : 'bg-[#12161d] border-[#30353d] text-[#8a92a6] hover:border-slate-500'
+                      ? 'bg-emerald-50 border-emerald-500 text-slate-900'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-[#dee2ec]">{opt.title}</span>
-                    {storageType === opt.id && <CheckCircle2 className="w-4 h-4 text-[#facc15]" />}
+                    <span className="font-bold text-xs text-slate-900">{opt.title}</span>
+                    {storageType === opt.id && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
                   </div>
                   <p className="text-[11px] leading-relaxed">{opt.desc}</p>
                 </div>
@@ -348,7 +348,7 @@ export default function WarehouseWizardModal({
 
           {/* Step 3: Material Handling Equipment (Aisle Width) */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+            <div className="flex items-center gap-2 text-sm font-bold text-emerald-700 uppercase tracking-wider font-mono">
               <Truck className="w-4 h-4" /> 3. เครื่องมือยก/รถโฟล์กลิฟต์ (กำหนดความกว้างทางเดิน Aisle)
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -363,13 +363,13 @@ export default function WarehouseWizardModal({
                   onClick={() => setMheType(opt.id as any)}
                   className={`p-3 rounded-xl border cursor-pointer text-center transition-all ${
                     mheType === opt.id
-                      ? 'bg-[#facc15]/10 border-[#facc15] text-[#dee2ec]'
-                      : 'bg-[#12161d] border-[#30353d] text-[#8a92a6] hover:border-slate-500'
+                      ? 'bg-emerald-50 border-emerald-500 text-slate-900'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
-                  <span className="font-bold text-xs block text-[#dee2ec]">{opt.title}</span>
-                  <span className="text-[11px] font-mono text-[#facc15] font-semibold">{opt.aisle}</span>
-                  <p className="text-[10px] text-[#8a92a6] mt-0.5">{opt.desc}</p>
+                  <span className="font-bold text-xs block text-slate-900">{opt.title}</span>
+                  <span className="text-[11px] font-mono text-emerald-600 font-semibold">{opt.aisle}</span>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{opt.desc}</p>
                 </div>
               ))}
             </div>
@@ -378,12 +378,12 @@ export default function WarehouseWizardModal({
           {/* Step 4: Racking Levels & Pallet vs Non-Pallet Mode */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+              <div className="flex items-center gap-2 text-sm font-bold text-emerald-700 uppercase tracking-wider font-mono">
                 <Box className="w-4 h-4" /> 4. จำนวนชั้นวางและรูปแบบการจัดเก็บ (Levels & Loading Mode)
               </div>
               
               {/* Toggle Pallet vs Non-Pallet */}
-              <div className="flex items-center bg-[#12161d] p-1 rounded-xl border border-[#30353d]">
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -392,8 +392,8 @@ export default function WarehouseWizardModal({
                   }}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                     palletMode === 'PALLET'
-                      ? 'bg-[#facc15] text-[#1b1600]'
-                      : 'text-[#8a92a6] hover:text-[#dee2ec]'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   วางบนพาเลท (Palletized)
@@ -406,8 +406,8 @@ export default function WarehouseWizardModal({
                   }}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                     palletMode === 'NON_PALLET'
-                      ? 'bg-[#4cd7f6] text-[#09151c]'
-                      : 'text-[#8a92a6] hover:text-[#dee2ec]'
+                      ? 'bg-emerald-600 text-white'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   ไม่ออนพาเลท (วางกล่อง/ชิ้นสินค้า)
@@ -424,8 +424,8 @@ export default function WarehouseWizardModal({
                   onClick={() => setLevels(lvl)}
                   className={`flex-1 min-w-[70px] py-2.5 rounded-xl border text-xs font-mono font-bold transition-all ${
                     levels === lvl
-                      ? 'bg-[#facc15] text-[#1b1600] border-[#facc15] font-black shadow-lg shadow-[#facc15]/20'
-                      : 'bg-[#12161d] border-[#30353d] text-[#dee2ec] hover:border-slate-500'
+                      ? 'bg-emerald-600 text-white border-emerald-600 font-black shadow-lg shadow-emerald-600/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:border-slate-300'
                   }`}
                 >
                   {lvl} ชั้น
@@ -436,24 +436,24 @@ export default function WarehouseWizardModal({
               ))}
 
               {/* Custom Number Input */}
-              <div className="flex items-center gap-1.5 bg-[#12161d] border border-[#30353d] rounded-xl px-3 py-2">
-                <span className="text-[10px] text-[#8a92a6] font-mono">ระบุเอง:</span>
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                <span className="text-[10px] text-slate-500 font-mono">ระบุเอง:</span>
                 <input
                   type="number"
                   min={1}
                   max={15}
                   value={levels}
                   onChange={e => setLevels(Math.max(1, Math.min(15, Number(e.target.value))))}
-                  className="w-12 bg-transparent text-xs font-mono font-bold text-[#facc15] outline-none text-center"
+                  className="w-12 bg-transparent text-xs font-mono font-bold text-emerald-700 outline-none text-center"
                 />
-                <span className="text-xs text-[#8a92a6]">ชั้น</span>
+                <span className="text-xs text-slate-500">ชั้น</span>
               </div>
             </div>
 
             {/* Optional Pallets per Bay if in Pallet mode */}
             {palletMode === 'PALLET' ? (
-              <div className="flex items-center justify-between bg-[#12161d] px-4 py-2.5 rounded-xl border border-[#30353d] text-xs">
-                <span className="text-[#8a92a6]">ความจุพาเลทต่อ 1 ช่วงเสา (Bay):</span>
+              <div className="flex items-center justify-between bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 text-xs">
+                <span className="text-slate-600">ความจุพาเลทต่อ 1 ช่วงเสา (Bay):</span>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3].map(p => (
                     <button
@@ -462,8 +462,8 @@ export default function WarehouseWizardModal({
                       onClick={() => setPalletsPerBay(p)}
                       className={`px-3 py-1 rounded-lg font-mono font-bold text-xs ${
                         palletsPerBay === p
-                          ? 'bg-[#facc15] text-[#1b1600]'
-                          : 'bg-[#171c23] text-[#8a92a6] border border-[#30353d]'
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-600 border border-slate-200'
                       }`}
                     >
                       {p} พาเลท/ช่วงเสา
@@ -472,7 +472,7 @@ export default function WarehouseWizardModal({
                 </div>
               </div>
             ) : (
-              <div className="bg-[#12161d] px-4 py-2.5 rounded-xl border border-[#4cd7f6]/30 text-xs flex items-center gap-2 text-[#4cd7f6]">
+              <div className="bg-sky-50 px-4 py-2.5 rounded-xl border border-sky-200 text-xs flex items-center gap-2 text-sky-700">
                 <Info className="w-4 h-4 shrink-0" />
                 <span>โหมดไม่ออนพาเลท: ชั้นวางจะถูกปรับความลึกเป็น 0.8m สำหรับวางกล่อง/ชิ้นส่วนชิ้นเล็กเพื่อความสะดวกในการเดินหยิบ</span>
               </div>
@@ -481,35 +481,35 @@ export default function WarehouseWizardModal({
 
           {/* Step 5: Floor Staging & Cross-Dock Areas */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#facc15] uppercase tracking-wider font-mono">
+            <div className="flex items-center gap-2 text-sm font-bold text-emerald-700 uppercase tracking-wider font-mono">
               <Layers className="w-4 h-4" /> 5. โซนวางพื้นและเปลี่ยนถ่ายสินค้า (Floor Staging & Cross-Dock)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#12161d] border border-[#30353d] cursor-pointer hover:border-slate-500 transition-all">
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer hover:border-slate-300 transition-all">
                 <input
                   type="checkbox"
                   checked={includeCrossDock}
                   onChange={e => setIncludeCrossDock(e.target.checked)}
-                  className="mt-0.5 rounded text-[#facc15] focus:ring-0 w-4 h-4"
+                  className="mt-0.5 rounded accent-emerald-600 focus:ring-0 w-4 h-4"
                 />
                 <div>
-                  <span className="text-xs font-bold text-[#dee2ec] block">ลาน Cross-Dock หน้าคลัง (XDOCK)</span>
-                  <span className="text-[11px] text-[#8a92a6] block mt-0.5">
+                  <span className="text-xs font-bold text-slate-900 block">ลาน Cross-Dock หน้าคลัง (XDOCK)</span>
+                  <span className="text-[11px] text-slate-500 block mt-0.5">
                     สำหรับสินค้าผ่านคลัง รับเช้า-ส่งบ่าย ไม่ยกขึ้นแร็ก ตั้งติดกับประตูสไลด์/Dock
                   </span>
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#12161d] border border-[#30353d] cursor-pointer hover:border-slate-500 transition-all">
+              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer hover:border-slate-300 transition-all">
                 <input
                   type="checkbox"
                   checked={includeFloorBulk}
                   onChange={e => setIncludeFloorBulk(e.target.checked)}
-                  className="mt-0.5 rounded text-[#4cd7f6] focus:ring-0 w-4 h-4"
+                  className="mt-0.5 rounded accent-emerald-600 focus:ring-0 w-4 h-4"
                 />
                 <div>
-                  <span className="text-xs font-bold text-[#dee2ec] block">ลานวางพื้นเทกอง (Floor Bulk Storage)</span>
-                  <span className="text-[11px] text-[#8a92a6] block mt-0.5">
+                  <span className="text-xs font-bold text-slate-900 block">ลานวางพื้นเทกอง (Floor Bulk Storage)</span>
+                  <span className="text-[11px] text-slate-500 block mt-0.5">
                     บล็อกตีเส้นบนพื้นปูน สำหรับสินค้าหนัก เครื่องจักร หรือพาเลทซ้อนบนพื้น
                   </span>
                 </div>
@@ -518,33 +518,33 @@ export default function WarehouseWizardModal({
           </div>
 
           {/* Generated Result Preview Banner */}
-          <div className="bg-[#12161d] border border-[#facc15]/30 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#facc15] font-bold block mb-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-700 font-bold block mb-1">
                 การจำลองผลลัพธ์ที่จะถูกสร้างขึ้น:
               </span>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
-                <span>ทางเดิน: <strong className="text-[#dee2ec]">{estimatedAisles} ช่อง</strong></span>
-                <span>แถวแร็ก: <strong className="text-[#dee2ec]">{estimatedRacks} แถว</strong></span>
-                <span>ช่วงเสาต่อแถว: <strong className="text-[#dee2ec]">{baysPerRack} ช่วงเสา</strong></span>
-                <span>จำนวนชั้น: <strong className="text-[#dee2ec]">{levels} ชั้น</strong></span>
-                <span className="text-[#57ec7f] font-bold">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-slate-600">
+                <span>ทางเดิน: <strong className="text-slate-900">{estimatedAisles} ช่อง</strong></span>
+                <span>แถวแร็ก: <strong className="text-slate-900">{estimatedRacks} แถว</strong></span>
+                <span>ช่วงเสาต่อแถว: <strong className="text-slate-900">{baysPerRack} ช่วงเสา</strong></span>
+                <span>จำนวนชั้น: <strong className="text-slate-900">{levels} ชั้น</strong></span>
+                <span className="text-emerald-700 font-bold">
                   รวมความจุ: {totalBinsCount.toLocaleString()} โลเคชัน (Bins)
                 </span>
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-[10px] text-[#8a92a6] font-mono">พร้อมสร้างรหัส Bin และบาร์โค้ด</div>
-              <div className="text-xs font-bold text-[#dee2ec]">A-01-01 ถึง D-{String(baysPerRack).padStart(2, '0')}-{String(levels).padStart(2, '0')}</div>
+              <div className="text-[10px] text-slate-500 font-mono">พร้อมสร้างรหัส Bin และบาร์โค้ด</div>
+              <div className="text-xs font-bold text-slate-900">A-01-01 ถึง D-{String(baysPerRack).padStart(2, '0')}-{String(levels).padStart(2, '0')}</div>
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-6 border-t border-[#30353d] bg-[#1f242c]/50 flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 transition-colors"
           >
             ยกเลิก
           </button>
@@ -552,7 +552,7 @@ export default function WarehouseWizardModal({
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-[#facc15] text-[#1b1600] font-black text-xs hover:bg-[#ffe043] transition-all flex items-center gap-2 shadow-lg shadow-[#facc15]/20 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
           >
             {loading ? (
               'กำลังประมวลผลผังคลังและบันทึก...'

@@ -10,7 +10,6 @@ import {
   Send,
   Sparkles,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import toast from 'react-hot-toast';
 import { SensorTelemetry } from '@/lib/iot/sensorEngine';
 import { NotificationResult } from '@/lib/notifications/notificationGateway';
@@ -32,7 +31,7 @@ export default function ColdChainIotPage() {
     try {
       const [sRes, nRes] = await Promise.all([
         fetch('/api/iot/telemetry'),
-        fetch('/api/notifications/test')
+        fetch('/api/notifications/test'),
       ]);
       const sData = await sRes.json();
       const nData = await nRes.json();
@@ -60,8 +59,8 @@ export default function ColdChainIotPage() {
           channel: 'MOCK_STAGING',
           eventType: 'IOT_TEMP_ALERT',
           title: testTitle,
-          message: testMessage
-        })
+          message: testMessage,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -76,36 +75,38 @@ export default function ColdChainIotPage() {
   };
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
-      <AmbientBackground />
-      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+      <div className="mx-auto max-w-7xl space-y-6">
         <ExperimentalBanner>
           ยังไม่ได้ต่อเซนเซอร์จริง — ค่าอุณหภูมิมาจากการส่งทดสอบ และการแจ้งเตือนส่งเข้าคิว MOCK_STAGING ไม่ถึงผู้รับจริง
         </ExperimentalBanner>
 
-        {/* Header Tactical Banner */}
-        <div className="relative mx-auto flex flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-          <div className="relative z-10">
-            <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#4cd7f6] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#4cd7f6]" />
-              COLD-CHAIN IOT TELEMETRY & MULTI-CHANNEL NOTIFICATION GATEWAY
-            </p>
-            <h1 className="font-headline text-2xl md:text-3xl font-black text-[#dee2ec] tracking-tight mb-1 flex items-center gap-3">
-              <div className="bg-[#4cd7f6] text-[#042027] p-2 rounded-lg shadow-md">
-                <ThermometerSnowflake className="w-6 h-6" />
-              </div>
-              Cold-Chain IoT Sensors & Alert Monitor
+        {/* Open Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between pt-1">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/70 backdrop-blur-md border border-white/85 px-2.5 py-0.5 rounded-full shadow-xs">
+                <Sparkles className="w-3 h-3 text-sky-600" />
+                Cold-Chain IoT Telemetry & Alerts
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/12 border border-sky-500/20 text-sky-700">
+                <ThermometerSnowflake className="w-5 h-5" />
+              </span>
+              <span>Cold-Chain IoT Sensors & Alert Monitor</span>
             </h1>
-            <p className="text-[#8a92a6] font-mono text-xs">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
               ตรวจวัดอุณหภูมิและความชื้นห้องเย็น/ยา/อาหารสดแบบ Real-Time พร้อมโครงสร้างระบบส่งต่อแจ้งเตือน
             </p>
           </div>
           <button
             onClick={fetchData}
-            className="px-4 py-2.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-xl border border-[#30353d] transition flex items-center gap-2 text-xs font-bold relative z-10"
+            disabled={loading}
+            className="self-start md:self-auto px-4 py-2 bg-white/85 hover:bg-white text-slate-700 hover:text-slate-900 rounded-full border border-slate-200/80 shadow-xs transition flex items-center gap-2 text-xs font-semibold disabled:opacity-50"
           >
-            <RefreshCw className="w-4 h-4" /> รีเฟรชข้อมูล
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
+            <span>รีเฟรชข้อมูล</span>
           </button>
         </div>
 
@@ -114,49 +115,67 @@ export default function ColdChainIotPage() {
           {sensors.map((sensor) => (
             <div
               key={sensor.sensorId}
-              className={`p-6 rounded-2xl border shadow-xl backdrop-blur-md transition space-y-4 bg-[#171c23]/90 ${
+              className={`nx-glass-card p-6 transition space-y-4 ${
                 sensor.status === 'CRITICAL'
-                  ? 'border-[#ff5449] ring-1 ring-[#ff5449]'
+                  ? 'ring-2 ring-rose-500/60 border-rose-500/40'
                   : sensor.status === 'WARNING'
-                  ? 'border-[#facc15] ring-1 ring-[#facc15]'
-                  : 'border-[#30353d]'
+                  ? 'ring-2 ring-amber-500/60 border-amber-500/40'
+                  : ''
               }`}
             >
-              <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
-                <span className="font-mono text-xs font-bold text-[#8a92a6]">{sensor.sensorId}</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                  sensor.status === 'NORMAL' ? 'bg-[#57ec7f]/20 text-[#57ec7f] border border-[#57ec7f]/30' : 'bg-[#ff5449]/20 text-[#ffb4ab] border border-[#ff5449]/30'
-                }`}>
+              <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                <span className="font-mono text-xs font-bold text-slate-500">{sensor.sensorId}</span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                    sensor.status === 'NORMAL'
+                      ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
+                      : sensor.status === 'WARNING'
+                      ? 'bg-amber-500/15 text-amber-800 border-amber-500/25'
+                      : 'bg-rose-500/12 text-rose-700 border-rose-500/20'
+                  }`}
+                >
                   {sensor.status === 'NORMAL' ? 'ปกติ (Normal)' : 'ผิดปกติ (Alert)'}
                 </span>
               </div>
 
               <div>
-                <h3 className="text-sm font-black text-[#dee2ec]">{sensor.zoneName}</h3>
-                <p className="text-[11px] text-[#8a92a6]">เกณฑ์ควบคุม: {sensor.minTempLimit}°C ถึง {sensor.maxTempLimit}°C</p>
+                <h3 className="text-sm font-bold text-slate-900">{sensor.zoneName}</h3>
+                <p className="text-[11px] text-slate-500 tabular-nums mt-0.5">
+                  เกณฑ์ควบคุม: {sensor.minTempLimit}°C ถึง {sensor.maxTempLimit}°C
+                </p>
               </div>
 
               {/* Giant Temperature Readout */}
               <div className="flex items-baseline justify-between pt-2">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black font-mono text-[#4cd7f6] tracking-tight">
+                  <span
+                    className={`text-5xl font-bold font-mono tracking-tight tabular-nums ${
+                      sensor.status === 'CRITICAL'
+                        ? 'text-rose-600'
+                        : sensor.status === 'WARNING'
+                        ? 'text-amber-600'
+                        : 'text-sky-700'
+                    }`}
+                  >
                     {sensor.temperature > 0 ? `+${sensor.temperature}` : sensor.temperature}
                   </span>
-                  <span className="text-lg font-bold text-[#8a92a6]">°C</span>
+                  <span className="text-lg font-bold text-slate-500">°C</span>
                 </div>
-                <div className="text-right text-xs text-[#8a92a6] space-y-1">
-                  <div className="flex items-center gap-1 font-mono">
-                    <Droplets className="w-3.5 h-3.5 text-[#4cd7f6]" /> {sensor.humidity}% RH
+                <div className="text-right text-xs text-slate-600 space-y-1 tabular-nums">
+                  <div className="flex items-center justify-end gap-1 font-mono">
+                    <Droplets className="w-3.5 h-3.5 text-sky-600" /> {sensor.humidity}% RH
                   </div>
-                  <div className="flex items-center gap-1 font-mono">
-                    <Battery className="w-3.5 h-3.5 text-[#57ec7f]" /> {sensor.batteryPct}%
+                  <div className="flex items-center justify-end gap-1 font-mono">
+                    <Battery className="w-3.5 h-3.5 text-emerald-600" /> {sensor.batteryPct}%
                   </div>
                 </div>
               </div>
 
-              <div className="text-[10px] text-[#8a92a6] pt-2 border-t border-[#262c36] flex justify-between">
+              <div className="text-[11px] text-slate-500 pt-2.5 border-t border-slate-200/70 flex justify-between">
                 <span>อัปเดตล่าสุด:</span>
-                <span className="font-mono text-[#dee2ec]">{new Date(sensor.recordedAt).toLocaleTimeString('th-TH')}</span>
+                <span className="font-mono text-slate-800 font-semibold tabular-nums">
+                  {new Date(sensor.recordedAt).toLocaleTimeString('th-TH')}
+                </span>
               </div>
             </div>
           ))}
@@ -165,45 +184,47 @@ export default function ColdChainIotPage() {
         {/* Notification Scaffolding Test & Audit Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Test Dispatcher Form */}
-          <div className="bg-[#171c23]/90 p-5 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl space-y-4">
-            <div className="border-b border-[#30353d] pb-3">
-              <h3 className="font-bold text-[#dee2ec] text-sm flex items-center gap-2">
-                <Bell className="w-4 h-4 text-[#facc15]" />
+          <div className="nx-glass-card p-6 space-y-4">
+            <div className="border-b border-slate-200/70 pb-3">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <Bell className="w-4 h-4 text-amber-600" />
                 โครงสร้างระบบแจ้งเตือน (Notification Gateway Scaffolding)
               </h3>
-              <p className="text-xs text-[#8a92a6]">
+              <p className="text-xs text-slate-600 mt-0.5">
                 รองรับ LINE Notify, Webhook, และ Staging Queue ป้องกันการ Error เมื่อยังไม่ใส่ Token จริง
               </p>
             </div>
 
             <form onSubmit={handleSendTestNotification} className="space-y-3 text-xs">
               <div>
-                <label className="block text-[#8a92a6] font-bold mb-1">หัวข้อแจ้งเตือน</label>
+                <label className="block text-slate-700 font-semibold mb-1">หัวข้อแจ้งเตือน</label>
                 <input
                   type="text"
                   value={testTitle}
                   onChange={(e) => setTestTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                  className="w-full px-3.5 py-2 border border-slate-200/80 rounded-xl bg-white/90 text-slate-900 focus:border-emerald-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[#8a92a6] font-bold mb-1">ข้อความแจ้งเตือน</label>
+                <label className="block text-slate-700 font-semibold mb-1">ข้อความแจ้งเตือน</label>
                 <textarea
                   rows={2}
                   value={testMessage}
                   onChange={(e) => setTestMessage(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                  className="w-full px-3.5 py-2 border border-slate-200/80 rounded-xl bg-white/90 text-slate-900 focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
-              <div className="p-3 bg-[#facc15]/10 border border-[#facc15]/30 rounded-xl text-[#facc15] text-[11px] leading-relaxed">
-                💡 <strong>สถาปัตยกรรมพร้อมเชื่อมต่อ:</strong> ตัวจัดการ Notification Gateway (`lib/notifications/notificationGateway.ts`) ถูกออกแบบให้เชื่อมต่อ LINE Token หรือ Webhook URL ได้ทันทีในอนาคต
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-amber-900 text-[11px] leading-relaxed">
+                💡 <strong>สถาปัตยกรรมพร้อมเชื่อมต่อ:</strong> ตัวจัดการ Notification Gateway
+                (`lib/notifications/notificationGateway.ts`) ถูกออกแบบให้เชื่อมต่อ LINE Token หรือ Webhook URL
+                ได้ทันทีในอนาคต
               </div>
 
               <button
                 type="submit"
                 disabled={isSending}
-                className="px-5 py-2.5 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-xl font-black shadow flex items-center gap-1.5 transition"
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-semibold shadow-sm flex items-center gap-1.5 transition disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" /> ทดสอบส่งเข้าคิวแจ้งเตือน (Simulate Dispatch)
               </button>
@@ -211,19 +232,24 @@ export default function ColdChainIotPage() {
           </div>
 
           {/* Right: Notification History Queue */}
-          <div className="bg-[#171c23]/90 p-5 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl space-y-3">
-            <h3 className="font-bold text-[#dee2ec] text-sm">ประวัติคิวการแจ้งเตือน (Event Queue Log)</h3>
+          <div className="nx-glass-card p-6 space-y-3">
+            <h3 className="font-bold text-slate-900 text-sm">ประวัติคิวการแจ้งเตือน (Event Queue Log)</h3>
             <div className="space-y-2 max-h-72 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-6 text-center text-[#8a92a6] text-xs">ยังไม่มีประวัติการส่งแจ้งเตือน</div>
+                <div className="p-6 text-center text-slate-500 text-xs">ยังไม่มีประวัติการส่งแจ้งเตือน</div>
               ) : (
                 notifications.map((n, idx) => (
-                  <div key={idx} className="p-3 bg-[#12161d] rounded-xl border border-[#30353d] text-xs space-y-1">
+                  <div
+                    key={idx}
+                    className="p-3.5 bg-white/80 rounded-2xl border border-slate-200/80 text-xs space-y-1"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#4cd7f6]">{n.channel}</span>
-                      <span className="font-mono text-[10px] text-[#8a92a6]">{new Date(n.timestamp).toLocaleTimeString('th-TH')}</span>
+                      <span className="font-bold text-sky-700">{n.channel}</span>
+                      <span className="font-mono text-[10px] text-slate-500 tabular-nums">
+                        {new Date(n.timestamp).toLocaleTimeString('th-TH')}
+                      </span>
                     </div>
-                    <div className="text-[#dee2ec] font-medium">{n.logMessage}</div>
+                    <div className="text-slate-800 font-medium">{n.logMessage}</div>
                   </div>
                 ))
               )}

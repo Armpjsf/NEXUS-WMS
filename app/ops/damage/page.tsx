@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Plus, CheckCircle, ArrowLeft, Truck, Printer } from 'lucide-react';
+import { AlertTriangle, Plus, CheckCircle, ArrowLeft, Truck, Printer, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import BinQuickSelect from '@/components/stock/BinQuickSelect';
 
 interface DamageRecord {
@@ -19,7 +18,7 @@ interface DamageRecord {
   status: string;
   approved_by: string;
   approved_date: string;
-  sent_to_hq?: string; // New field to track sent to Head Office status
+  sent_to_hq?: string;
 }
 
 export default function DamagePage() {
@@ -27,15 +26,15 @@ export default function DamagePage() {
   const [records, setRecords] = useState<DamageRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  
-  const [products, setProducts] = useState<any[]>([]); // Product Dropdown
+
+  const [products, setProducts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
       date: new Date().toISOString().split('T')[0],
       product_name: '',
-      location: '', // bin the damaged goods come from ('' = automatic FEFO/FIFO on approval)
+      location: '',
       quantity: 0,
       unit: '',
-      reason: 'Production Defect', // Default internal value
+      reason: 'Production Defect',
       notes: ''
   });
 
@@ -76,7 +75,7 @@ export default function DamagePage() {
               body: JSON.stringify(formData)
           });
           if (res.ok) {
-              alert(t('success_inbound') || "Recorded"); // Reuse success message or generic
+              alert(t('success_inbound') || "Recorded");
               setShowForm(false);
               fetchRecords();
               setFormData({ ...formData, product_name: '', quantity: 0, notes: '', location: '' });
@@ -97,9 +96,9 @@ export default function DamagePage() {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                  rowIndex: index, // 0-based index from list corresponds to row in sheet logic
-                  status: 'อนุมัติแล้ว', // Keep internal status consistent if backend expects Thai, or switch to English if safe
-                  approver: 'Admin' 
+                  rowIndex: index,
+                  status: 'อนุมัติแล้ว',
+                  approver: 'Admin'
               })
           });
           if (res.ok) {
@@ -133,17 +132,13 @@ export default function DamagePage() {
   };
 
   const getReasonLabel = (r: string) => {
-     // Map internal reason values to translation keys if possible
-     // Or just return the string if it's custom.
-     // Simple mapping for demo:
      if (r.includes("Production")) return t('cause_production');
      if (r === "Production Defect") return t('cause_production');
      if (r === "Transport Damage") return t('cause_transport');
      if (r === "Expired") return t('cause_expired');
      if (r === "Damaged during Use") return t('cause_damaged_use');
      if (r === "Other") return t('cause_other');
-     
-     // Fallback for Thai hardcoded values in DB
+
      if (r === "ของเสียจากการผลิต") return t('cause_production');
      if (r === "ของเสียจากการขนส่ง") return t('cause_transport');
      if (r === "ของหมดอายุ") return t('cause_expired');
@@ -151,220 +146,274 @@ export default function DamagePage() {
      if (r === "อื่นๆ") return t('cause_other');
 
      return r;
-  }
+  };
+
+  const pendingCount = records.filter(r => r.status !== 'อนุมัติแล้ว' && r.status !== 'Approved').length;
+  const approvedCount = records.length - pendingCount;
+  const totalDamagedUnits = records.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
 
   return (
-    <div className="relative min-h-screen px-4 py-6 sm:px-6 lg:p-8">
-      <AmbientBackground />
-      <div className="relative z-10 mx-auto max-w-[1500px] space-y-7">
-      
-      <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-[#30353d] bg-[#171c23] px-3 py-2 text-sm font-bold text-[#d1c6ab] shadow-sm transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-700">
-        <ArrowLeft className="w-4 h-4" /> {t('back_to_dashboard')}
-      </Link>
-      
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-[1.75rem] border border-amber-500/30 bg-[#171c23] p-6 shadow-xl shadow-amber-900/10 backdrop-blur-xl flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-slate-700" />
-        <div>
-            <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-amber-700">Exception Control</p>
-            <h1 className="text-3xl font-black text-[#dee2ec] mb-2 flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-rose-600 text-white shadow-lg shadow-amber-900/20">
-                    <AlertTriangle className="w-6 h-6" />
-                </span>
-                {t('damage_report_title')}
-            </h1>
-            <p className="text-[#8a92a6] font-semibold">{t('damage_subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <a
-            href="/print/damage-report"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-[#30353d] bg-[#171c23] hover:bg-[#1b2027] text-[#d1c6ab] font-bold py-3 px-4 rounded-xl flex items-center gap-2 transition-colors shadow-sm text-sm"
-          >
-            <Printer className="w-4 h-4 text-[#8a92a6]" />
-            พิมพ์รายงานชำรุด
-          </a>
-          <button 
-              onClick={() => setShowForm(!showForm)}
-              className="bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white font-bold py-3 px-5 rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-amber-900/20"
-          >
-              <Plus className="w-5 h-5" />
-              {showForm ? t('close_form') : t('report_damage_btn')}
-          </button>
-        </div>
-      </div>
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 text-slate-900">
+      <div className="mx-auto max-w-[1500px] space-y-6">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          {t('back_to_dashboard')}
+        </Link>
 
-      {/* Form Section */}
-      {showForm && (
-          <motion.div 
+        {/* Open Page Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between pt-1">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Exception Control
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
+              <AlertTriangle className="w-7 h-7 text-rose-600 shrink-0" />
+              <span>{t('damage_report_title')}</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('damage_subtitle')}</p>
+          </div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <a
+              href="/print/damage-report"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/80 hover:bg-white border border-white/90 text-slate-700 hover:text-slate-900 font-semibold py-2 px-4 rounded-full flex items-center gap-2 transition-all shadow-xs text-xs"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-600" />
+              พิมพ์รายงานชำรุด
+            </a>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 px-4 rounded-full flex items-center gap-2 transition-all shadow-sm text-xs"
+            >
+              <Plus className="w-4 h-4" />
+              {showForm ? t('close_form') : t('report_damage_btn')}
+            </button>
+          </div>
+        </div>
+
+        {/* Summary Strip with 1 Hero Dark Accent Alert Card */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="nx-dark-accent-card p-5 flex items-center justify-between">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Pending Action
+              </div>
+              <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">{t('status_pending')}</p>
+              <div className="text-3xl font-bold text-white tabular-nums mt-1">{pendingCount.toLocaleString()}</div>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="nx-glass-card p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">{t('status_approved')}</p>
+              <div className="text-3xl font-bold text-emerald-700 tabular-nums">{approvedCount.toLocaleString()}</div>
+              <p className="text-xs text-slate-500 mt-1">รายการอนุมัติแล้ว</p>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-emerald-500/12 border border-emerald-500/20 text-emerald-700">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="nx-glass-card p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">{t('qty')}</p>
+              <div className="text-3xl font-bold text-rose-600 tabular-nums">{totalDamagedUnits.toLocaleString()}</div>
+              <p className="text-xs text-slate-500 mt-1">{records.length.toLocaleString()} เคสทั้งหมด</p>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-rose-500/12 border border-rose-500/20 text-rose-600">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        {showForm && (
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="bg-[#171c23] p-6 rounded-2xl border border-[#30353d] shadow-xl shadow-slate-900/5 backdrop-blur-xl"
+            className="nx-glass-card p-6"
           >
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                      <label className="block text-[#8a92a6] mb-2">{t('found_date')}</label>
-                      <input 
-                        type="date" 
-                        value={formData.date}
-                        onChange={e => setFormData({...formData, date: e.target.value})}
-                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                      />
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('found_date')}</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={e => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full bg-white/85 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('product')}</label>
+                <select
+                  value={formData.product_name}
+                  onChange={e => {
+                    const p = products.find(prod => prod.name === e.target.value);
+                    setFormData({ ...formData, product_name: e.target.value, unit: p?.unit || 'pcs', location: '' });
+                  }}
+                  className="w-full bg-white/85 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                >
+                  <option value="">-- {t('select_product')} --</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.product_name && (() => {
+                const p = products.find(prod => prod.name === formData.product_name);
+                return (
+                  <div className="md:col-span-2 p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl">
+                    <BinQuickSelect
+                      sku={p?.sku || p?.id || formData.product_name}
+                      selectedBin={formData.location}
+                      onSelectBin={bin => setFormData({ ...formData, location: bin })}
+                      mode="picking"
+                      theme="light"
+                      label="ของเสียหยิบจากช่องไหน (ไม่เลือก = ระบบเลือกตาม FEFO/FIFO ตอนอนุมัติ):"
+                    />
                   </div>
-                  <div>
-                      <label className="block text-[#8a92a6] mb-2">{t('product')}</label>
-                      <select 
-                        value={formData.product_name}
-                        onChange={e => {
-                            const p = products.find(prod => prod.name === e.target.value);
-                            setFormData({...formData, product_name: e.target.value, unit: p?.unit || 'pcs', location: ''});
-                        }}
-                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                      >
-                          <option value="">-- {t('select_product')} --</option>
-                          {products.map(p => (
-                              <option key={p.id} value={p.name}>{p.name}</option>
-                          ))}
-                      </select>
-                  </div>
-                  {formData.product_name && (() => {
-                      const p = products.find(prod => prod.name === formData.product_name);
-                      return (
-                        <div className="md:col-span-2 p-3 bg-[#1b2027] border border-[#30353d] rounded-xl">
-                          <BinQuickSelect
-                            sku={p?.sku || p?.id || formData.product_name}
-                            selectedBin={formData.location}
-                            onSelectBin={bin => setFormData({ ...formData, location: bin })}
-                            mode="picking"
-                            theme="dark"
-                            label="ของเสียหยิบจากช่องไหน (ไม่เลือก = ระบบเลือกตาม FEFO/FIFO ตอนอนุมัติ):"
-                          />
-                        </div>
-                      );
-                  })()}
-                  <div>
-                      <label className="block text-[#8a92a6] mb-2">{t('qty')}</label>
-                      <input 
-                        type="number" 
-                        min="0"
-                        value={formData.quantity}
-                        onChange={e => setFormData({...formData, quantity: parseFloat(e.target.value)})}
-                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                      />
-                  </div>
-                  <div>
-                      <label className="block text-[#8a92a6] mb-2">{t('col_category')} (Reason)</label>
-                      <select 
-                        value={formData.reason}
-                        onChange={e => setFormData({...formData, reason: e.target.value})}
-                        className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                      >
-                          <option value="Production Defect">{t('cause_production')}</option>
-                          <option value="Transport Damage">{t('cause_transport')}</option>
-                          <option value="Expired">{t('cause_expired')}</option>
-                          <option value="Damaged during Use">{t('cause_damaged_use')}</option>
-                          <option value="Other">{t('cause_other')}</option>
-                      </select>
-                  </div>
-                  <div className="md:col-span-2">
-                       <label className="block text-[#8a92a6] mb-2">{t('notes')}</label>
-                       <textarea 
-                         value={formData.notes}
-                         onChange={e => setFormData({...formData, notes: e.target.value})}
-                         className="w-full bg-[#171c23] border border-[#30353d] rounded-xl p-3 text-[#dee2ec] outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 h-24"
-                       />
-                  </div>
-                  <div className="md:col-span-2 flex justify-end">
-                      <button type="submit" className="bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white font-bold py-3 px-8 rounded-xl transition-all">
-                          {t('confirm_record')}
-                      </button>
-                  </div>
-              </form>
+                );
+              })()}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('qty')}</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.quantity}
+                  onChange={e => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
+                  className="w-full bg-white/85 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 tabular-nums"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('col_category')} (Reason)</label>
+                <select
+                  value={formData.reason}
+                  onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                  className="w-full bg-white/85 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                >
+                  <option value="Production Defect">{t('cause_production')}</option>
+                  <option value="Transport Damage">{t('cause_transport')}</option>
+                  <option value="Expired">{t('cause_expired')}</option>
+                  <option value="Damaged during Use">{t('cause_damaged_use')}</option>
+                  <option value="Other">{t('cause_other')}</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t('notes')}</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full bg-white/85 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 h-24"
+                />
+              </div>
+              <div className="md:col-span-2 flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 px-6 rounded-full transition-all shadow-sm text-xs"
+                >
+                  {t('confirm_record')}
+                </button>
+              </div>
+            </form>
           </motion.div>
-      )}
+        )}
 
-      {/* Table Section */}
-      <div className="bg-[#171c23] border border-[#30353d] rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5">
-           <div className="overflow-x-auto">
-           <table className="w-full text-left text-sm text-[#d1c6ab]">
-                <thead className="bg-slate-900 text-white uppercase tracking-wider font-black text-[11px]">
-                    <tr>
-                        <th className="p-4">{t('date')}</th>
-                        <th className="p-4">{t('product')}</th>
-                        <th className="p-4 text-right">{t('qty')}</th>
-                        <th className="p-4">{t('col_category')}</th>
-                        <th className="p-4">{t('reporter')}</th>
-                        <th className="p-4 text-center">{t('col_status')}</th>
-                        <th className="p-4 text-center">{t('sent_to_hq')}</th>
-                        <th className="p-4 text-center">{t('col_actions')}</th>
+        {/* Table Section */}
+        <div className="nx-glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-700">
+              <thead className="bg-slate-50/80 sticky top-0 text-slate-600 uppercase tracking-wider font-semibold text-[11px] border-b border-slate-200/80">
+                <tr>
+                  <th className="p-4">{t('date')}</th>
+                  <th className="p-4">{t('product')}</th>
+                  <th className="p-4 text-right">{t('qty')}</th>
+                  <th className="p-4">{t('col_category')}</th>
+                  <th className="p-4">{t('reporter')}</th>
+                  <th className="p-4 text-center">{t('col_status')}</th>
+                  <th className="p-4 text-center">{t('sent_to_hq')}</th>
+                  <th className="p-4 text-center">{t('col_actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr><td colSpan={8} className="p-8 text-center text-slate-500 animate-pulse">{t('processing')}</td></tr>
+                ) : records.length === 0 ? (
+                  <tr><td colSpan={8} className="p-8 text-center text-slate-500">{t('no_logs')}</td></tr>
+                ) : (
+                  records.map((r, i) => (
+                    <tr key={i} className="hover:bg-emerald-50/40 transition-colors">
+                      <td className="p-4 text-slate-500 font-mono text-xs whitespace-nowrap">{r.date}</td>
+                      <td className="p-4 font-semibold text-slate-900">{r.product_name}</td>
+                      <td className="p-4 text-right text-rose-600 font-bold tabular-nums">{r.quantity.toLocaleString()} {r.unit}</td>
+                      <td className="p-4 text-slate-700">{getReasonLabel(r.reason)}</td>
+                      <td className="p-4 text-slate-600">{r.reported_by}</td>
+                      <td className="p-4 text-center">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                          r.status === 'อนุมัติแล้ว' || r.status === 'Approved'
+                            ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
+                            : 'bg-amber-500/15 text-amber-800 border-amber-500/25'
+                        }`}>
+                          {r.status === 'อนุมัติแล้ว' || r.status === 'Approved' ? t('status_approved') : t('status_pending')}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                          r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent'
+                            ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
+                            : 'bg-slate-900/6 text-slate-600 border-slate-200'
+                        }`}>
+                          {r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent' ? t('status_sent') : t('status_not_sent')}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {(r.status !== 'อนุมัติแล้ว' && r.status !== 'Approved') ? (
+                            <button
+                              onClick={() => handleApprove(i, r.status)}
+                              className="p-2 bg-white hover:bg-emerald-600 text-slate-600 hover:text-white border border-slate-200 rounded-full transition-colors shadow-xs"
+                              title={t('approve_btn')}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-emerald-700 flex items-center gap-1 text-xs font-bold bg-emerald-500/12 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                              <CheckCircle className="w-3.5 h-3.5" /> {t('status_approved')}
+                            </span>
+                          )}
+
+                          {(r.sent_to_hq !== 'ส่งกลับแล้ว' && r.sent_to_hq !== 'Sent') ? (
+                            <button
+                              onClick={() => handleSendToHq(i)}
+                              className="p-2 bg-white hover:bg-amber-600 text-slate-600 hover:text-white border border-slate-200 rounded-full transition-colors shadow-xs"
+                              title={t('mark_as_sent')}
+                            >
+                              <Truck className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-emerald-700 flex items-center gap-1 text-xs font-bold bg-emerald-500/12 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                              <Truck className="w-3.5 h-3.5" /> {t('status_sent')}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
-                </thead>
-                <tbody className="divide-y divide-[#30353d]">
-                    {loading ? (
-                         <tr><td colSpan={8} className="p-8 text-center animate-pulse">{t('processing')}</td></tr>
-                    ) : records.length === 0 ? (
-                         <tr><td colSpan={8} className="p-8 text-center">{t('no_logs')}</td></tr>
-                    ) : (
-                        records.map((r, i) => (
-                            <tr key={i} className="hover:bg-amber-500/10/40 transition-colors">
-                                <td className="p-4">{r.date}</td>
-                                <td className="p-4 font-bold text-[#dee2ec]">{r.product_name}</td>
-                                <td className="p-4 text-right text-red-400 font-bold">{r.quantity} {r.unit}</td>
-                                <td className="p-4">{getReasonLabel(r.reason)}</td>
-                                <td className="p-4">{r.reported_by}</td>
-                                <td className="p-4 text-center">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                        r.status === 'อนุมัติแล้ว' || r.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                                    }`}>
-                                        {r.status === 'อนุมัติแล้ว' || r.status === 'Approved' ? t('status_approved') : t('status_pending')}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-center">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                        r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-[#8a92a6] border border-slate-500/20'
-                                    }`}>
-                                        {r.sent_to_hq === 'ส่งกลับแล้ว' || r.sent_to_hq === 'Sent' ? t('status_sent') : t('status_not_sent')}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-center">
-                                    <div className="flex items-center justify-center gap-2">
-                                        {(r.status !== 'อนุมัติแล้ว' && r.status !== 'Approved') ? (
-                                            <button 
-                                                onClick={() => handleApprove(i, r.status)}
-                                                className="p-2 bg-[#252a32] hover:bg-emerald-600 hover:text-white rounded-lg transition-colors group"
-                                                title={t('approve_btn')}
-                                            >
-                                                <CheckCircle className="w-4 h-4 text-[#8a92a6] group-hover:text-white" />
-                                            </button>
-                                        ) : (
-                                            <span className="text-emerald-400 flex items-center gap-1 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
-                                                <CheckCircle className="w-3.5 h-3.5" /> {t('status_approved')}
-                                            </span>
-                                        )}
-                                        
-                                        {(r.sent_to_hq !== 'ส่งกลับแล้ว' && r.sent_to_hq !== 'Sent') ? (
-                                            <button 
-                                                onClick={() => handleSendToHq(i)}
-                                                className="p-2 bg-[#252a32] hover:bg-amber-600 hover:text-white rounded-lg transition-colors group"
-                                                title={t('mark_as_sent')}
-                                            >
-                                                <Truck className="w-4 h-4 text-[#8a92a6] group-hover:text-white" />
-                                            </button>
-                                        ) : (
-                                            <span className="text-emerald-400 flex items-center gap-1 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
-                                                <Truck className="w-3.5 h-3.5" /> {t('status_sent')}
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-           </table>
-           </div>
-      </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

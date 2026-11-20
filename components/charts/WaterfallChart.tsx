@@ -1,18 +1,18 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { TACTICAL_TOOLTIP_STYLE } from '@/lib/chartTheme';
+import { HYBRID_TOOLTIP_STYLE } from '@/lib/chartTheme';
 
 const WaterfallChart = ({ data }: { data: any[] }) => {
-  // Config for tactical waterfall coloring
+  // Config for V31 waterfall coloring
   const getBarColor = (name: string, value: number) => {
-    if (name === 'Opening') return '#8a92a6'; // Neutral Steel Baseline
-    if (name === 'Inbound') return '#57ec7f'; // Tactical Emerald
-    if (name === 'Outbound') return '#4cd7f6'; // Telemetry Cyan
-    if (name === 'Damage') return '#ff5449'; // Signal Rose
-    if (name === 'Closing') return '#facc15'; // Tactical Gold Final Balance
-    if (value < 0) return '#ff5449'; // Fallback negative
-    return '#57ec7f'; // Fallback positive
+    if (name === 'Opening') return '#64748b'; // Neutral Slate Baseline
+    if (name === 'Inbound') return '#10b981'; // Emerald
+    if (name === 'Outbound') return '#0ea5e9'; // Sky
+    if (name === 'Damage') return '#ef4444'; // Rose
+    if (name === 'Closing') return '#f59e0b'; // Warm Amber Final Balance
+    if (value < 0) return '#ef4444'; // Fallback negative
+    return '#10b981'; // Fallback positive
   };
 
   return (
@@ -21,28 +21,28 @@ const WaterfallChart = ({ data }: { data: any[] }) => {
         data={data}
         margin={{ top: 15, right: 30, left: 10, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
-        <XAxis 
-          dataKey="name" 
-          stroke="#64748b" 
-          fontSize={10} 
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+        <XAxis
+          dataKey="name"
+          stroke="#94a3b8"
+          fontSize={11}
           tickLine={false}
           axisLine={false}
-          tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }}
+          tick={{ fill: '#64748b' }}
         />
-        <YAxis 
-          stroke="#64748b" 
-          fontSize={10} 
+        <YAxis
+          stroke="#94a3b8"
+          fontSize={11}
           tickLine={false}
           axisLine={false}
-          tick={{ fill: '#d1c6ab', fontFamily: 'monospace' }}
+          tick={{ fill: '#64748b' }}
           tickFormatter={(val) => Number(val || 0).toLocaleString()}
         />
         <Tooltip
-          cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
-          contentStyle={TACTICAL_TOOLTIP_STYLE}
-          labelStyle={{ color: '#facc15', fontSize: '12px', fontWeight: 'bold' }}
-          itemStyle={{ color: '#dee2ec', fontFamily: 'monospace' }}
+          cursor={{ fill: 'rgba(15, 23, 42, 0.04)' }}
+          contentStyle={HYBRID_TOOLTIP_STYLE}
+          labelStyle={{ color: '#0f172a', fontSize: '12px', fontWeight: 'bold' }}
+          itemStyle={{ color: '#334155' }}
           formatter={(value: any, name: any, item: any) => {
             const rawVal = item?.payload?.rawDiff ?? item?.payload?.barValue ?? value;
             const sign = Number(rawVal) > 0 ? '+' : '';
@@ -50,7 +50,7 @@ const WaterfallChart = ({ data }: { data: any[] }) => {
           }}
         />
         <Bar dataKey="value" stackId="a" fill="transparent" />
-        <Bar dataKey="barValue" stackId="a" radius={[4, 4, 0, 0]}>
+        <Bar dataKey="barValue" stackId="a" radius={[6, 6, 0, 0]}>
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={getBarColor(entry.name, entry.barValue)} />
           ))}

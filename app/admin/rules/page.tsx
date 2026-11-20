@@ -1,11 +1,11 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Plus, Save } from 'lucide-react';
+import { Bot, Plus, Save, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { useLanguage } from '@/components/providers/LanguageProvider';
 
 interface AutomationRule {
     id: string;
@@ -17,18 +17,16 @@ interface AutomationRule {
     lastTriggered?: string;
 }
 
-import { useLanguage } from '@/components/providers/LanguageProvider';
-
 export default function RulesPage() {
     const { t } = useLanguage();
     const [rules, setRules] = useState<AutomationRule[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
-    
+
     // New Rule Form State
     const [newName, setNewName] = useState("");
-    const [triggerType, setTriggerType] = useState<'STOCK_LEVEL'>('STOCK_LEVEL'); // Limit to 1 for now
-    
+    const [triggerType, setTriggerType] = useState<'STOCK_LEVEL'>('STOCK_LEVEL');
+
     // Condition Builder State
     const [condField, setCondField] = useState("stock");
     const [condOp, setCondOp] = useState("<");
@@ -74,7 +72,7 @@ export default function RulesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newRule)
             });
-            
+
             if (res.ok) {
                 toast.success("Rule Created!");
                 setIsCreating(false);
@@ -89,23 +87,9 @@ export default function RulesPage() {
     };
 
     const toggleRule = async (rule: AutomationRule) => {
-        // Toggle Local First
         const updated = { ...rule, isActive: !rule.isActive };
         setRules(rules.map(r => r.id === rule.id ? updated : r));
-        
-        // Save to Server
-        // We reuse the POST endpoint for update if ID exists (handled in backend logic if we send full object)
-        // But our backend currently treats POST as UPSERT (SaveRule).
-        // So we need to parse the JSON strings back to objects for the API (since API re-stringifies) 
-        // OR adjust backend to handle updates better.
-        // Actually, the backend:
-        // const rule: AutomationRule = { ... condition: JSON.stringify(body.conditionRaw) ... }
-        // If we send existing rule, we need to handle the fact that 'condition' is ALREADY a string in 'rule'.
-        
-        // Let's just re-send the raw parts if we can, OR simply update the isActive flag on the server.
-        // To be safe and simple: Let's assume we can just send the 'rule' object but we need to unpack the JSONs to 'Raw' fields
-        // because the API expects 'conditionRaw' to stringify it.
-        
+
         try {
             const payload = {
                 id: rule.id,
@@ -115,88 +99,97 @@ export default function RulesPage() {
                 actionRaw: JSON.parse(rule.action),
                 isActive: !rule.isActive
             };
-            
+
             await fetch('/api/admin/rules', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            
+
             toast.success(updated.isActive ? "Rule Activated" : "Rule Deactivated");
         } catch (e) {
             toast.error("Failed to update status");
-            fetchRules(); // Revert
+            fetchRules();
         }
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8">
-            <AmbientBackground />
-            <div className="relative z-10 mx-auto max-w-7xl">
-            <header className="mb-8 flex flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-indigo-500/30 bg-[#171c23] p-6 shadow-xl shadow-indigo-900/10 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+        <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-28 sm:px-6 lg:p-8 text-slate-900">
+            <div className="mx-auto max-w-7xl space-y-6">
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> {t('back_to_admin')}
+            </Link>
+
+            <header className="flex flex-col gap-4 pt-1 md:flex-row md:items-end md:justify-between">
                 <div>
-                     <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-700">Automation Control</p>
-                     <h1 className="text-3xl font-black text-[#dee2ec] flex items-center gap-3">
-                        <Bot className="w-8 h-8 text-indigo-600" />
+                     <div className="flex items-center gap-2 mb-1.5">
+                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                         <Bot className="w-3 h-3 text-sky-600" />
+                         Automation Control · Beta
+                       </span>
+                     </div>
+                     <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
                         {t('rules_title')}
-                        <span className="px-3 py-1 bg-indigo-500/20 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-wider">Beta</span>
                      </h1>
-                     <p className="text-[#8a92a6] mt-2">{t('rules_subtitle')}</p>
+                     <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('rules_subtitle')}</p>
                 </div>
-                <button 
+                <button
                     onClick={() => setIsCreating(!isCreating)}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+                    className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full text-xs font-semibold transition-all shadow-sm w-fit"
                 >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                     {t('new_rule')}
                 </button>
             </header>
 
             {/* Create Rule Panel */}
             {isCreating && (
-                <motion.div 
-                    initial={{ opacity: 0, y: -20 }}
+                <motion.div
+                    initial={{ opacity: 0, y: -12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-[#171c23] rounded-3xl p-8 border border-[#30353d] shadow-xl mb-8"
+                    className="nx-glass-card p-6 md:p-8"
                 >
-                    <h2 className="text-xl font-bold text-[#dee2ec] mb-6 flex items-center gap-2">
-                        <Save className="w-5 h-5 text-indigo-500" />
+                    <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <Save className="w-5 h-5 text-emerald-600" />
                         {t('define_new_rule')}
                     </h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Left: Trigger */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-bold text-[#d1c6ab] mb-2">Rule Name</label>
-                                <input 
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Rule Name</label>
+                                <input
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     placeholder="e.g. Low Stock Alert for Electronics"
-                                    className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-3 font-bold text-[#d1c6ab] focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full bg-white/90 border border-slate-200/80 rounded-xl px-4 py-2.5 font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                 />
                             </div>
-                            
-                            <div className="p-4 bg-[#1b2027] rounded-2xl border border-[#30353d]">
-                                <label className="block text-xs font-black text-[#8a92a6] uppercase tracking-wider mb-4">{t('if_condition')}</label>
+
+                            <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80">
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">{t('if_condition')}</label>
                                 <div className="flex gap-2">
-                                    <select disabled className="bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-2 text-sm font-bold text-[#d1c6ab]">
+                                    <select disabled className="bg-white border border-slate-200/80 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700">
                                         <option>When Stock Level</option>
                                     </select>
-                                    <select 
+                                    <select
                                         value={condOp}
                                         onChange={e => setCondOp(e.target.value)}
-                                        className="bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-2 text-sm font-bold text-indigo-600 text-center w-20"
+                                        className="bg-white border border-slate-200/80 rounded-xl px-3 py-2 text-sm font-bold text-sky-700 text-center w-20 outline-none"
                                     >
                                         <option value="<">&lt;</option>
                                         <option value=">">&gt;</option>
                                         <option value="==">=</option>
                                     </select>
-                                    <input 
+                                    <input
                                         type="number"
                                         value={condVal}
                                         onChange={e => setCondVal(e.target.value)}
-                                        className="bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-2 text-sm font-bold text-[#d1c6ab] w-24"
+                                        className="bg-white border border-slate-200/80 rounded-xl px-3 py-2 text-sm font-bold text-slate-900 w-24 tabular-nums outline-none"
                                     />
                                 </div>
                             </div>
@@ -204,40 +197,40 @@ export default function RulesPage() {
 
                         {/* Right: Action */}
                         <div className="space-y-4">
-                            <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 h-full">
-                                <label className="block text-xs font-black text-indigo-400 uppercase tracking-wider mb-4">{t('then_action')}</label>
+                            <div className="p-4 bg-sky-500/8 rounded-2xl border border-sky-500/20 h-full">
+                                <label className="block text-[11px] font-bold text-sky-700 uppercase tracking-wider mb-3">{t('then_action')}</label>
                                 <div className="space-y-3">
-                                    <select 
+                                    <select
                                         value={actionType}
                                         onChange={e => setActionType(e.target.value)}
-                                        className="w-full bg-[#171c23] border border-indigo-500/30 rounded-lg px-4 py-3 text-sm font-bold text-indigo-700"
+                                        className="w-full bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 outline-none"
                                     >
                                         <option value="LOG_ALERT">Show Dashboard Alert 🚨</option>
                                         <option value="LINE_NOTIFY" disabled>Send LINE Notify (Coming Soon)</option>
                                         <option value="EMAIL" disabled>Send Email (Coming Soon)</option>
                                     </select>
-                                    
-                                    <input 
+
+                                    <input
                                         value={actionMsg}
                                         onChange={e => setActionMsg(e.target.value)}
                                         placeholder="Alert Message..."
-                                        className="w-full bg-[#171c23] border border-indigo-500/30 rounded-lg px-4 py-3 text-sm font-medium text-[#d1c6ab] focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                     />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8 flex justify-end gap-4">
-                        <button 
+                    <div className="mt-6 pt-4 border-t border-slate-200/70 flex justify-end gap-3">
+                        <button
                             onClick={() => setIsCreating(false)}
-                            className="px-6 py-3 rounded-xl font-bold text-[#8a92a6] hover:bg-[#252a32] transition-colors"
+                            className="px-5 py-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
                             onClick={handleCreate}
-                            className="px-8 py-3 rounded-xl font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transition-all"
+                            className="px-6 py-2 rounded-full text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all"
                         >
                             Create Rule
                         </button>
@@ -247,62 +240,60 @@ export default function RulesPage() {
 
             {/* Rules List */}
             {loading ? (
-                <div className="text-center py-12 text-[#8a92a6]">Loading rules...</div>
+                <div className="text-center py-12 text-slate-500 text-sm">Loading rules...</div>
             ) : rules.length === 0 ? (
-                <div className="text-center py-20 bg-[#171c23] rounded-3xl border border-dashed border-[#30353d]">
-                    <Bot className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-[#d1c6ab]">{t('no_history')}</h3>
-                    <p className="text-[#8a92a6]">{t('no_rules_desc')}</p>
+                <div className="nx-glass-card text-center py-16">
+                    <Bot className="w-14 h-14 text-slate-300 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-slate-900">{t('no_history')}</h3>
+                    <p className="text-slate-600 text-sm mt-1">{t('no_rules_desc')}</p>
                 </div>
             ) : (
-                <div className="grid gap-4">
+                <div className="grid gap-3.5">
                     {rules.map(rule => (
-                        <motion.div 
+                        <motion.div
                             key={rule.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`p-6 rounded-2xl border flex items-center justify-between transition-colors ${
-                                rule.isActive 
-                                    ? "bg-[#171c23] border-[#30353d] shadow-sm" 
-                                    : "bg-[#1b2027] border-[#30353d] opacity-70 grayscale"
+                            className={`nx-glass-card p-5 flex items-center justify-between transition-all ${
+                                rule.isActive ? "" : "opacity-65 grayscale"
                             }`}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                    rule.isActive ? "bg-indigo-500/20 text-indigo-600" : "bg-[#30353d] text-[#8a92a6]"
+                                <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${
+                                    rule.isActive ? "bg-sky-500/12 border-sky-500/20 text-sky-700" : "bg-slate-100 border-slate-200 text-slate-400"
                                 }`}>
-                                    <Bot className="w-6 h-6" />
+                                    <Bot className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-[#dee2ec] text-lg">{rule.name}</h3>
-                                    <div className="text-xs font-mono text-[#8a92a6] mt-1 flex items-center gap-2">
-                                        <span className="bg-[#252a32] px-2 py-0.5 rounded border border-[#30353d]">
+                                    <h3 className="font-bold text-slate-900 text-base">{rule.name}</h3>
+                                    <div className="text-xs font-mono text-slate-600 mt-1 flex flex-wrap items-center gap-2">
+                                        <span className="bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 text-slate-700">
                                             IF {JSON.parse(rule.condition).field} {JSON.parse(rule.condition).operator} {JSON.parse(rule.condition).value}
                                         </span>
-                                        <span className="text-slate-300">➜</span>
-                                        <span className="bg-indigo-500/10 text-indigo-600 px-2 py-0.5 rounded border border-indigo-500/20">
+                                        <span className="text-slate-400">➜</span>
+                                        <span className="bg-emerald-500/12 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-semibold">
                                             {JSON.parse(rule.action).type}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="flex items-center gap-6">
+
+                            <div className="flex items-center gap-5">
                                 <div className="text-right hidden md:block">
-                                    <p className="text-[10px] font-bold text-[#8a92a6] uppercase tracking-wider">Last Triggered</p>
-                                    <p className="text-xs font-medium text-[#d1c6ab]">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Last Triggered</p>
+                                    <p className="text-xs font-medium text-slate-700 tabular-nums">
                                         {rule.lastTriggered ? new Date(rule.lastTriggered).toLocaleString() : 'Never'}
                                     </p>
                                 </div>
-                                
-                                <button 
+
+                                <button
                                     onClick={() => toggleRule(rule)}
-                                    className={`relative w-14 h-8 rounded-full transition-colors ${
-                                        rule.isActive ? 'bg-indigo-500' : 'bg-slate-300'
+                                    className={`relative w-13 h-7 rounded-full transition-colors ${
+                                        rule.isActive ? 'bg-emerald-500' : 'bg-slate-300'
                                     }`}
                                 >
-                                    <motion.div 
-                                        className="absolute top-1 left-1 w-6 h-6 bg-[#171c23] rounded-full shadow-md"
+                                    <motion.div
+                                        className="absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-sm"
                                         animate={{ x: rule.isActive ? 24 : 0 }}
                                     />
                                 </button>

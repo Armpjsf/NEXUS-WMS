@@ -196,37 +196,43 @@ export default function MobileReturnsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white pb-28 max-w-md mx-auto font-sans select-none">
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 pb-28 font-sans select-none">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-[#171c23] px-4 py-3 border-b border-slate-800 shadow-lg flex items-center justify-between">
-        <Link
-          href="/mobile"
-          className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-transform"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <h1 className="text-base font-bold tracking-wide flex items-center gap-1.5">
-          <RotateCcw className="w-4 h-4 text-purple-400" />
-          <span>รับคืนสินค้า (RMA Returns)</span>
-        </h1>
-        <button
-          type="button"
-          onClick={loadData}
-          className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white active:scale-95"
-          title="รีเฟรชข้อมูล"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl px-4 py-3 border-b border-white/85 shadow-sm">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2">
+          <Link
+            href="/mobile"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 shadow-xs active:scale-95 transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-base font-bold tracking-wide flex items-center gap-2 text-slate-900">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-700">
+              <RotateCcw className="w-4 h-4" />
+            </span>
+            <span>รับคืนสินค้า (RMA Returns)</span>
+          </h1>
+          <button
+            type="button"
+            onClick={loadData}
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs active:scale-95 transition-all"
+            title="รีเฟรชข้อมูล"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </header>
 
-      <div className="p-4">
+      <div className="p-4 max-w-md mx-auto">
         {success ? (
-          <div className="mt-8 p-6 bg-purple-500/10 border border-purple-500/30 rounded-3xl text-center space-y-3 animate-in fade-in zoom-in-95">
-            <CheckCircle2 className="w-12 h-12 text-purple-400 mx-auto" />
-            <div className="font-bold text-base text-purple-300">
+          <div className="nx-glass-card mt-6 p-6 border-2 border-emerald-200 text-center space-y-3">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600">
+              <CheckCircle2 className="w-9 h-9" />
+            </div>
+            <div className="font-bold text-base text-slate-900 tabular-nums">
               รับคืนสินค้าเรียบร้อย! ({createdRmaNo})
             </div>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600 leading-relaxed tabular-nums">
               {finalStatus === 'RESTOCKED'
                 ? `สินค้า ${productName || sku || 'ตามใบรับคืน'} จำนวน ${qty} ชิ้น ถูกนำกลับเข้าสต็อกพร้อมจำหน่าย (RESTOCKED) แล้ว`
                 : `บันทึกสถานะรับของคืนเข้าคลัง (RECEIVED - ${condition}) เพื่อรอตรวจสอบคุณภาพเรียบร้อยแล้ว`}
@@ -242,15 +248,15 @@ export default function MobileReturnsPage() {
                 setNotes('');
                 setCreatedRmaNo('');
               }}
-              className="mt-4 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold text-white transition-colors"
+              className="mt-4 min-h-[44px] px-6 py-3 bg-slate-900 hover:bg-slate-800 rounded-full text-xs font-bold text-white transition-all shadow-sm active:scale-95"
             >
               รับคืนรายการถัดไป
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="nx-glass-card p-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 เลขที่ใบส่งสินค้า / ออเดอร์ที่รับคืน *
               </label>
               <div className="flex gap-2">
@@ -259,13 +265,14 @@ export default function MobileReturnsPage() {
                   placeholder="เช่น ORD-20260910-001"
                   value={returnNo}
                   onChange={e => handleOrderChange(e.target.value)}
-                  className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-sm font-mono text-white focus:outline-none focus:border-purple-400"
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-white/90 border border-slate-200/80 rounded-2xl text-sm font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setCameraTarget('ORDER')}
-                  className="px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl flex items-center justify-center active:scale-95 transition-transform"
+                  className="min-h-[44px] min-w-[48px] px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full flex items-center justify-center active:scale-95 transition-transform shadow-xs"
+                  aria-label="สแกนเลขใบส่งสินค้า"
                 >
                   <Scan className="w-5 h-5" />
                 </button>
@@ -273,7 +280,7 @@ export default function MobileReturnsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 ชื่อลูกค้า (Customer)
               </label>
               <input
@@ -281,12 +288,12 @@ export default function MobileReturnsPage() {
                 placeholder="ชื่อลูกค้า หรือร้านค้า"
                 value={customerName}
                 onChange={e => setCustomerName(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-xs text-white focus:outline-none focus:border-purple-400"
+                className="w-full min-h-[44px] px-4 py-3 bg-white/90 border border-slate-200/80 rounded-2xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 SKU / บาร์โค้ดสินค้าที่รับคืน *
               </label>
               <div className="flex gap-2">
@@ -295,26 +302,27 @@ export default function MobileReturnsPage() {
                   placeholder="SKU-001 หรือสแกนบาร์โค้ด"
                   value={sku}
                   onChange={e => handleSkuChange(e.target.value)}
-                  className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-sm font-mono text-white focus:outline-none focus:border-purple-400"
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-white/90 border border-slate-200/80 rounded-2xl text-sm font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setCameraTarget('SKU')}
-                  className="px-4 py-3 bg-slate-800 border border-slate-700 hover:border-purple-400 text-purple-300 rounded-2xl flex items-center justify-center active:scale-95"
+                  className="min-h-[44px] min-w-[48px] px-4 py-3 bg-white/90 border border-slate-200 hover:border-emerald-500 text-slate-700 rounded-full flex items-center justify-center active:scale-95 shadow-xs"
+                  aria-label="สแกน SKU"
                 >
                   <Scan className="w-5 h-5" />
                 </button>
               </div>
               {productName && (
-                <p className="text-xs text-purple-300 mt-1.5 px-1">
-                  สินค้า: <strong>{productName}</strong>
-                </p>
+                <div className="mt-2 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-xs text-sky-800 inline-block">
+                  สินค้า: <strong className="font-bold">{productName}</strong>
+                </div>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 จำนวนชิ้นที่รับคืน *
               </label>
               <input
@@ -322,23 +330,23 @@ export default function MobileReturnsPage() {
                 min="1"
                 value={qty}
                 onChange={e => setQty(Math.max(1, Number(e.target.value)))}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-base font-bold text-white text-center focus:outline-none"
+                className="w-full min-h-[48px] px-4 py-3 bg-white/90 border border-slate-200/80 rounded-2xl text-base font-bold font-mono text-slate-900 text-center tabular-nums focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 ผลการตรวจสภาพสินค้า (Disposition) *
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setCondition('RESTOCK')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all ${
+                  className={`min-h-[44px] p-2.5 rounded-full border text-xs font-bold transition-all ${
                     condition === 'RESTOCK'
-                      ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
-                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                      ? 'bg-emerald-50 border-emerald-400 text-emerald-800 shadow-xs'
+                      : 'bg-white/90 border-slate-200 text-slate-600'
                   }`}
                 >
                   สภาพดี (เติมสต็อก)
@@ -346,10 +354,10 @@ export default function MobileReturnsPage() {
                 <button
                   type="button"
                   onClick={() => setCondition('QUARANTINE')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all ${
+                  className={`min-h-[44px] p-2.5 rounded-full border text-xs font-bold transition-all ${
                     condition === 'QUARANTINE'
-                      ? 'bg-amber-600/20 border-amber-500 text-amber-300'
-                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                      ? 'bg-amber-50 border-amber-400 text-amber-800 shadow-xs'
+                      : 'bg-white/90 border-slate-200 text-slate-600'
                   }`}
                 >
                   มีตำหนิ (กักกัน)
@@ -357,10 +365,10 @@ export default function MobileReturnsPage() {
                 <button
                   type="button"
                   onClick={() => setCondition('SCRAP')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all ${
+                  className={`min-h-[44px] p-2.5 rounded-full border text-xs font-bold transition-all ${
                     condition === 'SCRAP'
-                      ? 'bg-rose-600/20 border-rose-500 text-rose-300'
-                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                      ? 'bg-rose-50 border-rose-400 text-rose-800 shadow-xs'
+                      : 'bg-white/90 border-slate-200 text-slate-600'
                   }`}
                 >
                   ชำรุด (ทิ้ง/เคลม)
@@ -369,10 +377,10 @@ export default function MobileReturnsPage() {
             </div>
 
             {condition === 'RESTOCK' && (
-              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-xs font-bold text-white">การจัดการสต็อกเมื่อรับคืน</div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-xs font-bold text-slate-900">การจัดการสต็อกเมื่อรับคืน</div>
+                  <div className="text-[11px] text-slate-600">
                     {immediateRestock
                       ? 'เติมกลับเข้าสต็อกพร้อมขายทันที (RESTOCKED)'
                       : 'พักไว้สถานะรับของคืนเพื่อรอตรวจสอบ (RECEIVED)'}
@@ -381,10 +389,10 @@ export default function MobileReturnsPage() {
                 <button
                   type="button"
                   onClick={() => setImmediateRestock(v => !v)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0 ${
+                  className={`min-h-[40px] px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${
                     immediateRestock
-                      ? 'bg-emerald-600 text-white border-emerald-500'
-                      : 'bg-slate-700 text-slate-300 border-slate-600'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
                   }`}
                 >
                   {immediateRestock ? 'เติมสต็อกทันที' : 'รอตรวจ QC ก่อน'}
@@ -393,7 +401,7 @@ export default function MobileReturnsPage() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
                 เหตุผลการคืน / หมายเหตุ
               </label>
               <input
@@ -401,14 +409,14 @@ export default function MobileReturnsPage() {
                 placeholder="เช่น ลูกค้าสั่งผิดไซส์, เปลี่ยนใจ"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-2xl text-xs text-white focus:outline-none"
+                className="w-full min-h-[44px] px-4 py-3 bg-white/90 border border-slate-200/80 rounded-2xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <button
               type="submit"
               disabled={!returnNo.trim() || !sku.trim() || submitting}
-              className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-500 hover:to-indigo-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-purple-600/25 active:scale-98 disabled:opacity-50 transition-all mt-4"
+              className="w-full min-h-[48px] py-3.5 px-5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-full font-bold text-sm shadow-lg shadow-amber-500/20 active:scale-[0.98] disabled:opacity-50 transition-all mt-2"
             >
               {submitting ? 'กำลังบันทึก...' : 'ยืนยันการรับคืนสินค้า'}
             </button>

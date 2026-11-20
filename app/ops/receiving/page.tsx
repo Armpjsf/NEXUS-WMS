@@ -19,7 +19,6 @@ import {
   Zap,
   Camera,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
 import { speakScanSuccess, speakScanMismatch, speakPutawayLocation, vibrateSuccess, vibrateError } from '@/lib/voiceAssistant';
 import CameraScannerModal from '@/components/CameraScannerModal';
@@ -27,19 +26,44 @@ import BinQuickSelect from '@/components/stock/BinQuickSelect';
 import { errorMessage } from '@/lib/errors';
 
 type Status = 'EXPECTED' | 'RECEIVING' | 'DONE' | 'CANCELLED';
-interface Line { sku: string; name: string; expectedQty: number; receivedQty?: number; putawayBin?: string; uom?: string; lotNo?: string; expDate?: string; done?: boolean; }
-interface UomOpt { code: string; name?: string; factor: number; isBase?: boolean }
+interface Line {
+  sku: string;
+  name: string;
+  expectedQty: number;
+  receivedQty?: number;
+  putawayBin?: string;
+  uom?: string;
+  lotNo?: string;
+  expDate?: string;
+  done?: boolean;
+}
+interface UomOpt {
+  code: string;
+  name?: string;
+  factor: number;
+  isBase?: boolean;
+}
 interface Receipt {
-  id: string; receiptNo: string; poNumber: string; supplier: string; status: Status;
-  items: Line[]; createdAt: string;
+  id: string;
+  receiptNo: string;
+  poNumber: string;
+  supplier: string;
+  status: Status;
+  items: Line[];
+  createdAt: string;
 }
 
-const STATUS_TH: Record<Status, string> = { EXPECTED: 'รอรับ', RECEIVING: 'กำลังรับ', DONE: 'รับ+เก็บแล้ว', CANCELLED: 'ยกเลิก' };
+const STATUS_TH: Record<Status, string> = {
+  EXPECTED: 'รอรับ',
+  RECEIVING: 'กำลังรับ',
+  DONE: 'รับ+เก็บแล้ว',
+  CANCELLED: 'ยกเลิก',
+};
 const STATUS_STYLE: Record<Status, string> = {
-  EXPECTED: 'bg-amber-500/20 text-amber-700 ring-amber-500/30',
-  RECEIVING: 'bg-blue-500/20 text-blue-700 ring-blue-500/30',
-  DONE: 'bg-emerald-500/20 text-emerald-700 ring-emerald-500/30',
-  CANCELLED: 'bg-rose-500/20 text-rose-600 ring-rose-500/30',
+  EXPECTED: 'bg-amber-500/15 text-amber-800 border-amber-500/25',
+  RECEIVING: 'bg-sky-500/15 text-sky-800 border-sky-500/25',
+  DONE: 'bg-emerald-500/15 text-emerald-800 border-emerald-500/25',
+  CANCELLED: 'bg-rose-500/15 text-rose-700 border-rose-500/25',
 };
 
 export default function ReceivingPage() {
@@ -57,9 +81,15 @@ export default function ReceivingPage() {
       const res = await fetch('/api/receiving', { cache: 'no-store' });
       const json = await res.json();
       setReceipts(json.receipts || []);
-    } catch { toast.error('โหลดใบรับเข้าไม่สำเร็จ'); } finally { setLoading(false); }
+    } catch {
+      toast.error('โหลดใบรับเข้าไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // Read ?po= query param on mount and auto-open CreateReceiptModal pre-selected with that PO
   useEffect(() => {
@@ -68,10 +98,10 @@ export default function ReceivingPage() {
     const poParam = sp.get('po')?.trim();
     if (!poParam) return;
     fetch('/api/po/create?status=DRAFT,ORDERED', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         const orders: any[] = d?.orders || [];
-        const match = orders.find(p => p.po_number === poParam || p.id === poParam);
+        const match = orders.find((p) => p.po_number === poParam || p.id === poParam);
         if (match) {
           setInitialPoNumber(match.po_number);
           setShowCreate(true);
@@ -86,18 +116,19 @@ export default function ReceivingPage() {
       });
   }, []);
 
-  const pending = receipts.filter(r => r.status === 'EXPECTED' || r.status === 'RECEIVING');
-  const done = receipts.filter(r => r.status === 'DONE');
+  const pending = receipts.filter((r) => r.status === 'EXPECTED' || r.status === 'RECEIVING');
+  const done = receipts.filter((r) => r.status === 'DONE');
 
   // Smart barcode scan handler on main screen:
   // Auto-opens matching pending receipt directly into ReceiveModal
   const handleMainBarcodeScan = (scanned: string) => {
     const q = scanned.trim().toLowerCase();
     // 1. Look for matching pending receipt by receiptNo, poNumber, or line SKU/name
-    const matchPending = pending.find(r =>
-      r.receiptNo.toLowerCase() === q ||
-      (r.poNumber && r.poNumber.toLowerCase() === q) ||
-      r.items.some(it => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q))
+    const matchPending = pending.find(
+      (r) =>
+        r.receiptNo.toLowerCase() === q ||
+        (r.poNumber && r.poNumber.toLowerCase() === q) ||
+        r.items.some((it) => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q))
     );
 
     if (matchPending) {
@@ -108,10 +139,11 @@ export default function ReceivingPage() {
     }
 
     // 2. Look in completed receipts
-    const matchDone = done.find(r =>
-      r.receiptNo.toLowerCase() === q ||
-      (r.poNumber && r.poNumber.toLowerCase() === q) ||
-      r.items.some(it => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q))
+    const matchDone = done.find(
+      (r) =>
+        r.receiptNo.toLowerCase() === q ||
+        (r.poNumber && r.poNumber.toLowerCase() === q) ||
+        r.items.some((it) => it.sku.toLowerCase() === q || it.name.toLowerCase().includes(q))
     );
     if (matchDone) {
       toast(`ใบรับ ${matchDone.receiptNo} นี้ตรวจรับและเก็บเข้าสต็อกเสร็จสิ้นแล้ว`, { icon: 'ℹ️' });
@@ -139,7 +171,7 @@ export default function ReceivingPage() {
       r.receiptNo.toLowerCase().includes(q) ||
       (r.poNumber && r.poNumber.toLowerCase().includes(q)) ||
       (r.supplier && r.supplier.toLowerCase().includes(q)) ||
-      r.items.some(it => it.sku.toLowerCase().includes(q) || it.name.toLowerCase().includes(q))
+      r.items.some((it) => it.sku.toLowerCase().includes(q) || it.name.toLowerCase().includes(q))
     );
   };
 
@@ -147,50 +179,62 @@ export default function ReceivingPage() {
   const filteredDone = done.filter(matchesSearch);
 
   return (
-    <div className="min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 relative overflow-hidden">
-      <AmbientBackground />
-      <div className="relative z-10 max-w-[1200px] mx-auto space-y-6">
-        <Link href="/ops" className="inline-flex items-center gap-2 text-sm font-bold text-[#d1c6ab] hover:text-[#facc15]"><ArrowLeft className="w-4 h-4" /> ปฏิบัติการ</Link>
+    <div className="theme-nexus-hybrid min-h-screen px-4 py-6 pb-24 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-[1200px] mx-auto space-y-6">
+        <Link
+          href="/ops"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <span>ปฏิบัติการ</span>
+        </Link>
 
         {/* Main Header with prominent Scan Button */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-[#dee2ec] flex items-center gap-3">
-              <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25"><PackagePlus className="w-6 h-6" /></span>
-              รับเข้า &amp; จัดเก็บ (Inbound &amp; Putaway)
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+              <span className="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20">
+                <PackagePlus className="w-6 h-6" />
+              </span>
+              <span>รับเข้า &amp; จัดเก็บ (Inbound &amp; Putaway)</span>
             </h1>
-            <p className="text-[#d1c6ab] font-medium mt-1">รับของตาม PO/Supplier → ตรวจนับ → จัดเก็บเข้า bin → เข้าสต็อกอัตโนมัติ</p>
+            <p className="text-slate-600 text-sm font-medium mt-1">
+              รับของตาม PO/Supplier → ตรวจนับ → จัดเก็บเข้า bin → เข้าสต็อกอัตโนมัติ
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setShowMainScanner(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg shadow-emerald-600/25 hover:from-emerald-500 hover:to-teal-500 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-bold shadow-md shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 active:scale-95 transition-all"
             >
-              <Camera className="w-5 h-5" />
+              <Camera className="w-4 h-4" />
               <span>สแกนบาร์โค้ดรับสินค้า</span>
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white text-sm font-bold shadow-md hover:bg-slate-800 active:scale-95 transition-all"
             >
-              <Plus className="w-5 h-5" /> สร้างใบรับเข้า
+              <Plus className="w-4 h-4" /> สร้างใบรับเข้า
             </button>
           </div>
         </div>
 
         {/* Quick Search & PDA Status Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <div className="nx-glass-card p-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3.5 top-3 text-[#8a92a6]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="ค้นหาเลขที่ใบรับ (GRN), เลข PO, ชื่อผู้ขาย, หรือชื่อ/รหัสสินค้า..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-2.5 bg-[#171c23] border border-[#30353d] rounded-2xl font-medium text-sm text-[#dee2ec] placeholder:text-[#8a92a6] outline-none focus:border-emerald-500 shadow-sm"
+              className="w-full pl-10 pr-10 py-2 bg-white/85 border border-slate-200/80 rounded-full font-medium text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 shadow-2xs"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-3 text-[#8a92a6] hover:text-[#d1c6ab]">
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              >
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -199,50 +243,113 @@ export default function ReceivingPage() {
             <button
               type="button"
               onClick={() => setShowMainScanner(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-sm shadow-md transition-all shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-xs transition-all shrink-0"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-3.5 h-3.5" />
               <span>สแกนหาใบรับ</span>
             </button>
-            <div className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-[#252a32] text-[#d1c6ab] text-xs font-bold rounded-2xl border border-[#30353d] shrink-0">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500/12 text-emerald-800 text-xs font-bold rounded-full border border-emerald-500/25 shrink-0">
               <Zap className="w-3.5 h-3.5 text-emerald-600" />
               <span className="hidden sm:inline">PDA พร้อมยิง</span>
             </div>
           </div>
         </div>
 
-        <Section title="รอรับเข้า" icon={<ClipboardCheck className="w-4 h-4" />} empty="ไม่มีใบรอรับ" loading={loading} items={filteredPending}
+        <Section
+          title="รอรับเข้า"
+          icon={<ClipboardCheck className="w-4 h-4 text-amber-600" />}
+          empty="ไม่มีใบรอรับ"
+          loading={loading}
+          items={filteredPending}
           render={(r: Receipt) => (
             <div className="flex items-center gap-2 flex-wrap">
-              <a href={`/print/putaway-slip?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบจัดเก็บเข้าที่ (Putaway Slip)" className="p-2 rounded-xl text-[#8a92a6] hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors">
+              <a
+                href={`/print/putaway-slip?id=${r.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="พิมพ์ใบจัดเก็บเข้าที่ (Putaway Slip)"
+                className="p-2 rounded-full text-slate-500 hover:text-emerald-700 hover:bg-emerald-500/10 transition-colors"
+              >
                 <Printer className="w-4 h-4" />
               </a>
-              <a href={`/print/receipt?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบตรวจรับ (GRN)" className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
+              <a
+                href={`/print/receipt?id=${r.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="พิมพ์ใบตรวจรับ (GRN)"
+                className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
                 <FileText className="w-4 h-4" />
               </a>
-              <button onClick={() => setReceiving(r)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-600/20">
-                <Warehouse className="w-4 h-4" /> ตรวจรับ &amp; เก็บ
+              <button
+                onClick={() => setReceiving(r)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-sm shadow-emerald-600/20"
+              >
+                <Warehouse className="w-3.5 h-3.5" /> ตรวจรับ &amp; เก็บ
               </button>
             </div>
-          )} />
+          )}
+        />
 
-        <Section title="รับเข้าแล้ว" icon={<CheckCircle2 className="w-4 h-4" />} empty="ยังไม่มีประวัติ" loading={loading} items={filteredDone}
+        <Section
+          title="รับเข้าแล้ว"
+          icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+          empty="ยังไม่มีประวัติ"
+          loading={loading}
+          items={filteredDone}
           render={(r: Receipt) => (
             <div className="flex items-center gap-2 flex-wrap">
-              <a href={`/print/putaway-slip?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบจัดเก็บ (Putaway Slip)" className="p-2 rounded-xl text-[#8a92a6] hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors">
+              <a
+                href={`/print/putaway-slip?id=${r.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="พิมพ์ใบจัดเก็บ (Putaway Slip)"
+                className="p-2 rounded-full text-slate-500 hover:text-emerald-700 hover:bg-emerald-500/10 transition-colors"
+              >
                 <Printer className="w-4 h-4" />
               </a>
-              <a href={`/print/receipt?id=${r.id}`} target="_blank" rel="noopener noreferrer" title="พิมพ์ใบรับเข้า (GRN)" className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors">
+              <a
+                href={`/print/receipt?id=${r.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="พิมพ์ใบรับเข้า (GRN)"
+                className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              >
                 <FileText className="w-4 h-4" />
               </a>
-              <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-sm px-2"><CheckCircle2 className="w-4 h-4" /> เสร็จสิ้น</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-500/12 border border-emerald-500/25 rounded-full font-bold text-xs px-3 py-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> เสร็จสิ้น
+              </span>
             </div>
-          )} />
+          )}
+        />
       </div>
 
       <AnimatePresence>
-        {showCreate && <CreateReceiptModal initialPoNumber={initialPoNumber} onClose={() => { setShowCreate(false); setInitialPoNumber(''); }} onDone={() => { setShowCreate(false); setInitialPoNumber(''); load(); }} />}
-        {receiving && <ReceiveModal receipt={receiving} onClose={() => setReceiving(null)} onDone={() => { setReceiving(null); load(); }} />}
+        {showCreate && (
+          <CreateReceiptModal
+            initialPoNumber={initialPoNumber}
+            onClose={() => {
+              setShowCreate(false);
+              setInitialPoNumber('');
+            }}
+            onDone={() => {
+              setShowCreate(false);
+              setInitialPoNumber('');
+              load();
+            }}
+          />
+        )}
+        {receiving && (
+          <ReceiveModal
+            receipt={receiving}
+            onClose={() => setReceiving(null)}
+            onDone={() => {
+              setReceiving(null);
+              load();
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Embedded Camera Scanner on Main Receiving Screen */}
@@ -259,30 +366,57 @@ export default function ReceivingPage() {
 
 function Section({ title, icon, items, render, empty, loading }: any) {
   return (
-    <div className="rounded-2xl border border-[#30353d] bg-[#171c23] backdrop-blur overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-[#30353d] font-bold text-[#d1c6ab]">{icon} {title} · {items.length}</div>
-      {loading ? <div className="p-12 text-center text-[#8a92a6]">กำลังโหลด...</div>
-        : items.length === 0 ? <div className="p-12 text-center text-[#8a92a6]">{empty}</div>
-        : <div className="divide-y divide-[#30353d]">
-            {items.map((r: Receipt) => (
-              <div key={r.id} className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-[#1b2027]">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-[#dee2ec]">{r.receiptNo}</span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${STATUS_STYLE[r.status]}`}>{STATUS_TH[r.status]}</span>
-                    {r.poNumber && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#252a32] text-[#8a92a6] inline-flex items-center gap-1"><FileText className="w-3 h-3" />{r.poNumber}</span>}
-                  </div>
-                  <div className="text-sm text-[#8a92a6] mt-1 truncate">{r.supplier || 'ไม่ระบุผู้ขาย'} · {r.items.length} รายการ · คาด {r.items.reduce((s, l) => s + l.expectedQty, 0)} ชิ้น</div>
+    <div className="nx-glass-card overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-200/80 font-bold text-sm text-slate-900 tabular-nums">
+        {icon} {title} · {items.length}
+      </div>
+      {loading ? (
+        <div className="p-12 text-center text-slate-500 text-sm">กำลังโหลด...</div>
+      ) : items.length === 0 ? (
+        <div className="p-12 text-center text-slate-500 text-sm">{empty}</div>
+      ) : (
+        <div className="divide-y divide-slate-200/75">
+          {items.map((r: Receipt) => (
+            <div
+              key={r.id}
+              className="px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 hover:bg-white/60 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono font-bold text-slate-900 tabular-nums">{r.receiptNo}</span>
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${STATUS_STYLE[r.status]}`}>
+                    {STATUS_TH[r.status]}
+                  </span>
+                  {r.poNumber && (
+                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 inline-flex items-center gap-1">
+                      <FileText className="w-3 h-3 text-slate-500" />
+                      {r.poNumber}
+                    </span>
+                  )}
                 </div>
-                {render(r)}
+                <div className="text-sm text-slate-600 mt-1 truncate tabular-nums">
+                  {r.supplier || 'ไม่ระบุผู้ขาย'} · {r.items.length} รายการ · คาด{' '}
+                  {r.items.reduce((s, l) => s + l.expectedQty, 0)} ชิ้น
+                </div>
               </div>
-            ))}
-          </div>}
+              {render(r)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initialPoNumber?: string; onClose: () => void; onDone: () => void }) {
+function CreateReceiptModal({
+  initialPoNumber = '',
+  onClose,
+  onDone,
+}: {
+  initialPoNumber?: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [products, setProducts] = useState<any[]>([]);
   const [pos, setPos] = useState<any[]>([]);
   const [selectedPoId, setSelectedPoId] = useState('');
@@ -296,66 +430,110 @@ function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initial
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products', { cache: 'no-store' }).then(r => r.json()),
-      fetch('/api/po/create?status=DRAFT,ORDERED', { cache: 'no-store' }).then(r => r.json()),
-      fetch('/api/suppliers', { cache: 'no-store' }).then(r => r.json()),
-    ]).then(([dProd, dPo, dSupp]) => {
-      const prodList = Array.isArray(dProd) ? dProd : [];
-      const poList: any[] = dPo?.orders || [];
-      setProducts(prodList);
-      setPos(poList);
-      setSuppliers(dSupp?.suppliers || []);
+      fetch('/api/products', { cache: 'no-store' }).then((r) => r.json()),
+      fetch('/api/po/create?status=DRAFT,ORDERED', { cache: 'no-store' }).then((r) => r.json()),
+      fetch('/api/suppliers', { cache: 'no-store' }).then((r) => r.json()),
+    ])
+      .then(([dProd, dPo, dSupp]) => {
+        const prodList = Array.isArray(dProd) ? dProd : [];
+        const poList: any[] = dPo?.orders || [];
+        setProducts(prodList);
+        setPos(poList);
+        setSuppliers(dSupp?.suppliers || []);
 
-      if (initialPoNumber) {
-        const matched = poList.find(p => p.po_number === initialPoNumber || p.id === initialPoNumber);
-        if (matched) {
-          setSelectedPoId(matched.id);
-          setPoNumber(matched.po_number);
-          setSupplier(matched.supplier || '');
-          const items: any[] = Array.isArray(matched.items_json) ? matched.items_json : [];
-          setLines(items.map(it => ({ sku: it.sku || it.id || it.name, name: it.name, expectedQty: Number(it.qty) || 1, putawayBin: '' })));
+        if (initialPoNumber) {
+          const matched = poList.find((p) => p.po_number === initialPoNumber || p.id === initialPoNumber);
+          if (matched) {
+            setSelectedPoId(matched.id);
+            setPoNumber(matched.po_number);
+            setSupplier(matched.supplier || '');
+            const items: any[] = Array.isArray(matched.items_json) ? matched.items_json : [];
+            setLines(
+              items.map((it) => ({
+                sku: it.sku || it.id || it.name,
+                name: it.name,
+                expectedQty: Number(it.qty) || 1,
+                putawayBin: '',
+              }))
+            );
+          }
         }
-      }
-    }).catch(() => {});
+      })
+      .catch(() => {});
   }, [initialPoNumber]);
 
   const prefillFromPO = (poId: string) => {
     setSelectedPoId(poId);
-    const po = pos.find(p => p.id === poId);
-    if (!po) { setPoNumber(''); return; }
+    const po = pos.find((p) => p.id === poId);
+    if (!po) {
+      setPoNumber('');
+      return;
+    }
     setPoNumber(po.po_number);
     setSupplier(po.supplier || '');
     const items: any[] = Array.isArray(po.items_json) ? po.items_json : [];
-    setLines(items.map(it => ({ sku: it.sku || it.id || it.name, name: it.name, expectedQty: Number(it.qty) || 1, putawayBin: '' })));
+    setLines(
+      items.map((it) => ({
+        sku: it.sku || it.id || it.name,
+        name: it.name,
+        expectedQty: Number(it.qty) || 1,
+        putawayBin: '',
+      }))
+    );
   };
 
   const addLine = (p: any) => {
-    if (lines.some(l => l.sku === p.id)) { toast('มีในรายการแล้ว'); return; }
+    if (lines.some((l) => l.sku === p.id)) {
+      toast('มีในรายการแล้ว');
+      return;
+    }
     setLines([...lines, { sku: p.id, name: p.name, expectedQty: 1, putawayBin: p.location }]);
   };
-  const setExp = (sku: string, q: number) => setLines(lines.map(l => l.sku === sku ? { ...l, expectedQty: Math.max(1, q) } : l));
-  const removeLine = (sku: string) => setLines(lines.filter(l => l.sku !== sku));
+  const setExp = (sku: string, q: number) =>
+    setLines(lines.map((l) => (l.sku === sku ? { ...l, expectedQty: Math.max(1, q) } : l)));
+  const removeLine = (sku: string) => setLines(lines.filter((l) => l.sku !== sku));
 
-  const shown = search ? products.filter(p => (p.name || '').toLowerCase().includes(search.toLowerCase()) || (p.id || '').toLowerCase().includes(search.toLowerCase())).slice(0, 8) : [];
+  const shown = search
+    ? products
+        .filter(
+          (p) =>
+            (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            (p.id || '').toLowerCase().includes(search.toLowerCase())
+        )
+        .slice(0, 8)
+    : [];
 
   const submit = async () => {
-    if (lines.length === 0) { toast.error('เพิ่มสินค้าอย่างน้อย 1 รายการ'); return; }
+    if (lines.length === 0) {
+      toast.error('เพิ่มสินค้าอย่างน้อย 1 รายการ');
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/receiving', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ supplier, poNumber, items: lines }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'สร้างไม่สำเร็จ');
       toast.success(`สร้าง ${json.receipt.receiptNo} แล้ว`);
       onDone();
-    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleScanAdd = (scanned: string) => {
     const q = scanned.trim().toLowerCase();
-    const matched = products.find(p => (p.id || '').toLowerCase() === q || (p.name || '').toLowerCase() === q || (p.barcode || '').toLowerCase() === q);
+    const matched = products.find(
+      (p) =>
+        (p.id || '').toLowerCase() === q ||
+        (p.name || '').toLowerCase() === q ||
+        (p.barcode || '').toLowerCase() === q
+    );
     if (matched) {
       addLine(matched);
       toast.success(`เพิ่ม ${matched.name} ลงใบรับเข้าแล้ว`);
@@ -370,42 +548,68 @@ function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initial
       <div className="p-6 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-[#8a92a6] uppercase mb-1">เลือกจากใบสั่งซื้อ (PO)</label>
-            <select value={selectedPoId} onChange={e => prefillFromPO(e.target.value)} className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm">
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เลือกจากใบสั่งซื้อ (PO)</label>
+            <select
+              value={selectedPoId}
+              onChange={(e) => prefillFromPO(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-900 outline-none focus:border-emerald-500 text-sm"
+            >
               <option value="">— ไม่ผูกกับ PO —</option>
-              {pos.map(p => <option key={p.id} value={p.id}>{p.po_number} · {p.supplier || 'ไม่ระบุ'}</option>)}
+              {pos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.po_number} · {p.supplier || 'ไม่ระบุ'}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-[#8a92a6] uppercase mb-1">เลือกผู้จำหน่าย (Supplier)</label>
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">เลือกผู้จำหน่าย (Supplier)</label>
             <select
               value={supplier}
-              onChange={e => setSupplier(e.target.value)}
-              className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm"
+              onChange={(e) => setSupplier(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium text-slate-900 outline-none focus:border-emerald-500 text-sm"
             >
               <option value="">— ระบุชื่อผู้ขายเอง / เลือกจากรายชื่อ —</option>
-              {suppliers.map(s => <option key={s.id} value={s.name}>{s.code} - {s.name}</option>)}
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.name}>
+                  {s.code} - {s.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <input
           value={supplier}
-          onChange={e => setSupplier(e.target.value)}
+          onChange={(e) => setSupplier(e.target.value)}
           placeholder="ชื่อผู้ขาย / ซัพพลายเออร์ (สามารถพิมพ์แก้ไขได้)"
-          className="w-full bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm"
+          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 text-sm"
         />
 
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 w-5 h-5 text-[#8a92a6]" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาสินค้าเพื่อเพิ่มลงใบรับเข้า..." className="w-full pl-11 bg-[#1b2027] border border-[#30353d] rounded-xl px-4 py-2.5 font-medium outline-none focus:border-emerald-500 text-sm" />
+            <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาสินค้าเพื่อเพิ่มลงใบรับเข้า..."
+              className="w-full pl-10 bg-white border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 text-sm"
+            />
             {shown.length > 0 && (
-              <div className="absolute z-20 left-0 right-0 mt-1 bg-[#171c23] border border-[#30353d] rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
-                {shown.map(p => (
-                  <button key={p.id} onClick={() => { addLine(p); setSearch(''); }} className="w-full text-left px-4 py-2.5 hover:bg-emerald-500/10 flex items-center justify-between">
-                    <span className="font-medium text-[#d1c6ab] truncate">{p.name}</span>
-                    <span className="text-xs text-[#8a92a6]">{p.location} · สต็อก {p.stock}</span>
+              <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                {shown.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      addLine(p);
+                      setSearch('');
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-emerald-500/10 flex items-center justify-between transition-colors"
+                  >
+                    <span className="font-medium text-slate-900 truncate">{p.name}</span>
+                    <span className="text-xs text-slate-500 tabular-nums">
+                      {p.location} · สต็อก {p.stock}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -414,7 +618,7 @@ function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initial
           <button
             type="button"
             onClick={() => setShowCameraScanner(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shrink-0 active:scale-95"
           >
             <Camera className="w-4 h-4 text-emerald-400" />
             <span>สแกนบาร์โค้ด</span>
@@ -422,19 +626,45 @@ function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initial
         </div>
 
         <div className="space-y-2">
-          {lines.length === 0 ? <div className="text-center text-[#8a92a6] py-8 border-2 border-dashed border-[#30353d] rounded-xl">ยังไม่มีสินค้าในใบรับเข้า</div>
-            : lines.map(l => (
-              <div key={l.sku} className="flex items-center gap-3 bg-[#1b2027] rounded-xl px-4 py-2.5">
-                <div className="flex-1 min-w-0"><div className="font-medium text-[#dee2ec] truncate">{l.name}</div><div className="text-xs text-[#8a92a6]">{l.sku}</div></div>
-                <div className="text-xs text-[#8a92a6]">จำนวนคาดรับ</div>
-                <input type="number" min={1} value={l.expectedQty} onChange={e => setExp(l.sku, parseInt(e.target.value) || 1)} className="w-20 bg-[#171c23] border border-[#30353d] rounded-lg px-3 py-1.5 text-center font-bold outline-none focus:border-emerald-500" />
-                <button onClick={() => removeLine(l.sku)} className="p-1.5 text-[#8a92a6] hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
+          {lines.length === 0 ? (
+            <div className="text-center text-slate-500 text-sm py-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
+              ยังไม่มีสินค้าในใบรับเข้า
+            </div>
+          ) : (
+            lines.map((l) => (
+              <div
+                key={l.sku}
+                className="flex items-center gap-3 bg-slate-50/90 border border-slate-200/80 rounded-2xl px-4 py-2.5"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-slate-900 truncate">{l.name}</div>
+                  <div className="text-xs font-mono text-slate-500">{l.sku}</div>
+                </div>
+                <div className="text-xs text-slate-600 font-medium">จำนวนคาดรับ</div>
+                <input
+                  type="number"
+                  min={1}
+                  value={l.expectedQty}
+                  onChange={(e) => setExp(l.sku, parseInt(e.target.value) || 1)}
+                  className="w-20 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-center font-bold text-slate-900 tabular-nums outline-none focus:border-emerald-500"
+                />
+                <button
+                  onClick={() => removeLine(l.sku)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-            ))}
+            ))
+          )}
         </div>
       </div>
       <ModalFooter>
-        <button onClick={submit} disabled={saving || lines.length === 0} className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold shadow-lg hover:bg-emerald-500 active:scale-95 transition-all disabled:opacity-50">
+        <button
+          onClick={submit}
+          disabled={saving || lines.length === 0}
+          className="px-6 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-bold shadow-md hover:bg-emerald-500 active:scale-95 transition-all disabled:opacity-50"
+        >
           {saving ? 'กำลังสร้าง...' : 'สร้างใบรับเข้า'}
         </button>
       </ModalFooter>
@@ -452,7 +682,9 @@ function CreateReceiptModal({ initialPoNumber = '', onClose, onDone }: { initial
 }
 
 function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose: () => void; onDone: () => void }) {
-  const [lines, setLines] = useState<Line[]>(receipt.items.map(l => ({ ...l, receivedQty: l.receivedQty || l.expectedQty, putawayBin: l.putawayBin || '' })));
+  const [lines, setLines] = useState<Line[]>(
+    receipt.items.map((l) => ({ ...l, receivedQty: l.receivedQty || l.expectedQty, putawayBin: l.putawayBin || '' }))
+  );
   const [saving, setSaving] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [uomMap, setUomMap] = useState<Record<string, UomOpt[]>>({});
@@ -461,26 +693,38 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const skus = Array.from(new Set(receipt.items.map(i => i.sku)));
-      const entries = await Promise.all(skus.map(async (s) => {
-        try { const d = await (await fetch(`/api/products/uoms?sku=${encodeURIComponent(s)}`, { cache: 'no-store' })).json(); return [s, Array.isArray(d.uoms) ? d.uoms : []] as const; }
-        catch { return [s, []] as const; }
-      }));
+      const skus = Array.from(new Set(receipt.items.map((i) => i.sku)));
+      const entries = await Promise.all(
+        skus.map(async (s) => {
+          try {
+            const d = await (await fetch(`/api/products/uoms?sku=${encodeURIComponent(s)}`, { cache: 'no-store' })).json();
+            return [s, Array.isArray(d.uoms) ? d.uoms : []] as const;
+          } catch {
+            return [s, []] as const;
+          }
+        })
+      );
       if (!cancelled) setUomMap(Object.fromEntries(entries));
     })();
-    return () => { cancelled = true; };
-  }, [receipt.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [receipt.id, receipt.items]);
 
-  const setRecv = (sku: string, q: number) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, receivedQty: Math.max(0, q) } : l));
-  const setBin = (sku: string, bin: string) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, putawayBin: bin } : l));
-  const setLot = (sku: string, patch: Partial<Pick<Line, 'lotNo' | 'expDate'>>) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, ...patch } : l));
-  const setUom = (sku: string, uom: string) => setLines(prev => prev.map(l => l.sku === sku ? { ...l, uom } : l));
+  const setRecv = (sku: string, q: number) =>
+    setLines((prev) => prev.map((l) => (l.sku === sku ? { ...l, receivedQty: Math.max(0, q) } : l)));
+  const setBin = (sku: string, bin: string) =>
+    setLines((prev) => prev.map((l) => (l.sku === sku ? { ...l, putawayBin: bin } : l)));
+  const setLot = (sku: string, patch: Partial<Pick<Line, 'lotNo' | 'expDate'>>) =>
+    setLines((prev) => prev.map((l) => (l.sku === sku ? { ...l, ...patch } : l)));
+  const setUom = (sku: string, uom: string) =>
+    setLines((prev) => prev.map((l) => (l.sku === sku ? { ...l, uom } : l)));
 
   // Shared scan handler for both PDA Hardware scanner and Mobile Camera
   const handleItemScanned = (scanned: string) => {
     const trimmed = scanned.trim().toLowerCase();
     const matchIndex = lines.findIndex(
-      l => l.sku.toLowerCase() === trimmed || l.name.toLowerCase().includes(trimmed)
+      (l) => l.sku.toLowerCase() === trimmed || l.name.toLowerCase().includes(trimmed)
     );
     if (matchIndex >= 0) {
       const line = lines[matchIndex];
@@ -506,106 +750,154 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
   });
 
   const commit = async () => {
-    const missingLot = lines.find(l => l.expDate && !l.lotNo?.trim() && (l.receivedQty || 0) > 0);
-    if (missingLot) { toast.error(`${missingLot.name}: ใส่เลขล็อตคู่กับวันหมดอายุ`); return; }
+    const missingLot = lines.find((l) => l.expDate && !l.lotNo?.trim() && (l.receivedQty || 0) > 0);
+    if (missingLot) {
+      toast.error(`${missingLot.name}: ใส่เลขล็อตคู่กับวันหมดอายุ`);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/receiving', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: receipt.id, lines }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'ยืนยันไม่สำเร็จ');
       toast.success('รับเข้าและจัดเก็บเข้าสต็อกเรียบร้อย');
       onDone();
-    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Modal onClose={onClose} title={`ตรวจรับ & จัดเก็บ: ${receipt.receiptNo}`}>
       <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="text-sm text-[#8a92a6] font-medium">ตรวจนับยอดรับจริงและระบุ Bin ตำแหน่งจัดเก็บเพื่อนำสินค้าเข้าสต็อก</div>
+          <div className="text-sm text-slate-600 font-medium">
+            ตรวจนับยอดรับจริงและระบุ Bin ตำแหน่งจัดเก็บเพื่อนำสินค้าเข้าสต็อก
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setShowCameraScanner(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-full shadow-xs transition-all"
             >
               <Camera className="w-3.5 h-3.5" />
               <span>เปิดกล้องสแกน</span>
             </button>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/10 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-500/30">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/12 text-emerald-800 text-xs font-bold rounded-full border border-emerald-500/25">
               <Zap className="w-3.5 h-3.5 text-emerald-600" />
               <span>PDA พร้อมยิง</span>
             </div>
           </div>
         </div>
         <div className="space-y-3">
-          {lines.map(l => (
-            <div key={l.sku} className="p-4 rounded-2xl border border-[#30353d] bg-[#1b2027] space-y-2">
+          {lines.map((l) => (
+            <div key={l.sku} className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/90 space-y-2.5">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-bold text-[#dee2ec]">{l.name}</div>
-                  <div className="text-xs font-mono text-[#8a92a6]">{l.sku}</div>
+                  <div className="font-bold text-slate-900">{l.name}</div>
+                  <div className="text-xs font-mono text-slate-500">{l.sku}</div>
                 </div>
-                <div className="text-xs text-[#8a92a6]">คาดรับ: <b className="text-[#dee2ec]">{l.expectedQty}</b></div>
+                <div className="text-xs text-slate-600 tabular-nums">
+                  คาดรับ: <b className="text-slate-900">{l.expectedQty}</b>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">รับจริง</label>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">รับจริง</label>
                   <div className="flex gap-1.5">
-                    <input type="number" min={0} value={l.receivedQty} onChange={e => setRecv(l.sku, parseInt(e.target.value) || 0)}
-                      className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-bold text-[#dee2ec] outline-none focus:border-emerald-500" />
+                    <input
+                      type="number"
+                      min={0}
+                      value={l.receivedQty}
+                      onChange={(e) => setRecv(l.sku, parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-900 tabular-nums outline-none focus:border-emerald-500"
+                    />
                     {(uomMap[l.sku]?.length || 0) > 1 && (
-                      <select value={l.uom || (uomMap[l.sku]?.find(u => u.isBase)?.code || '')} onChange={e => setUom(l.sku, e.target.value)}
-                        className="bg-[#171c23] border border-[#30353d] rounded-xl px-2 py-2 text-xs font-bold text-[#dee2ec] outline-none focus:border-emerald-500 shrink-0">
-                        {uomMap[l.sku]?.map(u => <option key={u.code} value={u.code}>{u.name || u.code}{!u.isBase ? ` (×${u.factor})` : ''}</option>)}
+                      <select
+                        value={l.uom || uomMap[l.sku]?.find((u) => u.isBase)?.code || ''}
+                        onChange={(e) => setUom(l.sku, e.target.value)}
+                        className="bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 shrink-0"
+                      >
+                        {uomMap[l.sku]?.map((u) => (
+                          <option key={u.code} value={u.code}>
+                            {u.name || u.code}
+                            {!u.isBase ? ` (×${u.factor})` : ''}
+                          </option>
+                        ))}
                       </select>
                     )}
                   </div>
                   {(() => {
-                    const sel = uomMap[l.sku]?.find(u => u.code === (l.uom || uomMap[l.sku]?.find(x => x.isBase)?.code));
-                    const base = uomMap[l.sku]?.find(u => u.isBase);
-                    if (sel && !sel.isBase) return <div className="text-[11px] text-emerald-400 font-mono mt-1">= {(Number(l.receivedQty || 0) * sel.factor)} {base?.name || 'ชิ้น'}</div>;
+                    const sel = uomMap[l.sku]?.find(
+                      (u) => u.code === (l.uom || uomMap[l.sku]?.find((x) => x.isBase)?.code)
+                    );
+                    const base = uomMap[l.sku]?.find((u) => u.isBase);
+                    if (sel && !sel.isBase)
+                      return (
+                        <div className="text-[11px] text-emerald-700 font-mono font-semibold mt-1 tabular-nums">
+                          = {Number(l.receivedQty || 0) * sel.factor} {base?.name || 'ชิ้น'}
+                        </div>
+                      );
                     return null;
                   })()}
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">จัดเก็บที่ Bin</label>
-                  <input value={l.putawayBin || ''} onChange={e => setBin(l.sku, e.target.value.toUpperCase())} placeholder="เช่น A-01-02-1"
-                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-mono font-bold text-[#dee2ec] outline-none focus:border-emerald-500 uppercase mb-1.5" />
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">จัดเก็บที่ Bin</label>
+                  <input
+                    value={l.putawayBin || ''}
+                    onChange={(e) => setBin(l.sku, e.target.value.toUpperCase())}
+                    placeholder="เช่น A-01-02-1"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 uppercase mb-1.5"
+                  />
                   <BinQuickSelect
                     sku={l.sku}
                     selectedBin={l.putawayBin || ''}
-                    onSelectBin={bin => setBin(l.sku, bin)}
+                    onSelectBin={(bin) => setBin(l.sku, bin)}
                     mode="putaway"
-                    theme="dark"
+                    theme="light"
                   />
                 </div>
               </div>
               {/* Lot + expiry (optional): drives FEFO picking and lot trace/recall */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">เลขล็อต (ถ้ามี)</label>
-                  <input value={l.lotNo || ''} onChange={e => setLot(l.sku, { lotNo: e.target.value.toUpperCase() })} placeholder="เช่น LOT-2609A"
-                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 font-mono text-sm text-[#dee2ec] outline-none focus:border-emerald-500 uppercase" />
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">เลขล็อต (ถ้ามี)</label>
+                  <input
+                    value={l.lotNo || ''}
+                    onChange={(e) => setLot(l.sku, { lotNo: e.target.value.toUpperCase() })}
+                    placeholder="เช่น LOT-2609A"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 uppercase"
+                  />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-[#8a92a6] uppercase mb-1">วันหมดอายุ</label>
-                  <input type="date" value={l.expDate || ''} onChange={e => setLot(l.sku, { expDate: e.target.value })}
-                    className="w-full bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-2 text-sm text-[#dee2ec] outline-none focus:border-emerald-500 [color-scheme:dark]" />
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">วันหมดอายุ</label>
+                  <input
+                    type="date"
+                    value={l.expDate || ''}
+                    onChange={(e) => setLot(l.sku, { expDate: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                  />
                 </div>
               </div>
               {l.expDate && !l.lotNo?.trim() && (
-                <div className="text-[11px] text-amber-400">ใส่เลขล็อตด้วย — วันหมดอายุผูกกับล็อต</div>
+                <div className="text-[11px] text-amber-700 font-semibold">ใส่เลขล็อตด้วย — วันหมดอายุผูกกับล็อต</div>
               )}
             </div>
           ))}
         </div>
       </div>
       <ModalFooter>
-        <button onClick={commit} disabled={saving} className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold shadow-lg hover:bg-emerald-500 active:scale-95 transition-all disabled:opacity-50">
+        <button
+          onClick={commit}
+          disabled={saving}
+          className="px-6 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-bold shadow-md hover:bg-emerald-500 active:scale-95 transition-all disabled:opacity-50"
+        >
           {saving ? 'กำลังบันทึก...' : 'ยืนยันรับเข้า & บันทึกสต็อก'}
         </button>
       </ModalFooter>
@@ -625,13 +917,28 @@ function ReceiveModal({ receipt, onClose, onDone }: { receipt: Receipt; onClose:
 
 function Modal({ title, onClose, children }: any) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[#171c23] rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-[#30353d] flex justify-between items-center bg-[#171c23] shrink-0">
-          <h2 className="text-xl font-black text-[#dee2ec]">{title}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-[#252a32] rounded-full text-[#8a92a6]"><X className="w-5 h-5" /></button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-slate-200/80 flex justify-between items-center bg-white/90 shrink-0">
+          <h2 className="text-xl font-black text-slate-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
       </motion.div>
@@ -640,5 +947,5 @@ function Modal({ title, onClose, children }: any) {
 }
 
 function ModalFooter({ children }: any) {
-  return <div className="p-6 border-t border-[#30353d] flex justify-end bg-[#171c23] shrink-0">{children}</div>;
+  return <div className="p-5 border-t border-slate-200/80 flex justify-end bg-slate-50/90 shrink-0">{children}</div>;
 }

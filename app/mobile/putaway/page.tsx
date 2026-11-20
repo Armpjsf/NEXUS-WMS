@@ -276,26 +276,27 @@ export default function MobilePutawayPage() {
     .slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 max-w-md mx-auto font-sans select-none">
-      {/* Top Bar - Tactical Sticky Header */}
-      <header className="sticky top-0 z-30 bg-[#171c23] text-white px-4 py-3 border-b border-[#30353d] shadow-xl">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-        <div className="flex items-center justify-between">
+    <div className="theme-nexus-hybrid min-h-screen text-slate-900 pb-28 font-sans select-none">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl px-4 py-3 border-b border-white/85 shadow-sm">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2">
           <Link
             href="/mobile"
-            className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95 transition-all"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-700 hover:text-slate-900 shadow-xs active:scale-95 transition-all shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-base font-bold tracking-wide flex items-center gap-1.5 text-[#dee2ec]">
-            <Layers className="w-4 h-4 text-[#57ec7f]" />
-            <span>จัดเก็บขึ้นชั้น (Putaway)</span>
+          <h1 className="text-base font-bold tracking-wide flex items-center gap-2 text-slate-900 truncate">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/12 border border-emerald-500/20 text-emerald-700 shrink-0">
+              <Layers className="w-4 h-4" />
+            </span>
+            <span className="truncate">จัดเก็บขึ้นชั้น (Putaway)</span>
           </h1>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={loadData}
-              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#8a92a6] hover:text-[#dee2ec] active:scale-95"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-white/90 border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs active:scale-95 transition-all"
               title="รีเฟรชคิวงาน"
             >
               <RefreshCw className={`w-4 h-4 ${loadingProds ? 'animate-spin' : ''}`} />
@@ -303,7 +304,7 @@ export default function MobilePutawayPage() {
             <button
               type="button"
               onClick={() => setCameraMode(step === 'SCAN_ITEM' ? 'ITEM' : 'LOC')}
-              className="p-2 rounded-xl bg-[#252a32] border border-[#30353d] text-[#dee2ec] hover:text-[#facc15] active:scale-95"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm active:scale-95 transition-all"
               title="เปิดกล้องสแกน"
             >
               <Scan className="w-5 h-5" />
@@ -312,32 +313,32 @@ export default function MobilePutawayPage() {
         </div>
       </header>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 max-w-md mx-auto">
         {step === 'SCAN_ITEM' && (
           <div className="space-y-4">
             {/* Pending Putaway Tasks Queue */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
+            <div className="nx-glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
                     <ClipboardList className="w-4 h-4" />
                   </div>
-                  <div>
-                    <h3 className="text-xs font-black text-slate-900">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-black text-slate-900 truncate">
                       คิวงานรอจัดเก็บขึ้นชั้น (Pending Putaway Queue)
                     </h3>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-600 truncate">
                       แตะเลือกรายการที่รับเข้าแล้วเพื่อย้ายจากจุดพักขึ้นชั้นวาง
                     </p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums shrink-0">
                   {putawayTasks.length} งาน
                 </span>
               </div>
 
               {putawayTasks.length === 0 ? (
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-center text-xs text-slate-500">
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-slate-200/80 text-center text-xs text-slate-500">
                   ไม่มีคิวงานค้างในระบบ — สามารถสแกนหรือค้นหาสินค้าด้านล่างเพื่อย้ายช่องจัดเก็บได้ทันที
                 </div>
               ) : (
@@ -347,19 +348,19 @@ export default function MobilePutawayPage() {
                       key={task.id}
                       type="button"
                       onClick={() => handleSelectTask(task)}
-                      className="w-full text-left p-3 rounded-2xl bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-200/80 flex items-center justify-between gap-2 active:scale-[0.99] transition-all"
+                      className="w-full min-h-[48px] text-left p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-2 active:scale-[0.99] transition-all"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-bold text-slate-900 truncate">
                           {task.product_name || task.sku}
                         </div>
-                        <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <div className="text-[11px] font-mono text-slate-600 flex items-center gap-1.5 mt-0.5 tabular-nums">
                           <span>{task.source_location || 'RCV-DOCK'}</span>
                           <ArrowRight className="w-3 h-3 text-emerald-600" />
                           <span className="font-bold text-emerald-700">{task.target_location || 'AI แนะนำ'}</span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-xs font-bold font-mono shrink-0">
+                      <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-bold font-mono tabular-nums shrink-0">
                         {task.requested_qty || 1} ชิ้น
                       </span>
                     </button>
@@ -368,13 +369,13 @@ export default function MobilePutawayPage() {
               )}
             </div>
 
-            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm text-center space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto">
+            <div className="nx-glass-card p-5 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto">
                 <Package className="w-7 h-7" />
               </div>
               <div>
                 <h2 className="text-base font-black text-slate-900">ขั้นตอนที่ 1: สแกนหรือเลือกสินค้า</h2>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   ยิงบาร์โค้ดสินค้าที่ต้องการย้ายขึ้นชั้นวาง (ย้าย Bin โดยไม่บวกสต็อกซ้ำ)
                 </p>
               </div>
@@ -382,7 +383,7 @@ export default function MobilePutawayPage() {
               <button
                 type="button"
                 onClick={() => setCameraMode('ITEM')}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all"
+                className="w-full min-h-[48px] py-3.5 px-5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
               >
                 <Scan className="w-5 h-5" />
                 <span>เปิดกล้องสแกนบาร์โค้ดสินค้า</span>
@@ -392,37 +393,37 @@ export default function MobilePutawayPage() {
             {/* Manual Search Box */}
             <div className="space-y-2">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="พิมพ์ค้นหาชื่อ หรือ SKU สินค้า..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 focus:outline-none focus:border-emerald-500 shadow-sm"
+                  className="w-full min-h-[48px] pl-11 pr-4 py-3 bg-white/90 border border-slate-200/80 rounded-full text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
 
               {/* Search Results */}
               {filteredProducts.length > 0 && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-lg divide-y divide-slate-100 overflow-hidden">
+                <div className="nx-glass-card divide-y divide-slate-200/70 overflow-hidden">
                   {filteredProducts.map(p => (
                     <div
                       key={p.id || p.sku || p.name}
                       onClick={() => handleSelectItem(p)}
-                      className="p-3 hover:bg-emerald-50/50 cursor-pointer flex items-center justify-between transition-colors"
+                      className="p-3.5 hover:bg-emerald-50/50 cursor-pointer flex items-center justify-between transition-colors min-h-[48px]"
                     >
                       <div className="min-w-0 pr-2">
                         <div className="text-sm font-bold text-slate-900 truncate">{p.name}</div>
-                        <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                        <div className="text-[11px] font-mono text-slate-500 flex items-center gap-2">
                           <span>SKU: {p.sku || p.id}</span>
                           {p.location && (
-                            <span className="flex items-center gap-0.5 text-emerald-600">
+                            <span className="flex items-center gap-0.5 text-emerald-700 font-semibold">
                               <MapPin className="w-3 h-3" /> {p.location}
                             </span>
                           )}
                         </div>
                       </div>
-                      <span className="text-xs font-bold font-mono px-2 py-1 rounded bg-slate-100 text-slate-700 shrink-0">
+                      <span className="text-xs font-bold font-mono px-2.5 py-1 rounded-full bg-white/90 border border-slate-200 text-slate-700 tabular-nums shrink-0">
                         {p.stock ?? 0} {p.unit || 'ชิ้น'}
                       </span>
                     </div>
@@ -436,16 +437,16 @@ export default function MobilePutawayPage() {
         {step === 'CONFIRM_LOCATION' && selectedProduct && (
           <div className="space-y-4">
             {/* Selected Product Banner */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            <div className="nx-glass-card p-4 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                 สินค้าที่กำลังจัดเก็บขึ้นชั้น (Relocate Bin):
               </span>
               <div className="text-base font-black text-slate-900 leading-tight">
                 {selectedProduct.name}
               </div>
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+              <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
                 <span className="font-mono">SKU: {selectedProduct.sku || selectedProduct.id}</span>
-                <span>
+                <span className="tabular-nums">
                   สต็อกรวมคงเดิม:{' '}
                   <strong className="text-slate-900 font-mono font-black">
                     {selectedProduct.stock ?? 0}
@@ -453,22 +454,22 @@ export default function MobilePutawayPage() {
                   {selectedProduct.unit || 'ชิ้น'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-                <span className="text-slate-500">ย้ายจากพิกัดต้นทาง:</span>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200/70 text-xs">
+                <span className="text-slate-600 font-medium">ย้ายจากพิกัดต้นทาง:</span>
                 <input
                   type="text"
                   value={fromBin}
                   onChange={e => setFromBin(e.target.value.toUpperCase())}
-                  className="px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 font-mono font-bold text-slate-800 text-xs w-32 uppercase"
+                  className="px-3 py-1.5 rounded-full bg-white/90 border border-slate-200 font-mono font-bold text-slate-900 text-xs w-32 uppercase text-center"
                 />
               </div>
             </div>
 
             {/* AI Putaway Recommendation Banner */}
             {(loadingRec || recommendation) && (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800">
+              <div className="nx-glass-card p-3.5 bg-emerald-50/90 border border-emerald-200 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                     <Sparkles className="w-4 h-4 text-emerald-600" />
                     AI แนะนำพิกัดจัดเก็บ (Directed Putaway)
                   </span>
@@ -479,29 +480,29 @@ export default function MobilePutawayPage() {
                         setTargetBin(recommendation.recommendedLocation);
                         speakPutawayLocation(recommendation.recommendedLocation);
                       }}
-                      className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
+                      className="px-3 py-1 rounded-full bg-emerald-600 text-white font-mono text-xs font-bold shadow-xs active:scale-95"
                     >
                       ใช้ {recommendation.recommendedLocation}
                     </button>
                   )}
                 </div>
-                <p className="text-[11px] text-emerald-700 leading-relaxed">
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
                   {loadingRec ? 'กำลังคำนวณพิกัดที่เหมาะสม...' : recommendation?.reason}
                 </p>
               </div>
             )}
 
-            {/* Putaway Bin Selection Section */}
-            <div className="p-5 bg-white rounded-3xl border-2 border-emerald-500/40 shadow-md space-y-3">
+            {/* Putaway Bin Selection Section (Dark Accent Readout Card) */}
+            <div className="nx-dark-accent-card p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                  <MapPin className="w-4 h-4 text-emerald-300" />
                   <span>พิกัดจัดเก็บปลายทาง (Target Bin):</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => speakPutawayLocation(targetBin || 'A-01')}
-                  className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-full bg-white/10 border border-white/15 text-emerald-300 hover:bg-white/20"
                   title="ฟังเสียงพิกัด"
                 >
                   <Volume2 className="w-4 h-4" />
@@ -515,12 +516,12 @@ export default function MobilePutawayPage() {
                   value={targetBin}
                   onChange={e => setTargetBin(e.target.value.toUpperCase())}
                   placeholder="เช่น A-01-01"
-                  className="flex-1 px-4 py-3 text-center text-2xl font-black font-mono tracking-wider bg-slate-50 border-2 border-emerald-500/50 rounded-2xl text-emerald-700 focus:outline-none focus:border-emerald-600 uppercase"
+                  className="flex-1 min-h-[52px] px-4 py-3 text-center text-2xl font-black font-mono tracking-wider bg-white/10 border border-white/20 rounded-2xl text-amber-300 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 uppercase tabular-nums"
                 />
                 <button
                   type="button"
                   onClick={() => setCameraMode('LOC')}
-                  className="p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl flex items-center justify-center active:scale-95 shadow-md"
+                  className="min-h-[52px] min-w-[52px] p-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-full flex items-center justify-center active:scale-95 shadow-md"
                   title="สแกนบาร์โค้ดชั้นวาง"
                 >
                   <Scan className="w-5 h-5" />
@@ -528,7 +529,7 @@ export default function MobilePutawayPage() {
               </div>
 
               {/* BinQuickSelect for Consolidation or picking existing bin */}
-              <div className="pt-2 border-t border-slate-100">
+              <div className="p-3 rounded-2xl bg-white/95 text-slate-900">
                 <BinQuickSelect
                   sku={selectedProduct.sku || selectedProduct.id}
                   selectedBin={targetBin}
@@ -544,15 +545,15 @@ export default function MobilePutawayPage() {
             </div>
 
             {/* Quantity to Putaway */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <label className="block text-xs font-bold text-slate-600">
+            <div className="nx-glass-card p-4 space-y-3">
+              <label className="block text-xs font-bold text-slate-700">
                 จำนวนที่ย้ายขึ้นชั้นวาง ({selectedProduct.unit || 'ชิ้น'}):
               </label>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPutawayQty(Math.max(1, putawayQty - 1))}
-                  className="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 font-black text-lg text-slate-700 flex items-center justify-center active:scale-95"
+                  className="w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 font-black text-lg text-slate-700 flex items-center justify-center active:scale-95"
                 >
                   -
                 </button>
@@ -561,12 +562,12 @@ export default function MobilePutawayPage() {
                   min="1"
                   value={putawayQty}
                   onChange={e => setPutawayQty(Math.max(1, Number(e.target.value) || 1))}
-                  className="flex-1 py-3 text-center text-xl font-black font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-emerald-500"
+                  className="flex-1 h-12 py-2 text-center text-xl font-black font-mono bg-white/90 border border-slate-200 rounded-2xl text-slate-900 tabular-nums focus:outline-none focus:border-emerald-500"
                 />
                 <button
                   type="button"
                   onClick={() => setPutawayQty(putawayQty + 1)}
-                  className="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 font-black text-lg text-slate-700 flex items-center justify-center active:scale-95"
+                  className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 font-black text-lg text-emerald-700 flex items-center justify-center active:scale-95"
                 >
                   +
                 </button>
@@ -579,7 +580,7 @@ export default function MobilePutawayPage() {
                     key={amt}
                     type="button"
                     onClick={() => setPutawayQty(prev => prev + amt)}
-                    className="flex-1 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold font-mono text-slate-700"
+                    className="flex-1 min-h-[40px] py-1.5 rounded-full bg-white/90 border border-slate-200 hover:bg-slate-100 text-xs font-bold font-mono text-slate-700 tabular-nums"
                   >
                     +{amt}
                   </button>
@@ -587,8 +588,8 @@ export default function MobilePutawayPage() {
               </div>
 
               {/* Optional Lot No */}
-              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+              <div className="pt-2 border-t border-slate-200/70">
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
                   เลข Lot / Batch (ถ้ามี):
                 </label>
                 <input
@@ -596,17 +597,17 @@ export default function MobilePutawayPage() {
                   placeholder="เช่น LOT-2026-09"
                   value={lotNumber}
                   onChange={e => setLotNumber(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-emerald-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 text-xs font-mono bg-white/90 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => setStep('SCAN_ITEM')}
-                className="w-1/3 py-3.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-bold text-xs active:scale-95 transition-all"
+                className="w-1/3 min-h-[48px] py-3 bg-white/90 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-full font-bold text-xs active:scale-95 transition-all"
               >
                 ย้อนกลับ
               </button>
@@ -614,7 +615,7 @@ export default function MobilePutawayPage() {
                 type="button"
                 onClick={handleConfirmPutaway}
                 disabled={submitting}
-                className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-98 transition-all disabled:opacity-50"
+                className="flex-1 min-h-[48px] py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {submitting ? (
                   <>
@@ -633,38 +634,38 @@ export default function MobilePutawayPage() {
         )}
 
         {step === 'DONE' && selectedProduct && (
-          <div className="mt-8 p-6 bg-white border-2 border-emerald-500/50 rounded-3xl text-center space-y-4 shadow-xl animate-in fade-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-10 h-10" />
+          <div className="nx-glass-card mt-6 p-6 border-2 border-emerald-200 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-9 h-9" />
             </div>
             <div className="space-y-1">
               <div className="text-xl font-black text-slate-900">จัดเก็บสินค้าขึ้นชั้นสำเร็จ!</div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600">
                 ย้ายสินค้าจากพิกัดพักสินค้าเข้าสู่ชั้นวางเรียบร้อยแล้ว โดยไม่นับสต็อกซ้ำ
               </p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-1.5">
-              <div className="flex justify-between">
+            <div className="p-4 bg-white/85 rounded-2xl border border-slate-200/80 text-left text-xs space-y-1.5">
+              <div className="flex justify-between gap-2">
                 <span className="text-slate-500">สินค้า:</span>
-                <span className="font-bold text-slate-900">{selectedProduct.name}</span>
+                <span className="font-bold text-slate-900 truncate">{selectedProduct.name}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-2">
                 <span className="text-slate-500">ย้ายจากพิกัด:</span>
                 <span className="font-mono font-bold text-slate-700">{fromBin}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-2">
                 <span className="text-slate-500">พิกัดจัดเก็บ (Bin):</span>
-                <span className="font-mono font-black text-emerald-600 text-sm">{targetBin}</span>
+                <span className="font-mono font-black text-emerald-700 text-sm">{targetBin}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-2">
                 <span className="text-slate-500">จำนวนที่จัดเก็บ:</span>
-                <span className="font-mono font-bold text-slate-900">
+                <span className="font-mono font-bold text-slate-900 tabular-nums">
                   {putawayQty} {selectedProduct.unit || 'ชิ้น'}
                 </span>
               </div>
               {lotNumber && (
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-2">
                   <span className="text-slate-500">Lot:</span>
                   <span className="font-mono text-slate-700">{lotNumber}</span>
                 </div>
@@ -681,7 +682,7 @@ export default function MobilePutawayPage() {
                 setLotNumber('');
                 setSearchQuery('');
               }}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all active:scale-95"
+              className="w-full min-h-[48px] py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
             >
               จัดเก็บชิ้นถัดไป
             </button>

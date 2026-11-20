@@ -50,42 +50,42 @@ export default function WarehouseBatchLabelModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#171c23] border border-[#30353d] w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/90 w-full max-w-4xl rounded-[24px] shadow-2xl text-slate-900 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-[#30353d] flex items-center justify-between bg-[#1f242c]/50">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#57ec7f]/10 border border-[#57ec7f]/30 flex items-center justify-center text-[#57ec7f]">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
               <BarcodeIcon className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#dee2ec] flex items-center gap-2">
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
                 พิมพ์สติ๊กเกอร์บาร์โค้ดติดเสาแร็ก (Shelf & Bin Barcodes)
               </h3>
-              <p className="text-xs text-[#8a92a6]">
+              <p className="text-xs text-slate-500">
                 ขนาดมาตรฐาน 100 × 50 มม. (Thermal Label) พร้อมติดหน้างานจริงทันที • {filteredBins.length} ป้าย
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Filter Toolbar */}
-        <div className="p-4 border-b border-[#30353d] bg-[#12161d] flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-[#8a92a6] font-mono">เลือกโซน:</span>
-            <div className="flex items-center bg-[#171c23] p-1 rounded-xl border border-[#30353d]">
+            <span className="text-slate-500 font-mono">เลือกโซน:</span>
+            <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200">
               <button
                 onClick={() => setSelectedZone('ALL')}
                 className={`px-3 py-1 rounded-lg font-bold transition-all ${
                   selectedZone === 'ALL'
-                    ? 'bg-[#facc15] text-[#1b1600]'
-                    : 'text-[#8a92a6] hover:text-[#dee2ec]'
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 ทั้งหมด ({bins.length})
@@ -96,8 +96,8 @@ export default function WarehouseBatchLabelModal({
                   onClick={() => setSelectedZone(z)}
                   className={`px-3 py-1 rounded-lg font-bold transition-all ${
                     selectedZone === z
-                      ? 'bg-[#facc15] text-[#1b1600]'
-                      : 'text-[#8a92a6] hover:text-[#dee2ec]'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Zone {z} ({bins.filter(b => b.startsWith(z)).length})
@@ -112,13 +112,13 @@ export default function WarehouseBatchLabelModal({
               placeholder="ค้นหารหัส Bin..."
               value={searchFilter}
               onChange={e => setSearchFilter(e.target.value)}
-              className="bg-[#171c23] border border-[#30353d] rounded-xl px-3 py-1.5 text-xs text-[#dee2ec] placeholder-[#8a92a6] focus:border-[#facc15] outline-none"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 outline-none"
             />
           </div>
         </div>
 
         {/* Printable & Scrollable Labels Preview */}
-        <div className="p-6 overflow-y-auto max-h-[60vh] bg-[#0c1015]">
+        <div className="p-6 overflow-y-auto max-h-[60vh] bg-slate-100/80">
           <div
             ref={printRef}
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 print:grid-cols-2 print:gap-2 print:p-0"
@@ -186,28 +186,28 @@ export default function WarehouseBatchLabelModal({
           </div>
 
           {filteredBins.length === 0 && (
-            <div className="text-center py-16 text-[#8a92a6]">
+            <div className="text-center py-16 text-slate-500">
               ไม่พบรหัส Location ตามเงื่อนไขค้นหา
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-6 border-t border-[#30353d] bg-[#1f242c]/50 flex items-center justify-between">
-          <div className="text-xs text-[#8a92a6] font-mono">
-            แสดง <strong className="text-[#dee2ec]">{filteredBins.length}</strong> จากทั้งหมด {bins.length} ป้าย
+        <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between">
+          <div className="text-xs text-slate-500 font-mono">
+            แสดง <strong className="text-slate-900">{filteredBins.length}</strong> จากทั้งหมด {bins.length} ป้าย
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#8a92a6] hover:text-[#dee2ec] hover:bg-[#252a32] transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 transition-colors"
             >
               ปิด
             </button>
             <button
               onClick={() => handlePrint()}
-              className="px-6 py-2.5 rounded-xl bg-[#57ec7f] text-[#09150c] font-black text-xs hover:bg-[#72f595] transition-all flex items-center gap-2 shadow-lg shadow-[#57ec7f]/20"
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20"
             >
               <Printer className="w-4 h-4" /> สั่งพิมพ์สติ๊กเกอร์บาร์โค้ด ({filteredBins.length} ใบ)
             </button>

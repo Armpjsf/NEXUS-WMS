@@ -13,7 +13,6 @@ import {
 import Link from 'next/link';
 import Barcode from 'react-barcode';
 import { QRCodeSVG } from 'qrcode.react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { toast } from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { usePdaScanner } from '@/hooks/usePdaScanner';
@@ -40,7 +39,7 @@ function ThermalLabelsContent() {
 
   const [codAmount, setCodAmount] = useState('0');
   const [notes, setNotes] = useState('ระวังแตก / กรุณาโทรแจ้งก่อนส่ง');
-  const [items, setItems] = useState([
+  const [items] = useState([
     { name: 'สินค้าตัวอย่าง A (SKU-001)', qty: 2 },
     { name: 'สินค้าตัวอย่าง B (SKU-002)', qty: 1 },
   ]);
@@ -118,52 +117,55 @@ function ThermalLabelsContent() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-[#1b2027]">
-      <AmbientBackground />
-
+    <div className="theme-nexus-hybrid relative min-h-screen overflow-hidden px-4 py-6 pb-24 sm:px-6 lg:p-8 text-slate-900 print:bg-white print:p-0">
       <div className="relative z-10 mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <header className="relative overflow-hidden rounded-[1.75rem] border border-amber-500/30 bg-[#171c23] p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl print:hidden">
-          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/barcode/print"
-                className="p-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl border border-amber-500/30 text-amber-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-[#dee2ec] flex items-center gap-2.5">
-                  <Printer className="w-8 h-8 text-amber-600" />
-                  Thermal Label Designer (100x150 mm)
-                </h1>
-                <p className="text-sm text-[#8a92a6] mt-0.5">
-                  ระบบพิมพ์ใบปะหน้ากล่องพัสดุและสติ๊กเกอร์พิกัดชั้นวางสำหรับเครื่องพิมพ์ความร้อน (Thermal Printer)
-                </p>
-              </div>
-            </div>
+        <div className="print:hidden">
+          <Link
+            href="/barcode/print"
+            className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            กลับหน้าพิมพ์สติ๊กเกอร์
+          </Link>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handlePrint}
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black rounded-xl text-sm shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all"
-              >
-                <Printer className="w-4 h-4" /> สั่งพิมพ์เดี๋ยวนี้ (Print)
-              </button>
+        {/* Open Page Header */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-1 print:hidden">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                Thermal Print Studio
+              </span>
             </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <Printer className="w-7 h-7 text-amber-600 shrink-0" />
+              <span>Thermal Label Designer (100x150 mm)</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+              ระบบพิมพ์ใบปะหน้ากล่องพัสดุและสติ๊กเกอร์พิกัดชั้นวางสำหรับเครื่องพิมพ์ความร้อน (Thermal Printer)
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePrint}
+              className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-full text-xs sm:text-sm shadow-sm flex items-center gap-2 transition-all"
+            >
+              <Printer className="w-4 h-4" /> สั่งพิมพ์เดี๋ยวนี้ (Print)
+            </button>
           </div>
         </header>
 
         {/* Template Switcher */}
-        <div className="flex items-center gap-2 bg-[#171c23] p-2 rounded-2xl border border-[#30353d] shadow-sm print:hidden">
+        <div className="nx-glass-card flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 p-1.5 print:hidden">
           <button
             onClick={() => setLabelType('SHIPPING_100x150')}
             className={cn(
-              'flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2',
+              'flex-1 py-2.5 px-4 rounded-full text-xs font-semibold transition-all flex items-center justify-center gap-2',
               labelType === 'SHIPPING_100x150'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                : 'text-[#d1c6ab] hover:bg-[#1b2027]'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             )}
           >
             <Truck className="w-4 h-4" />
@@ -173,10 +175,10 @@ function ThermalLabelsContent() {
           <button
             onClick={() => setLabelType('SHELF_100x50')}
             className={cn(
-              'flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2',
+              'flex-1 py-2.5 px-4 rounded-full text-xs font-semibold transition-all flex items-center justify-center gap-2',
               labelType === 'SHELF_100x50'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                : 'text-[#d1c6ab] hover:bg-[#1b2027]'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             )}
           >
             <MapPin className="w-4 h-4" />
@@ -186,10 +188,10 @@ function ThermalLabelsContent() {
           <button
             onClick={() => setLabelType('PRODUCT_50x30')}
             className={cn(
-              'flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2',
+              'flex-1 py-2.5 px-4 rounded-full text-xs font-semibold transition-all flex items-center justify-center gap-2',
               labelType === 'PRODUCT_50x30'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                : 'text-[#d1c6ab] hover:bg-[#1b2027]'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             )}
           >
             <BarcodeIcon className="w-4 h-4" />
@@ -200,9 +202,9 @@ function ThermalLabelsContent() {
         {/* Main Grid: Form Controls (Left) + Live Preview (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Form Controls */}
-          <div className="lg:col-span-5 bg-[#171c23] border border-[#30353d] rounded-3xl p-6 shadow-xl space-y-4 print:hidden">
-            <h2 className="font-bold text-[#dee2ec] text-sm uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
+          <div className="lg:col-span-5 nx-glass-card p-6 space-y-4 print:hidden">
+            <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-600" />
               กำหนดข้อมูลใบปะหน้า (Parameters)
             </h2>
 
@@ -210,14 +212,14 @@ function ThermalLabelsContent() {
               <div className="space-y-4 text-xs">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">บริษัทขนส่ง (Carrier)</label>
+                    <label className="block text-slate-600 font-semibold mb-1">บริษัทขนส่ง (Carrier)</label>
                     <select
                       value={carrier}
                       onChange={e => setCarrier(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-bold text-[#dee2ec]"
+                      className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                     >
                       <option>Flash Express</option>
-                      <option>J&T Express</option>
+                      <option>J&amp;T Express</option>
                       <option>Kerry Express / KEX</option>
                       <option>ไปรษณีย์ไทย (EMS)</option>
                       <option>Shopee Xpress</option>
@@ -226,33 +228,33 @@ function ThermalLabelsContent() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">เลขออเดอร์ (Order No)</label>
+                    <label className="block text-slate-600 font-semibold mb-1">เลขออเดอร์ (Order No)</label>
                     <input
                       type="text"
                       value={orderNo}
                       onChange={e => setOrderNo(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-mono font-bold"
+                      className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">
+                  <label className="block text-slate-600 font-semibold mb-1">
                     เลขพัสดุ (Tracking No / Barcode)
                   </label>
                   <input
                     type="text"
                     value={trackingNo}
                     onChange={e => setTrackingNo(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#1b2027] border border-amber-300 rounded-xl font-mono font-black text-amber-900"
+                    className="w-full px-3 py-2 bg-amber-50/80 border border-amber-300 rounded-xl font-mono font-bold text-amber-950 focus:bg-white focus:border-amber-500 outline-none"
                   />
-                  <span className="text-[10px] text-[#8a92a6]">
+                  <span className="text-[11px] text-slate-500 mt-1 block">
                     💡 สามารถใช้เครื่องสแกน PDA ยิงเลขพัสดุเข้าฟิลด์นี้ได้โดยตรง
                   </span>
                 </div>
 
-                <div className="pt-2 border-t border-[#30353d]">
-                  <span className="font-bold text-[#d1c6ab] block mb-2">ข้อมูลผู้รับ (Recipient)</span>
+                <div className="pt-3 border-t border-slate-200/70">
+                  <span className="font-bold text-slate-800 block mb-2">ข้อมูลผู้รับ (Recipient)</span>
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -260,14 +262,14 @@ function ThermalLabelsContent() {
                         placeholder="ชื่อผู้รับ"
                         value={recipientName}
                         onChange={e => setRecipientName(e.target.value)}
-                        className="px-3 py-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg font-bold"
+                        className="px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                       />
                       <input
                         type="text"
                         placeholder="เบอร์โทร"
                         value={recipientPhone}
                         onChange={e => setRecipientPhone(e.target.value)}
-                        className="px-3 py-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg font-mono font-bold"
+                        className="px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                       />
                     </div>
                     <textarea
@@ -275,7 +277,7 @@ function ThermalLabelsContent() {
                       placeholder="ที่อยู่จัดส่ง"
                       value={recipientAddress}
                       onChange={e => setRecipientAddress(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg"
+                      className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -283,26 +285,26 @@ function ThermalLabelsContent() {
                         placeholder="รหัสไปรษณีย์"
                         value={postalCode}
                         onChange={e => setPostalCode(e.target.value)}
-                        className="px-3 py-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg font-mono font-bold text-[#dee2ec]"
+                        className="px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                       />
                       <input
                         type="text"
                         placeholder="ยอดเก็บเงินปลายทาง COD (0 = ไม่มี)"
                         value={codAmount}
                         onChange={e => setCodAmount(e.target.value)}
-                        className="px-3 py-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg font-mono font-bold"
+                        className="px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 tabular-nums focus:bg-white focus:border-emerald-500 outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#30353d]">
-                  <span className="font-bold text-[#d1c6ab] block mb-1">หมายเหตุเพิ่มเติม</span>
+                <div className="pt-3 border-t border-slate-200/70">
+                  <span className="font-bold text-slate-800 block mb-1.5">หมายเหตุเพิ่มเติม</span>
                   <input
                     type="text"
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-[#1b2027] border border-[#30353d] rounded-lg"
+                    className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                   />
                 </div>
               </div>
@@ -311,30 +313,30 @@ function ThermalLabelsContent() {
             {labelType === 'SHELF_100x50' && (
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">รหัสพิกัดชั้นวาง (Location Code)</label>
+                  <label className="block text-slate-600 font-semibold mb-1">รหัสพิกัดชั้นวาง (Location Code)</label>
                   <input
                     type="text"
                     value={shelfLocation}
                     onChange={e => setShelfLocation(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 bg-[#1b2027] border border-amber-300 rounded-xl font-mono font-black text-lg text-amber-950"
+                    className="w-full px-3 py-2 bg-amber-50/80 border border-amber-300 rounded-xl font-mono font-black text-lg text-amber-950 focus:bg-white focus:border-amber-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">ชื่อโซน (Zone Name)</label>
+                  <label className="block text-slate-600 font-semibold mb-1">ชื่อโซน (Zone Name)</label>
                   <input
                     type="text"
                     value={shelfZone}
                     onChange={e => setShelfZone(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl"
+                    className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">คำอธิบายตำแหน่ง</label>
+                  <label className="block text-slate-600 font-semibold mb-1">คำอธิบายตำแหน่ง</label>
                   <input
                     type="text"
                     value={shelfDesc}
                     onChange={e => setShelfDesc(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl"
+                    className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                   />
                 </div>
               </div>
@@ -343,40 +345,40 @@ function ThermalLabelsContent() {
             {labelType === 'PRODUCT_50x30' && (
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">รหัสสินค้า / SKU</label>
+                  <label className="block text-slate-600 font-semibold mb-1">รหัสสินค้า / SKU</label>
                   <input
                     type="text"
                     value={productSku}
                     onChange={e => setProductSku(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#1b2027] border border-amber-300 rounded-xl font-mono font-bold"
+                    className="w-full px-3 py-2 bg-amber-50/80 border border-amber-300 rounded-xl font-mono font-bold text-amber-950 focus:bg-white focus:border-amber-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">ชื่อสินค้า</label>
+                  <label className="block text-slate-600 font-semibold mb-1">ชื่อสินค้า</label>
                   <input
                     type="text"
                     value={productName}
                     onChange={e => setProductName(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl"
+                    className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">ราคา (บาท)</label>
+                    <label className="block text-slate-600 font-semibold mb-1">ราคา (บาท)</label>
                     <input
                       type="text"
                       value={productPrice}
                       onChange={e => setProductPrice(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl font-bold"
+                      className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl font-bold text-slate-900 tabular-nums focus:bg-white focus:border-emerald-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">หน่วยนับ</label>
+                    <label className="block text-slate-600 font-semibold mb-1">หน่วยนับ</label>
                     <input
                       type="text"
                       value={productUnit}
                       onChange={e => setProductUnit(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl"
+                      className="w-full px-3 py-2 bg-white/85 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
                     />
                   </div>
                 </div>
@@ -385,13 +387,13 @@ function ThermalLabelsContent() {
           </div>
 
           {/* Live Thermal Preview (Right) */}
-          <div className="lg:col-span-7 flex flex-col items-center justify-center">
-            <div className="text-xs text-[#8a92a6] font-mono mb-3 print:hidden">
+          <div className="lg:col-span-7 nx-glass-card p-6 md:p-8 flex flex-col items-center justify-center print:bg-transparent print:border-0 print:shadow-none print:p-0">
+            <div className="text-xs text-slate-600 font-mono mb-4 print:hidden">
               🔍 Live Print Preview (อัตราส่วนจริงตามขนาดกระดาษความร้อน)
             </div>
 
-            {/* Printable Container */}
-            <div className="print-label-container shadow-2xl rounded-lg overflow-hidden border border-[#30353d] bg-white">
+            {/* Printable Container — strictly crisp black-on-white */}
+            <div className="print-label-container shadow-xl rounded-lg overflow-hidden border border-slate-300 bg-white text-black">
               {/* 1. SHIPPING LABEL 100x150 mm */}
               {labelType === 'SHIPPING_100x150' && (
                 <div
@@ -451,7 +453,7 @@ function ThermalLabelsContent() {
                   <div className="py-2 border-b-2 border-black grid grid-cols-2 gap-2 text-xs">
                     <div className="border-r border-black pr-2">
                       <span className="text-[10px] font-bold block">ยอดเก็บเงินปลายทาง (COD):</span>
-                      <span className="text-lg font-black font-mono">
+                      <span className="text-lg font-black font-mono tabular-nums">
                         {Number(codAmount) > 0 ? `฿${Number(codAmount).toLocaleString()}` : 'ไม่มี (ชำระแล้ว)'}
                       </span>
                     </div>
@@ -468,7 +470,7 @@ function ThermalLabelsContent() {
                       {items.map((it, idx) => (
                         <div key={idx} className="flex justify-between">
                           <span className="truncate max-w-[200px]">• {it.name}</span>
-                          <span className="font-bold">x{it.qty}</span>
+                          <span className="font-bold tabular-nums">x{it.qty}</span>
                         </div>
                       ))}
                     </div>
@@ -490,7 +492,7 @@ function ThermalLabelsContent() {
                   <div className="flex justify-between items-start border-b border-black pb-1">
                     <div>
                       <div className="text-[10px] font-bold uppercase">{shelfZone}</div>
-                      <div className="text-[9px] text-[#d1c6ab]">{shelfDesc}</div>
+                      <div className="text-[9px] text-neutral-700">{shelfDesc}</div>
                     </div>
                     <div className="text-[10px] font-mono font-bold">WMS-LOC</div>
                   </div>
@@ -532,7 +534,7 @@ function ThermalLabelsContent() {
                       displayValue={true}
                     />
                   </div>
-                  <div className="text-xs font-black font-mono">
+                  <div className="text-xs font-black font-mono tabular-nums">
                     ฿{Number(productPrice).toLocaleString()} / {productUnit}
                   </div>
                 </div>
@@ -575,10 +577,10 @@ export default function ThermalLabelsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen items-center justify-center bg-[#1b2027]">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold text-[#d1c6ab]">กำลังโหลดเทมเพลตฉลาก...</p>
+        <div className="theme-nexus-hybrid flex h-screen items-center justify-center text-slate-700">
+          <div className="nx-glass-card px-6 py-4 flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-700">กำลังโหลดเทมเพลตฉลาก...</p>
           </div>
         </div>
       }
@@ -587,4 +589,3 @@ export default function ThermalLabelsPage() {
     </Suspense>
   );
 }
-

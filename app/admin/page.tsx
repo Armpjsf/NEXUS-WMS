@@ -1,119 +1,140 @@
 'use client';
 
-import { Users, History, ShieldAlert, Settings, LayoutGrid, Printer, Building2, TrendingUp, Warehouse } from 'lucide-react';
+import { Users, History, ShieldAlert, Settings, LayoutGrid, Printer, Building2, ArrowRight, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { motion } from 'framer-motion';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 
 export default function AdminPage() {
   const { t } = useLanguage();
 
   const menuItems = [
-    { 
-      title: t('menu_ops_user'), 
-      desc: t('admin_users_desc'), 
-      icon: Users, 
+    {
+      title: t('menu_ops_user'),
+      desc: t('admin_users_desc'),
+      icon: Users,
       href: '/admin/users',
-      color: 'from-blue-600 to-indigo-700'
+      iconTone: 'bg-sky-500/12 border-sky-500/20 text-sky-700',
+      badge: 'RBAC',
+      badgeTone: 'bg-sky-500/12 text-sky-700 border-sky-500/20',
     },
-    { 
-      title: t('menu_audit'), 
-      desc: t('admin_audit_desc'), 
-      icon: History, 
+    {
+      title: t('menu_audit'),
+      desc: t('admin_audit_desc'),
+      icon: History,
       href: '/admin/audit-trail',
-      color: 'from-amber-500 to-orange-600'
+      iconTone: 'bg-amber-500/15 border-amber-500/25 text-amber-700',
+      badge: 'Security',
+      badgeTone: 'bg-amber-500/15 text-amber-800 border-amber-500/25',
     },
-    { 
-      title: t('menu_quality'), 
-      desc: t('admin_quality_desc'), 
-      icon: ShieldAlert, 
+    {
+      title: t('menu_quality'),
+      desc: t('admin_quality_desc'),
+      icon: ShieldAlert,
       href: '/admin/data-quality',
-      color: 'from-emerald-500 to-teal-600'
+      iconTone: 'bg-emerald-500/12 border-emerald-500/20 text-emerald-700',
+      badge: 'Integrity',
+      badgeTone: 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20',
     },
-    { 
-      title: t('menu_slotting'), 
-      desc: t('admin_slotting_desc'), 
-      icon: LayoutGrid, 
+    {
+      title: t('menu_slotting'),
+      desc: t('admin_slotting_desc'),
+      icon: LayoutGrid,
       href: '/admin/slotting',
-      color: 'from-amber-600 to-blue-700'
+      iconTone: 'bg-amber-500/15 border-amber-500/25 text-amber-700',
+      badge: 'AI Layout',
+      badgeTone: 'bg-slate-900 text-white border-slate-900',
     },
-    { 
-      title: t('barcode_title'), 
-      desc: t('admin_labels_desc'), 
-      icon: Printer, 
+    {
+      title: t('barcode_title'),
+      desc: t('admin_labels_desc'),
+      icon: Printer,
       href: '/admin/labels',
-      color: 'from-rose-600 to-pink-700'
+      iconTone: 'bg-rose-500/12 border-rose-500/20 text-rose-700',
+      badge: 'Labels',
+      badgeTone: 'bg-rose-500/12 text-rose-700 border-rose-500/20',
     },
     {
       title: t('branch_management_title'),
       desc: t('admin_branches_desc'),
       icon: Building2,
       href: '/admin/branches',
-      color: 'from-teal-500 to-cyan-600'
+      iconTone: 'bg-emerald-500/12 border-emerald-500/20 text-emerald-700',
+      badge: 'Branches',
+      badgeTone: 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20',
     },
     {
       title: 'จุดรับสินค้า',
       desc: 'คลังจุดรับพร้อมพิกัด (ต้นทาง) ใช้ตอนสร้างงานส่งขึ้นรถ',
       icon: Warehouse,
       href: '/admin/pickup-locations',
-      color: 'from-cyan-500 to-blue-600'
-    }
+      iconTone: 'bg-sky-500/12 border-sky-500/20 text-sky-700',
+      badge: 'TMS GPS',
+      badgeTone: 'bg-sky-500/12 text-sky-700 border-sky-500/20',
+    },
   ];
 
   return (
-    <div className="p-8 pb-32 max-w-7xl mx-auto min-h-screen relative">
-      <AmbientBackground />
-      
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-12 bg-[#171c23] backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl shadow-slate-900/5 relative overflow-hidden"
-      >
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-800 via-blue-700 to-teal-500" />
-        <h1 className="relative z-10 text-4xl font-black text-[#dee2ec] mb-2 flex items-center gap-4">
-          <div className="bg-slate-900 text-white p-3 rounded-2xl shadow-lg">
-            <Settings className="w-8 h-8" />
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 text-slate-900">
+      <div className="max-w-[1500px] mx-auto space-y-6">
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="pt-1"
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+              <Settings className="w-3 h-3 text-emerald-600" />
+              System Administration
+            </span>
           </div>
-          {t('menu_admin')}
-        </h1>
-        <p className="relative z-10 text-[#8a92a6] font-medium text-lg ml-2">{t('admin_subtitle')}</p>
-      </motion.div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+            {t('menu_admin')}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-3xl">{t('admin_subtitle')}</p>
+        </motion.header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {menuItems.map((item, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-          >
-            <Link href={item.href}>
-              <div className="group relative border border-[#30353d] bg-[#171c23] p-8 rounded-[1.75rem] flex flex-col h-full shadow-lg shadow-slate-900/5 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden cursor-pointer">
-                <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${item.color}`} />
-
-                <div className="relative z-10">
-                  <div className={`w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
-                     <item.icon className={`w-8 h-8 text-white`} />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {menuItems.map((item, idx) => (
+            <motion.div
+              key={item.href}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04 }}
+            >
+              <Link
+                href={item.href}
+                className="nx-glass-card group flex h-full flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-1"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${item.iconTone}`}>
+                      <item.icon className="w-6 h-6" />
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${item.badgeTone}`}>
+                      {item.badge}
+                    </span>
                   </div>
-                  
-                  <h3 className={`text-2xl font-black text-[#dee2ec] mb-3 tracking-tight`}>
-                     {item.title}
+
+                  <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight group-hover:text-emerald-700 transition-colors">
+                    {item.title}
                   </h3>
-                  
-                  <p className="text-[#8a92a6] leading-relaxed font-medium">
-                     {item.desc}
+
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    {item.desc}
                   </p>
                 </div>
 
-                <div className="mt-8 flex items-center gap-2 text-[#d1c6ab] font-black text-sm uppercase tracking-widest relative z-10 opacity-80 group-hover:opacity-100 transition-opacity">
-                   Manage Module
-                   <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <div className="mt-6 pt-4 border-t border-slate-200/70 flex items-center justify-between text-slate-700 font-semibold text-xs group-hover:text-emerald-700 transition-colors">
+                  <span>Manage Module</span>
+                  <span className="w-8 h-8 rounded-full bg-white/80 border border-slate-200 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all">
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
                 </div>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );

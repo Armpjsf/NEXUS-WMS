@@ -146,77 +146,77 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className="w-full max-w-lg bg-[#171c23] border border-[#30353d] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
+        className="w-full max-w-lg bg-white/95 backdrop-blur-xl border border-white/90 rounded-[24px] shadow-2xl text-slate-900 flex flex-col max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#30353d]">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-[#facc15]/15 text-[#facc15]"><PackagePlus className="w-5 h-5" /></div>
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200"><PackagePlus className="w-5 h-5" /></div>
             <div>
-              <h2 className="font-bold text-[#dee2ec] text-sm">เพิ่มสินค้าเข้าออเดอร์</h2>
-              <p className="font-mono text-[11px] text-[#8a92a6]">{order.orderNo}{order.tmsJobId ? ` · TMS ${order.tmsJobId}` : ''}</p>
+              <h2 className="font-bold text-slate-900 text-sm">เพิ่มสินค้าเข้าออเดอร์</h2>
+              <p className="font-mono text-[11px] text-slate-500">{order.orderNo}{order.tmsJobId ? ` · TMS ${order.tmsJobId}` : ''}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#8a92a6] hover:text-[#dee2ec]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><X className="w-5 h-5" /></button>
         </div>
 
         {/* Scan / search */}
-        <div className="p-4 space-y-2 border-b border-[#30353d]">
+        <div className="p-4 space-y-2 border-b border-slate-100">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <ScanLine className="w-4 h-4 absolute left-3 top-3 text-[#facc15]" />
+              <ScanLine className="w-4 h-4 absolute left-3 top-3 text-emerald-600" />
               <input
                 ref={scanRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleScan(query); } }}
                 placeholder="สแกนบาร์โค้ด / พิมพ์ SKU หรือชื่อสินค้า แล้วกด Enter"
-                className="w-full pl-9 pr-3 py-2.5 bg-[#090f15] border border-[#30353d] rounded-lg text-sm text-[#dee2ec] placeholder:text-[#8a92a6]/60 outline-none focus:border-[#facc15]"
+                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500"
               />
             </div>
             <button type="button" onClick={() => setCamOpen(true)}
-              className="shrink-0 px-3 rounded-lg bg-[#facc15] text-[#1b1600] flex items-center justify-center hover:bg-[#eec200] active:scale-95" aria-label="เปิดกล้องสแกน">
+              className="shrink-0 px-3 rounded-xl bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 active:scale-95 transition-all" aria-label="เปิดกล้องสแกน">
               <Camera className="w-4 h-4" />
             </button>
           </div>
 
           {/* โหมดของนอกคลัง (cross-dock) */}
-          <label className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[#1b2027] border border-[#30353d] cursor-pointer">
-            <span className="text-[11px] font-semibold text-[#d1c6ab]">🔀 ของนอกคลัง (Cross-dock) — พิมพ์/สแกนเพิ่มได้เลย ไม่ตัดสต็อก</span>
-            <input type="checkbox" checked={crossDock} onChange={(e) => setCrossDock(e.target.checked)} className="w-4 h-4 accent-[#facc15]" />
+          <label className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+            <span className="text-[11px] font-semibold text-slate-700">🔀 ของนอกคลัง (Cross-dock) — พิมพ์/สแกนเพิ่มได้เลย ไม่ตัดสต็อก</span>
+            <input type="checkbox" checked={crossDock} onChange={(e) => setCrossDock(e.target.checked)} className="w-4 h-4 accent-emerald-600" />
           </label>
 
           {/* เลือกดรอปที่จะเพิ่มของเข้า */}
           {drops.length > 1 ? (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold text-[#8a92a6]">เพิ่มเข้าดรอป:</span>
+              <span className="text-[11px] font-bold text-slate-500">เพิ่มเข้าดรอป:</span>
               {drops.map(d => (
                 <button key={d} type="button" onClick={() => setTargetDrop(d)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${targetDrop === d ? 'bg-[#facc15] text-[#1b1600] border-[#facc15]' : 'bg-[#1b2027] text-[#d1c6ab] border-[#30353d]'}`}>
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${targetDrop === d ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'}`}>
                   ดรอป {d}{dropName(d) ? ` · ${dropName(d)}` : ''}
                 </button>
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-[#8a92a6]">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
+            <p className="text-[11px] text-slate-500">เพิ่มเข้า: ดรอป 1{dropName(1) ? ` · ${dropName(1)}` : ''}</p>
           )}
 
           {!crossDock && searchResults.length > 0 && (
-            <div className="rounded-lg border border-[#30353d] bg-[#1b2027] divide-y divide-[#30353d] max-h-44 overflow-y-auto">
+            <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 max-h-44 overflow-y-auto shadow-sm">
               {searchResults.map(p => (
                 <button
                   key={p.id}
                   onClick={() => { addLine(p); setQuery(''); scanRef.current?.focus(); }}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-[#252a32] transition-colors"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
                 >
                   <span className="min-w-0">
-                    <span className="block text-xs text-[#dee2ec] truncate">{p.name}</span>
-                    <span className="block font-mono text-[10px] text-[#8a92a6]">{p.id} · คงเหลือ {p.stock ?? 0}</span>
+                    <span className="block text-xs font-semibold text-slate-900 truncate">{p.name}</span>
+                    <span className="block font-mono text-[10px] text-slate-500">{p.id} · คงเหลือ {p.stock ?? 0}</span>
                   </span>
-                  <Plus className="w-4 h-4 text-[#facc15] shrink-0" />
+                  <Plus className="w-4 h-4 text-emerald-600 shrink-0" />
                 </button>
               ))}
             </div>
@@ -224,12 +224,12 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
 
           {query.trim() && (crossDock || searchResults.length === 0) && (
             <button type="button" onClick={() => { addCustom(query); scanRef.current?.focus(); }}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-dashed border-[#facc15]/50 bg-[#facc15]/10 text-left hover:bg-[#facc15]/15">
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-dashed border-amber-300 bg-amber-50 text-left hover:bg-amber-100/70 transition-colors">
               <span className="min-w-0">
-                <span className="block text-xs font-semibold text-[#facc15] truncate">เพิ่ม “{query.trim()}” เป็นของนอกคลัง</span>
-                <span className="block text-[10px] text-[#8a92a6]">Cross-dock · ไม่ตัดสต็อก (แก้ชื่อได้ทีหลัง)</span>
+                <span className="block text-xs font-semibold text-amber-800 truncate">เพิ่ม “{query.trim()}” เป็นของนอกคลัง</span>
+                <span className="block text-[10px] text-amber-700">Cross-dock · ไม่ตัดสต็อก (แก้ชื่อได้ทีหลัง)</span>
               </span>
-              <Plus className="w-4 h-4 text-[#facc15] shrink-0" />
+              <Plus className="w-4 h-4 text-amber-600 shrink-0" />
             </button>
           )}
         </div>
@@ -238,54 +238,54 @@ export default function AddItemsModal({ order, onClose, onDone }: Props) {
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {lines.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Search className="w-8 h-8 text-[#30353d] mb-2" />
-              <p className="text-[11px] text-[#8a92a6]">สแกนหรือค้นหาสินค้าเพื่อเพิ่มเข้าออเดอร์</p>
+              <Search className="w-8 h-8 text-slate-300 mb-2" />
+              <p className="text-[11px] text-slate-400">สแกนหรือค้นหาสินค้าเพื่อเพิ่มเข้าออเดอร์</p>
             </div>
           ) : lines.map((l, idx) => (
-            <div key={l.sku} className="flex items-center gap-2 bg-[#1b2027] border border-[#30353d] rounded-lg p-2.5">
+            <div key={l.sku} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
               <div className="min-w-0 flex-1">
                 {l.custom ? (
                   <input value={l.name} onChange={(e) => renameLine(idx, e.target.value)} placeholder="ชื่อสินค้า (นอกคลัง)"
-                    className="w-full text-xs text-[#dee2ec] bg-[#090f15] border border-[#facc15]/40 rounded px-2 py-1 outline-none focus:border-[#facc15]" />
+                    className="w-full text-xs text-slate-900 bg-white border border-amber-300 rounded-lg px-2 py-1 outline-none focus:border-emerald-500" />
                 ) : (
-                  <p className="text-xs text-[#dee2ec] truncate">{l.name}</p>
+                  <p className="text-xs font-semibold text-slate-900 truncate">{l.name}</p>
                 )}
-                <p className="font-mono text-[10px] text-[#8a92a6]">{l.custom ? '🔀 ของนอกคลัง' : l.sku}</p>
+                <p className="font-mono text-[10px] text-slate-500">{l.custom ? '🔀 ของนอกคลัง' : l.sku}</p>
               </div>
               {drops.length > 1 && (
                 <select
                   value={l.drop}
                   onChange={(e) => setDrop(l.sku, Number(e.target.value))}
-                  className="bg-[#090f15] border border-[#30353d] rounded text-[11px] text-[#dee2ec] px-1.5 py-1 outline-none focus:border-[#facc15]"
+                  className="bg-white border border-slate-200 rounded-lg text-[11px] text-slate-900 px-1.5 py-1 outline-none focus:border-emerald-500"
                 >
                   {drops.map(d => <option key={d} value={d}>ดรอป {d}</option>)}
                 </select>
               )}
               <div className="flex items-center gap-1">
-                <button onClick={() => setQty(l.sku, l.qty - 1)} className="w-7 h-7 rounded bg-[#252a32] text-[#d1c6ab] flex items-center justify-center hover:text-[#facc15]"><Minus className="w-3.5 h-3.5" /></button>
+                <button onClick={() => setQty(l.sku, l.qty - 1)} className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:text-emerald-600"><Minus className="w-3.5 h-3.5" /></button>
                 <input
                   type="number" value={l.qty} min={1}
                   onChange={(e) => setQty(l.sku, parseInt(e.target.value) || 1)}
-                  className="w-12 text-center bg-[#090f15] border border-[#30353d] rounded text-xs text-[#dee2ec] py-1 outline-none focus:border-[#facc15]"
+                  className="w-12 text-center bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 py-1 outline-none focus:border-emerald-500"
                 />
-                <button onClick={() => setQty(l.sku, l.qty + 1)} className="w-7 h-7 rounded bg-[#252a32] text-[#d1c6ab] flex items-center justify-center hover:text-[#facc15]"><Plus className="w-3.5 h-3.5" /></button>
+                <button onClick={() => setQty(l.sku, l.qty + 1)} className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:text-emerald-600"><Plus className="w-3.5 h-3.5" /></button>
               </div>
-              <button onClick={() => removeLine(l.sku)} className="text-[#8a92a6] hover:text-[#ffb4ab] ml-1"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => removeLine(l.sku)} className="text-slate-400 hover:text-rose-600 ml-1"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#30353d] flex items-center justify-between gap-3">
-          <span className="text-[11px] text-[#8a92a6]">
+        <div className="p-4 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
+          <span className="text-[11px] text-slate-500">
             {lines.length > 0 ? `${lines.length} รายการ · รวม ${lines.reduce((s, l) => s + l.qty, 0)} ชิ้น` : 'ยังไม่มีรายการ'}
           </span>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs font-bold text-[#d1c6ab] hover:bg-[#252a32]">ยกเลิก</button>
+            <button onClick={onClose} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/70 transition-colors">ยกเลิก</button>
             <button
               onClick={submit}
               disabled={saving || lines.length === 0}
-              className="px-5 py-2 rounded-lg bg-[#facc15] text-[#1b1600] text-xs font-bold hover:bg-[#eec200] disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm transition-colors"
             >
               <PackagePlus className="w-4 h-4" />
               {saving ? 'กำลังบันทึก...' : 'เพิ่มเข้าออเดอร์'}

@@ -226,7 +226,7 @@ export default function CameraScannerModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+          className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4"
           onClick={onClose}
         >
           <motion.div
@@ -234,24 +234,24 @@ export default function CameraScannerModal({
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl flex flex-col text-white"
+            className="relative w-full max-w-md bg-white/95 backdrop-blur-xl border border-white/90 rounded-[24px] overflow-hidden shadow-2xl flex flex-col text-slate-900"
           >
             {/* Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white/80">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                <div className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl">
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white">{title}</h3>
-                  <p className="text-[11px] text-slate-400 truncate max-w-[220px]">{description}</p>
+                  <h3 className="text-base font-black text-slate-900">{title}</h3>
+                  <p className="text-[11px] text-slate-500 truncate max-w-[220px]">{description}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setShowManual(!showManual)}
-                  className={`p-2 rounded-xl transition-colors ${showManual ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-slate-800 text-slate-400'}`}
+                  className={`p-2 rounded-xl transition-colors ${showManual ? 'bg-emerald-50 text-emerald-600' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'}`}
                   title="เปิด/ปิดช่องพิมพ์รหัสเอง"
                 >
                   <Keyboard className="w-4 h-4" />
@@ -259,15 +259,15 @@ export default function CameraScannerModal({
                 <button
                   type="button"
                   onClick={() => setSoundEnabled(!soundEnabled)}
-                  className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-900 transition-colors"
                   title={soundEnabled ? 'ปิดเสียง' : 'เปิดเสียง'}
                 >
-                  {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
+                  {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4" />}
                 </button>
                 <button
                   type="button"
                   onClick={toggleCamera}
-                  className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-900 transition-colors"
                   title="สลับกล้องหน้า/หลัง"
                 >
                   <SwitchCamera className="w-4 h-4" />
@@ -275,7 +275,7 @@ export default function CameraScannerModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-900 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -283,13 +283,13 @@ export default function CameraScannerModal({
             </div>
 
             {/* Viewport Area */}
-            <div className="relative w-full bg-black aspect-square flex items-center justify-center overflow-hidden">
+            <div className="relative w-full bg-slate-950 aspect-square flex items-center justify-center overflow-hidden">
               <div id={readerId.current} className="w-full h-full" />
 
               {/* Laser animation and target box */}
               {!error && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-64 h-64 border-2 border-emerald-500/60 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] flex flex-col justify-between p-2">
+                  <div className="relative w-64 h-64 border-2 border-emerald-500/70 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] flex flex-col justify-between p-2">
                     {/* Corners */}
                     <div className="flex justify-between">
                       <span className="w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
@@ -307,26 +307,26 @@ export default function CameraScannerModal({
 
               {/* Loading indicator */}
               {isStarting && !error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 gap-3">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 gap-3">
                   <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-xs font-semibold text-slate-300">กำลังเชื่อมต่อกล้อง...</p>
+                  <p className="text-xs font-semibold text-slate-200">กำลังเชื่อมต่อกล้อง...</p>
                 </div>
               )}
 
               {/* Error View with Built-in Manual Barcode Input */}
               {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 p-5 text-center z-20 overflow-y-auto">
-                  <div className="w-11 h-11 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mb-2 shrink-0">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 p-5 text-center z-20 overflow-y-auto">
+                  <div className="w-11 h-11 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mb-2 shrink-0">
                     <Camera className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-rose-300 font-bold whitespace-pre-line leading-relaxed max-w-xs mb-3">
+                  <p className="text-xs text-rose-700 font-bold whitespace-pre-line leading-relaxed max-w-xs mb-3">
                     {error}
                   </p>
 
                   {/* Immediate Manual Barcode Entry */}
-                  <div className="w-full max-w-xs bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-left mb-3">
-                    <label className="text-[11px] font-bold text-slate-300 block mb-1.5 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <div className="w-full max-w-xs bg-slate-50 p-3 rounded-2xl border border-slate-200 text-left mb-3">
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
                       <span>พิมพ์รหัสบาร์โค้ด / SKU:</span>
                     </label>
                     <form onSubmit={submitManual} className="flex items-center gap-2">
@@ -336,12 +336,12 @@ export default function CameraScannerModal({
                         onChange={e => setManualCode(e.target.value)}
                         placeholder="ระบุรหัสบาร์โค้ด แล้วกดส่ง..."
                         autoFocus
-                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                        className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:outline-none focus:border-emerald-500"
                       />
                       <button
                         type="submit"
                         disabled={!manualCode.trim()}
-                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all shrink-0"
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all shrink-0"
                       >
                         ส่งรหัส
                       </button>
@@ -356,7 +356,7 @@ export default function CameraScannerModal({
                         setIsStarting(true);
                         setFacingMode(prev => prev);
                       }}
-                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       <span>ลองใหม่</span>
@@ -364,7 +364,7 @@ export default function CameraScannerModal({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all"
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
                     >
                       ปิดหน้าต่าง
                     </button>
@@ -386,7 +386,7 @@ export default function CameraScannerModal({
             </div>
 
             {/* Footer with Expandable Manual Input */}
-            <div className="p-3.5 border-t border-slate-800 bg-slate-900/90 flex flex-col gap-2.5">
+            <div className="p-3.5 border-t border-slate-100 bg-slate-50/80 flex flex-col gap-2.5">
               {showManual && (
                 <form onSubmit={submitManual} className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
                   <input
@@ -395,27 +395,27 @@ export default function CameraScannerModal({
                     onChange={e => setManualCode(e.target.value)}
                     placeholder="พิมพ์รหัสบาร์โค้ด / SKU..."
                     autoFocus
-                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono text-xs focus:outline-none focus:border-emerald-500"
                   />
                   <button
                     type="submit"
                     disabled={!manualCode.trim()}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all shrink-0"
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all shrink-0"
                   >
                     ส่งรหัส
                   </button>
                 </form>
               )}
 
-              <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="flex items-center justify-between text-xs text-slate-500">
                 <div className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
                   <span>รองรับปืนสแกนไร้สาย (PDA Laser)</span>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors text-xs"
+                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors text-xs"
                 >
                   เสร็จสิ้น
                 </button>

@@ -12,7 +12,6 @@ import {
   FileCheck,
   Sparkles,
 } from 'lucide-react';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { errorMessage } from '@/lib/errors';
@@ -230,136 +229,128 @@ export default function StockAdjustmentsPage() {
   };
 
   return (
-    <div className="relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 font-mono text-[#dee2ec]">
-      <AmbientBackground />
+    <div className="theme-nexus-hybrid relative min-h-screen px-4 py-6 pb-32 sm:px-6 lg:p-8 text-slate-900">
       <div className="relative z-10 mx-auto max-w-7xl space-y-6">
 
-        {/* Header Tactical Banner */}
-        <div className="relative mx-auto flex flex-col gap-4 overflow-hidden rounded-xl border border-[#30353d] bg-[#171c23]/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#facc15] via-[#4cd7f6] to-[#57ec7f]" />
-          <div className="relative z-10">
-            <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#facc15] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#facc15]" />
-              FOUR-EYES PRINCIPLE & ISO 9001 / 21 CFR PART 11 GOVERNANCE
-            </p>
-            <h1 className="font-headline text-2xl md:text-3xl font-black text-[#dee2ec] tracking-tight mb-1 flex items-center gap-3">
-              <div className="bg-[#facc15] text-[#1b1600] p-2 rounded-lg shadow-md">
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              ศูนย์ขออนุมัติปรับยอดสต็อก (Maker-Checker Console)
+        {/* Open Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between pt-1">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                Four-Eyes Principle &amp; ISO 9001 / 21 CFR Part 11 Governance
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <ShieldAlert className="w-7 h-7 text-amber-600 shrink-0" />
+              <span>ศูนย์ขออนุมัติปรับยอดสต็อก (Maker-Checker Console)</span>
             </h1>
-            <p className="text-[#8a92a6] font-mono text-xs">
+            <p className="text-slate-600 text-xs sm:text-sm font-medium mt-0.5">
               ระบบตรวจสอบสิทธิ์ 2 ชั้น ป้องกันการทุจริตหรือแอบปรับลดยอดสต็อกโดยพลการ พร้อมเก็บบันทึกประวัติการตัดสินใจถาวร
             </p>
           </div>
-          <div className="flex items-center gap-2 relative z-10">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={fetchAdjustments}
-              className="p-2.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-xl border border-[#30353d] transition flex items-center gap-1.5 text-xs font-bold"
+              className="p-2.5 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-full border border-white/90 shadow-xs transition flex items-center gap-1.5 text-xs font-semibold"
               title="รีเฟรชข้อมูล"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
             </button>
             <button
               onClick={() => setIsRequestModalOpen(true)}
-              className="px-4 py-2.5 bg-[#facc15] hover:bg-[#eab308] text-[#1b1600] rounded-xl shadow-lg shadow-[#facc15]/20 font-black transition flex items-center gap-2 text-xs"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-sm font-semibold transition flex items-center gap-1.5 text-xs"
             >
               <Plus className="w-4 h-4" />
-              + ยื่นคำขอปรับสต็อก (Maker)
+              <span>ยื่นคำขอปรับสต็อก (Maker)</span>
             </button>
           </div>
         </div>
 
-        {/* KPI Summary Cards */}
+        {/* KPI Summary Cards (with 1 Hero Dark Accent Alert Card for Pending) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div 
+          <div
             onClick={() => setActiveTab('PENDING')}
-            className={`p-4 rounded-xl border transition cursor-pointer backdrop-blur-md ${
-              activeTab === 'PENDING' 
-                ? 'bg-[#facc15]/10 border-[#facc15] ring-1 ring-[#facc15]' 
-                : 'bg-[#171c23]/90 border-[#30353d] hover:border-[#facc15]/50'
+            className={`nx-dark-accent-card p-5 transition cursor-pointer ${
+              activeTab === 'PENDING' ? 'ring-2 ring-amber-400' : 'hover:ring-1 hover:ring-amber-400/50'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#facc15]">รอหัวหน้าอนุมัติ (Pending)</span>
-              <span className="p-1.5 bg-[#facc15]/20 text-[#facc15] rounded-lg">
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-300">รอหัวหน้าอนุมัติ (Pending)</span>
+              <span className="p-2 bg-amber-500/20 text-amber-300 rounded-xl border border-amber-500/30">
                 <Clock className="w-4 h-4" />
               </span>
             </div>
-            <div className="text-3xl font-black text-[#dee2ec] mt-2 font-mono">{pendingCount}</div>
-            <p className="text-[11px] text-[#8a92a6] mt-1">ต้องการ Checker Review พิจารณา</p>
+            <div className="text-3xl font-bold text-white mt-2 tabular-nums">{pendingCount.toLocaleString()}</div>
+            <p className="text-[11px] text-slate-400 mt-1">ต้องการ Checker Review พิจารณา</p>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('APPROVED')}
-            className={`p-4 rounded-xl border transition cursor-pointer backdrop-blur-md ${
-              activeTab === 'APPROVED' 
-                ? 'bg-[#57ec7f]/10 border-[#57ec7f] ring-1 ring-[#57ec7f]' 
-                : 'bg-[#171c23]/90 border-[#30353d] hover:border-[#57ec7f]/50'
+            className={`nx-glass-card p-5 transition cursor-pointer ${
+              activeTab === 'APPROVED' ? 'ring-2 ring-emerald-500' : 'hover:ring-1 hover:ring-emerald-400/60'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#57ec7f]">อนุมัติเรียบร้อย (Approved)</span>
-              <span className="p-1.5 bg-[#57ec7f]/20 text-[#57ec7f] rounded-lg">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">อนุมัติเรียบร้อย (Approved)</span>
+              <span className="p-2 bg-emerald-500/12 text-emerald-700 rounded-xl border border-emerald-500/20">
                 <CheckCircle2 className="w-4 h-4" />
               </span>
             </div>
-            <div className="text-3xl font-black text-[#dee2ec] mt-2 font-mono">{approvedCount}</div>
-            <p className="text-[11px] text-[#8a92a6] mt-1">อัปเดตสต็อกจริงและลง Log แล้ว</p>
+            <div className="text-3xl font-bold text-slate-900 mt-2 tabular-nums">{approvedCount.toLocaleString()}</div>
+            <p className="text-[11px] text-slate-500 mt-1">อัปเดตสต็อกจริงและลง Log แล้ว</p>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('REJECTED')}
-            className={`p-4 rounded-xl border transition cursor-pointer backdrop-blur-md ${
-              activeTab === 'REJECTED' 
-                ? 'bg-[#ff5449]/10 border-[#ff5449] ring-1 ring-[#ff5449]' 
-                : 'bg-[#171c23]/90 border-[#30353d] hover:border-[#ff5449]/50'
+            className={`nx-glass-card p-5 transition cursor-pointer ${
+              activeTab === 'REJECTED' ? 'ring-2 ring-rose-500' : 'hover:ring-1 hover:ring-rose-400/60'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#ff5449]">ปฏิเสธคำขอ (Rejected)</span>
-              <span className="p-1.5 bg-[#ff5449]/20 text-[#ff5449] rounded-lg">
+              <span className="text-xs font-semibold uppercase tracking-wider text-rose-700">ปฏิเสธคำขอ (Rejected)</span>
+              <span className="p-2 bg-rose-500/12 text-rose-700 rounded-xl border border-rose-500/20">
                 <XCircle className="w-4 h-4" />
               </span>
             </div>
-            <div className="text-3xl font-black text-[#dee2ec] mt-2 font-mono">{rejectedCount}</div>
-            <p className="text-[11px] text-[#8a92a6] mt-1">ไม่ผ่านเกณฑ์ / ข้อมูลไม่สอดคล้อง</p>
+            <div className="text-3xl font-bold text-slate-900 mt-2 tabular-nums">{rejectedCount.toLocaleString()}</div>
+            <p className="text-[11px] text-slate-500 mt-1">ไม่ผ่านเกณฑ์ / ข้อมูลไม่สอดคล้อง</p>
           </div>
         </div>
 
         {/* Main Table Card */}
-        <div className="bg-[#171c23]/90 rounded-xl border border-[#30353d] shadow-2xl backdrop-blur-xl overflow-hidden">
+        <div className="nx-glass-card overflow-hidden">
           {/* Controls */}
-          <div className="p-4 border-b border-[#30353d] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 border-b border-slate-200/80 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
               <button
                 onClick={() => setActiveTab('PENDING')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  activeTab === 'PENDING' ? 'bg-[#facc15] text-[#1b1600]' : 'bg-[#12161d] text-[#8a92a6] hover:text-white border border-[#30353d]'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap tabular-nums ${
+                  activeTab === 'PENDING' ? 'bg-amber-500 text-white shadow-xs' : 'bg-white/80 text-slate-600 hover:text-slate-900 border border-slate-200'
                 }`}
               >
                 รออนุมัติ ({pendingCount})
               </button>
               <button
                 onClick={() => setActiveTab('APPROVED')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  activeTab === 'APPROVED' ? 'bg-[#57ec7f] text-[#0a2012]' : 'bg-[#12161d] text-[#8a92a6] hover:text-white border border-[#30353d]'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap tabular-nums ${
+                  activeTab === 'APPROVED' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white/80 text-slate-600 hover:text-slate-900 border border-slate-200'
                 }`}
               >
                 อนุมัติแล้ว ({approvedCount})
               </button>
               <button
                 onClick={() => setActiveTab('REJECTED')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  activeTab === 'REJECTED' ? 'bg-[#ff5449] text-white' : 'bg-[#12161d] text-[#8a92a6] hover:text-white border border-[#30353d]'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap tabular-nums ${
+                  activeTab === 'REJECTED' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white/80 text-slate-600 hover:text-slate-900 border border-slate-200'
                 }`}
               >
                 ปฏิเสธ ({rejectedCount})
               </button>
               <button
                 onClick={() => setActiveTab('ALL')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  activeTab === 'ALL' ? 'bg-[#4cd7f6] text-[#042027]' : 'bg-[#12161d] text-[#8a92a6] hover:text-white border border-[#30353d]'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap tabular-nums ${
+                  activeTab === 'ALL' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white/80 text-slate-600 hover:text-slate-900 border border-slate-200'
                 }`}
               >
                 ทั้งหมด ({adjustments.length})
@@ -367,13 +358,13 @@ export default function StockAdjustmentsPage() {
             </div>
 
             <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8a92a6]" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="ค้นหา SKU, ใบคำขอ, ผู้ยื่น..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#12161d] border border-[#30353d] rounded-lg text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                className="w-full pl-9 pr-3.5 py-2 text-xs bg-white/85 border border-slate-200 rounded-full text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
               />
             </div>
           </div>
@@ -381,91 +372,95 @@ export default function StockAdjustmentsPage() {
           {/* Table Content */}
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="p-8 text-center text-[#8a92a6] text-xs">กำลังโหลดรายการคำขอ...</div>
+              <div className="p-8 text-center text-slate-500 text-xs">กำลังโหลดรายการคำขอ...</div>
             ) : filteredAdjustments.length === 0 ? (
-              <div className="p-12 text-center text-[#8a92a6]">
-                <FileCheck className="w-12 h-12 mx-auto text-[#30353d] mb-2" />
-                <p className="text-xs font-bold">ไม่พบรายการคำขอปรับสต็อกในหมวดหมู่นี้</p>
+              <div className="p-12 text-center text-slate-500">
+                <FileCheck className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                <p className="text-xs font-semibold">ไม่พบรายการคำขอปรับสต็อกในหมวดหมู่นี้</p>
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#12161d] text-[#8a92a6] font-bold uppercase tracking-wider border-b border-[#30353d]">
+              <table className="w-full text-left text-xs text-slate-700">
+                <thead className="bg-slate-50/90 text-slate-600 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200/80">
                   <tr>
-                    <th className="py-3 px-4">เลขที่คำขอ</th>
-                    <th className="py-3 px-4">สินค้า & พิกัด</th>
-                    <th className="py-3 px-4 text-center">ยอดระบบ</th>
-                    <th className="py-3 px-4 text-center">ยอดนับจริง</th>
-                    <th className="py-3 px-4 text-center">ผลต่าง (Diff)</th>
-                    <th className="py-3 px-4">เหตุผลในการปรับ</th>
-                    <th className="py-3 px-4">ผู้ยื่น (Maker)</th>
-                    <th className="py-3 px-4">สถานะ</th>
-                    <th className="py-3 px-4 text-right">ดำเนินการ</th>
+                    <th className="py-3.5 px-4">เลขที่คำขอ</th>
+                    <th className="py-3.5 px-4">สินค้า &amp; พิกัด</th>
+                    <th className="py-3.5 px-4 text-center">ยอดระบบ</th>
+                    <th className="py-3.5 px-4 text-center">ยอดนับจริง</th>
+                    <th className="py-3.5 px-4 text-center">ผลต่าง (Diff)</th>
+                    <th className="py-3.5 px-4">เหตุผลในการปรับ</th>
+                    <th className="py-3.5 px-4">ผู้ยื่น (Maker)</th>
+                    <th className="py-3.5 px-4">สถานะ</th>
+                    <th className="py-3.5 px-4 text-right">ดำเนินการ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#262c36]">
+                <tbody className="divide-y divide-slate-100">
                   {filteredAdjustments.map((item) => (
-                    <tr key={item.id} className="hover:bg-white/5 transition">
-                      <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-[#dee2ec]">{item.requestId}</span>
-                        <div className="text-[10px] text-[#8a92a6]">{new Date(item.createdAt).toLocaleString('th-TH')}</div>
+                    <tr key={item.id} className="hover:bg-emerald-50/35 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono font-bold text-slate-900">{item.requestId}</span>
+                        <div className="text-[10px] text-slate-500 tabular-nums">{new Date(item.createdAt).toLocaleString('th-TH')}</div>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-[#dee2ec]">{item.sku}</div>
-                        <div className="text-[11px] text-[#4cd7f6] font-bold">📍 {item.location}</div>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900">{item.sku}</div>
+                        <div className="text-[11px] text-sky-700 font-semibold font-mono">📍 {item.location}</div>
                       </td>
-                      <td className="py-3 px-4 text-center font-mono text-[#8a92a6]">
-                        {item.systemQty}
+                      <td className="py-3.5 px-4 text-center font-mono text-slate-600 tabular-nums">
+                        {item.systemQty.toLocaleString()}
                       </td>
-                      <td className="py-3 px-4 text-center font-mono font-bold text-[#dee2ec]">
-                        {item.countedQty}
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-900 tabular-nums">
+                        {item.countedQty.toLocaleString()}
                       </td>
-                      <td className="py-3 px-4 text-center font-mono font-black">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
-                          item.diffQty < 0 ? 'bg-[#ff5449]/20 text-[#ffb4ab]' : item.diffQty > 0 ? 'bg-[#57ec7f]/20 text-[#57ec7f]' : 'bg-[#252a32] text-[#8a92a6]'
+                      <td className="py-3.5 px-4 text-center font-mono font-bold tabular-nums">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border ${
+                          item.diffQty < 0
+                            ? 'bg-rose-500/12 text-rose-700 border-rose-500/20'
+                            : item.diffQty > 0
+                            ? 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
                         }`}>
                           {item.diffQty > 0 ? `+${item.diffQty}` : item.diffQty}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="text-[#dee2ec]">{getReasonLabel(item.reason)}</div>
-                        {item.notes && <div className="text-[10px] text-[#8a92a6] truncate max-w-xs">{item.notes}</div>}
+                      <td className="py-3.5 px-4">
+                        <div className="text-slate-800 font-medium">{getReasonLabel(item.reason)}</div>
+                        {item.notes && <div className="text-[10px] text-slate-500 truncate max-w-xs">{item.notes}</div>}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="text-[#dee2ec] font-bold">{item.requestedByName || item.requestedBy}</div>
-                        <div className="text-[10px] text-[#8a92a6]">พนักงานคลัง</div>
+                      <td className="py-3.5 px-4">
+                        <div className="text-slate-900 font-semibold">{item.requestedByName || item.requestedBy}</div>
+                        <div className="text-[10px] text-slate-500">พนักงานคลัง</div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         {item.status === 'PENDING' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#facc15]/20 text-[#facc15] border border-[#facc15]/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/25">
                             <Clock className="w-3 h-3" /> รออนุมัติ
                           </span>
                         )}
                         {item.status === 'APPROVED' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#57ec7f]/20 text-[#57ec7f] border border-[#57ec7f]/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/12 text-emerald-700 border border-emerald-500/20">
                             <CheckCircle2 className="w-3 h-3" /> อนุมัติแล้ว
                           </span>
                         )}
                         {item.status === 'REJECTED' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#ff5449]/20 text-[#ffb4ab] border border-[#ff5449]/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/12 text-rose-700 border border-rose-500/20">
                             <XCircle className="w-3 h-3" /> ปฏิเสธ
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right">
                         {item.status === 'PENDING' ? (
                           <button
                             onClick={() => {
                               setSelectedForReview(item);
                               setRejectReasonInput('');
                             }}
-                            className="px-3 py-1.5 bg-[#4cd7f6] hover:bg-[#38bdf8] text-[#042027] rounded-lg text-xs font-black shadow transition"
+                            className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-full text-xs font-semibold shadow-xs transition"
                           >
                             ตรวจสอบ (Checker)
                           </button>
                         ) : (
                           <button
                             onClick={() => setSelectedForReview(item)}
-                            className="px-3 py-1.5 bg-[#252a32] hover:bg-[#30353d] text-[#dee2ec] rounded-lg text-xs font-bold transition border border-[#30353d]"
+                            className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-full text-xs font-semibold transition border border-slate-200 shadow-xs"
                           >
                             ดูประวัติ
                           </button>
@@ -481,17 +476,16 @@ export default function StockAdjustmentsPage() {
 
         {/* MODAL: Submit Request (Maker) */}
         {isRequestModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl p-6 text-xs font-mono text-[#dee2ec]">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-              <div className="flex items-center justify-between border-b border-[#30353d] pb-3 mb-4">
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white bg-white/95 backdrop-blur-xl shadow-2xl p-6 text-xs text-slate-900">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3.5 mb-4">
                 <div>
-                  <h3 className="text-base font-black text-[#dee2ec]">ยื่นคำขอปรับปรุงยอดสต็อก (Maker Request)</h3>
-                  <p className="text-[11px] text-[#8a92a6]">ข้อมูลจะถูกส่งเข้าคิวรอหัวหน้างาน (Checker) พิจารณาอนุมัติ</p>
+                  <h3 className="text-base font-bold text-slate-900">ยื่นคำขอปรับปรุงยอดสต็อก (Maker Request)</h3>
+                  <p className="text-[11px] text-slate-500">ข้อมูลจะถูกส่งเข้าคิวรอหัวหน้างาน (Checker) พิจารณาอนุมัติ</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsRequestModalOpen(false)}
-                  className="text-[#8a92a6] hover:text-white text-lg font-bold"
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold"
                 >
                   ✕
                 </button>
@@ -500,52 +494,52 @@ export default function StockAdjustmentsPage() {
               <form onSubmit={handleCreateRequest} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">รหัส SKU *</label>
+                    <label className="block text-slate-600 font-semibold mb-1.5">รหัส SKU *</label>
                     <input
                       type="text"
                       required
                       placeholder="เช่น SKU-PROD-001"
                       value={formData.sku}
                       onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-slate-50/90 text-slate-900 font-mono focus:bg-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] font-bold mb-1">พิกัดตำแหน่ง (Location) *</label>
+                    <label className="block text-slate-600 font-semibold mb-1.5">พิกัดตำแหน่ง (Location) *</label>
                     <input
                       type="text"
                       required
                       placeholder="เช่น A-01-02-01"
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] focus:outline-none"
+                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-slate-50/90 text-slate-900 font-mono focus:bg-white focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 bg-[#12161d] p-3 rounded-xl border border-[#30353d]">
+                <div className="grid grid-cols-2 gap-3 bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200">
                   <div>
-                    <label className="block text-[#8a92a6] mb-1">ยอดคงเหลือในระบบ</label>
+                    <label className="block text-slate-600 font-semibold mb-1">ยอดคงเหลือในระบบ</label>
                     <input
                       type="number"
                       value={formData.systemQty}
                       onChange={(e) => setFormData({ ...formData, systemQty: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#1c222b] text-[#dee2ec] font-bold"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-900 font-bold tabular-nums outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[#8a92a6] mb-1">ยอดนับจริง (Actual Count)</label>
+                    <label className="block text-slate-600 font-semibold mb-1">ยอดนับจริง (Actual Count)</label>
                     <input
                       type="number"
                       value={formData.countedQty}
                       onChange={(e) => setFormData({ ...formData, countedQty: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#1c222b] text-[#4cd7f6] font-bold"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sky-700 font-bold tabular-nums outline-none focus:border-emerald-500"
                     />
                   </div>
-                  <div className="col-span-2 pt-2 border-t border-[#262c36] text-right">
-                    <span className="text-[#8a92a6] mr-2">ผลต่างที่จะปรับปรุง:</span>
-                    <span className={`font-mono font-black text-sm ${
-                      formData.countedQty - formData.systemQty < 0 ? 'text-[#ff5449]' : 'text-[#57ec7f]'
+                  <div className="col-span-2 pt-2 border-t border-slate-200 text-right">
+                    <span className="text-slate-600 mr-2">ผลต่างที่จะปรับปรุง:</span>
+                    <span className={`font-mono font-bold text-sm tabular-nums ${
+                      formData.countedQty - formData.systemQty < 0 ? 'text-rose-600' : 'text-emerald-700'
                     }`}>
                       {formData.countedQty - formData.systemQty > 0 ? `+${formData.countedQty - formData.systemQty}` : formData.countedQty - formData.systemQty}
                     </span>
@@ -553,11 +547,11 @@ export default function StockAdjustmentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">สาเหตุในการขอปรับปรุง *</label>
+                  <label className="block text-slate-600 font-semibold mb-1.5">สาเหตุในการขอปรับปรุง *</label>
                   <select
                     value={formData.reason}
                     onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6]"
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-slate-50/90 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
                   >
                     <option value="CYCLE_COUNT_DISCREPANCY">ตรวจนับรอบสต็อกพบผลต่าง (Cycle Count Discrepancy)</option>
                     <option value="DAMAGED_EXPIRED">สินค้าชำรุดเสียหาย / เสื่อมสภาพ / หมดอายุ</option>
@@ -567,28 +561,28 @@ export default function StockAdjustmentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[#8a92a6] font-bold mb-1">หมายเหตุ / รายละเอียดเพิ่มเติม</label>
+                  <label className="block text-slate-600 font-semibold mb-1.5">หมายเหตุ / รายละเอียดเพิ่มเติม</label>
                   <textarea
                     rows={2}
                     placeholder="ระบุสาเหตุที่ชัดเจนเพื่อประกอบการพิจารณา..."
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6]"
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-slate-50/90 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
 
-                <div className="pt-3 border-t border-[#30353d] flex justify-end gap-2">
+                <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsRequestModalOpen(false)}
-                    className="px-4 py-2 bg-[#252a32] text-[#8a92a6] hover:text-white rounded-xl"
+                    className="px-4 py-2 bg-slate-100 text-slate-600 hover:text-slate-900 rounded-full font-semibold"
                   >
                     ยกเลิก
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-5 py-2 bg-[#facc15] hover:bg-[#eab308] text-[#1b1600] rounded-xl font-black shadow"
+                    className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full font-semibold shadow-xs"
                   >
                     {isSubmitting ? 'กำลังส่ง...' : 'ยืนยันส่งคำขอ (Submit)'}
                   </button>
@@ -600,45 +594,46 @@ export default function StockAdjustmentsPage() {
 
         {/* MODAL: Review & Approve/Reject (Checker) */}
         {selectedForReview && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl p-6 text-xs font-mono text-[#dee2ec] space-y-4">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#4cd7f6] via-[#facc15] to-[#57ec7f]" />
-              <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white bg-white/95 backdrop-blur-xl shadow-2xl p-6 text-xs text-slate-900 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3.5">
                 <div>
-                  <h3 className="text-base font-black text-[#dee2ec]">
+                  <h3 className="text-base font-bold text-slate-900">
                     {selectedForReview.status === 'PENDING' ? 'พิจารณาอนุมัติคำขอ (Checker Review)' : 'รายละเอียดประวัติคำขอ'}
                   </h3>
-                  <p className="text-[11px] text-[#4cd7f6]">คำขอเลขที่: {selectedForReview.requestId}</p>
+                  <p className="text-[11px] text-sky-700 font-mono font-semibold">คำขอเลขที่: {selectedForReview.requestId}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setSelectedForReview(null)}
-                  className="text-[#8a92a6] hover:text-white text-lg font-bold"
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 bg-[#12161d] p-4 rounded-xl border border-[#30353d]">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50/90 p-4 rounded-2xl border border-slate-200">
                 <div>
-                  <span className="text-[#8a92a6] block text-[10px]">สินค้า SKU:</span>
-                  <span className="text-sm font-bold text-[#dee2ec]">{selectedForReview.sku}</span>
+                  <span className="text-slate-500 block text-[10px] font-semibold">สินค้า SKU:</span>
+                  <span className="text-sm font-bold text-slate-900">{selectedForReview.sku}</span>
                 </div>
                 <div>
-                  <span className="text-[#8a92a6] block text-[10px]">พิกัดจัดเก็บ:</span>
-                  <span className="text-sm font-bold text-[#4cd7f6]">📍 {selectedForReview.location}</span>
+                  <span className="text-slate-500 block text-[10px] font-semibold">พิกัดจัดเก็บ:</span>
+                  <span className="text-sm font-bold text-sky-700 font-mono">📍 {selectedForReview.location}</span>
                 </div>
                 <div>
-                  <span className="text-[#8a92a6] block text-[10px]">ยอดในระบบเดิม:</span>
-                  <span className="text-base font-bold text-[#8a92a6]">{selectedForReview.systemQty}</span>
+                  <span className="text-slate-500 block text-[10px] font-semibold">ยอดในระบบเดิม:</span>
+                  <span className="text-base font-bold text-slate-600 tabular-nums">{selectedForReview.systemQty.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-[#8a92a6] block text-[10px]">ยอดนับจริงใหม่:</span>
-                  <span className="text-base font-bold text-[#dee2ec]">{selectedForReview.countedQty}</span>
+                  <span className="text-slate-500 block text-[10px] font-semibold">ยอดนับจริงใหม่:</span>
+                  <span className="text-base font-bold text-slate-900 tabular-nums">{selectedForReview.countedQty.toLocaleString()}</span>
                 </div>
-                <div className="col-span-2 pt-2 border-t border-[#262c36] flex justify-between items-center">
-                  <span className="text-[#8a92a6]">ยอดส่วนต่างที่จะบันทึกบัญชี:</span>
-                  <span className={`text-base font-black px-2 py-0.5 rounded ${
-                    selectedForReview.diffQty < 0 ? 'bg-[#ff5449]/20 text-[#ffb4ab]' : 'bg-[#57ec7f]/20 text-[#57ec7f]'
+                <div className="col-span-2 pt-2 border-t border-slate-200 flex justify-between items-center">
+                  <span className="text-slate-600 font-semibold">ยอดส่วนต่างที่จะบันทึกบัญชี:</span>
+                  <span className={`text-sm font-bold font-mono px-2.5 py-0.5 rounded-full tabular-nums border ${
+                    selectedForReview.diffQty < 0
+                      ? 'bg-rose-500/12 text-rose-700 border-rose-500/20'
+                      : 'bg-emerald-500/12 text-emerald-700 border-emerald-500/20'
                   }`}>
                     {selectedForReview.diffQty > 0 ? `+${selectedForReview.diffQty}` : selectedForReview.diffQty}
                   </span>
@@ -647,27 +642,27 @@ export default function StockAdjustmentsPage() {
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-[#8a92a6]">ผู้ยื่นคำขอ (Maker):</span>
-                  <span className="text-[#dee2ec] font-bold">{selectedForReview.requestedByName || selectedForReview.requestedBy}</span>
+                  <span className="text-slate-500">ผู้ยื่นคำขอ (Maker):</span>
+                  <span className="text-slate-900 font-bold">{selectedForReview.requestedByName || selectedForReview.requestedBy}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8a92a6]">เหตุผล:</span>
-                  <span className="text-[#dee2ec]">{getReasonLabel(selectedForReview.reason)}</span>
+                  <span className="text-slate-500">เหตุผล:</span>
+                  <span className="text-slate-800 font-medium">{getReasonLabel(selectedForReview.reason)}</span>
                 </div>
                 {selectedForReview.notes && (
-                  <div className="p-3 bg-[#12161d] rounded-xl text-[#dee2ec] border border-[#30353d] text-[11px]">
-                    <span className="text-[#8a92a6] block text-[10px] mb-0.5">บันทึกเหตุผล:</span>
+                  <div className="p-3 bg-slate-50 rounded-xl text-slate-700 border border-slate-200 text-[11px]">
+                    <span className="text-slate-500 block text-[10px] font-semibold mb-0.5">บันทึกเหตุผล:</span>
                     {selectedForReview.notes}
                   </div>
                 )}
                 {selectedForReview.approvedBy && (
-                  <div className="flex justify-between pt-2 border-t border-[#30353d]">
-                    <span className="text-[#8a92a6]">ผู้อนุมัติ/ตรวจสอบ:</span>
-                    <span className="font-bold text-[#57ec7f]">{selectedForReview.approvedByName || selectedForReview.approvedBy}</span>
+                  <div className="flex justify-between pt-2 border-t border-slate-200">
+                    <span className="text-slate-500">ผู้อนุมัติ/ตรวจสอบ:</span>
+                    <span className="font-bold text-emerald-700">{selectedForReview.approvedByName || selectedForReview.approvedBy}</span>
                   </div>
                 )}
                 {selectedForReview.rejectionReason && (
-                  <div className="p-3 bg-[#ff5449]/10 border border-[#ff5449]/30 rounded-xl text-[#ffb4ab] text-[11px]">
+                  <div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-rose-700 text-[11px]">
                     <span className="font-bold block mb-0.5">เหตุผลที่ปฏิเสธ:</span>
                     {selectedForReview.rejectionReason}
                   </div>
@@ -675,9 +670,9 @@ export default function StockAdjustmentsPage() {
               </div>
 
               {selectedForReview.status === 'PENDING' && (
-                <div className="space-y-3 pt-3 border-t border-[#30353d]">
+                <div className="space-y-3 pt-3 border-t border-slate-200">
                   <div>
-                    <label className="block text-[#8a92a6] mb-1">
+                    <label className="block text-slate-600 font-semibold mb-1.5">
                       ระบุเหตุผลกรณีปฏิเสธ (Reject Reason):
                     </label>
                     <input
@@ -685,7 +680,7 @@ export default function StockAdjustmentsPage() {
                       placeholder="ใส่เหตุผลหากต้องการปฏิเสธคำขอนี้..."
                       value={rejectReasonInput}
                       onChange={(e) => setRejectReasonInput(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#30353d] rounded-xl bg-[#12161d] text-[#dee2ec] focus:border-[#4cd7f6] text-xs"
+                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-slate-50/90 text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none text-xs"
                     />
                   </div>
 
@@ -694,7 +689,7 @@ export default function StockAdjustmentsPage() {
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => handleApproveReject(selectedForReview.id, 'REJECTED')}
-                      className="px-4 py-2 bg-[#ff5449] hover:bg-[#e0382e] text-white rounded-xl font-bold transition flex items-center gap-1.5"
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-semibold transition flex items-center gap-1.5"
                     >
                       <XCircle className="w-4 h-4" /> ปฏิเสธ (Reject)
                     </button>
@@ -702,7 +697,7 @@ export default function StockAdjustmentsPage() {
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => handleApproveReject(selectedForReview.id, 'APPROVED')}
-                      className="px-5 py-2 bg-[#57ec7f] hover:bg-[#43d469] text-[#0a2012] rounded-xl font-black transition flex items-center gap-1.5 shadow"
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold transition flex items-center gap-1.5 shadow-xs"
                     >
                       <CheckCircle2 className="w-4 h-4" /> อนุมัติการปรับยอด (Approve)
                     </button>

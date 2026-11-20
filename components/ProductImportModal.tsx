@@ -294,56 +294,56 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 font-mono">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-3 sm:p-4 font-mono">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-[#30353d] bg-[#171c23] shadow-2xl flex flex-col"
+          className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[24px] border border-white/90 bg-white/95 backdrop-blur-xl shadow-2xl text-slate-900 flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#30353d] bg-[#090f15] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-white/90 px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[#facc15]/10 p-2.5 text-[#facc15] border border-[#facc15]/20">
+              <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 border border-emerald-200">
                 <FileSpreadsheet className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-headline text-base sm:text-lg font-bold text-[#dee2ec] flex items-center gap-2">
+                <h3 className="font-headline text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <span>นำเข้าสินค้าเป็นชุด (Batch Product Import)</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     Excel / CSV
                   </span>
                 </h3>
-                <p className="text-xs text-[#8a92a6]">
+                <p className="text-xs text-slate-500">
                   อัปโหลดไฟล์ Excel (.xlsx, .xls) หรือ CSV เพื่อเพิ่ม/อัปเดตรายการสินค้าในระบบคลังพร้อมกัน
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 text-[#d1c6ab] hover:bg-[#252a32] hover:text-[#dee2ec] transition-colors"
+              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Download Template Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 bg-[#090f15]/50 border-b border-[#30353d] text-xs">
-            <div className="flex items-center gap-2 text-[#d1c6ab]">
-              <Download className="w-4 h-4 text-[#facc15]" />
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 bg-slate-50/80 border-b border-slate-100 text-xs">
+            <div className="flex items-center gap-2 text-slate-600">
+              <Download className="w-4 h-4 text-emerald-600" />
               <span>ดาวน์โหลดไฟล์แม่แบบที่มีหัวตารางและตัวอย่าง:</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => downloadTemplate('xlsx')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#57ec7f]/40 bg-[#57ec7f]/10 text-[#57ec7f] hover:bg-[#57ec7f]/20 font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold transition-all"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>แม่แบบ Excel (.xlsx)</span>
               </button>
               <button
                 onClick={() => downloadTemplate('csv')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#4cd7f6]/40 bg-[#4cd7f6]/10 text-[#4cd7f6] hover:bg-[#4cd7f6]/20 font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold transition-all"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>แม่แบบ CSV (.csv)</span>
@@ -366,8 +366,8 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
               className={cn(
                 "relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all",
                 dragActive 
-                  ? "border-[#facc15] bg-[#facc15]/10 scale-[0.99]" 
-                  : "border-[#30353d] bg-[#090f15]/80 hover:border-[#facc15]/60 hover:bg-[#090f15]"
+                  ? "border-emerald-500 bg-emerald-50/70 scale-[0.99]" 
+                  : "border-slate-200 bg-slate-50/80 hover:border-emerald-400 hover:bg-emerald-50/30"
               )}
             >
               <input
@@ -379,15 +379,15 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
                 }}
                 className="hidden"
               />
-              <UploadCloud className="w-10 h-10 text-[#facc15] mb-2" />
-              <p className="font-bold text-sm text-[#dee2ec] mb-1">
+              <UploadCloud className="w-10 h-10 text-emerald-600 mb-2" />
+              <p className="font-bold text-sm text-slate-900 mb-1">
                 {file ? file.name : 'ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์'}
               </p>
-              <p className="text-xs text-[#8a92a6]">
+              <p className="text-xs text-slate-500">
                 รองรับไฟล์นามสกุล .xlsx, .xls และ .csv (ขนาดไม่เกิน 10MB)
               </p>
               {file && (
-                <span className="mt-2 text-[11px] text-[#57ec7f] bg-[#57ec7f]/10 px-2.5 py-0.5 rounded border border-[#57ec7f]/30">
+                <span className="mt-2 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                   เลือกไฟล์แล้ว ({(file.size / 1024).toFixed(1)} KB)
                 </span>
               )}
@@ -395,25 +395,25 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
 
             {/* Preview Section */}
             {isProcessing ? (
-              <div className="py-12 text-center text-xs text-[#8a92a6]">
-                <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-[#facc15]" />
+              <div className="py-12 text-center text-xs text-slate-500">
+                <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-emerald-600" />
                 กำลังแปลงข้อมูลจากไฟล์...
               </div>
             ) : parsedData.length > 0 ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">
-                    <Table className="w-4 h-4 text-[#4cd7f6]" />
-                    <span className="font-bold text-[#dee2ec]">
+                    <Table className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-slate-900">
                       ตัวอย่างข้อมูลที่ตรวจพบ ({parsedData.length} รายการ)
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-[#57ec7f]/20 text-[#57ec7f] font-bold text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
                       พร้อมนำเข้า: {validCount}
                     </span>
                     {invalidCount > 0 && (
-                      <span className="px-2 py-0.5 rounded bg-[#93000a]/30 text-[#ffdad6] font-bold text-[11px]">
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[11px]">
                         ไม่สมบูรณ์: {invalidCount}
                       </span>
                     )}
@@ -421,9 +421,9 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
                 </div>
 
                 {/* Table View */}
-                <div className="overflow-x-auto rounded-xl border border-[#30353d] bg-[#090f15] max-h-64">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white max-h-64">
                   <table className="w-full text-[11px] text-left">
-                    <thead className="bg-[#171c23] text-[#8a92a6] border-b border-[#30353d] sticky top-0 font-bold">
+                    <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0 font-bold">
                       <tr>
                         <th className="py-2 px-3">#</th>
                         <th className="py-2 px-3">รหัสสินค้า (SKU)</th>
@@ -437,22 +437,22 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
                         <th className="py-2 px-3">วันหมดอายุ</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#30353d]/50 text-[#dee2ec]">
+                    <tbody className="divide-y divide-slate-100 text-slate-800">
                       {parsedData.slice(0, 30).map((row, idx) => (
-                        <tr key={idx} className={cn("hover:bg-[#171c23]/60", !row.isValid && "bg-[#93000a]/10")}>
-                          <td className="py-2 px-3 text-[#8a92a6]">{idx + 1}</td>
-                          <td className="py-2 px-3 font-bold text-[#facc15]">{row.sku}</td>
+                        <tr key={idx} className={cn("hover:bg-slate-50/70", !row.isValid && "bg-rose-50/70")}>
+                          <td className="py-2 px-3 text-slate-400">{idx + 1}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900">{row.sku}</td>
                           <td className="py-2 px-3 max-w-[200px] truncate">{row.name}</td>
-                          <td className="py-2 px-3 text-[#8a92a6]">{row.category}</td>
-                          <td className="py-2 px-3 text-right font-bold text-[#57ec7f]">{row.stock.toLocaleString()}</td>
+                          <td className="py-2 px-3 text-slate-500">{row.category}</td>
+                          <td className="py-2 px-3 text-right font-bold text-emerald-600">{row.stock.toLocaleString()}</td>
                           <td className="py-2 px-3 text-right">฿{row.price.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-[#4cd7f6]">{row.location}</td>
+                          <td className="py-2 px-3 text-teal-700 font-semibold">{row.location}</td>
                           <td className="py-2 px-3">
                             <span className={cn(
-                              "px-2 py-0.5 rounded text-[10px] font-bold",
+                              "px-2 py-0.5 rounded-full text-[10px] font-bold",
                               row.status === 'Active' 
-                                ? "bg-[#57ec7f]/10 text-[#57ec7f] border border-[#57ec7f]/30" 
-                                : "bg-[#8a92a6]/20 text-[#8a92a6] border border-[#8a92a6]/30"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                                : "bg-slate-100 text-slate-500 border border-slate-200"
                             )}>
                               {row.status}
                             </span>
@@ -466,7 +466,7 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
                 </div>
 
                 {parsedData.length > 30 && (
-                  <p className="text-[10px] text-[#8a92a6] text-right">
+                  <p className="text-[10px] text-slate-500 text-right">
                     * แสดงตัวอย่าง 30 รายการแรก จากทั้งหมด {parsedData.length} รายการ
                   </p>
                 )}
@@ -475,25 +475,25 @@ export function ProductImportModal({ isOpen, onClose, onSuccess }: ProductImport
           </div>
 
           {/* Footer */}
-          <div className="border-t border-[#30353d] bg-[#090f15] px-6 py-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 flex flex-wrap items-center justify-between gap-3 text-xs">
             <button
               onClick={onClose}
               disabled={isImporting}
-              className="px-4 py-2 rounded-lg border border-[#30353d] bg-[#252a32] text-[#d1c6ab] hover:text-[#dee2ec] transition-colors"
+              className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-bold transition-colors"
             >
               ยกเลิก
             </button>
 
             <div className="flex items-center gap-3">
               {parsedData.length > 0 && (
-                <span className="text-[#8a92a6]">
-                  เตรียมนำเข้า <strong>{validCount}</strong> รายการ
+                <span className="text-slate-600">
+                  เตรียมนำเข้า <strong className="text-slate-900">{validCount}</strong> รายการ
                 </span>
               )}
               <button
                 onClick={handleImportSubmit}
                 disabled={isImporting || validCount === 0}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#facc15] hover:bg-[#eec200] text-[#1b1600] font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
                 {isImporting ? (
                   <>

@@ -129,27 +129,27 @@ export default function SignatureModal({ isOpen, onClose, onSave, docNum }: Sign
 
     const modalContent = (
         <div 
-            className="fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center overflow-hidden"
+            className="fixed inset-0 z-[9999] bg-slate-900/45 backdrop-blur-sm flex items-center justify-center overflow-hidden md:p-4"
             onClick={(e) => e.stopPropagation()}
         >
             {/* Landscape Container */}
-            <div className="w-full h-full flex flex-col md:flex-row">
+            <div className="w-full h-full md:rounded-[24px] overflow-hidden bg-white/95 backdrop-blur-xl border border-white/90 shadow-2xl text-slate-900 flex flex-col md:flex-row">
                 
                 {/* Left/Top Sidebar: Info & Controls */}
-                <div className="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col justify-between shrink-0">
+                <div className="w-full md:w-64 bg-slate-50/90 border-b md:border-b-0 md:border-r border-slate-100 p-6 flex flex-col justify-between shrink-0">
                     <div>
-                        <div className="flex items-center gap-2 text-indigo-400 mb-1">
+                        <div className="flex items-center gap-2 text-emerald-600 mb-1">
                             <RotateCw className="w-4 h-4" />
                             <span className="text-[10px] font-bold uppercase tracking-widest">{t('landscape_mode')}</span>
                         </div>
-                        <h2 className="text-xl font-black text-white leading-tight mb-1">{t('sign_title')}</h2>
+                        <h2 className="text-xl font-black text-slate-900 leading-tight mb-1">{t('sign_title')}</h2>
                         <p className="text-slate-500 text-xs font-mono">{docNum}</p>
                     </div>
 
                     <div className="hidden md:block space-y-4">
-                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
-                            <p className="text-slate-400 text-[10px] font-bold uppercase mb-2">{t('label_usage_tips') || 'TIPS'}</p>
-                            <p className="text-slate-300 text-xs leading-relaxed">{t('sign_instruction')}</p>
+                        <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs">
+                            <p className="text-slate-500 text-[10px] font-bold uppercase mb-2">{t('label_usage_tips') || 'TIPS'}</p>
+                            <p className="text-slate-700 text-xs leading-relaxed">{t('sign_instruction')}</p>
                         </div>
                     </div>
 
@@ -157,7 +157,7 @@ export default function SignatureModal({ isOpen, onClose, onSave, docNum }: Sign
                         <button 
                             onClick={handleConfirm}
                             disabled={saving}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white py-4 rounded-2xl font-black text-sm shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-2 transition-all active:scale-95"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white py-4 rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
                             {saving ? (
                                 <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
@@ -170,7 +170,7 @@ export default function SignatureModal({ isOpen, onClose, onSave, docNum }: Sign
                         </button>
                         <button 
                             onClick={onClose}
-                            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-2xl font-bold text-xs transition-all active:scale-95"
+                            className="w-full bg-slate-200/80 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl font-bold text-xs transition-all active:scale-95"
                         >
                             {t('btn_cancel')}
                         </button>

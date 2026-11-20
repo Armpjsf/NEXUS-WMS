@@ -24,7 +24,6 @@ import {
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { LocationSwapModal } from '@/components/LocationSwapModal';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/config';
@@ -54,9 +53,9 @@ export default function WarehouseMapPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#1b2027]">
-          <div className="text-[#8a92a6] font-bold text-sm flex items-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-teal-600" />
+        <div className="theme-nexus-hybrid min-h-screen flex items-center justify-center text-slate-700">
+          <div className="nx-glass-card px-6 py-4 font-semibold text-sm flex items-center gap-2.5 text-slate-700">
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
             กำลังโหลดแผนผังคลังสินค้า...
           </div>
         </div>
@@ -339,71 +338,75 @@ function WarehouseMapContent() {
   })();
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:p-8 bg-[#1b2027]">
-      <AmbientBackground />
+    <div className="theme-nexus-hybrid relative min-h-screen overflow-hidden px-4 py-6 pb-24 sm:px-6 lg:p-8 text-slate-900">
+      <div className="relative z-10 mx-auto max-w-[1500px] space-y-6">
+        <Link
+          href="/inventory"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white border border-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 shadow-xs transition-all group w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          กลับไปคลังสินค้า
+        </Link>
 
-      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <header className="relative overflow-hidden rounded-[1.75rem] border border-teal-500/30 bg-[#171c23] p-6 shadow-xl shadow-teal-900/5 backdrop-blur-xl">
-          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/inventory"
-                className="p-3 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl border border-teal-500/30 text-teal-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-[#dee2ec] flex items-center gap-2.5">
-                  <LayoutGrid className="w-8 h-8 text-teal-600" />
-                  ผังคลังสินค้า
-                </h1>
-                <p className="text-sm text-[#8a92a6] mt-0.5">
-                  {layout?.name || 'คลังสินค้า'} • สาขา <span className="font-mono font-bold text-teal-400">{branchId || '…'}</span> • สต็อกจริงรายช่องจากโลเคชัน
-                </p>
-              </div>
+        {/* Open Page Header */}
+        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pt-1">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800 bg-white/65 backdrop-blur-md border border-white/80 px-2.5 py-0.5 rounded-full shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Spatial Twin
+              </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-sky-800 bg-sky-500/12 border border-sky-500/25 px-2.5 py-0.5 rounded-full">
+                {branchId || '…'}
+              </span>
             </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <LayoutGrid className="w-7 h-7 text-emerald-600 shrink-0" />
+              <span>ผังคลังสินค้า</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+              {layout?.name || 'คลังสินค้า'} • สาขา <span className="font-mono font-bold text-emerald-700">{branchId || '…'}</span> • สต็อกจริงรายช่องจากโลเคชัน
+            </p>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={handleInferLayout}
-                className="px-3.5 py-2.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
-                title="ร่างผังจากรหัสโลเคชันที่มีสต็อกอยู่จริง"
-              >
-                <ScanSearch className="w-4 h-4" />
-                สร้างผังจากโลเคชันจริง
-              </button>
-              <button
-                onClick={openEditor}
-                className="px-3.5 py-2.5 bg-[#facc15]/10 hover:bg-[#facc15]/20 text-[#facc15] border border-[#facc15]/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
-              >
-                <PencilRuler className="w-4 h-4" />
-                แก้ไขผัง
-              </button>
-              <Link
-                href="/admin/slotting"
-                className="px-3.5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
-              >
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                ABC Slotting
-              </Link>
-              <button
-                onClick={fetchData}
-                disabled={loading}
-                className="p-2.5 bg-[#171c23] hover:bg-[#1b2027] text-[#d1c6ab] rounded-xl border border-[#30353d] shadow-sm transition-all"
-                title="รีเฟรชข้อมูลผัง"
-              >
-                <RefreshCw className={cn('w-4 h-4 text-teal-600', loading && 'animate-spin')} />
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleInferLayout}
+              className="px-4 py-2 bg-emerald-500/12 hover:bg-emerald-500/20 text-emerald-800 border border-emerald-500/25 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+              title="ร่างผังจากรหัสโลเคชันที่มีสต็อกอยู่จริง"
+            >
+              <ScanSearch className="w-3.5 h-3.5" />
+              สร้างผังจากโลเคชันจริง
+            </button>
+            <button
+              onClick={openEditor}
+              className="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border border-amber-500/25 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <PencilRuler className="w-3.5 h-3.5" />
+              แก้ไขผัง
+            </button>
+            <Link
+              href="/admin/slotting"
+              className="px-4 py-2 bg-sky-500/12 hover:bg-sky-500/20 text-sky-800 border border-sky-500/25 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+              ABC Slotting
+            </Link>
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="p-2.5 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-full border border-white/90 shadow-xs transition-all"
+              title="รีเฟรชข้อมูลผัง"
+            >
+              <RefreshCw className={cn('w-4 h-4 text-emerald-600', loading && 'animate-spin')} />
+            </button>
           </div>
         </header>
 
         {/* Layout status banners */}
         {layout?.legacyFrom && (
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-200 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="nx-glass-card border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-xs text-amber-900 flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
             <span>
               สาขา <b className="font-mono">{branchId}</b> ยังไม่มีผังของตัวเอง — กำลังแสดงผังเดิมที่บันทึกไว้ก่อนแยกสาขา (<span className="font-mono">{layout.legacyFrom}</span>).
               กด &quot;บันทึกผัง&quot; เพื่อเก็บเป็นผังของสาขานี้
@@ -411,43 +414,45 @@ function WarehouseMapContent() {
           </div>
         )}
         {dirty && (
-          <div className="rounded-2xl border border-[#facc15]/40 bg-[#facc15]/10 px-4 py-3 text-xs text-[#facc15] flex flex-wrap items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> ผังมีการแก้ไขที่ยังไม่บันทึก
+          <div className="nx-glass-card border border-amber-500/40 bg-amber-500/12 px-4 py-3 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2 font-semibold">
+              <AlertTriangle className="w-4 h-4 text-amber-600" /> ผังมีการแก้ไขที่ยังไม่บันทึก
             </span>
             <button
               onClick={() => saveLayout()}
               disabled={isSavingLayout}
-              className="px-3 py-1.5 rounded-lg bg-[#facc15] text-[#1b1600] font-black disabled:opacity-50"
+              className="px-4 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold disabled:opacity-50 transition-colors shadow-xs"
             >
               {isSavingLayout ? 'กำลังบันทึก...' : 'บันทึกผัง'}
             </button>
           </div>
         )}
 
-        {/* Stats Strip */}
+        {/* 4-Card Bento Stats Strip */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-teal-500/10 text-teal-600 rounded-xl border border-teal-500/20">
+          <div className="nx-dark-accent-card p-5 flex items-center gap-3.5">
+            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-400/25 shrink-0">
               <Box className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">สต็อกที่อยู่ในผัง</span>
-              <span className="text-lg font-black text-[#dee2ec] font-mono">{stats.mappedStock.toLocaleString()} ชิ้น</span>
-              <span className="text-[10px] text-teal-600 block font-bold">
+              <span className="text-[11px] text-slate-300 font-semibold uppercase tracking-wider block">สต็อกที่อยู่ในผัง</span>
+              <span className="text-xl font-bold text-white tabular-nums tracking-tight block">
+                {stats.mappedStock.toLocaleString()} <span className="text-xs font-medium text-slate-300">ชิ้น</span>
+              </span>
+              <span className="text-[11px] text-emerald-400 block font-medium tabular-nums">
                 จากทั้งหมด {stats.totalWarehouseStock.toLocaleString()} ชิ้น
               </span>
             </div>
           </div>
 
-          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl border border-emerald-500/20">
+          <div className="nx-glass-card p-5 flex items-center gap-3.5">
+            <div className="p-3 bg-emerald-500/12 text-emerald-700 rounded-2xl border border-emerald-500/20 shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">อัตราการใช้ช่อง</span>
-              <span className="text-lg font-black text-emerald-600 font-mono">{stats.occupancyRate}%</span>
-              <span className="text-[10px] text-[#8a92a6] block">
+            <div className="min-w-0">
+              <span className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider block">อัตราการใช้ช่อง</span>
+              <span className="text-xl font-bold text-emerald-700 tabular-nums tracking-tight block">{stats.occupancyRate}%</span>
+              <span className="text-[11px] text-slate-500 block tabular-nums">
                 {stats.occupiedBins.toLocaleString()} จาก {stats.totalBins.toLocaleString()} ช่อง
               </span>
             </div>
@@ -456,43 +461,47 @@ function WarehouseMapContent() {
           <button
             onClick={() => setShowOrphans(v => !v)}
             className={cn(
-              'text-left bg-[#171c23] p-4 rounded-2xl border shadow-sm flex items-center gap-3 transition-colors',
-              orphans.length > 0 ? 'border-amber-500/40 hover:border-amber-400' : 'border-[#30353d]',
+              'nx-glass-card text-left p-5 flex items-center gap-3.5 transition-all hover:-translate-y-0.5',
+              orphans.length > 0 && 'ring-1 ring-amber-500/40',
             )}
           >
-            <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl border border-amber-500/20">
+            <div className="p-3 bg-amber-500/15 text-amber-700 rounded-2xl border border-amber-500/25 shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">โลเคชันที่ไม่อยู่ในผัง</span>
-              <span className="text-lg font-black text-amber-600 font-mono">{orphans.length.toLocaleString()} รหัส</span>
-              <span className="text-[10px] text-[#8a92a6] block">
+            <div className="min-w-0">
+              <span className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider block">โลเคชันที่ไม่อยู่ในผัง</span>
+              <span className="text-xl font-bold text-amber-700 tabular-nums tracking-tight block">
+                {orphans.length.toLocaleString()} <span className="text-xs font-medium">รหัส</span>
+              </span>
+              <span className="text-[11px] text-slate-500 block tabular-nums truncate">
                 {stats.orphanStock.toLocaleString()} ชิ้น{stats.unassignedStock > 0 && ` • ไม่ระบุที่ ${stats.unassignedStock.toLocaleString()}`}
               </span>
             </div>
           </button>
 
-          <div className="bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl border border-blue-500/20">
+          <div className="nx-glass-card p-5 flex items-center gap-3.5">
+            <div className="p-3 bg-sky-500/12 text-sky-700 rounded-2xl border border-sky-500/25 shrink-0">
               <Layers className="w-5 h-5" />
             </div>
-            <div>
-              <span className="text-[10px] text-[#8a92a6] font-bold uppercase tracking-wider block">โครงสร้างผัง</span>
-              <span className="text-lg font-black text-blue-600 font-mono">{zones.length} โซน</span>
-              <span className="text-[11px] text-blue-500 block font-bold">{rackSummary}</span>
-              <span className="text-[10px] text-amber-500 block font-bold">
-                {stats.lowStockBins > 0 ? `${stats.lowStockBins} ช่องสต็อกต่ำ` : ' '}
-              </span>
+            <div className="min-w-0">
+              <span className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider block">โครงสร้างผัง</span>
+              <span className="text-xl font-bold text-sky-700 tabular-nums tracking-tight block">{zones.length} โซน</span>
+              <span className="text-[11px] text-slate-600 block font-medium truncate">{rackSummary}</span>
+              {stats.lowStockBins > 0 && (
+                <span className="text-[10px] text-amber-700 block font-semibold tabular-nums">
+                  {stats.lowStockBins} ช่องสต็อกต่ำ
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Stock the layout doesn't cover */}
         {showOrphans && (orphans.length > 0 || unassigned) && (
-          <div className="bg-[#171c23] rounded-2xl border border-amber-500/30 p-4 space-y-3">
+          <div className="nx-glass-card border border-amber-500/30 p-5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-black text-amber-300">โลเคชันที่มีสต็อกแต่ยังไม่อยู่ในผัง</h3>
-              <span className="text-[11px] text-[#8a92a6]">
+              <h3 className="text-sm font-bold text-amber-900">โลเคชันที่มีสต็อกแต่ยังไม่อยู่ในผัง</h3>
+              <span className="text-[11px] text-slate-600">
                 เพิ่มแร็ก/ปรับรูปแบบรหัสโลเคชันให้ตรงป้ายจริง หรือกด &quot;สร้างผังจากโลเคชันจริง&quot;
               </span>
             </div>
@@ -500,7 +509,7 @@ function WarehouseMapContent() {
               {unassigned && (
                 <button
                   onClick={() => setSelectedBin(toModalBin(unassigned))}
-                  className="px-2.5 py-1 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-200 text-[11px] font-mono"
+                  className="px-3 py-1 rounded-full border border-rose-500/25 bg-rose-500/12 text-rose-700 text-[11px] font-mono font-semibold tabular-nums hover:bg-rose-500/20 transition-colors"
                 >
                   ไม่ระบุที่ • {unassigned.totalStock.toLocaleString()}
                 </button>
@@ -509,7 +518,7 @@ function WarehouseMapContent() {
                 <button
                   key={o.binCode}
                   onClick={() => setSelectedBin(toModalBin(o))}
-                  className="px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-100 text-[11px] font-mono hover:border-amber-400"
+                  className="px-3 py-1 rounded-full border border-amber-500/25 bg-amber-500/15 text-amber-800 text-[11px] font-mono font-semibold tabular-nums hover:bg-amber-500/25 transition-colors"
                 >
                   {o.binCode} • {o.totalStock.toLocaleString()}
                 </button>
@@ -519,7 +528,7 @@ function WarehouseMapContent() {
         )}
 
         {/* Controls Toolbar */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-[#171c23] p-4 rounded-2xl border border-[#30353d] shadow-sm">
+        <div className="nx-glass-card flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center p-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
             {[{ zoneCode: 'ALL', totalStock: stats.mappedStock }, ...zones].map(z => {
               const isSelected = z.zoneCode === zoneFilter;
@@ -528,13 +537,20 @@ function WarehouseMapContent() {
                   key={z.zoneCode}
                   onClick={() => setZoneFilter(z.zoneCode)}
                   className={cn(
-                    'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap',
-                    isSelected ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20' : 'bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab]',
+                    'px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap',
+                    isSelected
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'bg-white/80 hover:bg-white border border-slate-200/80 text-slate-700',
                   )}
                 >
                   <MapPin className="w-3.5 h-3.5" />
                   {z.zoneCode === 'ALL' ? 'ทุกโซน' : `โซน ${z.zoneCode}`}
-                  <span className={cn('ml-1 px-1.5 rounded text-[10px] font-mono', isSelected ? 'bg-teal-700 text-teal-100' : 'bg-[#30353d] text-[#d1c6ab]')}>
+                  <span
+                    className={cn(
+                      'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums',
+                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600',
+                    )}
+                  >
                     {z.totalStock.toLocaleString()}
                   </span>
                 </button>
@@ -544,20 +560,20 @@ function WarehouseMapContent() {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[12rem] md:w-64">
-              <Search className="w-4 h-4 text-[#8a92a6] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="ค้นหา SKU / ชื่อสินค้า / โลเคชัน..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-28 py-2 bg-[#1b2027] border border-[#30353d] rounded-xl text-xs outline-none focus:border-teal-500 focus:bg-[#171c23] transition-colors"
+                className="w-full pl-9 pr-28 py-2 bg-white/85 border border-slate-200 rounded-full text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:bg-white transition-all"
               />
               {searchQuery.trim() && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   <span
                     className={cn(
-                      'px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap',
-                      matchingBinCodes.size > 0 ? 'bg-cyan-500/15 text-cyan-600' : 'bg-rose-500/15 text-rose-500',
+                      'px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap tabular-nums',
+                      matchingBinCodes.size > 0 ? 'bg-sky-500/15 text-sky-700' : 'bg-rose-500/12 text-rose-700',
                     )}
                     title={outsideMatches.length ? `อยู่นอกผัง: ${outsideMatches.slice(0, 10).join(', ')}` : undefined}
                   >
@@ -569,7 +585,7 @@ function WarehouseMapContent() {
                   </span>
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="p-0.5 rounded text-slate-400 hover:text-slate-600"
+                    className="p-0.5 rounded-full text-slate-400 hover:text-slate-700"
                     aria-label="ล้างคำค้น"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -578,12 +594,12 @@ function WarehouseMapContent() {
               )}
             </div>
 
-            <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
+            <div className="flex items-center bg-white/75 p-1 rounded-full border border-slate-200/80 shadow-xs">
               <button
                 onClick={() => setViewMode('2D')}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
-                  viewMode === '2D' ? 'bg-teal-600 text-white shadow-sm' : 'text-[#8a92a6]',
+                  'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5',
+                  viewMode === '2D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900',
                 )}
               >
                 <LayoutGrid className="w-3.5 h-3.5" /> 2D ผังพื้น
@@ -591,20 +607,20 @@ function WarehouseMapContent() {
               <button
                 onClick={() => setViewMode('3D')}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
-                  viewMode === '3D' ? 'bg-[#facc15] text-[#1b1600] shadow-md shadow-[#facc15]/20 font-black' : 'text-[#8a92a6]',
+                  'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5',
+                  viewMode === '3D' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900',
                 )}
               >
                 <Box className="w-3.5 h-3.5" /> 3D
               </button>
             </div>
 
-            <div className="flex items-center bg-[#252a32] p-1 rounded-xl border border-[#30353d]">
+            <div className="flex items-center bg-white/75 p-1 rounded-full border border-slate-200/80 shadow-xs">
               <button
                 onClick={() => setHeatmapMode('STOCK')}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1',
-                  heatmapMode === 'STOCK' ? 'bg-[#171c23] text-[#dee2ec] shadow-sm' : 'text-[#8a92a6]',
+                  'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1',
+                  heatmapMode === 'STOCK' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900',
                 )}
               >
                 <Layers className="w-3.5 h-3.5" /> สต็อก
@@ -612,8 +628,8 @@ function WarehouseMapContent() {
               <button
                 onClick={() => setHeatmapMode('VELOCITY')}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1',
-                  heatmapMode === 'VELOCITY' ? 'bg-orange-500 text-white shadow-sm' : 'text-[#8a92a6]',
+                  'px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1',
+                  heatmapMode === 'VELOCITY' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900',
                 )}
               >
                 <Flame className="w-3.5 h-3.5" /> ABC
@@ -623,48 +639,48 @@ function WarehouseMapContent() {
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-[#d1c6ab]">
-          <span className="font-bold text-[#d1c6ab]">สัญลักษณ์สี:</span>
+        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-slate-600">
+          <span className="font-semibold text-slate-700">สัญลักษณ์สี:</span>
           {heatmapMode === 'STOCK' ? (
             <>
               <Legend color="bg-emerald-500" label="มีสต็อก" />
               <Legend color="bg-amber-500" label="สินค้าต่ำกว่า Min" />
-              <Legend color="bg-slate-600" label="ช่องว่าง" />
-              <Legend color="bg-cyan-400" label="ตรงกับที่ค้นหา" />
+              <Legend color="bg-slate-400" label="ช่องว่าง" />
+              <Legend color="bg-sky-400" label="ตรงกับที่ค้นหา" />
             </>
           ) : (
             <>
-              <Legend color="bg-red-500" label="Class A หยิบบ่อยมาก" />
+              <Legend color="bg-rose-500" label="Class A หยิบบ่อยมาก" />
               <Legend color="bg-amber-500" label="Class B" />
-              <Legend color="bg-blue-500" label="Class C" />
+              <Legend color="bg-sky-500" label="Class C" />
               <Legend color="bg-purple-500" label="Class D ไม่มียอดจ่าย" />
-              <Legend color="bg-slate-600" label="ช่องว่าง" />
+              <Legend color="bg-slate-400" label="ช่องว่าง" />
             </>
           )}
         </div>
 
         {/* Empty state: branch has no racks yet */}
         {!loading && rackCount === 0 && (
-          <div className="bg-[#171c23] rounded-3xl border border-dashed border-teal-500/40 p-8 text-center space-y-4">
-            <LayoutGrid className="w-10 h-10 text-teal-500 mx-auto" />
+          <div className="nx-glass-card border border-dashed border-emerald-500/40 p-10 text-center space-y-4">
+            <LayoutGrid className="w-10 h-10 text-emerald-600 mx-auto" />
             <div>
-              <h2 className="text-lg font-black text-[#dee2ec]">สาขานี้ยังไม่มีผังคลัง</h2>
-              <p className="text-xs text-[#8a92a6] mt-1">
+              <h2 className="text-lg font-bold text-slate-900">สาขานี้ยังไม่มีผังคลัง</h2>
+              <p className="text-xs text-slate-600 mt-1">
                 เริ่มจากรหัสโลเคชันที่มีสต็อกอยู่จริง ({(orphans.length + (unassigned ? 1 : 0)).toLocaleString()} รหัส) หรือใช้ตัวช่วยสร้างผังแบบกำหนดเอง
               </p>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2.5">
               <button
                 onClick={handleInferLayout}
-                className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-black flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
               >
                 <ScanSearch className="w-4 h-4" /> สร้างผังจากโลเคชันจริง
               </button>
               <button
                 onClick={() => setIsWizardOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#252a32] hover:bg-[#30353d] border border-[#30353d] text-[#dee2ec] text-xs font-bold flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-full bg-white/85 hover:bg-white border border-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
               >
-                <Wand2 className="w-4 h-4 text-[#facc15]" /> ตัวช่วยสร้างผัง
+                <Wand2 className="w-4 h-4 text-amber-600" /> ตัวช่วยสร้างผัง
               </button>
             </div>
           </div>
@@ -697,7 +713,7 @@ function WarehouseMapContent() {
 
         {/* 2D floor plan + rack elevation */}
         {viewMode === '2D' && layout && rackCount > 0 && (
-          <div className="bg-[#171c23] rounded-3xl p-4 sm:p-6 shadow-2xl border border-[#30353d] text-[#dee2ec]">
+          <div className="nx-glass-card p-4 sm:p-6 text-slate-900">
             <Warehouse2DPlan
               layout={layout}
               map={map}
@@ -718,7 +734,7 @@ function WarehouseMapContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm z-50 flex items-center justify-center p-4"
               onClick={() => setSelectedBin(null)}
             >
               <motion.div
@@ -726,16 +742,16 @@ function WarehouseMapContent() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 20 }}
                 onClick={e => e.stopPropagation()}
-                className="bg-[#171c23] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#30353d] space-y-5 text-[#dee2ec]"
+                className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-white/90 space-y-5 text-slate-900"
               >
-                <div className="flex items-center justify-between border-b border-[#30353d] pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2.5 bg-teal-500/10 text-teal-600 rounded-xl">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-emerald-500/12 border border-emerald-500/20 text-emerald-700 rounded-2xl">
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-black text-lg text-[#dee2ec] font-mono">พิกัด: {selectedBin.binCode}</h3>
-                      <p className="text-xs text-[#8a92a6]">
+                      <h3 className="font-bold text-lg text-slate-900 font-mono">พิกัด: {selectedBin.binCode}</h3>
+                      <p className="text-xs text-slate-500">
                         {selectedBin.rackCode
                           ? `โซน ${selectedBin.zoneCode} • แร็ก ${selectedBin.rackCode} • ช่อง ${selectedBin.bay} • ชั้น ${selectedBin.level}`
                           : 'ไม่อยู่ในผังคลังของสาขานี้'}
@@ -744,59 +760,61 @@ function WarehouseMapContent() {
                   </div>
                   <button
                     onClick={() => setSelectedBin(null)}
-                    className="p-2 hover:bg-[#252a32] rounded-xl text-[#8a92a6] hover:text-[#d1c6ab]"
+                    className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 bg-[#1b2027] p-3 rounded-2xl border border-[#30353d]">
+                <div className="grid grid-cols-2 gap-3 bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80">
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">สต็อกในช่องนี้</span>
-                    <span className="text-lg font-black font-mono text-teal-600">{selectedBin.totalStock.toLocaleString()} ชิ้น</span>
+                    <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">สต็อกในช่องนี้</span>
+                    <span className="text-lg font-bold tabular-nums text-emerald-700">{selectedBin.totalStock.toLocaleString()} ชิ้น</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#8a92a6] font-bold block uppercase">ความถี่หมุนเวียน (ABC)</span>
-                    <span className="text-lg font-black font-mono text-[#dee2ec]">Class {selectedBin.velocityClass}</span>
+                    <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">ความถี่หมุนเวียน (ABC)</span>
+                    <span className="text-lg font-bold tabular-nums text-slate-900">Class {selectedBin.velocityClass}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  <span className="text-xs font-bold text-[#8a92a6] uppercase tracking-wider block">
+                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
                     รายการสินค้าในช่องนี้ ({selectedBin.products.length} รายการ):
                   </span>
 
                   {selectedBin.products.length === 0 ? (
-                    <div className="p-4 bg-[#1b2027] rounded-xl text-center text-[#8a92a6] text-xs">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 text-center text-slate-500 text-xs">
                       ไม่มีสินค้าในช่องนี้ (ช่องว่างพร้อมจัดเก็บ)
                     </div>
                   ) : (
                     selectedBin.products.map(p => (
                       <div
                         key={p.id}
-                        className="p-3 bg-[#1b2027] rounded-xl border border-[#30353d] flex items-center justify-between gap-2 text-xs"
+                        className="p-3 bg-slate-50/80 hover:bg-emerald-50/40 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-2 text-xs transition-colors"
                       >
                         <div className="min-w-0">
-                          <div className="font-bold text-[#dee2ec] truncate">{p.name}</div>
-                          <div className="text-[11px] text-[#8a92a6] flex items-center gap-2 mt-0.5">
+                          <div className="font-semibold text-slate-900 truncate">{p.name}</div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
                             <span className="font-mono">{p.id}</span>
                             <span>•</span>
-                            <span className="font-mono text-orange-500 font-bold">Class {p.velocityClass}</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 font-semibold text-[10px]">
+                              Class {p.velocityClass}
+                            </span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
-                          <div className="text-right font-mono">
-                            <span className={cn('text-sm font-black', p.totalStock <= p.minStock ? 'text-amber-500' : 'text-[#dee2ec]')}>
+                          <div className="text-right tabular-nums">
+                            <span className={cn('text-sm font-bold', p.totalStock <= p.minStock ? 'text-amber-600' : 'text-slate-900')}>
                               {p.stock.toLocaleString()} {p.unit}
                             </span>
-                            <span className="block text-[10px] text-[#8a92a6]">
+                            <span className="block text-[10px] text-slate-500">
                               รวมทุกช่อง {p.totalStock.toLocaleString()} • Min {p.minStock}
                             </span>
                           </div>
                           <button
                             onClick={() => setSwapProduct({ id: p.id, name: p.name, sku: p.id, location: selectedBin.binCode, stock: p.stock })}
-                            className="px-2 py-1 bg-[#1b2027] hover:bg-[#facc15] hover:text-[#1b1600] text-[#facc15] border border-[#facc15]/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition"
+                            className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500 hover:text-white text-amber-800 border border-amber-500/25 rounded-full text-[11px] font-semibold flex items-center gap-1 transition-colors"
                             title="สลับพิกัดสินค้านี้"
                           >
                             <ArrowLeftRight className="w-3 h-3" />
@@ -808,16 +826,16 @@ function WarehouseMapContent() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[#30353d] flex items-center justify-between">
+                <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between gap-2">
                   <Link
                     href={`/barcode/thermal-labels?bin=${encodeURIComponent(selectedBin.binCode)}`}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-full text-xs flex items-center gap-1.5 transition-colors shadow-sm"
                   >
-                    <Printer className="w-4 h-4" /> พิมพ์ป้ายพิกัด 100x50 mm
+                    <Printer className="w-3.5 h-3.5" /> พิมพ์ป้ายพิกัด 100x50 mm
                   </Link>
                   <button
                     onClick={() => setSelectedBin(null)}
-                    className="px-4 py-2 bg-[#252a32] hover:bg-[#30353d] text-[#d1c6ab] font-bold rounded-xl text-xs transition-colors"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-full text-xs transition-colors"
                   >
                     ปิด
                   </button>
