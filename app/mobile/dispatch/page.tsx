@@ -298,9 +298,14 @@ export default function MobileDispatchPage() {
       const shipped = await shipRes.json();
       if (!shipRes.ok) throw new Error(shipped.error || 'ส่งขึ้นรถไม่สำเร็จ');
 
-      toast.success(
-        `✅ ${created.order.orderNo} ส่งขึ้นรถแล้ว${selectedVehicle ? ` (${selectedVehicle.plate})` : ''}${isFleet ? ' + เข้า TMS' : ''}`,
-        { id: t, duration: 5000 });
+      if (isFleet && !shipped.order?.tmsJobId) {
+        toast.error(`⚠️ ${created.order.orderNo} ส่งขึ้นรถแล้ว แต่ส่งเข้า TMS ไม่สำเร็จ (${shipped.tmsError || shipped.order?.tmsDispatchError || 'ไม่ทราบสาเหตุ'})`, { id: t, duration: 6000 });
+      } else {
+        toast.success(
+          `✅ ${created.order.orderNo} ส่งขึ้นรถแล้ว${selectedVehicle ? ` (${selectedVehicle.plate})` : ''}${shipped.order?.tmsJobId ? ` + เข้า TMS (${shipped.order.tmsJobId})` : ''}`,
+          { id: t, duration: 5000 }
+        );
+      }
       setLastSlip({ id: created.order.id, orderNo: created.order.orderNo });
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
       setActiveDrop(1); setChecked(false); setVehicleId('');

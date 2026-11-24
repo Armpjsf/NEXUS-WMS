@@ -91,6 +91,7 @@ export interface OutboundOrder {
   tmsJobId?: string;
   tmsStatus?: string;
   tmsSyncedAt?: string | null;
+  tmsDispatchError?: string;
   destinations?: DeliveryDestination[];
   qcSignatures?: QCSignatures;
   // Cross-dock pickup point (chosen by the checker). Pushed to TMS as
@@ -669,6 +670,8 @@ export async function updateOrder(
       } catch (tmsSaveErr) {
         console.warn('[orders] failed to save tms_job_id:', tmsSaveErr);
       }
+    } else if (!r.ok || r.skipped) {
+      mapped.tmsDispatchError = r.error || 'ส่งงานเข้า TMS ไม่สำเร็จ';
     }
   }
 

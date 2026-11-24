@@ -77,7 +77,7 @@ export async function PATCH(request: Request) {
     }
     const order = await updateOrder(id, patch);
     if (!order) return NextResponse.json({ error: 'อัปเดตออเดอร์ไม่สำเร็จ' }, { status: 500 });
-    return NextResponse.json({ success: true, order });
+    return NextResponse.json({ success: true, order, ...(order.tmsDispatchError ? { tmsError: order.tmsDispatchError } : {}) });
   } catch (error) {
     await captureError(error, { where: 'PATCH /api/orders' });
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });

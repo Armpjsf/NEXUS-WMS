@@ -191,7 +191,8 @@ export default function MobileOrdersPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'ส่งงานเข้า TMS ไม่สำเร็จ');
-      toast.success(`ส่งงาน ${order.orderNo} เข้า TMS เรียบร้อย!`, { id: t });
+      if (!data.order?.tmsJobId) throw new Error(`ส่งงานเข้า TMS ไม่สำเร็จ (${data.tmsError || data.order?.tmsDispatchError || 'ไม่พบ TMS Job ID'})`);
+      toast.success(`ส่งงาน ${order.orderNo} เข้า TMS (${data.order.tmsJobId}) เรียบร้อย!`, { id: t });
       loadData();
     } catch (e) {
       toast.error(errorMessage(e) || 'ไม่สามารถส่งเข้า TMS ได้', { id: t });
@@ -1179,9 +1180,14 @@ function MobileDispatchModal({
         }),
       });
 
-      if (!res.ok) throw new Error('บันทึกส่งมอบไม่สำเร็จ');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'บันทึกส่งมอบไม่สำเร็จ');
       if (isFleet) {
-        toast.success(`ส่งมอบ ${order.orderNo} ให้รถบริษัท (${vehiclePlate || 'จัดส่งเอง'}) และสร้างงานเข้า TMS เรียบร้อย!`);
+        if (data.order?.tmsJobId) {
+          toast.success(`ส่งมอบ ${order.orderNo} ให้รถบริษัท (${vehiclePlate || 'จัดส่งเอง'}) และสร้างงานเข้า TMS (${data.order.tmsJobId}) เรียบร้อย!`);
+        } else {
+          toast.error(`ส่งมอบ ${order.orderNo} แล้ว แต่ส่งงานเข้า TMS ไม่สำเร็จ (${data.tmsError || data.order?.tmsDispatchError || 'ตรวจสอบการเชื่อมต่อ TMS'})`, { duration: 6000 });
+        }
       } else {
         toast.success(isPickup ? `ส่งมอบ ${order.orderNo} ให้ลูกค้ารับเองแล้ว!` : `ส่งมอบ ${order.orderNo} ให้ ${carrier} เรียบร้อย!`);
       }

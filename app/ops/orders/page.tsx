@@ -1034,7 +1034,13 @@ function DispatchModal({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'บันทึกการจัดส่งไม่สำเร็จ');
-      toast.success('ออเดอร์ถูกเปลี่ยนสถานะเป็น "จัดส่งแล้ว" และตัดสต็อกเรียบร้อย', { id: t });
+      if (isCompanyFleet && sendToTms && !json.order?.tmsJobId) {
+        toast.error(`บันทึกการจัดส่งและตัดสต็อกแล้ว แต่ส่งงานเข้า TMS ไม่สำเร็จ (${json.tmsError || json.order?.tmsDispatchError || 'ไม่ทราบสาเหตุ'})`, { id: t, duration: 6000 });
+      } else if (isCompanyFleet && json.order?.tmsJobId) {
+        toast.success(`จัดส่งแล้ว ตัดสต็อก และสร้างงาน TMS (${json.order.tmsJobId}) เรียบร้อย`, { id: t });
+      } else {
+        toast.success('ออเดอร์ถูกเปลี่ยนสถานะเป็น "จัดส่งแล้ว" และตัดสต็อกเรียบร้อย', { id: t });
+      }
       onDone();
     } catch (err) {
       toast.error(errorMessage(err), { id: t });
