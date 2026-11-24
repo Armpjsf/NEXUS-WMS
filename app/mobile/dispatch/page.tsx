@@ -52,6 +52,7 @@ export default function MobileDispatchPage() {
   const [activeDrop, setActiveDrop] = useState(1);
 
   const [checked, setChecked] = useState(false);
+  const [requireScanDelivery, setRequireScanDelivery] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [sigTarget, setSigTarget] = useState<'' | 'customer' | 'checker'>('');
@@ -293,7 +294,12 @@ export default function MobileDispatchPage() {
 
       const shipRes = await fetch(getApiUrl('/api/orders'), {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: created.order.id, status: 'SHIPPED', qcSignatures }),
+        body: JSON.stringify({
+          id: created.order.id,
+          status: 'SHIPPED',
+          qcSignatures,
+          requireScanDelivery: isFleet && requireScanDelivery ? true : undefined,
+        }),
       });
       const shipped = await shipRes.json();
       if (!shipRes.ok) throw new Error(shipped.error || 'ส่งขึ้นรถไม่สำเร็จ');
@@ -308,7 +314,7 @@ export default function MobileDispatchPage() {
       }
       setLastSlip({ id: created.order.id, orderNo: created.order.orderNo });
       setItems([]); setCustomer(''); setDrops([{ name: '', phone: '', address: '' }]);
-      setActiveDrop(1); setChecked(false); setVehicleId('');
+      setActiveDrop(1); setChecked(false); setRequireScanDelivery(false); setVehicleId('');
       setCustomerStaffSig(''); setCheckerSig('');
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (e) {
@@ -550,8 +556,20 @@ export default function MobileDispatchPage() {
             {carriers.length === 0 && <option>{carrier}</option>}
             {carriers.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
           </select>
-          {isFleet ? <p className="text-xs text-emerald-700 font-semibold mt-1.5 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> รถบริษัท — สร้างงานเข้า TMS อัตโนมัติ</p>
-            : <p className="text-xs text-slate-500 mt-1.5">ขนส่งเอกชน — ไม่เข้า TMS</p>}
+          {isFleet ? (
+            <>
+              <p className="text-xs text-emerald-700 font-semibold mt-1.5 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> รถบริษัท — สร้างงานเข้า TMS อัตโนมัติ</p>
+              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={requireScanDelivery}
+                  onChange={e => setRequireScanDelivery(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 shrink-0"
+                />
+                <span className="text-xs font-bold text-slate-800">งานนี้ติดลาเบล (บังคับคนขับสแกนตอนส่ง)</span>
+              </label>
+            </>
+          ) : <p className="text-xs text-slate-500 mt-1.5">ขนส่งเอกชน — ไม่เข้า TMS</p>}
         </div>
 
         {/* Signatures */}

@@ -979,6 +979,7 @@ function DispatchModal({
   const [vehiclePlate, setVehiclePlate] = useState(order.vehiclePlate || '');
   const [driverName, setDriverName] = useState(order.driverName || '');
   const [sendToTms] = useState(true);
+  const [requireScanDelivery, setRequireScanDelivery] = useState(false);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || '');
   const [submitting, setSubmitting] = useState(false);
@@ -1029,6 +1030,7 @@ function DispatchModal({
           driverName: isCompanyFleet ? driverName.trim() : undefined,
           dockBay: dockBay || undefined,
           sendToTms: isCompanyFleet ? sendToTms : false,
+          requireScanDelivery: isCompanyFleet && requireScanDelivery ? true : undefined,
           trackingNo: trackingNo.trim() || (isCompanyFleet ? order.orderNo : ''),
         }),
       });
@@ -1181,6 +1183,16 @@ function DispatchModal({
                   <option value="Motorcycle">รถมอเตอร์ไซค์ (Motorcycle)</option>
                 </select>
               </div>
+
+              <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={requireScanDelivery}
+                  onChange={(e) => setRequireScanDelivery(e.target.checked)}
+                  className="w-4 h-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-xs font-bold text-indigo-950">งานนี้ติดลาเบล (บังคับคนขับสแกนตอนส่ง)</span>
+              </label>
 
               <div className="text-xs text-indigo-800 space-y-1">
                 <div className="font-bold flex items-center gap-1.5 text-indigo-900">

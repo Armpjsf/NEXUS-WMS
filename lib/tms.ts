@@ -195,7 +195,7 @@ export function isCompanyFleetCarrier(carrier?: string | null): boolean {
 }
 
 // Create a TMS delivery job for a shipped WMS order. Never throws.
-export async function createTmsDeliveryJob(order: OutboundOrder & { orgId?: string }): Promise<TmsResult> {
+export async function createTmsDeliveryJob(order: OutboundOrder & { orgId?: string; requireScanDelivery?: boolean }): Promise<TmsResult> {
   if (!isTmsEnabled()) return { ok: false, skipped: true, error: 'disabled', dispatchState: 'disconnected' };
   const tenantOrgId = order.orgId || (order as any).org_id;
   if (!(await isTmsEnabledForTenant(tenantOrgId))) {
@@ -312,6 +312,7 @@ export async function createTmsDeliveryJob(order: OutboundOrder & { orgId?: stri
       // Pre-assigned company vehicle/driver (checker picked the plate at the dock).
       ...(order.vehiclePlate ? { vehicle_plate: order.vehiclePlate } : {}),
       ...(order.driverName ? { driver_name: order.driverName } : {}),
+      ...(typeof order.requireScanDelivery === 'boolean' ? { require_scan_delivery: order.requireScanDelivery } : {}),
       // Pickup coordinates (from the checker's chosen pickup point) so the TMS
       // job gets a real origin pin instead of only a text location.
       ...(order.pickupLat != null && order.pickupLon != null
@@ -449,6 +450,7 @@ export async function createTmsConsolidatedTripJob(params: {
   vehicleType?: string;
   pickupAddress?: string;
   branchCode?: string;
+  requireScanDelivery?: boolean;
   orders: OutboundOrder[];
 }): Promise<TmsResult> {
   if (!isTmsEnabled()) {
@@ -501,6 +503,7 @@ export async function createTmsConsolidatedTripJob(params: {
       vehicle_type: params.vehicleType || '4-Wheel',
       ...(params.vehiclePlate ? { vehicle_plate: params.vehiclePlate } : {}),
       ...(params.driverName ? { driver_name: params.driverName } : {}),
+      ...(typeof params.requireScanDelivery === 'boolean' ? { require_scan_delivery: params.requireScanDelivery } : {}),
       ...(totalWeight > 0 ? { weight_kg: totalWeight } : {}),
       wms_order_no: params.orders.map(o => o.orderNo).join(','),
       notes: `ทริปจัดส่งรวม WMS: ${params.orders.map(o => `[WMS: ${o.orderNo}]`).join(' ')}`,

@@ -1101,6 +1101,7 @@ function MobileDispatchModal({
   const [vehicleType, setVehicleType] = useState(order.vehicleType || '4-Wheel');
   const [dockBay, setDockBay] = useState(order.dockBay || '');
   const [shipAddress, setShipAddress] = useState(order.shipAddress || '');
+  const [requireScanDelivery, setRequireScanDelivery] = useState(false);
   const [trackingNo, setTrackingNo] = useState(order.trackingNo || (isFleet ? order.orderNo : ''));
   const [submitting, setSubmitting] = useState(false);
   const [scanCamOpen, setScanCamOpen] = useState(false);
@@ -1177,6 +1178,7 @@ function MobileDispatchModal({
           dockBay: dockBay || undefined,
           shipAddress: isFleet && shipAddress.trim() ? shipAddress.trim() : undefined,
           sendToTms: isFleet,
+          requireScanDelivery: isFleet && requireScanDelivery ? true : undefined,
         }),
       });
 
@@ -1354,6 +1356,16 @@ function MobileDispatchModal({
                 className="w-full p-2.5 rounded-2xl bg-white border border-sky-200 text-slate-900 font-medium text-xs focus:outline-none focus:border-sky-500 resize-none"
               />
             </div>
+
+            <label className="flex items-center gap-2 pt-0.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={requireScanDelivery}
+                onChange={e => setRequireScanDelivery(e.target.checked)}
+                className="w-4 h-4 rounded border-sky-300 text-sky-600 focus:ring-sky-500 shrink-0"
+              />
+              <span className="text-xs font-bold text-sky-950">งานนี้ติดลาเบล (บังคับคนขับสแกนตอนส่ง)</span>
+            </label>
           </div>
         )}
 

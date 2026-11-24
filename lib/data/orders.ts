@@ -500,7 +500,7 @@ export async function updateOrder(
   id: string,
   patch: Partial<{
     status: OrderStatus; items: OrderLine[]; carrier: string; trackingNo: string; vehicleType: string;
-    vehiclePlate: string; driverName: string; dockBay: string; sendToTms: boolean;
+    vehiclePlate: string; driverName: string; dockBay: string; sendToTms: boolean; requireScanDelivery: boolean;
     boxCount: number; weightKg: number; podSignature: string; podPhoto: string; podNote: string;
     priority: string; notes: string; tmsJobId: string; tmsStatus: string;
     destinations: DeliveryDestination[]; qcSignatures: QCSignatures;
@@ -630,7 +630,11 @@ export async function updateOrder(
     isCompanyFleetCarrier(mapped.carrier);
 
   if (needsTmsJob && !mapped.tmsJobId) {
-    const r = await createTmsDeliveryJob({ ...mapped, orgId });
+    const requireScanDelivery =
+      typeof (patch as any).requireScanDelivery === 'boolean'
+        ? (patch as any).requireScanDelivery
+        : undefined;
+    const r = await createTmsDeliveryJob({ ...mapped, orgId, requireScanDelivery });
     if (r.ok && r.jobId) {
       mapped.tmsJobId = r.jobId;
       mapped.tmsStatus = 'New';
