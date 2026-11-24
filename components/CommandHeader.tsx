@@ -24,7 +24,7 @@ export default function CommandHeader({ onToggleSidebar }: CommandHeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const isHybrid = !pathname?.startsWith('/print') && pathname !== '/login' && !pathname?.startsWith('/mobile');
+  const isHybrid = pathname !== '/login' && !pathname?.startsWith('/mobile');
   const [currentTime, setCurrentTime] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [audioMuted, setAudioMuted] = useState(false);

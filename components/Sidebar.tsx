@@ -163,7 +163,7 @@ export default function Sidebar() {
 
   const userRole = session?.user?.role || 'User';
   const isAdminRole = adminRoles.includes(userRole);
-  const isHybrid = !pathname?.startsWith('/print') && pathname !== '/login' && !pathname?.startsWith('/mobile');
+  const isHybrid = pathname !== '/login' && !pathname?.startsWith('/mobile');
 
   // P1 cleanup: ยุบเมนูซ้ำ (พิมพ์ฉลาก/สแกน/ตรวจนับ/รายงาน/AI) + ย้ายเมนูมือถือ (/mobile/*) ไปไว้ที่ MobileNav
   const navGroups = useMemo<NavGroup[]>(() => ([

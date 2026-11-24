@@ -63,7 +63,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const isAuthOrMobile = pathname === '/login' || pathname.startsWith('/mobile');
-  const isHybridRoute = !pathname?.startsWith('/print') && !isAuthOrMobile;
+  const isHybridRoute = !isAuthOrMobile;
 
   if (isAuthOrMobile) {
     return (
@@ -82,12 +82,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       {(isNative || hasSafeAreaShield) && <div className="mobile-status-bar-shield" aria-hidden="true" />}
-      <Sidebar />
-      <CommandHeader />
+      <div className="print:hidden">
+        <Sidebar />
+        <CommandHeader />
+      </div>
       <main
         id="main-content"
         style={isNative ? { paddingTop: 'calc(4rem + var(--safe-top, 0px))' } : undefined}
-        className={`min-h-screen pt-16 transition-all duration-300 md:pl-80 ${
+        className={`min-h-screen pt-16 transition-all duration-300 md:pl-80 print:pt-0 print:pl-0 print:bg-white ${
           isHybridRoute ? 'theme-nexus-hybrid text-[#0f172a]' : 'bg-[#0f141b]'
         } ${isNative ? 'mobile-shell' : ''}`}
       >
